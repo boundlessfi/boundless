@@ -179,7 +179,7 @@ export default function VenueSection({
         )}
 
         {venueType === 'virtual' && (
-          <div className='rounded-lg border border-blue-500/30 bg-blue-900/20 p-4'>
+          <div className='mx-5 rounded-lg border border-blue-500/30 bg-blue-900/20 p-4'>
             <p className='text-sm text-blue-300'>
               <strong>Virtual Event:</strong> This hackathon will be conducted
               online. You can specify the platform (Zoom, Discord, etc.) and
