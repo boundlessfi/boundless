@@ -37,7 +37,7 @@ export default function OrganizationHeader() {
           />
         </div>
 
-        <Link href='/'>
+        <Link href='/organizations'>
           <button className='hover:text-primary/80 flex items-center gap-2 text-gray-600 transition-colors'>
             <Building2 className='h-5 w-5' />
             <span className='text-sm font-medium'>Home</span>

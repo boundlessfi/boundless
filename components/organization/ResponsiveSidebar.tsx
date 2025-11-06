@@ -84,7 +84,7 @@ export default function ResponsiveSidebar({
 
           <div className='mt-6 space-y-3 px-4'>
             <Link
-              href=''
+              href={`/organizations/${organizationId}/hackathons/new`}
               onClick={() => onOpenChange?.(false)}
               className='flex items-center gap-3 px-3 py-2'
             >
@@ -96,7 +96,7 @@ export default function ResponsiveSidebar({
               </span>
             </Link>
             <Link
-              href=''
+              href={`/organizations/${organizationId}/grants/new`}
               onClick={() => onOpenChange?.(false)}
               className='flex items-center gap-3 px-3 py-2'
             >

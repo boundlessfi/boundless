@@ -56,8 +56,29 @@
   --color-success-800: #015b20;
   --color-success-900: #004617;
 
+  /* Error Colors */
+  --color-error-50: #fbeae9;
+  --color-error-75: #f2bcba;
+  --color-error-100: #eb9b98;
+  --color-error-200: #e26e6a;
+  --color-error-300: #dd524d;
+  --color-error-400: #d42620;
+  --color-error-500: #cb1a14;
+  --color-error-600: #ba110b;
+  --color-error-700: #9e0a05;
+  --color-error-800: #800501;
+  --color-error-900: #591000;
+
   --color-active-bg: rgba(167, 249, 80, 0.08);
   --color-active-bg2: rgba(167, 249, 80, 0.32);
+
+  --color-background-main-bg: #030303;
+
+  --color-inactive: #171717;
+  --color-section: #1c1c1c;
+  --color-background-card: #101010;
+  --color-modal: #f5b546;
+  --color-faint: #f5b546;
 }
 
 .custom-scrollbar {

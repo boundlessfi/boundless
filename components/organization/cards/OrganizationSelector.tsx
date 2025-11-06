@@ -108,7 +108,7 @@ export default function OrganizationSelector({
         <Button className='flex items-center gap-3 bg-transparent px-3 py-2 transition-colors hover:bg-transparent focus:ring-0 focus-visible:ring-0'>
           <div className='relative h-10 w-10 overflow-hidden rounded-full bg-white'>
             <Image
-              src={selectedOrg.logo || '/boundless.png'}
+              src={selectedOrg.logo || ''}
               alt={selectedOrg.name || 'Organization'}
               fill
               className='object-cover'
@@ -137,7 +137,7 @@ export default function OrganizationSelector({
           >
             <div className='relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-white'>
               <Image
-                src={org.logo || '/logo.svg'}
+                src={org.logo || ''}
                 alt={org.name}
                 fill
                 className='object-cover'

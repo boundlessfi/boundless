@@ -3,7 +3,7 @@ import { Organization } from '../api/types';
 export interface OrganizationSummary {
   _id: string;
   name: string;
-  logo?: string;
+  logo: string;
   tagline?: string;
   isProfileComplete: boolean;
   role: 'owner' | 'member';

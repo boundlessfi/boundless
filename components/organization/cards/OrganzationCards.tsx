@@ -31,7 +31,7 @@ export default function OrganizationCard({
       onClick={() => router.push(`/organizations/${id}/settings`)}
       className='hover:shadow-primary/10 cursor-pointer rounded-xl border border-zinc-800 bg-black transition-shadow duration-300 hover:shadow-lg'
     >
-      <div className='rounded-xl border border-zinc-800 bg-zinc-900 px-6 pt-6 pb-1'>
+      <div className='rounded-xl border border-zinc-800 bg-zinc-900 px-4 pt-4 pb-1 md:px-6 md:pt-6'>
         <div className='mb-6 flex items-start gap-4'>
           <div className='flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg'>
             <Image
@@ -44,17 +44,21 @@ export default function OrganizationCard({
           </div>
           <div className='min-w-0 flex-1'>
             <h3 className='mb-1 text-lg font-semibold text-white'>{name}</h3>
-            <p className='text-sm text-zinc-500'>Created {createdAt}</p>
+            <p className='text-sm text-zinc-500'>
+              Created {new Date(createdAt).toLocaleDateString()}
+            </p>
           </div>
         </div>
 
         <div className='mb-6 grid grid-cols-2 gap-4'>
-          <div className='rounded-lg border border-zinc-800 bg-black p-4'>
+          <div className='rounded-lg border border-zinc-800 bg-black p-2.5 md:p-4'>
             <div className='mb-2 flex items-center gap-2'>
-              <div className='bg-active-bg grid h-7 w-7 place-content-center rounded-lg border-[0.5px] border-[rgba(167,249,80,0.24)] md:h-10 md:w-10'>
+              <div className='bg-active-bg grid max-h-7 min-h-7 max-w-7 min-w-7 place-content-center rounded-lg border-[0.5px] border-[rgba(167,249,80,0.24)] md:h-10 md:w-10'>
                 <Trophy className='text-primary h-3 w-3 md:h-4 md:w-4' />
               </div>
-              <span className='text-sm font-medium text-white'>Hackathons</span>
+              <span className='text-xs font-medium text-white sm:text-sm'>
+                Hackathons
+              </span>
             </div>
             <div className='my-2 text-2xl font-semibold text-white'>
               {hackathons.count}
@@ -78,12 +82,14 @@ export default function OrganizationCard({
             </div>
           </div>
 
-          <div className='rounded-lg border border-zinc-800 bg-black p-4'>
+          <div className='rounded-lg border border-zinc-800 bg-black p-2.5 md:p-4'>
             <div className='mb-2 flex items-center gap-2'>
               <div className='bg-active-bg grid h-7 w-7 place-content-center rounded-lg border-[0.5px] border-[rgba(167,249,80,0.24)] md:h-10 md:w-10'>
                 <HandCoins className='text-primary h-3 w-3 md:h-4 md:w-4' />
               </div>
-              <span className='text-sm font-medium text-white'>Grants</span>
+              <span className='text-xs font-medium text-white sm:text-sm'>
+                Grants
+              </span>
             </div>
             <div className='my-2 text-2xl font-semibold text-white'>
               {grants.count}

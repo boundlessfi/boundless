@@ -322,7 +322,7 @@ export function OrganizationProvider({
         .map(org => ({
           _id: (org._id as string) ?? (org.id as string),
           name: (org.name as string) || 'Unnamed Organization',
-          logo: (org.logo as string) || '',
+          logo: (org.avatar as string) || '',
           tagline: (org.tagline as string) || '',
           isProfileComplete: Boolean(org.isProfileComplete),
           role: org.owner === response.email ? 'owner' : 'member',

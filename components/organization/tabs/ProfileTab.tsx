@@ -376,7 +376,7 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={cn(
-              'hover:border-primary flex h-32 w-32 cursor-pointer items-center justify-center rounded-[12px] border border-[#2B2B2B] bg-[#101010] transition-colors xl:h-[200px] xl:w-[200px]',
+              'hover:border-primary flex h-32 w-32 cursor-pointer items-center justify-center overflow-hidden rounded-[12px] border border-[#2B2B2B] bg-[#101010] transition-colors xl:h-[200px] xl:w-[200px]',
               (isSaving || isUploading) && 'cursor-not-allowed opacity-50',
               isDragOver && 'border-primary bg-primary/10 scale-105'
             )}
@@ -389,18 +389,14 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
                     <span className='text-primary text-xs'>Uploading...</span>
                   </div>
                 ) : (
-                  <>
-                    <div className='relative h-32 w-32 overflow-hidden rounded-[12px]'>
-                      <Image
-                        src={formData.logo || logoPreview || ''}
-                        alt='Logo preview'
-                        fill
-                        sizes='128px'
-                        className='object-cover'
-                      />
-                    </div>
-                    <span className='text-xs text-white'>Change</span>
-                  </>
+                  <Image
+                    src={formData.logo || logoPreview || ''}
+                    alt='Logo preview'
+                    width={400}
+                    height={400}
+                    sizes='128px'
+                    className='h-full w-full object-cover'
+                  />
                 )}
               </div>
             ) : isDragOver ? (

@@ -171,12 +171,7 @@ export function Navbar() {
       className='sticky top-0 z-50 max-h-[88px] bg-[#030303A3] backdrop-blur-[12px]'
     >
       <div className='mx-auto max-w-[1440px] px-3 py-3 sm:px-6 sm:py-5 md:px-8 lg:px-12 xl:px-16 2xl:px-20'>
-        <div
-          className={cn(
-            'grid grid-cols-2 items-center gap-3 sm:gap-6 md:grid-cols-[auto_1fr_auto] md:justify-items-center',
-            isAuthenticated && 'md:justify-items-start'
-          )}
-        >
+        <div className='flex items-center justify-between gap-3 sm:gap-6'>
           <div className='flex-shrink-0'>
             <Link
               ref={logoRef}
@@ -185,17 +180,27 @@ export function Navbar() {
               className='flex items-center'
             >
               <Image
-                src='/auth/logo.svg'
+                src='/logo-icon.png'
                 alt='logo'
-                width={width && width < 640 ? 90 : 116}
-                height={width && width < 640 ? 18 : 22}
-                className='transition-all duration-200'
+                width={32}
+                height={32}
+                className='transition-all duration-200 lg:hidden'
+              />
+              <Image
+                src='/logo.png'
+                alt='logo'
+                width={140}
+                height={28}
+                className='hidden transition-all duration-200 lg:block'
               />
             </Link>
           </div>
 
-          <div ref={menuRef} className='hidden md:block'>
-            <div className='ml-6 flex items-baseline space-x-2 lg:ml-10 lg:space-x-4'>
+          <div
+            ref={menuRef}
+            className='hidden md:flex md:flex-1 md:justify-center'
+          >
+            <div className='flex items-baseline space-x-2 lg:space-x-4'>
               {menuItems.map(item => (
                 <Link
                   key={item.href}
@@ -610,11 +615,18 @@ function MobileMenu({
             <div className='flex-shrink-0'>
               <Link ref={mobileLogoRef} href='/' className='flex items-center'>
                 <Image
-                  src='/auth/logo.svg'
+                  src='/logo.png'
                   alt='logo'
-                  width={width && width < 640 ? 90 : 116}
-                  height={width && width < 640 ? 18 : 22}
-                  className='transition-all duration-200'
+                  width={116}
+                  height={22}
+                  className='transition-all duration-200 lg:hidden'
+                />
+                <Image
+                  src='/logo.png'
+                  alt='logo'
+                  width={140}
+                  height={28}
+                  className='hidden transition-all duration-200 lg:block'
                 />
               </Link>
             </div>

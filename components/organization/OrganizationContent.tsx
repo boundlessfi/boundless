@@ -71,7 +71,7 @@ export default function OrganizationContent() {
                 <OrganizationCard
                   id={org._id}
                   name={org.name}
-                  logo={org.logo || ''}
+                  logo={org.logo}
                   createdAt={org.createdAt}
                   hackathons={{ count: 0, submissions: 0 }}
                   grants={{ count: 0, applications: 0 }}
