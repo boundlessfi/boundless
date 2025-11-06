@@ -137,7 +137,7 @@ export default function OrganizationSelector({
           >
             <div className='relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-white'>
               <Image
-                src={org.logo || '/placeholder.svg'}
+                src={org.logo || '/logo.svg'}
                 alt={org.name}
                 fill
                 className='object-cover'

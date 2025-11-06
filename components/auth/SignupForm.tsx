@@ -280,7 +280,7 @@ const SignupForm = ({ onLoadingChange, invitation }: SignupFormProps) => {
                       <LockIcon className='h-5 w-5 flex-shrink-0 text-[#B5B5B5]' />
                       <Input
                         {...field}
-                        type='text'
+                        type='password'
                         placeholder='Enter your password'
                         className='w-full border-none bg-transparent text-white caret-white placeholder:text-[#B5B5B5] focus-visible:ring-0 focus-visible:ring-offset-0'
                       />

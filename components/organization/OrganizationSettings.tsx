@@ -88,7 +88,11 @@ export default function OrganizationSettings({
 
         <div className='px-6 py-6 md:px-20'>
           <TabsContent value='profile' className='mt-0'>
-            <ProfileTab initialData={initialData} onSave={handleProfileSave} />
+            <ProfileTab
+              organizationId={organizationId as string}
+              initialData={initialData}
+              onSave={handleProfileSave}
+            />{' '}
           </TabsContent>
 
           <TabsContent value='links' className='mt-0'>

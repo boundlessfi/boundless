@@ -12,8 +12,10 @@ import { useOrganization } from '@/lib/providers/OrganizationProvider';
 import { BoundlessButton } from '@/components/buttons';
 import { toast } from 'sonner';
 import { uploadService } from '@/lib/api/upload';
+import { useRouter } from 'next/navigation';
 
 interface ProfileTabProps {
+  organizationId: string;
   initialData?: {
     name?: string;
     logo?: string;
@@ -48,6 +50,12 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previousOrgIdRef = useRef<string | null>(null);
+  const router = useRouter();
+
+  // useEffect(() => {
+  //   setIsInitialized(false);
+  //   previousOrgIdRef.current = null;
+  // }, [organizationId]);
 
   useEffect(() => {
     if (!isInitialized) {
@@ -267,6 +275,11 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
           about: formData.about,
         });
         toast.success('Organization profile updated successfully');
+        if (activeOrgId) {
+          setTimeout(() => {
+            router.push(`/organizations/${activeOrgId}/settings`);
+          }, 500);
+        }
       } else {
         await createOrganization({
           name: formData.name,
@@ -275,6 +288,11 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
           about: formData.about,
         });
         toast.success('Organization created successfully');
+        if (activeOrgId) {
+          setTimeout(() => {
+            router.push(`/organizations/${activeOrgId}/settings`);
+          }, 500);
+        }
       }
 
       setHasUserChanges(false);

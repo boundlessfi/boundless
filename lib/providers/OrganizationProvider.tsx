@@ -828,7 +828,7 @@ export function OrganizationProvider({
       fetchOrganizations()
         .then(() => {
           const savedOrgId =
-            localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID) || initialOrgId;
+            initialOrgId || localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID);
           if (savedOrgId) {
             logger.info({
               eventType: 'org.initialize.set_active_after_fetch',
