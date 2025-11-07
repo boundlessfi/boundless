@@ -26,6 +26,11 @@ export interface Organization {
   updatedAt: string;
 }
 
+export interface AssignRoleRequest {
+  action: 'promote' | 'demote';
+  email: string;
+}
+
 export interface CreateOrganizationRequest {
   name: string;
   logo?: string;
@@ -124,6 +129,12 @@ export interface UpdateGrantsResponse extends ApiResponse<Organization> {
 
 export interface DeleteOrganizationResponse extends ApiResponse {
   success: true;
+  message: string;
+}
+
+export interface AssignRoleResponse extends ApiResponse<Organization> {
+  success: true;
+  data: Organization;
   message: string;
 }
 
@@ -523,6 +534,14 @@ export const importOrganizationData = async (
       },
     }
   );
+  return res.data;
+};
+
+export const assignOrganizationRole = async (
+  organizationId: string,
+  data: AssignRoleRequest
+): Promise<AssignRoleResponse> => {
+  const res = await api.patch(`/organizations/${organizationId}/roles`, data);
   return res.data;
 };
 

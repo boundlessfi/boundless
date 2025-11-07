@@ -12,33 +12,42 @@ import {
 import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BoundlessButton } from '@/components/buttons';
+import { useOrganization } from '@/lib/providers/OrganizationProvider';
+import { toast } from 'sonner';
 
 interface Member {
   id: string;
   name: string;
   email: string;
   avatar?: string;
-  role: 'admin' | 'member';
+  role: 'member';
 }
 
 interface TransferOwnershipTabProps {
-  currentOwner?: {
-    name: string;
-    email: string;
-    avatar?: string;
-  };
-  members?: Member[];
   onTransfer?: (newOwnerId: string) => void;
 }
 
 export default function TransferOwnershipTab({
-  members = [],
   onTransfer,
 }: TransferOwnershipTabProps) {
   const [selectedMember, setSelectedMember] = useState<string>('');
   const [isTransferring, setIsTransferring] = useState(false);
   const [popoverWidth, setPopoverWidth] = useState(0);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const { activeOrg, activeOrgId, transferOwnership } = useOrganization();
+
+  // Create members list using the SAME logic as MembersTab
+  const members: Member[] =
+    activeOrg?.members
+      ?.filter(email => email !== activeOrg?.owner) // Exclude owner
+      ?.map((email, idx) => ({
+        id: `${idx}-${email}`,
+        name: email.split('@')[0] || email,
+        email,
+        role: 'member' as const,
+        joinedAt: new Date().toISOString(),
+        status: 'active' as const,
+      })) || [];
 
   useEffect(() => {
     const updateWidth = () => {
@@ -52,49 +61,40 @@ export default function TransferOwnershipTab({
 
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
-  // Dummy data for demonstration
-  const dummyMembers: Member[] = [
-    {
-      id: 'admin-1',
-      name: 'Robert Fox',
-      email: 'robert.fox@example.com',
-      avatar: '/avatar.png',
-      role: 'admin',
-    },
-    {
-      id: 'admin-2',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@example.com',
-      avatar: '/avatar.png',
-      role: 'admin',
-    },
-    {
-      id: 'admin-3',
-      name: 'Mike Chen',
-      email: 'mike.chen@example.com',
-      avatar: '/avatar.png',
-      role: 'admin',
-    },
-  ];
 
-  const eligibleMembers =
-    members.length > 0
-      ? members.filter(member => member.role === 'admin')
-      : dummyMembers;
-  const selectedMemberData = eligibleMembers.find(
+  const selectedMemberData = members.find(
     member => member.id === selectedMember
   );
 
   const handleTransfer = async () => {
-    if (!selectedMember) return;
+    if (!selectedMember || !activeOrgId) return;
 
     setIsTransferring(true);
     try {
-      await onTransfer?.(selectedMember);
+      const selectedMemberData = members.find(m => m.id === selectedMember);
+      if (!selectedMemberData) {
+        toast.error('Selected member not found');
+        return;
+      }
+
+      await transferOwnership(activeOrgId, selectedMemberData.email);
+
+      toast.success('Ownership transferred successfully');
+
+      onTransfer?.(selectedMember);
+      setSelectedMember(''); // Reset selection
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to transfer ownership'
+      );
     } finally {
       setIsTransferring(false);
     }
   };
+
+  // Debug: Log the members to see what's happening
+  console.log('TransferOwnershipTab - activeOrg:', activeOrg);
+  console.log('TransferOwnershipTab - members:', members);
 
   return (
     <>
@@ -111,6 +111,10 @@ export default function TransferOwnershipTab({
               you will be demoted to admin.
             </span>
           </p>
+          {/* Debug info */}
+          <div className='mt-2 text-xs text-gray-400'>
+            Available members: {members.length}
+          </div>
         </div>
 
         <div className='space-y-4'>
@@ -148,41 +152,52 @@ export default function TransferOwnershipTab({
               className='bg-background w-full border-gray-900'
               style={{ width: popoverWidth > 0 ? `${popoverWidth}px` : '100%' }}
             >
-              {eligibleMembers.map(member => (
-                <DropdownMenuItem
-                  key={member.id}
-                  className={cn(
-                    'flex cursor-pointer items-center gap-3 px-4 py-3 focus:bg-gray-800',
-                    selectedMember === member.id && 'bg-primary/10'
-                  )}
-                  onClick={() => setSelectedMember(member.id)}
-                >
-                  <Avatar className='h-6 w-6'>
-                    <AvatarImage src={member.avatar} alt={member.name} />
-                    <AvatarFallback className='text-xs'>
-                      {member.name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className='flex-1'>
-                    <div className='text-sm text-white'>{member.name}</div>
-                    <div className='text-xs text-gray-500'>{member.email}</div>
-                  </div>
-                  {selectedMember === member.id && (
-                    <Check className='text-primary h-4 w-4' />
-                  )}
-                </DropdownMenuItem>
-              ))}
+              {members.length > 0 ? (
+                members.map(member => (
+                  <DropdownMenuItem
+                    key={member.id}
+                    className={cn(
+                      'flex cursor-pointer items-center gap-3 px-4 py-3 focus:bg-gray-800',
+                      selectedMember === member.id && 'bg-primary/10'
+                    )}
+                    onClick={() => setSelectedMember(member.id)}
+                  >
+                    <Avatar className='h-6 w-6'>
+                      <AvatarImage src={member.avatar} alt={member.name} />
+                      <AvatarFallback className='text-xs'>
+                        {member.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className='flex-1'>
+                      <div className='text-sm text-white'>{member.name}</div>
+                      <div className='text-xs text-gray-500'>
+                        {member.email}
+                      </div>
+                    </div>
+                    {selectedMember === member.id && (
+                      <Check className='text-primary h-4 w-4' />
+                    )}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <div className='px-4 py-3 text-sm text-gray-500'>
+                  No members found (only owner in organization)
+                </div>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
       <BoundlessButton
         onClick={handleTransfer}
-        disabled={!selectedMember || isTransferring}
-        className={cn(!selectedMember && 'cursor-not-allowed opacity-50')}
+        disabled={!selectedMember || isTransferring || members.length === 0}
+        className={cn(
+          (!selectedMember || members.length === 0) &&
+            'cursor-not-allowed opacity-50'
+        )}
         size='xl'
       >
-        {isTransferring ? 'Transferring...' : 'Save Changes'}
+        {isTransferring ? 'Transferring...' : 'Transfer Ownership'}
       </BoundlessButton>
     </>
   );

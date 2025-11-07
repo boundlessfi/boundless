@@ -6,6 +6,7 @@ import { useOrganization } from '@/lib/providers/OrganizationProvider';
 import EmailInviteSection from './MembersTab/EmailInviteSection';
 import PermissionsTable from './MembersTab/PermissionsTable';
 import TeamManagementSection from './MembersTab/TeamManagementSection';
+import { toast } from 'sonner';
 
 interface Member {
   id: string;
@@ -28,6 +29,7 @@ export default function MembersTab({ onSave }: MembersTabProps) {
     updateOrganizationMembers,
     inviteMember,
     removeMember,
+    assignRole,
     isLoading,
   } = useOrganization();
 
@@ -54,12 +56,21 @@ export default function MembersTab({ onSave }: MembersTabProps) {
     }
   };
 
-  const handleRoleChange = (memberId: string) => {
+  const handleRoleChange = async (memberId: string, newRole: string) => {
     if (!activeOrgId) return;
-    const m = members.find(x => x.id === memberId);
-    if (!m) return;
-    updateOrganizationMembers(activeOrgId, [m.email]);
-    setHasUserChanges(true);
+    const member = members.find(m => m.id === memberId);
+    if (!member) return;
+
+    try {
+      const action = newRole === 'admin' ? 'promote' : 'demote';
+      await assignRole(activeOrgId, member.email, action);
+      setHasUserChanges(true);
+      toast.success(`Member role updated to ${newRole}`);
+    } catch (error) {
+      // Handle error (show toast, etc.)
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to update member role: ${msg}`);
+    }
   };
 
   const handleRemoveMember = (memberId: string) => {
@@ -95,6 +106,7 @@ export default function MembersTab({ onSave }: MembersTabProps) {
         members={members}
         onRoleChange={handleRoleChange}
         onRemoveMember={handleRemoveMember}
+        activeOrg={activeOrg}
       />
 
       <div className='space-y-2'>
