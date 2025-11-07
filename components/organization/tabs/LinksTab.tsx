@@ -89,7 +89,15 @@ export default function LinksTab({
         );
       }
 
-      await updateOrganizationLinks(activeOrgId, links);
+      // Convert empty strings to undefined - only validate non-empty fields
+      const linksToSend = {
+        website: links.website.trim() || undefined,
+        x: links.x.trim() || undefined,
+        github: links.github.trim() || undefined,
+        others: links.others.trim() || undefined,
+      };
+
+      await updateOrganizationLinks(activeOrgId, linksToSend);
 
       toast.success('Organization links updated successfully');
       setHasUserChanges(false);
@@ -123,6 +131,11 @@ export default function LinksTab({
           toast.error(
             'Network error. Please check your connection and try again.'
           );
+        } else if (
+          error.message.includes('Validation failed') ||
+          error.message.includes('valid URL')
+        ) {
+          toast.error('Please enter valid URLs for all links.');
         } else {
           toast.error(`Failed to save organization links: ${error.message}`);
         }

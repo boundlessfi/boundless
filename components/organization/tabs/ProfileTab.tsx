@@ -15,7 +15,7 @@ import { uploadService } from '@/lib/api/upload';
 import { useRouter } from 'next/navigation';
 
 interface ProfileTabProps {
-  organizationId: string;
+  organizationId?: string;
   initialData?: {
     name?: string;
     logo?: string;
@@ -23,9 +23,15 @@ interface ProfileTabProps {
     about?: string;
   };
   onSave?: (data: Record<string, unknown>) => void;
+  isCreating?: boolean;
 }
 
-export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
+export default function ProfileTab({
+  organizationId,
+  initialData,
+  onSave,
+  isCreating = false,
+}: ProfileTabProps) {
   const {
     activeOrgId,
     activeOrg,
@@ -52,13 +58,20 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
   const previousOrgIdRef = useRef<string | null>(null);
   const router = useRouter();
 
-  // useEffect(() => {
-  //   setIsInitialized(false);
-  //   previousOrgIdRef.current = null;
-  // }, [organizationId]);
-
   useEffect(() => {
-    if (!isInitialized) {
+    if (isCreating) {
+      // For new organization, start with empty form
+      setFormData({
+        name: '',
+        logo: '',
+        tagline: '',
+        about: '',
+      });
+      setLogoPreview('');
+      setHasUserChanges(false);
+      setIsInitialized(true);
+    } else if (!isInitialized) {
+      // For existing organization, load from activeOrg or initialData
       if (activeOrg) {
         setFormData({
           name: activeOrg.name || '',
@@ -82,10 +95,10 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
         setIsInitialized(true);
       }
     }
-  }, [activeOrg, initialData, isInitialized]);
+  }, [activeOrg, initialData, isInitialized, isCreating]);
 
   useEffect(() => {
-    if (activeOrg && isInitialized) {
+    if (activeOrg && isInitialized && !isCreating) {
       const currentOrgId = activeOrg._id;
       const previousOrgId = previousOrgIdRef.current;
 
@@ -101,7 +114,7 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
         previousOrgIdRef.current = currentOrgId;
       }
     }
-  }, [activeOrg, isInitialized]);
+  }, [activeOrg, isInitialized, isCreating]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -248,6 +261,11 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
       return;
     }
 
+    if (!formData.logo.trim()) {
+      toast.error('Logo is required');
+      return;
+    }
+
     if (!formData.tagline.trim()) {
       toast.error('Tagline is required');
       return;
@@ -267,35 +285,34 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
         );
       }
 
-      if (activeOrgId && activeOrg) {
-        await updateOrganization(activeOrgId, {
+      if (isCreating) {
+        // POST request - create new organization
+        const newOrg = await createOrganization({
           name: formData.name,
           logo: formData.logo,
           tagline: formData.tagline,
           about: formData.about,
         });
-        toast.success('Organization profile updated successfully');
-        if (activeOrgId) {
-          setTimeout(() => {
-            router.push(`/organizations/${activeOrgId}/settings`);
-          }, 500);
-        }
-      } else {
-        await createOrganization({
-          name: formData.name,
-          logo: formData.logo,
-          tagline: formData.tagline,
-          about: formData.about,
-        });
-        toast.success('Organization created successfully');
-        if (activeOrgId) {
-          setTimeout(() => {
-            router.push(`/organizations/${activeOrgId}/settings`);
-          }, 500);
-        }
-      }
 
-      setHasUserChanges(false);
+        toast.success('Organization created successfully');
+
+        // Redirect to the edit page
+        setTimeout(() => {
+          router.push(`/organizations/${newOrg._id}/settings`);
+        }, 500);
+      } else if (organizationId || activeOrgId) {
+        // PATCH request - update existing organization
+        const orgId = organizationId || activeOrgId;
+        await updateOrganization(orgId as string, {
+          name: formData.name,
+          logo: formData.logo,
+          tagline: formData.tagline,
+          about: formData.about,
+        });
+
+        toast.success('Organization profile updated successfully');
+        setHasUserChanges(false);
+      }
 
       if (onSave) {
         onSave(formData);
@@ -548,7 +565,7 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
       </div>
 
       <div className='space-y-2'>
-        {hasUserChanges && (
+        {hasUserChanges && !isCreating && (
           <div className='flex items-center gap-2 text-sm text-amber-400'>
             <div className='h-2 w-2 rounded-full bg-amber-400' />
             You have unsaved changes
@@ -565,10 +582,12 @@ export default function ProfileTab({ initialData, onSave }: ProfileTabProps) {
           )}
         >
           {isSaving
-            ? 'Saving...'
-            : activeOrgId
-              ? 'Save Changes'
-              : 'Create Organization'}
+            ? isCreating
+              ? 'Creating...'
+              : 'Saving...'
+            : isCreating
+              ? 'Create Organization'
+              : 'Save Changes'}
         </BoundlessButton>
       </div>
     </div>
