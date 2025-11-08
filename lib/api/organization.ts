@@ -31,6 +31,11 @@ export interface AssignRoleRequest {
   email: string;
 }
 
+export interface AssignRoleRequest {
+  action: 'promote' | 'demote';
+  email: string;
+}
+
 export interface CreateOrganizationRequest {
   name: string;
   logo?: string;
