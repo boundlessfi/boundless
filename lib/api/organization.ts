@@ -138,6 +138,33 @@ export interface AssignRoleResponse extends ApiResponse<Organization> {
   message: string;
 }
 
+export interface RawOrganizationPermissions {
+  [key: string]: {
+    owner: boolean;
+    admin: boolean;
+    member: boolean;
+  };
+}
+
+export interface GetPermissionsResponse
+  extends ApiResponse<{
+    permissions: RawOrganizationPermissions;
+    isCustom: boolean;
+    canEdit: boolean;
+  }> {
+  success: true;
+  data: {
+    permissions: RawOrganizationPermissions;
+    isCustom: boolean;
+    canEdit: boolean;
+  };
+  message: string;
+}
+
+export interface UpdatePermissionsRequest {
+  permissions: RawOrganizationPermissions;
+}
+
 /**
  * Create a new organization
  */
@@ -533,6 +560,33 @@ export const importOrganizationData = async (
         'Content-Type': 'multipart/form-data',
       },
     }
+  );
+  return res.data;
+};
+
+export const getOrganizationPermissions = async (
+  organizationId: string
+): Promise<GetPermissionsResponse> => {
+  const res = await api.get(`/organizations/${organizationId}/permissions`);
+  return res.data;
+};
+
+export const updateOrganizationPermissions = async (
+  organizationId: string,
+  data: UpdatePermissionsRequest
+): Promise<UpdateOrganizationResponse> => {
+  const res = await api.patch(
+    `/organizations/${organizationId}/permissions`,
+    data
+  );
+  return res.data;
+};
+
+export const resetOrganizationPermissions = async (
+  organizationId: string
+): Promise<UpdateOrganizationResponse> => {
+  const res = await api.post(
+    `/organizations/${organizationId}/permissions/reset`
   );
   return res.data;
 };

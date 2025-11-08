@@ -1,3 +1,4 @@
+import { OrganizationPermissions } from '@/types/organization-permission';
 import { Organization } from '../api/types';
 
 export interface OrganizationSummary {
@@ -194,4 +195,14 @@ export interface OrganizationContextActions {
     orgId: string,
     newOwnerEmail: string
   ) => Promise<Organization>;
+  getOrganizationPermissions: (orgId: string) => Promise<{
+    permissions: OrganizationPermissions;
+    isCustom: boolean;
+    canEdit: boolean;
+  }>;
+  updateOrganizationPermissions: (
+    orgId: string,
+    permissions: OrganizationPermissions
+  ) => Promise<Organization>;
+  resetOrganizationPermissions: (orgId: string) => Promise<Organization>;
 }
