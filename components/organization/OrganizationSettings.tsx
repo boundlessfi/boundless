@@ -9,6 +9,7 @@ import LinksTab from './tabs/LinksTab';
 import MembersTab from './tabs/MembersTab';
 import TransferOwnershipTab from './tabs/TransferOwnershipTab';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+
 interface OrganizationSettingsProps {
   organizationId?: string;
   initialData?: {
@@ -17,11 +18,13 @@ interface OrganizationSettingsProps {
     tagline?: string;
     about?: string;
   };
+  isCreating?: boolean;
 }
 
 export default function OrganizationSettings({
   organizationId,
   initialData,
+  isCreating = false,
 }: OrganizationSettingsProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -49,15 +52,18 @@ export default function OrganizationSettings({
       <Tabs defaultValue='profile' className='w-full'>
         <div className='border-b border-zinc-800 px-6 md:px-20'>
           <div className='flex items-center gap-4'>
-            {/* Hamburger Menu - Visible only on medium screens and below */}
-            <button
-              onClick={() => setModalOpen(true)}
-              className='rounded-lg p-2 transition-colors hover:bg-zinc-800 md:hidden'
-              aria-label='Open menu'
-            >
-              <Menu className='h-5 w-5' />
-            </button>
-            <div className='h-[50px] w-[0.5px] bg-gray-900 md:hidden' />
+            {!isCreating && (
+              <>
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className='rounded-lg p-2 transition-colors hover:bg-zinc-800 md:hidden'
+                  aria-label='Open menu'
+                >
+                  <Menu className='h-5 w-5' />
+                </button>
+                <div className='h-[50px] w-[0.5px] bg-gray-900 md:hidden' />
+              </>
+            )}
 
             <ScrollArea className='w-full'>
               <div className='flex w-max min-w-full'>
@@ -68,24 +74,28 @@ export default function OrganizationSettings({
                   >
                     Profile
                   </TabsTrigger>
-                  <TabsTrigger
-                    value='links'
-                    className='data-[state=active]:border-b-primary rounded-none border-b-2 border-transparent bg-transparent px-0 pt-4 pb-3 text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-                  >
-                    Links
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='members'
-                    className='data-[state=active]:border-b-primary rounded-none border-b-2 border-transparent bg-transparent px-0 pt-4 pb-3 text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-                  >
-                    Members
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='transfer'
-                    className='data-[state=active]:border-b-primary rounded-none border-b-2 border-transparent bg-transparent px-0 pt-4 pb-3 text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-                  >
-                    Transfer Ownership
-                  </TabsTrigger>
+                  {!isCreating && (
+                    <>
+                      <TabsTrigger
+                        value='links'
+                        className='data-[state=active]:border-b-primary rounded-none border-b-2 border-transparent bg-transparent px-0 pt-4 pb-3 text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+                      >
+                        Links
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value='members'
+                        className='data-[state=active]:border-b-primary rounded-none border-b-2 border-transparent bg-transparent px-0 pt-4 pb-3 text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+                      >
+                        Members
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value='transfer'
+                        className='data-[state=active]:border-b-primary rounded-none border-b-2 border-transparent bg-transparent px-0 pt-4 pb-3 text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+                      >
+                        Transfer Ownership
+                      </TabsTrigger>
+                    </>
+                  )}
                 </TabsList>
               </div>
               <ScrollBar orientation='horizontal' className='h-px' />
@@ -95,28 +105,39 @@ export default function OrganizationSettings({
 
         <div className='px-6 py-6 md:px-20'>
           <TabsContent value='profile' className='mt-0'>
-            <ProfileTab initialData={initialData} onSave={handleProfileSave} />
+            <ProfileTab
+              organizationId={organizationId}
+              initialData={initialData}
+              onSave={handleProfileSave}
+              isCreating={isCreating}
+            />
           </TabsContent>
 
-          <TabsContent value='links' className='mt-0'>
-            <LinksTab onSave={handleLinksSave} />
-          </TabsContent>
+          {!isCreating && (
+            <>
+              <TabsContent value='links' className='mt-0'>
+                <LinksTab onSave={handleLinksSave} />
+              </TabsContent>
 
-          <TabsContent value='members' className='mt-0'>
-            <MembersTab onSave={handleMembersSave} />
-          </TabsContent>
+              <TabsContent value='members' className='mt-0'>
+                <MembersTab onSave={handleMembersSave} />
+              </TabsContent>
 
-          <TabsContent value='transfer' className='mt-0'>
-            <TransferOwnershipTab onTransfer={handleTransferOwnership} />
-          </TabsContent>
+              <TabsContent value='transfer' className='mt-0'>
+                <TransferOwnershipTab onTransfer={handleTransferOwnership} />
+              </TabsContent>
+            </>
+          )}
         </div>
       </Tabs>
 
-      <ResponsiveSidebar
-        organizationId={organizationId}
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-      />
+      {!isCreating && (
+        <ResponsiveSidebar
+          organizationId={organizationId}
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+        />
+      )}
     </div>
   );
 }

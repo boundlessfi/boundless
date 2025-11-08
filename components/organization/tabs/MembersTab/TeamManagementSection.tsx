@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import MemberCard from './MemberCard';
+import { Organization } from '@/lib/api/types';
 
 interface Member {
   id: string;
@@ -17,25 +18,18 @@ interface TeamManagementSectionProps {
   members: Member[];
   onRoleChange: (memberId: string, newRole: string) => void;
   onRemoveMember: (memberId: string) => void;
+  activeOrg?: Organization | null;
 }
 
 export default function TeamManagementSection({
   members,
   onRoleChange,
   onRemoveMember,
+  activeOrg,
 }: TeamManagementSectionProps) {
-  const ownerMember = {
-    id: 'owner-1',
-    name: 'Collins Chikangwu',
-    email: 'collins@boundless.com',
-    avatar: '/avatar.png',
-    role: 'owner' as const,
-    joinedAt: new Date().toISOString(),
-    status: 'active' as const,
-  };
-
   const activeMembers = members.filter(member => member.status === 'active');
   const pendingMembers = members.filter(member => member.status === 'pending');
+  const orgOwner = members.find(member => member.email === activeOrg?.owner);
 
   return (
     <div className='space-y-6 rounded-[12px] border border-gray-900 bg-[#101010] p-4'>
@@ -49,26 +43,29 @@ export default function TeamManagementSection({
       </div>
 
       <div className='space-y-4'>
-        <div className='flex gap-3'>
-          <Avatar className='h-12 w-12'>
-            <AvatarImage src={ownerMember.avatar} alt={ownerMember.name} />
-            <AvatarFallback>
-              {ownerMember.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className='flex flex-col gap-0'>
-            <h4 className='text-white'>{ownerMember.name}</h4>
-            <p className='text-sm text-gray-500'>{ownerMember.email}</p>
-            <span className='text-warning-600 text-xs leading-[120%] font-semibold tracking-[1.44px] uppercase'>
-              Owner
-            </span>
+        {orgOwner && (
+          <div className='flex gap-3'>
+            <Avatar className='h-12 w-12'>
+              <AvatarImage src={orgOwner.avatar} alt={orgOwner.name} />
+              <AvatarFallback>
+                {orgOwner.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className='flex flex-col gap-0'>
+              <h4 className='text-white'>{orgOwner.name}</h4>
+              <p className='text-sm text-gray-500'>{orgOwner.email}</p>
+              <span className='text-warning-600 text-xs leading-[120%] font-semibold tracking-[1.44px] uppercase'>
+                Owner
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
-        {activeMembers.filter(member => member.role !== 'owner').length > 0 && (
+        {activeMembers.filter(member => member.email !== activeOrg?.owner)
+          .length > 0 && (
           <div className='space-y-3'>
             {activeMembers
-              .filter(member => member.role !== 'owner')
+              .filter(member => member.email !== activeOrg?.owner)
               .map(member => (
                 <MemberCard
                   key={member.id}

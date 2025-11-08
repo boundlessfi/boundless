@@ -185,4 +185,13 @@ export interface OrganizationContextActions {
     percentage: number;
     missingFields: string[];
   };
+  assignRole: (
+    orgId: string,
+    email: string,
+    action: 'promote' | 'demote'
+  ) => Promise<Organization>;
+  transferOwnership: (
+    orgId: string,
+    newOwnerEmail: string
+  ) => Promise<Organization>;
 }

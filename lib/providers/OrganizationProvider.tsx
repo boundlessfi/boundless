@@ -30,6 +30,8 @@ import {
   updateOrganizationHackathons,
   updateOrganizationGrants,
   deleteOrganization,
+  assignOrganizationRole,
+  transferOrganizationOwnership,
 } from '../api/organization';
 import { getProfileCompletionStatus as getOrgProfileCompletionStatus } from '../organization-utils';
 
@@ -828,7 +830,7 @@ export function OrganizationProvider({
       fetchOrganizations()
         .then(() => {
           const savedOrgId =
-            localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID) || initialOrgId;
+            initialOrgId || localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID);
           if (savedOrgId) {
             logger.info({
               eventType: 'org.initialize.set_active_after_fetch',
@@ -848,6 +850,50 @@ export function OrganizationProvider({
     }
   }, [fetchOrganizations, initialOrgId]);
 
+  const assignRole = useCallback(
+    async (orgId: string, email: string, action: 'promote' | 'demote') => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true } });
+        const response = await assignOrganizationRole(orgId, { action, email });
+        const updatedOrg = response.data;
+        dispatch({ type: 'UPDATE_ORGANIZATION', payload: updatedOrg });
+        return updatedOrg;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to assign role';
+        dispatch({ type: 'SET_ERROR', payload: { error: errorMessage } });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
+      }
+    },
+    []
+  );
+
+  const transferOwnership = useCallback(
+    async (orgId: string, newOwnerEmail: string) => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true } });
+        const response = await transferOrganizationOwnership(
+          orgId,
+          newOwnerEmail
+        );
+        const updatedOrg = response.data;
+        dispatch({ type: 'UPDATE_ORGANIZATION', payload: updatedOrg });
+        return updatedOrg;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to transfer ownership';
+        dispatch({ type: 'SET_ERROR', payload: { error: errorMessage } });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
+      }
+    },
+    []
+  );
   // Context value
   const contextValue: OrganizationContextValue = {
     ...state,
@@ -871,6 +917,8 @@ export function OrganizationProvider({
     isMember,
     canManage,
     getProfileCompletionStatus,
+    assignRole,
+    transferOwnership,
   };
 
   return (

@@ -64,16 +64,24 @@ export default function OrganizationSelector({
     const currentPath = pathname;
     const orgId = org._id;
 
-    if (currentPath.startsWith('/organizations/')) {
-      const pathAfterOrgs = currentPath.replace('/organizations/', '');
+    // Don't navigate if we're on the /organizations/new page
+    if (currentPath === '/organizations/new') {
+      return;
+    }
 
-      if (pathAfterOrgs.match(/^[a-f0-9]{24}/)) {
-        const newPath = currentPath.replace(
-          /^\/organizations\/[a-f0-9]{24}/,
-          `/organizations/${orgId}`
-        );
+    if (currentPath.startsWith('/organizations/')) {
+      const pathSegments = currentPath.split('/').filter(Boolean);
+
+      // Check if second segment is an org ID (MongoDB ObjectId pattern or UUID)
+      if (pathSegments[1] && pathSegments[1].match(/^[a-f0-9]{24}$/i)) {
+        // Replace the org ID in the path
+        const pathAfterOrgId = pathSegments.slice(2).join('/');
+        const newPath = pathAfterOrgId
+          ? `/organizations/${orgId}/${pathAfterOrgId}`
+          : `/organizations/${orgId}`;
         router.push(newPath);
       } else {
+        // If no org ID in path, just navigate to the org
         router.push(`/organizations/${orgId}`);
       }
     } else if (currentPath === '/organizations') {
@@ -108,7 +116,7 @@ export default function OrganizationSelector({
         <Button className='flex items-center gap-3 bg-transparent px-3 py-2 transition-colors hover:bg-transparent focus:ring-0 focus-visible:ring-0'>
           <div className='relative h-10 w-10 overflow-hidden rounded-full bg-white'>
             <Image
-              src={selectedOrg.logo || ''}
+              src={selectedOrg.logo || '/placeholder-org.png'}
               alt={selectedOrg.name || 'Organization'}
               fill
               className='object-cover'
@@ -137,7 +145,7 @@ export default function OrganizationSelector({
           >
             <div className='relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-white'>
               <Image
-                src={org.logo || ''}
+                src={org.logo || '/placeholder-org.png'}
                 alt={org.name}
                 fill
                 className='object-cover'

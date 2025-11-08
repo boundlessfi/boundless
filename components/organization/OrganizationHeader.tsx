@@ -20,10 +20,15 @@ export default function OrganizationHeader() {
   const { isLoading, user } = useAuthStatus();
   const { logout } = useAuthActions();
   const pathname = usePathname();
-  const isOnOrganizationsPage = pathname === '/dashboard/organizations';
+  const isOnOrganizationsPage = pathname === '/organizations';
   const { organizations, activeOrg, setActiveOrg } = useOrganization();
+
+  // Show organization selector on org pages, but NOT on /organizations/new
   const showOrgSelector =
-    pathname !== '/organizations' && pathname.startsWith('/organizations');
+    pathname !== '/organizations' &&
+    pathname !== '/organizations/new' &&
+    pathname.startsWith('/organizations') &&
+    organizations.length > 0;
 
   return (
     <header className='sticky top-0 z-50 flex w-full flex-wrap items-center justify-between overflow-x-hidden border-b border-b-zinc-800 bg-black px-4 py-3 md:flex-nowrap md:px-10'>
@@ -44,7 +49,17 @@ export default function OrganizationHeader() {
           </button>
         </Link>
 
-        {showOrgSelector && organizations && organizations.length > 0 && (
+        {/* Show title for new organization page */}
+        {pathname === '/organizations/new' && (
+          <div className='flex items-center gap-2'>
+            <span className='text-xs font-medium text-gray-700'>
+              / Create New Organization
+            </span>
+          </div>
+        )}
+
+        {/* Show organization selector on other org pages */}
+        {showOrgSelector && (
           <OrganizationSelector
             organizations={organizations}
             currentOrganization={
