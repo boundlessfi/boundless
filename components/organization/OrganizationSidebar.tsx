@@ -99,8 +99,10 @@ export default function OrganizationSidebar({
             <span>Host Hackathon</span>
           </Link>
           <Link
-            href={`/organizations/${organizationId}/grants/new`}
-            className='flex items-center gap-3'
+            // href={`/organizations/${organizationId}/grants/new`}
+            href='#'
+            onClick={e => e.preventDefault()}
+            className='pointer-events-none flex cursor-not-allowed items-center gap-3 opacity-50'
           >
             <div className='flex items-center gap-3'>
               <div className='bg-primary grid h-6 w-6 place-content-center rounded-full'>
