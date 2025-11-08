@@ -32,8 +32,16 @@ import {
   deleteOrganization,
   assignOrganizationRole,
   transferOrganizationOwnership,
+  getOrganizationPermissions as fetchOrganizationPermissions,
+  updateOrganizationPermissions as updateOrganizationPermissionsAPI,
+  resetOrganizationPermissions as resetOrganizationPermissionsAPI,
 } from '../api/organization';
 import { getProfileCompletionStatus as getOrgProfileCompletionStatus } from '../organization-utils';
+import type {
+  GetPermissionsResponse,
+  RawOrganizationPermissions,
+} from '../api/organization';
+import { OrganizationPermissions } from '@/types/organization-permission';
 
 const OrganizationContext = createContext<OrganizationContextValue | undefined>(
   undefined
@@ -89,6 +97,82 @@ const initialState: OrganizationContextState = {
   lastUpdated: 0,
   refreshCount: 0,
 };
+
+export function mapRawToResolvedPermissions(
+  raw: RawOrganizationPermissions
+): OrganizationPermissions {
+  return {
+    canEditProfile: raw['create_edit_profile']?.admin ?? false,
+    canCreateProfile: raw['create_edit_profile']?.owner ?? false,
+    canManageHackathons: raw['manage_hackathons_grants']?.admin ?? false,
+    canPublishHackathons: raw['publish_hackathons']?.owner ?? false,
+    canViewAnalytics: raw['view_analytics']?.member ?? false,
+    canInviteMembers: raw['invite_remove_members']?.admin ?? false,
+    canRemoveMembers: raw['invite_remove_members']?.admin ?? false,
+    canAssignRoles: raw['assign_roles']?.owner ?? false,
+    canPostAnnouncements: raw['post_announcements']?.admin ?? false,
+    canComment: raw['comment_discussions']?.member ?? false,
+    canAccessSubmissions: raw['access_submissions']?.member ?? false,
+    canDeleteOrganization: raw['delete_organization']?.owner ?? false,
+  };
+}
+
+export function mapResolvedToRawPermissions(
+  resolved: OrganizationPermissions
+): RawOrganizationPermissions {
+  return {
+    create_edit_profile: {
+      owner: true, // Owner always has this permission
+      admin: resolved.canEditProfile,
+      member: false,
+    },
+    manage_hackathons_grants: {
+      owner: true, // Owner always has this permission
+      admin: resolved.canManageHackathons,
+      member: false,
+    },
+    publish_hackathons: {
+      owner: true, // Owner always has this permission
+      admin: false,
+      member: false,
+    },
+    view_analytics: {
+      owner: true, // Owner always has this permission
+      admin: true, // Admin always has view access
+      member: resolved.canViewAnalytics,
+    },
+    invite_remove_members: {
+      owner: true, // Owner always has this permission
+      admin: resolved.canInviteMembers || resolved.canRemoveMembers,
+      member: false,
+    },
+    assign_roles: {
+      owner: true, // Owner always has this permission
+      admin: false,
+      member: false,
+    },
+    post_announcements: {
+      owner: true, // Owner always has this permission
+      admin: resolved.canPostAnnouncements,
+      member: false,
+    },
+    comment_discussions: {
+      owner: true, // Owner always has this permission
+      admin: true, // Admin always can comment
+      member: resolved.canComment,
+    },
+    access_submissions: {
+      owner: true, // Owner always has this permission
+      admin: true, // Admin always has access
+      member: resolved.canAccessSubmissions,
+    },
+    delete_organization: {
+      owner: true, // Owner always has this permission
+      admin: false,
+      member: false,
+    },
+  };
+}
 
 function organizationReducer(
   state: OrganizationContextState,
@@ -831,6 +915,7 @@ export function OrganizationProvider({
         .then(() => {
           const savedOrgId =
             initialOrgId || localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID);
+          initialOrgId || localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID);
           if (savedOrgId) {
             logger.info({
               eventType: 'org.initialize.set_active_after_fetch',
@@ -894,6 +979,86 @@ export function OrganizationProvider({
     },
     []
   );
+
+  const getOrganizationPermissions = useCallback(
+    async (
+      orgId: string
+    ): Promise<{
+      permissions: OrganizationPermissions;
+      isCustom: boolean;
+      canEdit: boolean;
+    }> => {
+      try {
+        const response: GetPermissionsResponse =
+          await fetchOrganizationPermissions(orgId);
+        const {
+          permissions: rawPermissions,
+          isCustom,
+          canEdit,
+        } = response.data;
+        const permissions = mapRawToResolvedPermissions(rawPermissions);
+        return { permissions, isCustom, canEdit };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to get permissions';
+        dispatch({ type: 'SET_ERROR', payload: { error: errorMessage } });
+        throw error;
+      }
+    },
+    [dispatch]
+  );
+
+  const updateOrganizationPermissions = useCallback(
+    async (
+      orgId: string,
+      permissions: OrganizationPermissions
+    ): Promise<Organization> => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true } });
+
+        const rawPermissions = mapResolvedToRawPermissions(permissions);
+        const response = await updateOrganizationPermissionsAPI(orgId, {
+          permissions: rawPermissions,
+        });
+
+        const updatedOrg = response.data;
+        dispatch({ type: 'UPDATE_ORGANIZATION', payload: updatedOrg });
+        return updatedOrg;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to update permissions';
+        dispatch({ type: 'SET_ERROR', payload: { error: errorMessage } });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
+      }
+    },
+    [dispatch]
+  );
+
+  const resetOrganizationPermissions = useCallback(
+    async (orgId: string): Promise<Organization> => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true } });
+        const response = await resetOrganizationPermissionsAPI(orgId);
+        const updatedOrg = response.data;
+        dispatch({ type: 'UPDATE_ORGANIZATION', payload: updatedOrg });
+        return updatedOrg;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to reset permissions';
+        dispatch({ type: 'SET_ERROR', payload: { error: errorMessage } });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
+      }
+    },
+    [dispatch]
+  );
   // Context value
   const contextValue: OrganizationContextValue = {
     ...state,
@@ -919,6 +1084,9 @@ export function OrganizationProvider({
     getProfileCompletionStatus,
     assignRole,
     transferOwnership,
+    getOrganizationPermissions,
+    updateOrganizationPermissions,
+    resetOrganizationPermissions,
   };
 
   return (
