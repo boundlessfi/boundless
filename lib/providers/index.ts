@@ -5,6 +5,11 @@ export {
 } from './OrganizationProvider';
 
 export {
+  NavigationLoadingProvider,
+  useNavigationLoading,
+} from './NavigationLoadingProvider';
+
+export {
   TrustlessWorkProvider,
   useTrustlessWorkConfig,
   TrustlessWorkContext,

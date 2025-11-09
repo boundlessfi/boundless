@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { OrganizationSummary } from '@/lib/providers/organization-types';
+import { useNavigationLoading } from '@/lib/providers';
 
 interface OrganizationSelectorProps {
   organizations?: OrganizationSummary[];
@@ -28,6 +29,7 @@ export default function OrganizationSelector({
 }: OrganizationSelectorProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { setIsNavigating } = useNavigationLoading();
   const [selectedOrg, setSelectedOrg] = useState<OrganizationSummary | null>(
     currentOrganization || organizations[0] || null
   );
@@ -61,32 +63,14 @@ export default function OrganizationSelector({
     setIsOpen(false);
     onToggle?.(false);
 
-    const currentPath = pathname;
-    const orgId = org._id;
-
     // Don't navigate if we're on the /organizations/new page
-    if (currentPath === '/organizations/new') {
+    if (pathname === '/organizations/new') {
       return;
     }
 
-    if (currentPath.startsWith('/organizations/')) {
-      const pathSegments = currentPath.split('/').filter(Boolean);
-
-      // Check if second segment is an org ID (MongoDB ObjectId pattern or UUID)
-      if (pathSegments[1] && pathSegments[1].match(/^[a-f0-9]{24}$/i)) {
-        // Replace the org ID in the path
-        const pathAfterOrgId = pathSegments.slice(2).join('/');
-        const newPath = pathAfterOrgId
-          ? `/organizations/${orgId}/${pathAfterOrgId}`
-          : `/organizations/${orgId}`;
-        router.push(newPath);
-      } else {
-        // If no org ID in path, just navigate to the org
-        router.push(`/organizations/${orgId}`);
-      }
-    } else if (currentPath === '/organizations') {
-      router.push(`/organizations/${orgId}`);
-    }
+    // Always navigate to the root organization page
+    setIsNavigating(true);
+    router.push(`/organizations/${org._id}`);
   };
 
   const handleOpenChange = (open: boolean) => {

@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { useNavigationLoading } from '@/lib/providers';
 
 interface Hackathon {
   id: string;
@@ -32,6 +33,7 @@ export default function HackathonSelector({
   onToggle,
 }: HackathonSelectorProps) {
   const router = useRouter();
+  const { setIsNavigating } = useNavigationLoading();
   const [selectedHackathon, setSelectedHackathon] = useState<Hackathon | null>(
     currentHackathon || hackathons[0] || null
   );
@@ -66,6 +68,7 @@ export default function HackathonSelector({
     onToggle?.(false);
 
     if (hackathon.href && hackathon.href !== '#') {
+      setIsNavigating(true);
       router.push(hackathon.href);
     }
   };

@@ -94,9 +94,7 @@ export default function HackathonSidebar({
       // The information field might be null/undefined, or title might be empty
       let title = 'Untitled Hackathon';
 
-      if (hackathon.information) {
-        title = hackathon.information.title || title;
-      }
+      title = hackathon.title || title;
 
       // Fallback: if information doesn't exist, keep default title
       // Note: Hackathon type requires information field, but we handle edge cases
