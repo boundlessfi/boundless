@@ -435,15 +435,43 @@ export function OrganizationProvider({
     } catch (error) {
       logger.error({ eventType: 'org.fetchOrganizations.error', error });
 
-      let errorMessage = 'Failed to fetch organizations';
+      let errorMessage: string | null = 'Failed to fetch organizations';
 
       if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'object' && error !== null) {
-        if (
+        // Check for ApiError structure (after interceptor transformation)
+        const apiErrorStatus = (error as { status?: number }).status;
+        if (apiErrorStatus === 429) {
+          errorMessage =
+            'Too many requests. Please wait a moment and try again.';
+          // Don't show error if we have cached data - use it instead
+          const cachedOrgs = localStorage.getItem(
+            STORAGE_KEYS.ORGANIZATIONS_CACHE
+          );
+          if (cachedOrgs) {
+            try {
+              const parsed = JSON.parse(cachedOrgs);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                dispatch({
+                  type: 'SET_ORGANIZATIONS',
+                  payload: parsed,
+                });
+                errorMessage = null; // Clear error since we have cached data
+                logger.info({
+                  eventType: 'org.fetchOrganizations.rateLimited_using_cache',
+                  cachedCount: parsed.length,
+                });
+              }
+            } catch {
+              // Cache parse failed, keep error message
+            }
+          }
+        } else if (
           'response' in (error as Record<string, unknown>) &&
           (error as Record<string, unknown>).response
         ) {
+          // Check axios error structure (before interceptor)
           const apiError = (
             error as {
               response?: {
@@ -471,10 +499,12 @@ export function OrganizationProvider({
         }
       }
 
-      dispatch({
-        type: 'SET_ERROR',
-        payload: { error: null, organizationsError: errorMessage },
-      });
+      if (errorMessage) {
+        dispatch({
+          type: 'SET_ERROR',
+          payload: { error: null, organizationsError: errorMessage },
+        });
+      }
 
       if (process.env.NODE_ENV === 'development') {
         logger.warn({
@@ -526,12 +556,54 @@ export function OrganizationProvider({
       });
       dispatch({ type: 'SET_LAST_UPDATED', payload: Date.now() });
     } catch (error) {
-      const errorMessage =
+      let errorMessage: string | null =
         error instanceof Error ? error.message : 'Failed to fetch organization';
-      dispatch({
-        type: 'SET_ERROR',
-        payload: { error: null, activeOrgError: errorMessage },
-      });
+
+      // Handle 429 rate limit errors gracefully
+      const apiError = error as {
+        status?: number;
+        message?: string;
+        code?: string;
+      };
+      if (apiError?.status === 429) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+        // Try to use cached organization if available
+        const cachedOrgs = localStorage.getItem(
+          STORAGE_KEYS.ORGANIZATIONS_CACHE
+        );
+        if (cachedOrgs) {
+          try {
+            const parsed = JSON.parse(cachedOrgs);
+            if (Array.isArray(parsed)) {
+              const cachedOrg = parsed.find(
+                (org: { _id: string }) => org._id === orgId
+              );
+              if (cachedOrg) {
+                // Use cached organization data
+                dispatch({
+                  type: 'SET_ACTIVE_ORG',
+                  payload: { org: cachedOrg, orgId },
+                });
+                errorMessage = null; // Clear error since we have cached data
+                logger.info({
+                  eventType:
+                    'org.fetchActiveOrganization.rateLimited_using_cache',
+                  orgId,
+                });
+              }
+            }
+          } catch {
+            // Cache parse failed, keep error message
+          }
+        }
+      }
+
+      if (errorMessage) {
+        dispatch({
+          type: 'SET_ERROR',
+          payload: { error: null, activeOrgError: errorMessage },
+        });
+      }
       logger.error({ eventType: 'org.fetchActiveOrganization.error', error });
     } finally {
       isFetchingActiveOrgRef.current = false;

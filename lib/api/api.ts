@@ -2,8 +2,8 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/lib/stores/auth-store';
 
-const API_BASE_URL = 'https://staging-api.boundlessfi.xyz/api';
-// const API_BASE_URL = 'http://localhost:8000/api';
+// const API_BASE_URL = 'https://staging-api.boundlessfi.xyz/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 if (!API_BASE_URL) {
   throw new Error('NEXT_PUBLIC_API_URL environment variable is not defined');
@@ -154,6 +154,41 @@ const createClientApi = (): AxiosInstance => {
     },
     async error => {
       const originalRequest = error.config;
+
+      // Handle 429 errors (Rate Limiting) with exponential backoff
+      if (error.response?.status === 429) {
+        const retryCount = originalRequest._retryCount || 0;
+        const maxRetries = 3;
+
+        if (retryCount < maxRetries) {
+          originalRequest._retryCount = retryCount + 1;
+
+          // Get Retry-After header if available, otherwise use exponential backoff
+          const retryAfter = error.response.headers['retry-after'];
+          let delay: number;
+
+          if (retryAfter) {
+            // Use Retry-After header value (in seconds)
+            delay = parseInt(retryAfter, 10) * 1000;
+          } else {
+            // Exponential backoff: 1s, 2s, 4s
+            delay = Math.pow(2, retryCount) * 1000;
+          }
+
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, delay));
+
+          // Retry the request
+          return instance(originalRequest);
+        }
+
+        // Max retries reached, reject with rate limit error
+        return Promise.reject({
+          message: 'Too many requests. Please try again later.',
+          status: 429,
+          code: 'RATE_LIMIT_EXCEEDED',
+        });
+      }
 
       // Handle 401 errors with automatic token refresh
       if (error.response?.status === 401 && !originalRequest._retry) {
