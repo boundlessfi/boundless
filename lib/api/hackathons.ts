@@ -147,16 +147,18 @@ export interface HackathonDraft extends HackathonData {
   status: 'draft';
   createdAt: string;
   updatedAt: string;
+  title: string;
 }
 
 // Published Hackathon Types
 export interface Hackathon extends HackathonData {
   _id: string;
   organizationId: string;
-  status: 'published' | 'ongoing' | 'completed' | 'cancelled';
+  status: 'published' | 'ongoing' | 'completed' | 'cancelled' | 'draft';
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
+  title: string;
 }
 
 // Request Types

@@ -5,7 +5,6 @@ import { useState, useMemo } from 'react';
 import {
   Search,
   ArrowUpDown,
-  ChevronDown,
   Archive,
   PencilLine,
   Dot,
@@ -28,7 +27,6 @@ import { Badge } from '@/components/ui/badge';
 import { useHackathons } from '@/hooks/use-hackathons';
 import type { Hackathon, HackathonDraft } from '@/lib/api/hackathons';
 
-// Helper function to calculate draft completion percentage
 const calculateDraftCompletion = (draft: HackathonDraft): number => {
   const fields = [
     draft.information?.title,
@@ -54,7 +52,6 @@ const calculateDraftCompletion = (draft: HackathonDraft): number => {
   return Math.round((filledFields / fields.length) * 100);
 };
 
-// Helper function to format time remaining
 const getTimeRemaining = (endDate: string): string => {
   const now = new Date();
   const end = new Date(endDate);
@@ -77,7 +74,6 @@ export default function HackathonsPage() {
   const organizationId = params.id as string;
   const router = useRouter();
 
-  // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'draft'>(
@@ -85,29 +81,29 @@ export default function HackathonsPage() {
   );
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  // Fetch hackathons
   const { hackathons, hackathonsLoading, drafts, draftsLoading } =
     useHackathons({
       organizationId,
       autoFetch: true,
     });
 
-  // Filter and combine drafts and hackathons
   const allHackathons = useMemo(() => {
     const items: Array<{
       type: 'draft' | 'hackathon';
       data: HackathonDraft | Hackathon;
     }> = [];
 
-    // Add drafts
     drafts.forEach(draft => {
       if (statusFilter === 'all' || statusFilter === 'draft') {
         items.push({ type: 'draft', data: draft });
       }
     });
 
-    // Add published hackathons
     hackathons.forEach(hackathon => {
+      if (hackathon.status === 'draft') {
+        return;
+      }
+
       if (
         statusFilter === 'all' ||
         (statusFilter === 'open' && hackathon.status === 'published')
@@ -116,7 +112,6 @@ export default function HackathonsPage() {
       }
     });
 
-    // Apply search filter
     let filtered = items;
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -126,7 +121,6 @@ export default function HackathonsPage() {
       });
     }
 
-    // Apply category filter
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(item => {
         const category = item.data.information?.category?.toLowerCase() || '';
@@ -134,7 +128,6 @@ export default function HackathonsPage() {
       });
     }
 
-    // Sort
     filtered.sort((a, b) => {
       const dateA = new Date(a.data.createdAt || 0).getTime();
       const dateB = new Date(b.data.createdAt || 0).getTime();
@@ -148,9 +141,8 @@ export default function HackathonsPage() {
   return (
     <div className='flex min-h-screen flex-col bg-black text-white'>
       <div className='flex-1'>
-        <main className='mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'>
-          {/* Header Section */}
-          <div className='mb-8'>
+        <main className=''>
+          <div className='mx-auto mb-8 max-w-7xl border-b border-gray-900 px-4 py-8 sm:px-6 lg:px-8'>
             <h1
               className='mb-6 text-left text-2xl font-normal text-white'
               style={{ fontFamily: 'sans-serif' }}
@@ -160,13 +152,13 @@ export default function HackathonsPage() {
 
             <div className='flex items-center gap-3'>
               <div className='relative flex-1'>
-                <Search className='absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400' />
+                <Search className='absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-700' />
                 <Input
                   type='search'
                   placeholder='Search'
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className='border-gray-700 bg-transparent pl-10 text-white placeholder:text-gray-400'
+                  className='h-11 border-gray-700 bg-transparent pl-10 text-white placeholder:text-gray-700 focus-visible:ring-0 focus-visible:ring-offset-0'
                 />
               </div>
 
@@ -174,7 +166,10 @@ export default function HackathonsPage() {
                 value={sortBy}
                 onValueChange={value => setSortBy(value as 'newest' | 'oldest')}
               >
-                <SelectTrigger className='w-[120px] border-gray-700 bg-transparent text-white'>
+                <SelectTrigger
+                  size='sm'
+                  className='!h-11 w-[120px] border-gray-700 bg-transparent text-white focus-visible:ring-0 focus-visible:ring-offset-0'
+                >
                   <ArrowUpDown className='mr-2 size-4' />
                   <SelectValue placeholder='Sort' />
                 </SelectTrigger>
@@ -190,9 +185,8 @@ export default function HackathonsPage() {
                   setStatusFilter(value as 'all' | 'open' | 'draft')
                 }
               >
-                <SelectTrigger className='w-[120px] border-gray-700 bg-transparent text-white'>
+                <SelectTrigger className='!h-11 w-[120px] border-gray-700 bg-transparent text-white focus-visible:ring-0 focus-visible:ring-offset-0'>
                   <SelectValue placeholder='Status' />
-                  <ChevronDown className='ml-2 size-4' />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='all'>All</SelectItem>
@@ -202,9 +196,8 @@ export default function HackathonsPage() {
               </Select>
 
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className='w-[120px] border-gray-700 bg-transparent text-white'>
-                  <SelectValue placeholder='Category' />
-                  <ChevronDown className='ml-2 size-4' />
+                <SelectTrigger className='!h-11 w-[120px] border-gray-700 bg-transparent text-white focus-visible:ring-0 focus-visible:ring-offset-0'>
+                  <SelectValue placeholder='Category' className='text-sm' />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='all'>All</SelectItem>
@@ -220,8 +213,7 @@ export default function HackathonsPage() {
             </div>
           </div>
 
-          {/* Hackathon Cards */}
-          <div className='space-y-4'>
+          <div className='mx-auto max-w-7xl space-y-4 px-4 py-8 sm:px-6 lg:px-8'>
             {isLoading ? (
               <div className='flex items-center justify-center py-20'>
                 <div className='flex flex-col items-center gap-4'>
@@ -243,10 +235,14 @@ export default function HackathonsPage() {
               </div>
             ) : (
               allHackathons.map(item => {
-                const isDraft = item.type === 'draft';
+                const isDraft =
+                  item.type === 'draft' ||
+                  (item.data as Hackathon | HackathonDraft).status === 'draft';
                 const hackathon = item.data;
                 const title =
-                  hackathon.information?.title || 'Untitled Hackathon';
+                  hackathon.information?.title ||
+                  hackathon.title ||
+                  'Untitled Hackathon';
                 const completion = isDraft
                   ? calculateDraftCompletion(hackathon as HackathonDraft)
                   : 0;
@@ -301,7 +297,7 @@ export default function HackathonsPage() {
                           <BoundlessButton
                             variant='default'
                             size='lg'
-                            className='ml-4 gap-2'
+                            className='gap-2'
                             onClick={e => {
                               e.stopPropagation();
                               router.push(
@@ -321,12 +317,7 @@ export default function HackathonsPage() {
                 return (
                   <Card
                     key={`hackathon-${hackathon._id}`}
-                    className='bg-background hover:border-primary/40 cursor-pointer !rounded-none !rounded-t-[6px] !rounded-b-[20px] border-gray-900 p-0 transition-all duration-300'
-                    onClick={() =>
-                      router.push(
-                        `/organizations/${organizationId}/hackathons/${hackathon._id}`
-                      )
-                    }
+                    className='bg-background hover:border-primary/40 !rounded-none !rounded-t-[6px] !rounded-b-[20px] border-gray-900 p-0 transition-all duration-300'
                   >
                     <CardContent className='flex flex-col p-0'>
                       <div className='bg-background-card flex items-start justify-between rounded-t-[6px] rounded-b-[20px] p-5'>
@@ -364,7 +355,6 @@ export default function HackathonsPage() {
                           </h2>
 
                           <div className='flex items-center gap-4 uppercase'>
-                            {/* TODO: Add participants and submissions count when API provides them */}
                             <div>
                               <span className='font-medium text-white'>0</span>{' '}
                               <span className='text-sm text-gray-500'>
@@ -399,7 +389,7 @@ export default function HackathonsPage() {
                           <BoundlessButton
                             variant='outline'
                             size='lg'
-                            className='ml-4 gap-2'
+                            className='gap-2'
                             onClick={e => {
                               e.stopPropagation();
                               router.push(
@@ -413,7 +403,7 @@ export default function HackathonsPage() {
                           <BoundlessButton
                             variant='default'
                             size='lg'
-                            className='ml-4 gap-2'
+                            className='gap-2'
                             onClick={e => {
                               e.stopPropagation();
                               router.push(
