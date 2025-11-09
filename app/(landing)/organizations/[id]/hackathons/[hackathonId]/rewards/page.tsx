@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Megaphone } from 'lucide-react';
 import PodiumSection from '@/components/organization/hackathons/rewards/PodiumSection';
@@ -9,15 +9,13 @@ import AnnounceWinnersModal from '@/components/organization/hackathons/rewards/A
 import WinnersPreviewPage from '@/components/organization/hackathons/rewards/WinnersPreviewPage';
 import { Submission } from '@/components/organization/hackathons/rewards/types';
 import { BoundlessButton } from '@/components/buttons';
+import { api } from '@/lib/api/api';
+import { toast } from 'sonner';
 
 export default function RewardsPage() {
   const params = useParams();
   const organizationId = params.id as string;
   const hackathonId = params.hackathonId as string;
-
-  // TODO: Use organizationId and hackathonId for API calls
-  void organizationId;
-  void hackathonId;
 
   // Mock data - replace with API call
   const [submissions, setSubmissions] = useState<Submission[]>([
@@ -119,6 +117,27 @@ export default function RewardsPage() {
     { rank: 3, prizeAmount: '8000', currency: 'USDC' },
   ];
 
+  // Fetch submissions from API
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      try {
+        const response = await api.get<Submission[]>(
+          `/organizations/${organizationId}/hackathons/${hackathonId}/submissions`
+        );
+        if (response.data) {
+          setSubmissions(response.data);
+        }
+      } catch {
+        toast.error('Failed to load submissions');
+        // Keep mock data as fallback
+      }
+    };
+
+    if (organizationId && hackathonId) {
+      fetchSubmissions();
+    }
+  }, [organizationId, hackathonId]);
+
   const maxRank = prizeTiers.length;
   const winners = submissions.filter(s => s.rank && s.rank <= maxRank);
   const hasWinners = winners.length > 0;
@@ -148,13 +167,20 @@ export default function RewardsPage() {
     setShowPreview(true);
   };
 
-  const handlePublish = () => {
-    // TODO: Implement API call to publish winners
-    console.log('Publishing winners...', {
-      submissions: winners,
-      announcement,
-    });
-    // Show success toast and redirect or close
+  const handlePublish = async () => {
+    try {
+      await api.post(
+        `/organizations/${organizationId}/hackathons/${hackathonId}/winners/announce`,
+        {
+          winners: winners.map(w => ({ submissionId: w.id, rank: w.rank })),
+          announcement,
+        }
+      );
+      toast.success('Winners announced successfully!');
+      setShowPreview(false);
+    } catch {
+      toast.error('Failed to announce winners');
+    }
   };
 
   if (showPreview) {

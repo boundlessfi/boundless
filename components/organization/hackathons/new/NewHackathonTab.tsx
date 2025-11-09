@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowUpRight, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -10,6 +12,17 @@ import { ParticipantFormData } from './tabs/schemas/participantSchema';
 import { RewardsFormData } from './tabs/schemas/rewardsSchema';
 import { JudgingFormData } from './tabs/schemas/judgingSchema';
 import { CollaborationFormData } from './tabs/schemas/collaborationSchema';
+import { useHackathons } from '@/hooks/use-hackathons';
+import type {
+  CreateDraftRequest,
+  PublishHackathonRequest,
+  HackathonDraft,
+} from '@/lib/api/hackathons';
+import {
+  HackathonCategory,
+  ParticipantType,
+  VenueType,
+} from '@/lib/api/hackathons';
 
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -38,12 +51,258 @@ interface StepData {
 }
 interface NewHackathonTabProps {
   organizationId?: string;
+  draftId?: string;
 }
+
+// Step order constant - defined outside component to avoid recreation on every render
+const STEP_ORDER: StepKey[] = [
+  'information',
+  'timeline',
+  'participation',
+  'rewards',
+  'judging',
+  'collaboration',
+  'review',
+];
+
+// Transform form data to API format
+const transformToApiFormat = (stepData: {
+  information?: InfoFormData;
+  timeline?: TimelineFormData;
+  participation?: ParticipantFormData;
+  rewards?: RewardsFormData;
+  judging?: JudgingFormData;
+  collaboration?: CollaborationFormData;
+}): CreateDraftRequest | PublishHackathonRequest => {
+  const info = stepData.information;
+  const timeline = stepData.timeline;
+  const participation = stepData.participation;
+  const rewards = stepData.rewards;
+  const judging = stepData.judging;
+  const collaboration = stepData.collaboration;
+
+  return {
+    information: {
+      title: info?.name || '',
+      banner: info?.banner || '',
+      description: info?.description || '',
+      category:
+        (info?.category as HackathonCategory) || HackathonCategory.OTHER,
+      venue: {
+        type: (info?.venueType as VenueType) || VenueType.VIRTUAL,
+        country: info?.country,
+        state: info?.state,
+        city: info?.city,
+        venueName: info?.venueName,
+        venueAddress: info?.venueAddress,
+      },
+    },
+    timeline: {
+      startDate: timeline?.startDate?.toISOString() || '',
+      submissionDeadline: timeline?.submissionDeadline?.toISOString() || '',
+      judgingDate: timeline?.endDate?.toISOString() || '',
+      winnerAnnouncementDate:
+        timeline?.registrationDeadline?.toISOString() || '',
+      timezone: timeline?.timezone || 'UTC',
+      phases: timeline?.phases?.map(phase => ({
+        name: phase.name,
+        startDate: phase.startDate.toISOString(),
+        endDate: phase.endDate.toISOString(),
+        description: phase.description,
+      })),
+    },
+    participation: {
+      participantType:
+        (participation?.participantType as ParticipantType) ||
+        ParticipantType.INDIVIDUAL,
+      teamMin: participation?.teamMin,
+      teamMax: participation?.teamMax,
+      about: participation?.about,
+      submissionRequirements: {
+        requireGithub: participation?.require_github,
+        requireDemoVideo: participation?.require_demo_video,
+        requireOtherLinks: participation?.require_other_links,
+      },
+      tabVisibility: {
+        detailsTab: participation?.details_tab,
+        scheduleTab: participation?.schedule_tab,
+        rulesTab: participation?.rules_tab,
+        rewardTab: participation?.reward_tab,
+        announcementsTab: participation?.announcements_tab,
+        partnersTab: participation?.partners_tab,
+        joinATeamTab: participation?.join_a_team_tab,
+        projectsTab: participation?.projects_tab,
+        participantsTab: participation?.participants_tab,
+      },
+    },
+    rewards: {
+      prizeTiers:
+        rewards?.prizeTiers?.map(tier => ({
+          position: tier.place,
+          amount: parseFloat(tier.prizeAmount) || 0,
+          currency: tier.currency || 'USDC',
+          description: tier.description,
+          passMark: tier.passMark,
+        })) || [],
+    },
+    judging: {
+      criteria:
+        judging?.criteria?.map(criterion => ({
+          title: criterion.name,
+          weight: criterion.weight,
+          description: criterion.description,
+        })) || [],
+    },
+    collaboration: {
+      contactEmail: collaboration?.contactEmail || '',
+      telegram: collaboration?.telegram,
+      discord: collaboration?.discord,
+      socialLinks:
+        collaboration?.socialLinks?.filter(
+          link => link && link.trim() !== ''
+        ) || [],
+      sponsorsPartners:
+        collaboration?.sponsorsPartners?.map(sp => ({
+          sponsorName: sp.name,
+          sponsorLogo: sp.logo || '',
+          partnerLink: sp.link || '',
+        })) || [],
+    },
+  };
+};
+
+// Transform API draft data to form data format
+const transformFromApiFormat = (draft: HackathonDraft) => {
+  const info = draft.information;
+  const timeline = draft.timeline;
+  const participation = draft.participation;
+  const rewards = draft.rewards;
+  const judging = draft.judging;
+  const collaboration = draft.collaboration;
+
+  return {
+    information: {
+      name: info?.title || '',
+      banner: info?.banner || '',
+      description: info?.description || '',
+      category: info?.category || '',
+      venueType: info?.venue?.type || 'physical',
+      country: info?.venue?.country || '',
+      state: info?.venue?.state || '',
+      city: info?.venue?.city || '',
+      venueName: info?.venue?.venueName || '',
+      venueAddress: info?.venue?.venueAddress || '',
+    } as InfoFormData,
+    timeline: {
+      startDate: timeline?.startDate ? new Date(timeline.startDate) : undefined,
+      endDate: timeline?.judgingDate
+        ? new Date(timeline.judgingDate)
+        : undefined,
+      registrationDeadline: timeline?.winnerAnnouncementDate
+        ? new Date(timeline.winnerAnnouncementDate)
+        : undefined,
+      submissionDeadline: timeline?.submissionDeadline
+        ? new Date(timeline.submissionDeadline)
+        : undefined,
+      timezone: timeline?.timezone || 'UTC',
+      phases:
+        timeline?.phases?.map(phase => ({
+          name: phase.name,
+          startDate: new Date(phase.startDate),
+          endDate: new Date(phase.endDate),
+          description: phase.description || '',
+        })) || [],
+    } as TimelineFormData,
+    participation: {
+      participantType: participation?.participantType || 'individual',
+      teamMin: participation?.teamMin,
+      teamMax: participation?.teamMax,
+      about: participation?.about || '',
+      require_github:
+        participation?.submissionRequirements?.requireGithub || false,
+      require_demo_video:
+        participation?.submissionRequirements?.requireDemoVideo || false,
+      require_other_links:
+        participation?.submissionRequirements?.requireOtherLinks || false,
+      details_tab: participation?.tabVisibility?.detailsTab || true,
+      schedule_tab: participation?.tabVisibility?.scheduleTab || true,
+      rules_tab: participation?.tabVisibility?.rulesTab || true,
+      reward_tab: participation?.tabVisibility?.rewardTab || true,
+      announcements_tab: participation?.tabVisibility?.announcementsTab || true,
+      partners_tab: participation?.tabVisibility?.partnersTab || true,
+      join_a_team_tab: participation?.tabVisibility?.joinATeamTab || true,
+      projects_tab: participation?.tabVisibility?.projectsTab || true,
+      participants_tab: participation?.tabVisibility?.participantsTab || true,
+    } as ParticipantFormData,
+    rewards: {
+      prizeTiers:
+        rewards?.prizeTiers?.map((tier, index) => ({
+          id: `tier-${index}`,
+          place: tier.position,
+          prizeAmount: tier.amount.toString(),
+          currency: tier.currency || 'USDC',
+          description: tier.description || '',
+          passMark: tier.passMark,
+        })) || [],
+    } as RewardsFormData,
+    judging: {
+      criteria:
+        judging?.criteria?.map((criterion, index) => ({
+          id: `criterion-${index}`,
+          name: criterion.title,
+          weight: criterion.weight,
+          description: criterion.description || '',
+        })) || [],
+    } as JudgingFormData,
+    collaboration: {
+      contactEmail: collaboration?.contactEmail || '',
+      telegram: collaboration?.telegram || '',
+      discord: collaboration?.discord || '',
+      socialLinks: collaboration?.socialLinks || [],
+      sponsorsPartners:
+        collaboration?.sponsorsPartners?.map(sp => ({
+          name: sp.sponsorName,
+          logo: sp.sponsorLogo,
+          link: sp.partnerLink,
+        })) || [],
+    } as CollaborationFormData,
+  };
+};
 
 export default function NewHackathonTab({
   organizationId,
+  draftId: initialDraftId,
 }: NewHackathonTabProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<StepKey>('information');
+  const [draftId, setDraftId] = useState<string | null>(initialDraftId || null);
+
+  // Get organizationId from pathname if not provided
+  const derivedOrgId =
+    organizationId ||
+    (() => {
+      if (typeof window !== 'undefined') {
+        const pathname = window.location.pathname;
+        const parts = pathname.split('/');
+        if (parts.length >= 3 && parts[1] === 'organizations') {
+          return parts[2];
+        }
+      }
+      return undefined;
+    })();
+
+  const {
+    createDraftAction,
+    updateDraftAction,
+    publishHackathonAction,
+    fetchDraft,
+    currentDraft,
+    currentLoading,
+    currentError,
+  } = useHackathons({
+    organizationId: derivedOrgId,
+    autoFetch: false,
+  });
 
   const [stepData, setStepData] = useState<{
     information?: InfoFormData;
@@ -76,17 +335,94 @@ export default function NewHackathonTab({
     review: { status: 'pending', isCompleted: false },
   });
 
-  const stepOrder: StepKey[] = [
-    'information',
-    'timeline',
-    'participation',
-    'rewards',
-    'judging',
-    'collaboration',
-    'review',
-  ];
+  const [isLoadingDraft, setIsLoadingDraft] = useState(false);
+  const draftInitializedRef = useRef<string | null>(null);
 
-  const getCurrentStepIndex = () => stepOrder.indexOf(activeTab);
+  // Load draft when draftId is provided
+  useEffect(() => {
+    const loadDraft = async () => {
+      if (!initialDraftId || !derivedOrgId) return;
+
+      setIsLoadingDraft(true);
+      try {
+        await fetchDraft(initialDraftId);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to load draft';
+        toast.error(errorMessage);
+      } finally {
+        setIsLoadingDraft(false);
+      }
+    };
+
+    loadDraft();
+  }, [initialDraftId, derivedOrgId, fetchDraft]);
+
+  // Initialize form data when draft is loaded (only once per draft)
+  useEffect(() => {
+    if (
+      currentDraft &&
+      initialDraftId &&
+      currentDraft._id === initialDraftId &&
+      draftInitializedRef.current !== currentDraft._id
+    ) {
+      try {
+        const formData = transformFromApiFormat(currentDraft);
+        setStepData(formData);
+
+        // Update steps based on available data
+        const newSteps: Record<StepKey, StepData> = {
+          information: {
+            status: formData.information ? 'completed' : 'active',
+            isCompleted: !!formData.information,
+          },
+          timeline: {
+            status: formData.timeline ? 'completed' : 'pending',
+            isCompleted: !!formData.timeline,
+          },
+          participation: {
+            status: formData.participation ? 'completed' : 'pending',
+            isCompleted: !!formData.participation,
+          },
+          rewards: {
+            status: formData.rewards ? 'completed' : 'pending',
+            isCompleted: !!formData.rewards,
+          },
+          judging: {
+            status: formData.judging ? 'completed' : 'pending',
+            isCompleted: !!formData.judging,
+          },
+          collaboration: {
+            status: formData.collaboration ? 'completed' : 'pending',
+            isCompleted: !!formData.collaboration,
+          },
+          review: {
+            status: formData.collaboration ? 'pending' : 'pending',
+            isCompleted: false,
+          },
+        };
+
+        // Set the first incomplete step as active
+        const firstIncompleteStep =
+          STEP_ORDER.find(step => !newSteps[step].isCompleted) || 'information';
+
+        newSteps[firstIncompleteStep] = {
+          ...newSteps[firstIncompleteStep],
+          status: 'active',
+        };
+
+        setSteps(newSteps);
+        setActiveTab(firstIncompleteStep as StepKey);
+
+        // Mark this draft as initialized
+        draftInitializedRef.current = currentDraft._id;
+      } catch {
+        toast.error('Failed to load draft data');
+      }
+    }
+  }, [currentDraft, initialDraftId]);
+
+  const getCurrentStepIndex = () => STEP_ORDER.indexOf(activeTab);
 
   const canAccessStep = (stepKey: StepKey) => {
     // Review tab is accessible only after collaboration is completed
@@ -94,7 +430,7 @@ export default function NewHackathonTab({
       return steps.collaboration?.isCompleted === true;
     }
 
-    const stepIndex = stepOrder.indexOf(stepKey);
+    const stepIndex = STEP_ORDER.indexOf(stepKey);
     const currentIndex = getCurrentStepIndex();
 
     if (stepIndex <= currentIndex) return true;
@@ -105,16 +441,16 @@ export default function NewHackathonTab({
     return false;
   };
 
-  const navigateToStep = (stepKey: StepKey) => {
-    if (canAccessStep(stepKey)) {
-      const stepIndex = stepOrder.indexOf(stepKey);
+  const navigateToStep = (stepKey: StepKey, skipAccessCheck = false) => {
+    if (skipAccessCheck || canAccessStep(stepKey)) {
+      const stepIndex = STEP_ORDER.indexOf(stepKey);
       const currentIndex = getCurrentStepIndex();
 
       if (stepIndex > currentIndex) {
         setSteps(prev => {
           const newSteps = { ...prev };
 
-          stepOrder.forEach((step, index) => {
+          STEP_ORDER.forEach((step, index) => {
             if (index > stepIndex) {
               newSteps[step] = { status: 'pending', isCompleted: false };
             }
@@ -136,133 +472,289 @@ export default function NewHackathonTab({
   };
 
   const saveInformationStep = async (data: InfoFormData) => {
+    if (!derivedOrgId) {
+      toast.error('Organization ID is required');
+      return;
+    }
+
     setLoadingStates(prev => ({ ...prev, information: true }));
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const updatedStepData = { ...stepData, information: data };
+      const apiData = transformToApiFormat(updatedStepData);
 
-      setStepData(prev => ({ ...prev, information: data }));
+      if (draftId) {
+        // Update existing draft
+        await updateDraftAction(draftId, { information: apiData.information });
+      } else {
+        // Create new draft
+        const draft = await createDraftAction({
+          information: apiData.information,
+        });
+        setDraftId(draft._id);
+      }
 
-      setSteps(prev => ({
-        ...prev,
-        information: {
-          ...prev.information,
-          status: 'completed',
-          isCompleted: true,
-        },
-      }));
-    } catch (error) {
-      throw error;
+      setStepData(updatedStepData);
+
+      // Update step completion and navigate in a single operation
+      setSteps(prev => {
+        const newSteps: Record<StepKey, StepData> = {
+          ...prev,
+          information: {
+            ...prev.information,
+            status: 'completed' as StepStatus,
+            isCompleted: true,
+          },
+          timeline: {
+            ...prev.timeline,
+            status: 'active' as StepStatus,
+          },
+        };
+        return newSteps;
+      });
+      setActiveTab('timeline');
+    } catch {
+      // Error toast is shown in the tab component
+      throw new Error('Failed to save information step');
     } finally {
       setLoadingStates(prev => ({ ...prev, information: false }));
     }
   };
 
   const saveTimelineStep = async (data: TimelineFormData) => {
+    if (!derivedOrgId) {
+      toast.error('Organization ID is required');
+      return;
+    }
+    if (!draftId) {
+      toast.error('Please save information first');
+      return;
+    }
+
     setLoadingStates(prev => ({ ...prev, timeline: true }));
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setStepData(prev => ({ ...prev, timeline: data }));
+      const updatedStepData = { ...stepData, timeline: data };
+      const apiData = transformToApiFormat(updatedStepData);
 
-      setSteps(prev => ({
-        ...prev,
-        timeline: { ...prev.timeline, status: 'completed', isCompleted: true },
-      }));
-    } catch (error) {
-      throw error;
+      await updateDraftAction(draftId, { timeline: apiData.timeline });
+
+      setStepData(updatedStepData);
+
+      // Update step completion and navigate in a single operation
+      setSteps(prev => {
+        const newSteps: Record<StepKey, StepData> = {
+          ...prev,
+          timeline: {
+            ...prev.timeline,
+            status: 'completed' as StepStatus,
+            isCompleted: true,
+          },
+          participation: {
+            ...prev.participation,
+            status: 'active' as StepStatus,
+          },
+        };
+        return newSteps;
+      });
+      setActiveTab('participation');
+    } catch {
+      // Error toast is shown in the tab component
+      throw new Error('Failed to save timeline step');
     } finally {
       setLoadingStates(prev => ({ ...prev, timeline: false }));
     }
   };
 
   const saveParticipationStep = async (data: ParticipantFormData) => {
+    if (!derivedOrgId || !draftId) {
+      toast.error('Please save previous steps first');
+      return;
+    }
+
     setLoadingStates(prev => ({ ...prev, participation: true }));
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setStepData(prev => ({ ...prev, participation: data }));
+      const updatedStepData = { ...stepData, participation: data };
+      const apiData = transformToApiFormat(updatedStepData);
 
-      setSteps(prev => ({
-        ...prev,
-        participation: {
-          ...prev.participation,
-          status: 'completed',
-          isCompleted: true,
-        },
-      }));
-    } catch (error) {
-      throw error;
+      await updateDraftAction(draftId, {
+        participation: apiData.participation,
+      });
+
+      setStepData(updatedStepData);
+
+      // Update step completion and navigate in a single operation
+      setSteps(prev => {
+        const newSteps: Record<StepKey, StepData> = {
+          ...prev,
+          participation: {
+            ...prev.participation,
+            status: 'completed' as StepStatus,
+            isCompleted: true,
+          },
+          rewards: {
+            ...prev.rewards,
+            status: 'active' as StepStatus,
+          },
+        };
+        return newSteps;
+      });
+      setActiveTab('rewards');
+    } catch {
+      // Error toast is shown in the tab component
+      throw new Error('Failed to save participation step');
     } finally {
       setLoadingStates(prev => ({ ...prev, participation: false }));
     }
   };
 
   const saveRewardsStep = async (data: RewardsFormData) => {
+    if (!derivedOrgId || !draftId) {
+      toast.error('Please save previous steps first');
+      return;
+    }
+
     setLoadingStates(prev => ({ ...prev, rewards: true }));
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setStepData(prev => ({ ...prev, rewards: data }));
+      const updatedStepData = { ...stepData, rewards: data };
+      const apiData = transformToApiFormat(updatedStepData);
 
-      setSteps(prev => ({
-        ...prev,
-        rewards: {
-          ...prev.rewards,
-          status: 'completed',
-          isCompleted: true,
-        },
-      }));
-    } catch (error) {
-      throw error;
+      await updateDraftAction(draftId, { rewards: apiData.rewards });
+
+      setStepData(updatedStepData);
+
+      // Update step completion and navigate in a single operation
+      setSteps(prev => {
+        const newSteps: Record<StepKey, StepData> = {
+          ...prev,
+          rewards: {
+            ...prev.rewards,
+            status: 'completed' as StepStatus,
+            isCompleted: true,
+          },
+          judging: {
+            ...prev.judging,
+            status: 'active' as StepStatus,
+          },
+        };
+        return newSteps;
+      });
+      setActiveTab('judging');
+    } catch {
+      // Error toast is shown in the tab component
+      throw new Error('Failed to save rewards step');
     } finally {
       setLoadingStates(prev => ({ ...prev, rewards: false }));
     }
   };
 
   const saveJudgingStep = async (data: JudgingFormData) => {
+    if (!derivedOrgId || !draftId) {
+      toast.error('Please save previous steps first');
+      return;
+    }
+
     setLoadingStates(prev => ({ ...prev, judging: true }));
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setStepData(prev => ({ ...prev, judging: data }));
+      const updatedStepData = { ...stepData, judging: data };
+      const apiData = transformToApiFormat(updatedStepData);
 
-      setSteps(prev => ({
-        ...prev,
-        judging: {
-          ...prev.judging,
-          status: 'completed',
-          isCompleted: true,
-        },
-      }));
-    } catch (error) {
-      throw error;
+      await updateDraftAction(draftId, { judging: apiData.judging });
+
+      setStepData(updatedStepData);
+
+      // Update step completion and navigate in a single operation
+      setSteps(prev => {
+        const newSteps: Record<StepKey, StepData> = {
+          ...prev,
+          judging: {
+            ...prev.judging,
+            status: 'completed' as StepStatus,
+            isCompleted: true,
+          },
+          collaboration: {
+            ...prev.collaboration,
+            status: 'active' as StepStatus,
+          },
+        };
+        return newSteps;
+      });
+      setActiveTab('collaboration');
+    } catch {
+      // Error toast is shown in the tab component
+      throw new Error('Failed to save judging step');
     } finally {
       setLoadingStates(prev => ({ ...prev, judging: false }));
     }
   };
 
   const saveCollaborationStep = async (data: CollaborationFormData) => {
+    if (!derivedOrgId || !draftId) {
+      toast.error('Please save previous steps first');
+      return;
+    }
+
     setLoadingStates(prev => ({ ...prev, collaboration: true }));
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setStepData(prev => ({ ...prev, collaboration: data }));
+      const updatedStepData = { ...stepData, collaboration: data };
+      const apiData = transformToApiFormat(updatedStepData);
 
-      setSteps(prev => ({
-        ...prev,
-        collaboration: {
-          ...prev.collaboration,
-          status: 'completed',
-          isCompleted: true,
-        },
-      }));
-    } catch (error) {
-      throw error;
+      await updateDraftAction(draftId, {
+        collaboration: apiData.collaboration,
+      });
+
+      setStepData(updatedStepData);
+
+      // Update step completion and navigate in a single operation
+      setSteps(prev => {
+        const newSteps: Record<StepKey, StepData> = {
+          ...prev,
+          collaboration: {
+            status: 'completed' as StepStatus,
+            isCompleted: true,
+            data: prev.collaboration?.data,
+          },
+          review: {
+            status: 'active' as StepStatus,
+            isCompleted: prev.review?.isCompleted || false,
+            data: prev.review?.data,
+          },
+        };
+        return newSteps;
+      });
+      setActiveTab('review');
+    } catch {
+      // Error toast is shown in the tab component
+      throw new Error('Failed to save collaboration step');
     } finally {
       setLoadingStates(prev => ({ ...prev, collaboration: false }));
     }
   };
 
   const handlePublish = async () => {
+    if (!derivedOrgId) {
+      toast.error('Organization ID is required');
+      return;
+    }
+
+    // Validate all required data is present
+    if (
+      !stepData.information ||
+      !stepData.timeline ||
+      !stepData.participation ||
+      !stepData.rewards ||
+      !stepData.judging ||
+      !stepData.collaboration
+    ) {
+      toast.error('Please complete all steps before publishing');
+      return;
+    }
+
     setLoadingStates(prev => ({ ...prev, review: true }));
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      // TODO: Implement actual publish logic
+      const apiData = transformToApiFormat(stepData) as PublishHackathonRequest;
+
+      const hackathon = await publishHackathonAction(apiData);
+      toast.success('Hackathon published successfully!');
+
       setSteps(prev => ({
         ...prev,
         review: {
@@ -271,21 +763,46 @@ export default function NewHackathonTab({
           isCompleted: true,
         },
       }));
-    } catch (error) {
-      throw error;
+
+      // Navigate to the published hackathon page
+      if (derivedOrgId && hackathon._id) {
+        setTimeout(() => {
+          router.push(
+            `/organizations/${derivedOrgId}/hackathons/${hackathon._id}`
+          );
+        }, 1500);
+      }
+    } catch {
+      toast.error('Failed to publish hackathon');
+      throw new Error('Failed to publish hackathon');
     } finally {
       setLoadingStates(prev => ({ ...prev, review: false }));
     }
   };
 
   const handleSaveDraft = async () => {
+    if (!derivedOrgId) {
+      toast.error('Organization ID is required');
+      return;
+    }
+
     setIsSavingDraft(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // TODO: Implement actual draft save logic
-      // Draft is saved but hackathon is not published
-    } catch (error) {
-      throw error;
+      const apiData = transformToApiFormat(stepData);
+
+      if (draftId) {
+        // Update existing draft with all current data
+        await updateDraftAction(draftId, apiData);
+        toast.success('Draft saved successfully');
+      } else {
+        // Create new draft if it doesn't exist
+        const draft = await createDraftAction(apiData);
+        setDraftId(draft._id);
+        toast.success('Draft created successfully');
+      }
+    } catch {
+      toast.error('Failed to save draft');
+      throw new Error('Failed to save draft');
     } finally {
       setIsSavingDraft(false);
     }
@@ -307,6 +824,29 @@ export default function NewHackathonTab({
   };
 
   const handlePreview = () => {};
+
+  // Show loading state while draft is being loaded
+  if (isLoadingDraft || (initialDraftId && currentLoading)) {
+    return (
+      <div className='bg-background-main-bg flex flex-1 items-center justify-center text-white'>
+        <div className='flex flex-col items-center gap-4'>
+          <div className='border-primary h-8 w-8 animate-spin rounded-full border-2 border-t-transparent' />
+          <span className='text-sm text-gray-400'>Loading draft...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if draft failed to load
+  if (initialDraftId && currentError && !currentDraft) {
+    return (
+      <div className='bg-background-main-bg flex flex-1 items-center justify-center text-white'>
+        <div className='flex flex-col items-center gap-4'>
+          <span className='text-sm text-red-400'>{currentError}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -331,8 +871,7 @@ export default function NewHackathonTab({
             <ScrollArea className='w-full'>
               <div className='flex w-max min-w-full items-center justify-between'>
                 <TabsList className='inline-flex h-auto bg-transparent p-0'>
-                  {stepOrder
-                    .filter(stepKey => stepKey !== 'review') // Hide review from tabs, show it separately
+                  {STEP_ORDER.filter(stepKey => stepKey !== 'review') // Hide review from tabs, show it separately
                     .map(stepKey => {
                       const step = steps[stepKey];
                       const isActive = stepKey === activeTab;

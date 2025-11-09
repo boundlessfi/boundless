@@ -84,6 +84,7 @@
     "@tiptap/pm": "^3.7.2",
     "@tiptap/react": "^3.7.2",
     "@tiptap/starter-kit": "^3.7.2",
+    "@trustless-work/escrow": "^3.0.2",
     "@types/marked": "^5.0.2",
     "@types/react-dropzone": "^4.2.2",
     "@uiw/react-md-editor": "^4.0.8",

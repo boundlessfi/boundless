@@ -154,6 +154,7 @@ export function ProjectSidebarActions({
           _id: project._id,
           title: project.title,
           logo: project.logo || project.media?.logo,
+          contractId: project.contractId || project.escrowAddress, // Get contractId from project
           funding: project.funding
             ? {
                 goal: project.funding.goal,

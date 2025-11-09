@@ -49,7 +49,6 @@ interface InfoTabProps {
 }
 
 export default function InfoTab({
-  onContinue,
   onSave,
   initialData,
   isLoading = false,
@@ -85,10 +84,8 @@ export default function InfoTab({
     try {
       if (onSave) {
         await onSave(data);
+        // Navigation is handled automatically in saveInformationStep
         toast.success('Information saved successfully!');
-      }
-      if (onContinue) {
-        onContinue();
       }
     } catch {
       toast.error('Failed to save information. Please try again.');
@@ -100,7 +97,9 @@ export default function InfoTab({
       try {
         const countriesData = await loadCountries();
         setCountries(countriesData);
-      } catch {}
+      } catch {
+        toast.error('Failed to load countries. Please try again.');
+      }
     };
     loadCountriesData();
   }, []);
@@ -116,6 +115,7 @@ export default function InfoTab({
           form.setValue('state', '');
           form.setValue('city', '');
         } catch {
+          toast.error('Failed to load states');
           setStates([]);
         }
       };
@@ -139,6 +139,7 @@ export default function InfoTab({
 
           form.setValue('city', '');
         } catch {
+          toast.error('Failed to load cities');
           setCities([]);
         }
       };
@@ -203,7 +204,9 @@ export default function InfoTab({
         if (result) {
           setMapLocation(result);
         }
-      } catch {}
+      } catch {
+        // Silently fail geocoding as it's not critical
+      }
     },
     [countries, states, selectedCountry, selectedState, form]
   );

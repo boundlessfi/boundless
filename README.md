@@ -208,6 +208,10 @@ Before you begin, ensure you have the following installed:
    # Stellar Configuration
    NEXT_PUBLIC_STELLAR_NETWORK=testnet
    NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+   # Trustless Work Configuration (optional)
+   # Get your API key from: https://docs.trustlesswork.com
+   NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY=your-trustless-work-api-key
    ```
 
 6. **Run the development server:**

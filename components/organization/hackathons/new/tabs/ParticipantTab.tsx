@@ -32,7 +32,6 @@ interface ParticipantTabProps {
 }
 
 export default function ParticipantTab({
-  onContinue,
   onSave,
   initialData,
   isLoading = false,
@@ -63,10 +62,8 @@ export default function ParticipantTab({
     try {
       if (onSave) {
         await onSave(data);
+        // Navigation is handled automatically in saveParticipationStep
         toast.success('Participation settings saved successfully!');
-      }
-      if (onContinue) {
-        onContinue();
       }
     } catch {
       toast.error('Failed to save participation settings. Please try again.');

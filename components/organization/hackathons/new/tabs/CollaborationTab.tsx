@@ -171,7 +171,6 @@ const LogoUpload = ({
 };
 
 export default function CollaborationTab({
-  onContinue,
   onSave,
   initialData,
   isLoading = false,
@@ -226,10 +225,8 @@ export default function CollaborationTab({
     try {
       if (onSave) {
         await onSave(data);
+        // Navigation is handled automatically in saveCollaborationStep
         toast.success('Collaboration settings saved successfully!');
-      }
-      if (onContinue) {
-        onContinue();
       }
     } catch {
       toast.error('Failed to save collaboration settings. Please try again.');

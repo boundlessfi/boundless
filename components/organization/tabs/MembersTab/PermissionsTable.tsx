@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -129,11 +129,7 @@ export default function PermissionsTable() {
     isOwner,
   } = useOrganization();
 
-  useEffect(() => {
-    loadPermissions();
-  }, [activeOrgId]);
-
-  const loadPermissions = async () => {
+  const loadPermissions = useCallback(async () => {
     if (!activeOrgId) return;
 
     try {
@@ -163,13 +159,16 @@ export default function PermissionsTable() {
       });
 
       setEditablePermissions({ admin: adminPerms, member: memberPerms });
-    } catch (error) {
+    } catch {
       toast.error('Failed to load permissions');
-      console.error('Error loading permissions:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeOrgId, getOrganizationPermissions]);
+
+  useEffect(() => {
+    loadPermissions();
+  }, [loadPermissions]);
 
   const handleAdminPermissionChange = (
     permissionKey: keyof OrganizationPermissions,
@@ -226,9 +225,8 @@ export default function PermissionsTable() {
       setIsCustom(true);
       setPermissions(mergedPermissions);
       toast.success('Permissions updated successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to update permissions');
-      console.error('Error updating permissions:', error);
     } finally {
       setIsLoading(false);
     }
@@ -244,9 +242,8 @@ export default function PermissionsTable() {
       setIsEditing(false);
       setIsCustom(false);
       toast.success('Permissions reset to defaults');
-    } catch (error) {
+    } catch {
       toast.error('Failed to reset permissions');
-      console.error('Error resetting permissions:', error);
     } finally {
       setIsLoading(false);
     }

@@ -90,7 +90,7 @@ export default function OrganizationSidebar({
         })}
         <div className='mt-6 space-y-6 px-8'>
           <Link
-            href={`/organizations/${organizationId}/hackathons/new`}
+            href={`/organizations/${derivedOrgId}/hackathons/new`}
             className='flex items-center gap-3'
           >
             <div className='bg-primary grid h-6 w-6 place-content-center rounded-full'>
@@ -99,7 +99,7 @@ export default function OrganizationSidebar({
             <span>Host Hackathon</span>
           </Link>
           <Link
-            href={`/organizations/${organizationId}/grants/new`}
+            href={`/organizations/${derivedOrgId}/grants/new`}
             className='flex items-center gap-3'
           >
             <div className='flex items-center gap-3'>

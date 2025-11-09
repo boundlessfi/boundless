@@ -57,7 +57,7 @@ export default function InformationSection({
           setMapLocation(result);
         }
       } catch {
-        // Silently handle geocoding errors
+        // Map will not be displayed if geocoding fails, but this is not critical
       } finally {
         setIsGeocoding(false);
       }

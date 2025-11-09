@@ -31,7 +31,6 @@ interface TimelineTabProps {
 }
 
 export default function TimelineTab({
-  onContinue,
   onSave,
   initialData,
   isLoading = false,
@@ -52,10 +51,8 @@ export default function TimelineTab({
     try {
       if (onSave) {
         await onSave(data);
+        // Navigation is handled automatically in saveTimelineStep
         toast.success('Timeline saved successfully!');
-      }
-      if (onContinue) {
-        onContinue();
       }
     } catch {
       toast.error('Failed to save timeline. Please try again.');

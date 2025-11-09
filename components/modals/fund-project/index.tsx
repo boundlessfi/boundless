@@ -8,12 +8,24 @@ import Amount, { AmountFormData, AmountHandle } from './Amount';
 import Confirm, { ConfirmHandle, ConfirmFormData } from './Confirm';
 import Success from '../Success';
 import Loading from '../Loading';
-import {
-  prepareProjectFunding,
-  confirmProjectFunding,
-} from '@/lib/api/project';
-import { useWalletInfo, useWalletSigning } from '@/hooks/use-wallet';
+import { fundCrowdfundingProject } from '@/lib/api/project';
+import { useWalletContext } from '@/components/providers/wallet-provider';
 import { useWalletProtection } from '@/hooks/use-wallet-protection';
+import { signTransaction } from '@/lib/config/wallet-kit';
+import {
+  useFundEscrow,
+  useSendTransaction,
+  useGetEscrowFromIndexerByContractIds,
+} from '@trustless-work/escrow';
+import {
+  FundEscrowPayload,
+  EscrowType,
+  EscrowRequestResponse,
+  Status,
+  MultiReleaseEscrow,
+  GetEscrowFromIndexerByContractIdsParams,
+} from '@trustless-work/escrow';
+import * as StellarSdk from '@stellar/stellar-sdk';
 
 interface FundProjectProps {
   open: boolean;
@@ -23,6 +35,7 @@ interface FundProjectProps {
     title: string;
     logo?: string;
     description?: string;
+    contractId?: string; // Escrow contract ID
     creator?: {
       profile?: {
         firstName?: string;
@@ -56,13 +69,19 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [flowStep, setFlowStep] = useState<
-    'form' | 'preparing' | 'signing' | 'confirming' | 'success'
+    'form' | 'fetching' | 'signing' | 'confirming' | 'success'
   >('form');
   const [error, setError] = useState<string | null>(null);
+  const [escrow, setEscrow] = useState<MultiReleaseEscrow | null>(null);
+  const [isFetchingEscrow, setIsFetchingEscrow] = useState(false);
+
+  // Escrow hooks
+  const { fundEscrow } = useFundEscrow();
+  const { sendTransaction } = useSendTransaction();
+  const { getEscrowByContractIds } = useGetEscrowFromIndexerByContractIds();
 
   // Wallet hooks
-  const { signTransaction } = useWalletSigning();
-  const { address } = useWalletInfo() || { address: '' };
+  const { walletAddress } = useWalletContext();
   const { requireWallet } = useWalletProtection({
     actionName: 'fund project',
   });
@@ -162,20 +181,90 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
     await handleSubmit();
   };
 
+  // Fetch escrow data when modal opens and contractId is available
+  useEffect(() => {
+    const fetchEscrowData = async () => {
+      if (!project?.contractId || escrow) {
+        return;
+      }
+
+      setIsFetchingEscrow(true);
+      try {
+        const params: GetEscrowFromIndexerByContractIdsParams = {
+          contractIds: [project.contractId],
+        };
+
+        const response = await getEscrowByContractIds(params);
+
+        // Handle both array response and object with escrows property
+        let escrows: MultiReleaseEscrow[] = [];
+
+        if (Array.isArray(response)) {
+          escrows = response as MultiReleaseEscrow[];
+        } else if (
+          response &&
+          typeof response === 'object' &&
+          'escrows' in response
+        ) {
+          escrows =
+            (response as { escrows: MultiReleaseEscrow[] }).escrows || [];
+        }
+
+        if (escrows.length > 0) {
+          const escrowData = escrows[0] as MultiReleaseEscrow;
+          setEscrow(escrowData);
+          setError(null); // Clear any previous errors
+        } else {
+          setError(
+            'Escrow not found for this project. The escrow contract may not be deployed yet, or the contract ID may be incorrect. Please contact support if this issue persists.'
+          );
+        }
+      } catch {
+        setError('Failed to fetch escrow data');
+      } finally {
+        setIsFetchingEscrow(false);
+      }
+    };
+
+    if (open && project?.contractId) {
+      fetchEscrowData();
+    }
+
+    // Reset escrow when modal closes
+    if (!open) {
+      setEscrow(null);
+      setError(null);
+    }
+  }, [open, project?.contractId, escrow, getEscrowByContractIds]);
+
   const handleSubmit = async () => {
     if (!project?._id) {
       setError('Project ID is required');
       return;
     }
 
-    const amount = parseFloat(formData.amount?.amount || '0');
-    if (!amount || amount <= 0) {
-      setError('Please enter a valid amount');
+    if (!project?.contractId) {
+      setError(
+        'This project does not have an escrow contract set up. Please contact the project creator or support if you believe this is an error.'
+      );
       return;
     }
 
-    if (!address) {
+    if (!walletAddress) {
       setError('Wallet address is required');
+      return;
+    }
+
+    if (!escrow) {
+      setError('Escrow data not found. Please try again.');
+      return;
+    }
+
+    // Get the amount entered by the user
+    const userAmount = parseFloat(formData.amount?.amount || '0');
+
+    if (!userAmount || userAmount <= 0) {
+      setError('Please enter a valid funding amount');
       return;
     }
 
@@ -185,7 +274,7 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
         0,
         project.funding.goal - project.funding.raised
       );
-      if (amount > remainingGoal) {
+      if (userAmount > remainingGoal) {
         setError(
           `Amount cannot exceed remaining goal of $${remainingGoal.toLocaleString()}`
         );
@@ -193,59 +282,132 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
       }
     }
 
+    // Use the user's entered amount (in dollars, no decimal conversion needed)
+    const fundingAmount = userAmount;
+
     setIsSubmitting(true);
     setIsLoading(true);
-    setFlowStep('preparing');
+    setFlowStep('signing');
     setSubmitErrors([]);
     setError(null);
 
-    try {
-      // Step 1: Prepare funding
-      setFlowStep('signing');
-      const prepareResponse = await prepareProjectFunding(project._id, {
-        amount,
-        signer: address,
-      });
-
-      if (!prepareResponse.success) {
-        throw new Error(prepareResponse.message || 'Failed to prepare funding');
-      }
-
-      // Step 2: Sign transaction with wallet protection
-      const walletValid = await requireWallet();
-
-      if (!walletValid) {
-        setError('Wallet connection required to fund project');
+    const walletValid = await requireWallet(async () => {
+      if (!walletAddress) {
+        setError('Wallet address is required');
         setFlowStep('form');
         setIsLoading(false);
         setIsSubmitting(false);
         return;
       }
 
-      const signedXdr = await signTransaction(prepareResponse.data.unsignedXdr);
-
-      // Step 3: Confirm funding
-      setFlowStep('confirming');
-      const confirmResponse = await confirmProjectFunding(project._id, {
-        signedXdr,
-        transactionHash: 'mock-hash', // This should come from the signing process
-        amount,
-      });
-
-      if (!confirmResponse.success) {
-        throw new Error(confirmResponse.message || 'Failed to confirm funding');
+      if (!project.contractId) {
+        setError(
+          'This project does not have an escrow contract set up. Please contact the project creator or support if you believe this is an error.'
+        );
+        setFlowStep('form');
+        setIsLoading(false);
+        setIsSubmitting(false);
+        return;
       }
 
-      // Success - move to success state
-      setFlowStep('success');
-      setShowSuccess(true);
-      setIsLoading(false);
-      setIsSubmitting(false);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'An error occurred';
-      setError(errorMessage);
-      setSubmitErrors([errorMessage]);
+      try {
+        // Step 1: Prepare the payload according to FundEscrowPayload type
+        const payload: FundEscrowPayload = {
+          contractId: project.contractId,
+          signer: walletAddress,
+          amount: fundingAmount,
+        };
+
+        // Step 2: Execute function from Trustless Work
+        const fundResponse: EscrowRequestResponse = await fundEscrow(
+          payload,
+          'multi-release' as EscrowType
+        );
+
+        // Type guard: Check if response is successful
+        if (
+          fundResponse.status !== ('SUCCESS' as Status) ||
+          !fundResponse.unsignedTransaction
+        ) {
+          const errorMessage =
+            'message' in fundResponse &&
+            typeof fundResponse.message === 'string'
+              ? fundResponse.message
+              : 'Failed to fund escrow';
+          throw new Error(errorMessage);
+        }
+
+        const { unsignedTransaction } = fundResponse;
+
+        // Step 3: Sign transaction with wallet
+        const signedXdr = await signTransaction({
+          unsignedTransaction,
+          address: walletAddress,
+        });
+
+        // Extract transaction hash from signed XDR
+        let transactionHash = project.contractId || ''; // Fallback to contractId
+
+        try {
+          // Get network passphrase based on environment
+          const networkPassphrase =
+            process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'public'
+              ? 'Public Global Stellar Network ; September 2015'
+              : 'Test SDF Network ; September 2015';
+
+          // Parse the signed XDR and extract transaction hash
+          const tx = new StellarSdk.Transaction(signedXdr, networkPassphrase);
+          const hash = tx.hash();
+          transactionHash = hash.toString('hex');
+        } catch {
+          // Continue with contractId as fallback
+        }
+
+        // Step 4: Send transaction
+        setFlowStep('confirming');
+        const sendResponse = await sendTransaction(signedXdr);
+
+        // Type guard: Check if response is successful
+        if (
+          'status' in sendResponse &&
+          sendResponse.status !== ('SUCCESS' as Status)
+        ) {
+          const errorMessage =
+            'message' in sendResponse &&
+            typeof sendResponse.message === 'string'
+              ? sendResponse.message
+              : 'Failed to send transaction';
+          throw new Error(errorMessage);
+        }
+
+        // Notify backend about the funding
+        await fundCrowdfundingProject(project._id, {
+          amount: fundingAmount,
+          transactionHash,
+        });
+
+        // Success - move to success state
+        setFlowStep('success');
+        setShowSuccess(true);
+        setIsLoading(false);
+        setIsSubmitting(false);
+
+        // Refresh page to show updated funding amounts
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
+        }, 2000); // Give user time to see success message
+      } catch {
+        setError('An error occurred');
+        setSubmitErrors(['An error occurred']);
+        setFlowStep('form');
+        setIsLoading(false);
+        setIsSubmitting(false);
+      }
+    });
+
+    if (!walletValid) {
       setFlowStep('form');
       setIsLoading(false);
       setIsSubmitting(false);
@@ -299,6 +461,7 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
     setSubmitErrors([]);
     setFlowStep('form');
     setError(null);
+    setEscrow(null); // Reset escrow state for fresh fetch on reopen
     setOpen(false);
   };
 
@@ -321,19 +484,22 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
 
   const renderStepContent = () => {
     // Handle the flow states
-    if (flowStep === 'preparing' || isLoading) {
+    if (
+      flowStep === 'fetching' ||
+      isFetchingEscrow ||
+      (isLoading && flowStep !== 'signing' && flowStep !== 'confirming')
+    ) {
       return <Loading />;
     }
     if (flowStep === 'success' || showSuccess) {
-      const amount = formData.amount?.amount
-        ? `$${formData.amount.amount} ${formData.amount.currency}`
-        : undefined;
+      const userAmount = formData.amount?.amount || '0';
+      const amountDisplay = `$${userAmount} USDC`;
 
       return (
         <Success
           onContinue={handleReset}
           title='Contribution Successful!'
-          description={`You have backed [${project?.title || 'this project'}](${typeof window !== 'undefined' ? window.location.pathname : ''}) with ${amount} USDC. Funds are securely held in escrow.`}
+          description={`You have backed [${project?.title || 'this project'}](${typeof window !== 'undefined' ? window.location.pathname : ''}) with ${amountDisplay}. Funds are securely held in escrow.`}
           buttonText='Continue'
         />
       );

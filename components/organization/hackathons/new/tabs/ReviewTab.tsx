@@ -29,6 +29,7 @@ import JudgingSection from './components/review/JudgingSection';
 import CollaborationSection from './components/review/CollaborationSection';
 import DraftSavedModal from './components/review/DraftSavedModal';
 import HackathonPublishedModal from './components/review/HackathonPublishedModal';
+import { toast } from 'sonner';
 
 interface ReviewTabProps {
   allData: {
@@ -114,7 +115,7 @@ export default function ReviewTab({
         setShowPublishedModal(true);
       }
     } catch {
-      // Error handling is done in parent component
+      toast.error('Failed to publish hackathon. Please try again.');
     }
   };
 
@@ -125,7 +126,7 @@ export default function ReviewTab({
         setShowDraftModal(true);
       }
     } catch {
-      // Error handling is done in parent component
+      toast.error('Failed to save draft. Please try again.');
     }
   };
 

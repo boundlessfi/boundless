@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Dialog,
   DialogClose,
@@ -8,8 +8,9 @@ import {
   DialogTitle,
 } from '../ui/dialog';
 import { XIcon } from 'lucide-react';
-import WalletConnectButton from './WalletConnectButton';
+import { WalletButton } from './WalletButton';
 import Image from 'next/image';
+import { useWalletContext } from '@/components/providers/wallet-provider';
 
 interface WalletRequiredModalProps {
   open: boolean;
@@ -24,11 +25,16 @@ const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
   actionName,
   onWalletConnected,
 }) => {
-  const handleWalletConnected = () => {
-    onWalletConnected?.();
-    onOpenChange(false);
-  };
+  const { walletAddress } = useWalletContext();
 
+  // Call onWalletConnected when wallet is connected while modal is open
+  useEffect(() => {
+    if (open && walletAddress && onWalletConnected) {
+      onWalletConnected();
+      // Close the modal after wallet is connected
+      onOpenChange(false);
+    }
+  }, [open, walletAddress, onWalletConnected, onOpenChange]);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -60,10 +66,7 @@ const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
             </DialogDescription>
           </DialogTitle>
           <div className='flex flex-col gap-3'>
-            <WalletConnectButton
-              onConnect={handleWalletConnected}
-              className='w-full'
-            />
+            <WalletButton />
           </div>
         </div>
       </DialogContent>
