@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
+import { JoinHackathonBanner } from '@/components/hackathons/overview/joinHackathon';
 
 // export const metadata: Metadata = generatePageMetadata("hackathons")
 
@@ -103,6 +104,14 @@ const HackathonsPage = () => {
 
   return (
     <div className='mx-auto mt-10 max-w-[1440px] px-5 py-5 text-center text-4xl font-bold text-white md:px-[50px] lg:px-[100px]'>
+      <div className='mb-10'>
+        <JoinHackathonBanner
+          onJoinClick={() => {}}
+          participants={bannerConfig.participants}
+          prizePool={bannerConfig.totalPrizePool}
+          isEnded={false}
+        />
+      </div>
       <HackathonBanner
         title={bannerConfig.title}
         subtitle={bannerConfig.subtitle}
