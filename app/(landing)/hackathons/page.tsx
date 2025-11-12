@@ -8,6 +8,7 @@ import { HackathonOverview } from '@/components/hackathons/overview/hackathonOve
 import { JoinHackathonBanner } from '@/components/hackathons/overview/joinHackathon';
 import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
 import { HackathonResources } from '@/components/hackathons/resources/resources';
+import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
 
 // export const metadata: Metadata = generatePageMetadata("hackathons")
 
@@ -239,6 +240,139 @@ const participants = [
   },
 ];
 
+const submissions = [
+  {
+    title: 'AI-Powered Health Tracker',
+    description:
+      'An AI system that analyzes health data and predicts potential risks.',
+    submitterName: 'Chris Johnson',
+    submitterAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chris',
+    category: 'AI & Health',
+    score: 82,
+    status: 'Approved' as const,
+    daysLeft: 5,
+    votes: { current: 120, total: 200 },
+    image: '/project1.png',
+  },
+  {
+    title: 'EcoChain',
+    description:
+      'A blockchain solution for tracking carbon footprints in supply chains.',
+    submitterName: 'Amara Lee',
+    submitterAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Amara',
+    category: 'Blockchain',
+    score: 67,
+    status: 'Pending' as const,
+    daysLeft: 8,
+    votes: { current: 80, total: 150 },
+    image: '/project2.png',
+  },
+  {
+    title: 'Klyra Risk Analyzer',
+    description:
+      'An AI-powered wallet analyzer providing Stellar wallet risk scores.',
+    submitterName: 'Benjamin',
+    submitterAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Benjamin',
+    category: 'Security',
+    score: 90,
+    status: 'Approved' as const,
+    daysLeft: 3,
+    votes: { current: 140, total: 180 },
+    image: '/project3.png',
+  },
+  {
+    title: 'EduVerse',
+    description:
+      'A gamified learning platform that rewards students with tokens for achievements.',
+    submitterName: 'Lara Mendes',
+    submitterAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lara',
+    category: 'EdTech',
+    score: 75,
+    status: 'Approved' as const,
+    daysLeft: 10,
+    votes: { current: 95, total: 160 },
+    image: '/project4.png',
+  },
+  {
+    title: 'GreenPay',
+    description:
+      'A decentralized app that rewards users for eco-friendly purchases.',
+    submitterName: 'Daniel Osei',
+    submitterAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Daniel',
+    category: 'FinTech',
+    score: 62,
+    status: 'Pending' as const,
+    daysLeft: 6,
+    votes: { current: 70, total: 120 },
+    image: '/project5.png',
+  },
+  {
+    title: 'FarmLink',
+    description:
+      'A blockchain system connecting farmers directly to consumers.',
+    submitterName: 'Nia Roberts',
+    submitterAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nia',
+    category: 'Agriculture',
+    score: 88,
+    status: 'Approved' as const,
+    daysLeft: 4,
+    votes: { current: 135, total: 190 },
+    image: '/project6.png',
+  },
+  {
+    title: 'SafeNet',
+    description:
+      'A privacy-focused browser extension that monitors and blocks phishing sites.',
+    submitterName: 'Alex Kim',
+    submitterAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+    category: 'Cybersecurity',
+    score: 93,
+    status: 'Approved' as const,
+    daysLeft: 2,
+    votes: { current: 155, total: 200 },
+    image: '/project7.png',
+  },
+  {
+    title: 'Artify',
+    description:
+      'A decentralized NFT marketplace empowering artists to monetize digital creations.',
+    submitterName: 'Sophia Turner',
+    submitterAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia',
+    category: 'NFTs & Art',
+    score: 79,
+    status: 'Pending' as const,
+    daysLeft: 7,
+    votes: { current: 100, total: 170 },
+    image: '/project8.png',
+  },
+  {
+    title: 'MedChain',
+    description:
+      'A secure blockchain network for medical record sharing between hospitals.',
+    submitterName: 'David Zhang',
+    submitterAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+    category: 'Healthcare',
+    score: 85,
+    status: 'Approved' as const,
+    daysLeft: 5,
+    votes: { current: 130, total: 190 },
+    image: '/project9.png',
+  },
+  {
+    title: 'VoteX',
+    description:
+      'A transparent and tamper-proof voting system built on blockchain.',
+    submitterName: 'Olivia Smith',
+    submitterAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia',
+    category: 'Governance',
+    score: 91,
+    status: 'Approved' as const,
+    daysLeft: 1,
+    votes: { current: 170, total: 210 },
+    image: '/project10.png',
+  },
+];
+
 const HackathonsPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -312,11 +446,8 @@ const HackathonsPage = () => {
               <p>Content for Rules tab goes here</p>
             </div>
           )}
-
           {activeTab === 'submission' && (
-            <div className='text-gray-400'>
-              <p>Content for Project gallery tab goes here</p>
-            </div>
+            <SubmissionTab submissions={submissions} />
           )}
 
           {activeTab === 'updates' && (

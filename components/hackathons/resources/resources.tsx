@@ -51,15 +51,6 @@ export function HackathonResources() {
       description: 'Detailed breakdown of judging criteria and scoring',
     },
     {
-      id: 4,
-      title: 'API Documentation',
-      type: 'pdf',
-      size: '3.2 MB',
-      url: '#',
-      uploadDate: 'Oct 13, 2024',
-      description: 'Complete API reference and integration guide',
-    },
-    {
       id: 5,
       title: 'Design Resources',
       type: 'slide',
@@ -161,7 +152,7 @@ export function HackathonResources() {
               href={resource.url}
               target={resource.type === 'link' ? '_blank' : '_self'}
               rel={resource.type === 'link' ? 'noopener noreferrer' : ''}
-              className='border-primary hover:border-primary/80 hover:bg-primary/5 group border p-4 text-left transition-all'
+              className='border-primary hover:border-primary/80 hover:bg-primary/5 group rounded-md border p-4 text-left transition-all'
             >
               <div className='flex items-start gap-3'>
                 <div className='relative flex-shrink-0'>
