@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Participant } from '@/app/(landing)/hackathons/page';
+import Image from 'next/image';
 
 interface ProfileCardProps {
   participant: Participant;
@@ -18,7 +19,7 @@ export function ProfileCard({ participant }: ProfileCardProps) {
       <div className='mb-4 flex items-start justify-between'>
         <div className='flex items-center gap-4'>
           <div className='h-16 w-16 overflow-hidden rounded-full border-2 border-[#a7f950]'>
-            <img
+            <Image
               src={participant.avatar}
               alt={participant.username}
               className='h-full w-full object-cover'
