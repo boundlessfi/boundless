@@ -1,17 +1,34 @@
 'use client';
-import { useState } from 'react';
-// import type { Metadata } from "next"
-// import { generatePageMetadata } from "@/lib/metadata"
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
 import { JoinHackathonBanner } from '@/components/hackathons/overview/joinHackathon';
+import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
 
 // export const metadata: Metadata = generatePageMetadata("hackathons")
 
+export interface Participant {
+  id: string | number;
+  name: string;
+  username: string;
+  avatar: string;
+  verified?: boolean;
+  joinedDate?: string;
+  role?: string;
+  description?: string;
+  categories?: string[];
+  projects?: number;
+  followers?: number;
+  following?: number;
+  hasSubmitted?: boolean;
+}
+
 const hackathonTabs = [
   { id: 'overview', label: 'Overview' },
-  { id: 'participants', label: 'Participants', badge: 78 },
+  { id: 'participants', label: 'Participants', badge: 48 },
   { id: 'resources', label: 'Resources' },
   { id: 'rules', label: 'Rules' },
   { id: 'submission', label: 'Submissions' },
@@ -98,9 +115,153 @@ const bannerConfig = {
   participants: 342,
   totalPrizePool: '1,000',
 };
+const participants = [
+  {
+    id: 1,
+    name: 'Ole-Martin',
+    username: 'enliven',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ole',
+    role: 'Full Stack Developer',
+    verified: true,
+    hasSubmitted: true,
+    joinedDate: 'Oct 27, 2020',
+    description:
+      'Web magician 🪄 Digital Janitor 🧹 Building cool stuff with React and Node.js',
+    categories: ['React', 'Node.js', 'TypeScript', 'Web3'],
+    projects: 42,
+    followers: 1234,
+    following: 567,
+  },
+  {
+    id: 2,
+    name: 'Sarah Chen',
+    username: 'Dc',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    role: 'UI/UX Designer',
+    verified: true,
+    hasSubmitted: false,
+    joinedDate: 'Jan 15, 2021',
+    description:
+      'Creating beautiful and intuitive user experiences. Design system enthusiast.',
+    categories: ['UI/UX', 'Figma', 'Design Systems'],
+    projects: 28,
+    followers: 892,
+    following: 234,
+  },
+  {
+    id: 3,
+    name: 'Alex Rodriguez',
+    username: '8250',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+    role: 'Backend Engineer',
+    verified: false,
+    joinedDate: 'Mar 8, 2021',
+    description:
+      'Scalable systems architect. Love working with distributed systems and APIs.',
+    categories: ['Python', 'Go', 'Kubernetes', 'DevOps'],
+    projects: 35,
+    followers: 654,
+    following: 412,
+  },
+  {
+    id: 4,
+    name: 'Maya Patel',
+    username: 'Acuna',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maya',
+    role: 'Frontend Developer',
+    verified: true,
+    joinedDate: 'Jun 22, 2020',
+    description:
+      'React enthusiast. Building accessible and performant web applications.',
+    categories: ['React', 'Next.js', 'Tailwind CSS'],
+    projects: 51,
+    followers: 1567,
+    following: 789,
+  },
+  {
+    id: 5,
+    name: 'Chris Johnson',
+    username: 'soni2005',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chris',
+    role: 'Mobile Developer',
+    verified: false,
+    joinedDate: 'Sep 3, 2021',
+    description:
+      'iOS and Android developer. Creating seamless mobile experiences.',
+    categories: ['React Native', 'Swift', 'Kotlin'],
+    projects: 19,
+    followers: 423,
+    following: 198,
+  },
+  {
+    id: 6,
+    name: 'Emily Zhang',
+    username: 'thanhtx',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily',
+    role: 'Data Scientist',
+    verified: true,
+    joinedDate: 'Nov 12, 2020',
+    description: 'ML engineer passionate about AI and data visualization.',
+    categories: ['Python', 'TensorFlow', 'Data Viz'],
+    projects: 33,
+    followers: 981,
+    following: 345,
+  },
+  {
+    id: 7,
+    name: 'David Kim',
+    username: 'ranax',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+    role: 'DevOps Engineer',
+    verified: false,
+    joinedDate: 'Feb 28, 2021',
+    description: 'Cloud infrastructure and CI/CD pipelines specialist.',
+    categories: ['AWS', 'Docker', 'Terraform'],
+    projects: 27,
+    followers: 567,
+    following: 234,
+  },
+  {
+    id: 8,
+    name: 'Lisa Anderson',
+    username: 'rafix',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa',
+    role: 'Product Designer',
+    verified: true,
+    joinedDate: 'Aug 5, 2020',
+    description:
+      'Product designer with a focus on user research and prototyping.',
+    categories: ['Product Design', 'Prototyping', 'User Research'],
+    projects: 44,
+    followers: 1123,
+    following: 456,
+  },
+];
 
 const HackathonsPage = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Get initial tab from URL search params
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && hackathonTabs.some(tab => tab.id === tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
+
+  // Update URL when tab changes
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+
+    // Create new URL with updated tab parameter
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tabId);
+
+    // Update URL without page refresh
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   return (
     <div className='mx-auto mt-10 max-w-[1440px] px-5 py-5 text-center text-4xl font-bold text-white md:px-[50px] lg:px-[100px]'>
@@ -125,7 +286,7 @@ const HackathonsPage = () => {
       <HackathonNavTabs
         tabs={hackathonTabs}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
       />
       <div className='mx-auto max-w-7xl px-6 py-12'>
         <div className='text-white'>
@@ -140,9 +301,7 @@ const HackathonsPage = () => {
             </div>
           )}
           {activeTab === 'participants' && (
-            <div className='text-gray-400'>
-              <p>Content for Participants tab goes here</p>
-            </div>
+            <HackathonParticipants participants={participants} />
           )}
 
           {activeTab === 'resources' && (

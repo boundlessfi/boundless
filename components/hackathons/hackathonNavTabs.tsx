@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-
 interface HackathonNavTab {
   id: string;
   label: string;
@@ -19,10 +17,7 @@ export function HackathonNavTabs({
   activeTab,
   onTabChange,
 }: HackathonNavTabsProps) {
-  const [active, setActive] = useState(activeTab || tabs[0]?.id || '');
-
   const handleTabChange = (tabId: string) => {
-    setActive(tabId);
     onTabChange?.(tabId);
   };
 
@@ -31,7 +26,7 @@ export function HackathonNavTabs({
       <div className='mx-auto max-w-7xl px-6'>
         <div className='flex items-center gap-1 overflow-x-auto'>
           {tabs.map(tab => {
-            const isActive = active === tab.id;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
