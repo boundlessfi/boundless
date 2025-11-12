@@ -5,10 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
-import { JoinHackathonBanner } from '@/components/hackathons/overview/joinHackathon';
+// import { JoinHackathonBanner } from '@/components/hackathons/overview/joinHackathon';
 import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
 import { HackathonResources } from '@/components/hackathons/resources/resources';
 import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
+import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
 
 // export const metadata: Metadata = generatePageMetadata("hackathons")
 
@@ -400,14 +401,14 @@ const HackathonsPage = () => {
 
   return (
     <div className='mx-auto mt-10 max-w-[1440px] px-5 py-5 text-center text-4xl font-bold text-white md:px-[50px] lg:px-[100px]'>
-      <div className='mb-10'>
+      {/* <div className='mb-10'>
         <JoinHackathonBanner
           onJoinClick={() => {}}
           participants={bannerConfig.participants}
           prizePool={bannerConfig.totalPrizePool}
           isEnded={false}
         />
-      </div>
+      </div> */}
       <HackathonBanner
         title={bannerConfig.title}
         subtitle={bannerConfig.subtitle}
@@ -457,9 +458,7 @@ const HackathonsPage = () => {
           )}
 
           {activeTab === 'discussions' && (
-            <div className='text-gray-400'>
-              <p>Content for Discussions tab goes here</p>
-            </div>
+            <HackathonDiscussions hackathonId='68ebe61f83c77a59ccaba35c' />
           )}
         </div>
       </div>

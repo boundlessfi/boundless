@@ -2,14 +2,8 @@
 
 import React, { useState } from 'react';
 import { ArrowUp, ThumbsUp, MessageCircle } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { BoundlessButton } from '@/components/buttons';
 import Image from 'next/image';
 
@@ -109,11 +103,18 @@ const SubmissionCard = ({
   return (
     <div
       onClick={onViewClick}
-      className='group mx-auto w-full max-w-[397px] cursor-pointer overflow-hidden rounded-lg border border-[#2B2B2B] bg-[#030303] p-4 transition-all hover:-translate-y-2 hover:scale-[1.02] hover:shadow-lg sm:p-5'
+      className='group hover:border-primary/45 mx-auto w-full max-w-[397px] cursor-pointer overflow-hidden rounded-lg border border-[#2B2B2B] bg-[#030303] p-4 transition-all sm:p-5'
     >
       {/* Header with Avatar and Status */}
       <div className='mb-3 flex items-center justify-between sm:mb-4'>
-        <TooltipProvider delayDuration={200}>
+        <div className='flex items-center gap-2'>
+          <div
+            style={{ backgroundImage: `url(${submitterAvatar})` }}
+            className='size-6 rounded-full bg-white bg-cover bg-center'
+          ></div>
+          <h4 className='text-sm font-normal text-gray-500'>{submitterName}</h4>
+        </div>
+        {/* <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
               <div className='group/avatar inline-flex cursor-pointer items-center gap-2'>
@@ -135,7 +136,7 @@ const SubmissionCard = ({
               </div>
             </TooltipTrigger>
           </Tooltip>
-        </TooltipProvider>
+        </TooltipProvider> */}
 
         <Badge
           className={`flex-shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
@@ -170,6 +171,8 @@ const SubmissionCard = ({
           <Image
             src={image}
             alt={title}
+            width={200}
+            height={200}
             className='h-full w-full object-cover transition-transform duration-300 group-hover:scale-105'
           />
         </div>
