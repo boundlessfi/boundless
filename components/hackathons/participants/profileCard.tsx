@@ -23,6 +23,8 @@ export function ProfileCard({ participant }: ProfileCardProps) {
               src={participant.avatar}
               alt={participant.username}
               className='h-full w-full object-cover'
+              width={120}
+              height={120}
             />
           </div>
           <div>

@@ -7,6 +7,7 @@ import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
 import { JoinHackathonBanner } from '@/components/hackathons/overview/joinHackathon';
 import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
+import { HackathonResources } from '@/components/hackathons/resources/resources';
 
 // export const metadata: Metadata = generatePageMetadata("hackathons")
 
@@ -30,9 +31,9 @@ const hackathonTabs = [
   { id: 'overview', label: 'Overview' },
   { id: 'participants', label: 'Participants', badge: 48 },
   { id: 'resources', label: 'Resources' },
-  { id: 'rules', label: 'Rules' },
+  // { id: 'rules', label: 'Rules' },
   { id: 'submission', label: 'Submissions' },
-  { id: 'updates', label: 'Updates' },
+  // { id: 'updates', label: 'Updates' },
   { id: 'discussions', label: 'Discussions' },
 ];
 
@@ -304,11 +305,7 @@ const HackathonsPage = () => {
             <HackathonParticipants participants={participants} />
           )}
 
-          {activeTab === 'resources' && (
-            <div className='text-gray-400'>
-              <p>Content for Resources tab goes here</p>
-            </div>
-          )}
+          {activeTab === 'resources' && <HackathonResources />}
 
           {activeTab === 'rules' && (
             <div className='text-gray-400'>

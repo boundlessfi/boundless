@@ -34,6 +34,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'lottie.host',
       },
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+      },
     ],
   },
 };
