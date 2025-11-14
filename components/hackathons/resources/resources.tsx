@@ -152,7 +152,7 @@ export function HackathonResources() {
               href={resource.url}
               target={resource.type === 'link' ? '_blank' : '_self'}
               rel={resource.type === 'link' ? 'noopener noreferrer' : ''}
-              className='border-primary hover:border-primary/80 hover:bg-primary/5 group rounded-md border p-4 text-left transition-all'
+              className='border-primary/45 hover:border-primary/80 hover:bg-primary/5 group rounded-md border p-4 text-left transition-all'
             >
               <div className='flex items-start gap-3'>
                 <div className='relative flex-shrink-0'>

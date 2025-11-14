@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import type { Participant } from '@/app/(landing)/hackathons/page';
+import type { Participant } from '@/types/hackathon';
 import Image from 'next/image';
 
 interface ProfileCardProps {

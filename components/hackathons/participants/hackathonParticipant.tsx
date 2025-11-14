@@ -1,117 +1,19 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { ParticipantAvatar } from './participantAvatar';
+import { useParticipants } from '@/hooks/hackathon/use-participants';
 import ParticipantsFilter from './participantFilter';
-import type { Participant } from '@/app/(landing)/hackathons/page';
+import { ParticipantAvatar } from './participantAvatar';
 
-interface HackathonParticipantsProps {
-  participants: Participant[];
-}
-
-export const HackathonParticipants = ({
-  participants,
-}: HackathonParticipantsProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
-  const [submissionFilter, setSubmissionFilter] = useState('all');
-  const [skillFilter, setSkillFilter] = useState('all');
-
-  const additionalUsernames = [
-    'GauravKarakoti',
-    'kannan16a2',
-    'koisose',
-    'Screpuh',
-    'ayushi0x',
-    'adetayo4422',
-    'Ogtech',
-    'Sunus200p',
-    'carlos_israelj',
-    'cryptopower',
-    'mdlog123',
-    'Oneyejack247',
-    'vedantp03',
-    'eastmaels',
-    'pnkjbee',
-    'Grant_F',
-    'sideshift_george',
-    'wonkassoy',
-    'eye',
-    'Kairos',
-  ];
-
-  const allParticipants: Participant[] = [...participants];
-
-  for (let i = 0; i < 50; i++) {
-    const base = participants[i % participants.length];
-    allParticipants.push({
-      ...base,
-      id: participants.length + i + 1,
-      username:
-        additionalUsernames[i % additionalUsernames.length] || `user${i}`,
-      hasSubmitted: Math.random() > 0.5,
-    });
-  }
-
-  const filteredAndSortedParticipants = useMemo(() => {
-    let filtered = [...allParticipants];
-
-    // Search
-    if (searchTerm) {
-      filtered = filtered.filter(
-        p =>
-          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.categories?.some(cat =>
-            cat.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-      );
-    }
-
-    // Submission filter
-    if (submissionFilter === 'submitted')
-      filtered = filtered.filter(p => p.hasSubmitted);
-    if (submissionFilter === 'not_submitted')
-      filtered = filtered.filter(p => !p.hasSubmitted);
-
-    // Skill filter
-    if (skillFilter !== 'all') {
-      filtered = filtered.filter(
-        p =>
-          p.role?.toLowerCase().includes(skillFilter) ||
-          p.categories?.some(cat => cat.toLowerCase().includes(skillFilter))
-      );
-    }
-
-    // Sorting
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return (
-            new Date(b.joinedDate || '').getTime() -
-            new Date(a.joinedDate || '').getTime()
-          );
-        case 'oldest':
-          return (
-            new Date(a.joinedDate || '').getTime() -
-            new Date(b.joinedDate || '').getTime()
-          );
-        case 'followers_high':
-          return (b.followers || 0) - (a.followers || 0);
-        case 'followers_low':
-          return (a.followers || 0) - (b.followers || 0);
-        case 'projects_high':
-          return (b.projects || 0) - (a.projects || 0);
-        case 'projects_low':
-          return (a.projects || 0) - (b.projects || 0);
-        default:
-          return 0;
-      }
-    });
-
-    return filtered;
-  }, [allParticipants, searchTerm, sortBy, submissionFilter, skillFilter]);
+export const HackathonParticipants = () => {
+  const {
+    participants,
+    totalParticipants,
+    submittedCount,
+    setSearchTerm,
+    setSortBy,
+    setSubmissionFilter,
+    setSkillFilter,
+  } = useParticipants();
 
   return (
     <div className='text-left'>
@@ -149,19 +51,19 @@ export const HackathonParticipants = ({
         onSortChange={setSortBy}
         onSubmissionStatusChange={setSubmissionFilter}
         onSkillChange={setSkillFilter}
-        totalParticipants={allParticipants.length}
-        submittedCount={allParticipants.filter(p => p.hasSubmitted).length}
+        totalParticipants={totalParticipants}
+        submittedCount={submittedCount}
       />
 
-      {/* Grid */}
+      {/* Participants Grid */}
       <div className='flex flex-wrap gap-x-6 gap-y-4'>
-        {filteredAndSortedParticipants.map(participant => (
+        {participants.map(participant => (
           <ParticipantAvatar key={participant.id} participant={participant} />
         ))}
       </div>
 
       {/* Empty State */}
-      {filteredAndSortedParticipants.length === 0 && (
+      {participants.length === 0 && (
         <div className='py-12 text-center'>
           <p className='text-lg text-gray-400'>
             No participants found matching your filters.
