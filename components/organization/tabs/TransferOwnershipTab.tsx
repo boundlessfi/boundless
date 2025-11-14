@@ -92,10 +92,6 @@ export default function TransferOwnershipTab({
     }
   };
 
-  // Debug: Log the members to see what's happening
-  console.log('TransferOwnershipTab - activeOrg:', activeOrg);
-  console.log('TransferOwnershipTab - members:', members);
-
   return (
     <>
       <div className='mb-6 space-y-6 rounded-[12px] border border-gray-900 bg-[#101010] p-4'>

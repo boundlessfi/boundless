@@ -11,7 +11,7 @@ function HackathonList() {
 
   useEffect(() => {
     refreshHackathons();
-  }, []);
+  }, [refreshHackathons]);
 
   const handleHackathonClick = (slug: string) => {
     router.push(`/hackathons/${slug}`);
@@ -33,10 +33,13 @@ function HackathonList() {
             <Image
               src={hackathon.imageUrl}
               alt={hackathon.title}
+              width={400}
+              height={200}
               className='mb-2 h-32 w-full rounded object-cover'
             />
             <h3 className='font-bold'>{hackathon.title}</h3>
             <p className='text-sm text-gray-600'>{hackathon.subtitle}</p>
+
             <div className='mt-2 flex flex-wrap gap-1'>
               {hackathon.categories?.map(category => (
                 <span
@@ -47,9 +50,11 @@ function HackathonList() {
                 </span>
               ))}
             </div>
+
             <p className='mt-2 font-semibold'>
               Prize Pool: {hackathon.totalPrizePool}
             </p>
+
             <p className='text-sm'>Participants: {hackathon.participants}</p>
           </div>
         ))}

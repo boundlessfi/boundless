@@ -41,7 +41,7 @@ export function JoinHackathonBanner({
     }, 3000 * 5);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [titles]);
 
   return (
     <div className='relative w-full overflow-hidden'>

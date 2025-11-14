@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -121,6 +121,7 @@ export default function PermissionsTable() {
   const [isCustom, setIsCustom] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
   const {
     activeOrgId,
     getOrganizationPermissions,
@@ -129,11 +130,8 @@ export default function PermissionsTable() {
     isOwner,
   } = useOrganization();
 
-  useEffect(() => {
-    loadPermissions();
-  }, [activeOrgId]);
-
-  const loadPermissions = async () => {
+  // ✔ FIX: useCallback so exhaustive-deps is happy
+  const loadPermissions = useCallback(async () => {
     if (!activeOrgId) return;
 
     try {
@@ -143,7 +141,6 @@ export default function PermissionsTable() {
       setIsCustom(response.isCustom);
       setCanEdit(response.canEdit);
 
-      // Initialize editable permissions
       const adminPerms: Partial<OrganizationPermissions> = {};
       const memberPerms: Partial<OrganizationPermissions> = {};
 
@@ -163,13 +160,17 @@ export default function PermissionsTable() {
       });
 
       setEditablePermissions({ admin: adminPerms, member: memberPerms });
-    } catch (error) {
+    } catch {
       toast.error('Failed to load permissions');
-      console.error('Error loading permissions:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeOrgId, getOrganizationPermissions]);
+
+  // ✔ FIX: safe dependency array
+  useEffect(() => {
+    loadPermissions();
+  }, [loadPermissions]);
 
   const handleAdminPermissionChange = (
     permissionKey: keyof OrganizationPermissions,
@@ -206,29 +207,26 @@ export default function PermissionsTable() {
 
     setIsLoading(true);
     try {
-      // Merge admin and member permissions
       const mergedPermissions: OrganizationPermissions = { ...permissions! };
 
       defaultPermissionConfigs.forEach(config => {
         const adminValue = editablePermissions.admin[config.key];
         const memberValue = editablePermissions.member[config.key];
 
-        if (adminValue !== undefined) {
+        if (adminValue !== undefined)
           mergedPermissions[config.key] = adminValue;
-        }
-        if (memberValue !== undefined && config.key in mergedPermissions) {
+        if (memberValue !== undefined)
           mergedPermissions[config.key] = memberValue;
-        }
       });
 
       await updateOrganizationPermissions(activeOrgId, mergedPermissions);
       setIsEditing(false);
       setIsCustom(true);
       setPermissions(mergedPermissions);
+
       toast.success('Permissions updated successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to update permissions');
-      console.error('Error updating permissions:', error);
     } finally {
       setIsLoading(false);
     }
@@ -240,13 +238,13 @@ export default function PermissionsTable() {
     setIsLoading(true);
     try {
       await resetOrganizationPermissions(activeOrgId);
-      await loadPermissions(); // Reload to get default permissions
+      await loadPermissions();
       setIsEditing(false);
       setIsCustom(false);
+
       toast.success('Permissions reset to defaults');
-    } catch (error) {
+    } catch {
       toast.error('Failed to reset permissions');
-      console.error('Error resetting permissions:', error);
     } finally {
       setIsLoading(false);
     }
@@ -260,11 +258,9 @@ export default function PermissionsTable() {
       const editableValue = editablePermissions[role][config.key];
       if (editableValue !== undefined) return editableValue;
     }
-
     if (permissions && permissions[config.key] !== undefined) {
       return permissions[config.key];
     }
-
     return typeof config[role] === 'object' ? config[role].value : config[role];
   };
 
@@ -305,6 +301,7 @@ export default function PermissionsTable() {
               </span>
             )}
           </h4>
+
           {canEdit && (
             <p className='mt-1 text-xs text-gray-400'>
               {isEditing
@@ -338,6 +335,7 @@ export default function PermissionsTable() {
                   <RotateCcw className='mr-2 h-4 w-4' />
                   Reset to Defaults
                 </Button>
+
                 <Button
                   size='sm'
                   onClick={handleSave}
@@ -347,12 +345,13 @@ export default function PermissionsTable() {
                   <Save className='mr-2 h-4 w-4' />
                   {isLoading ? 'Saving...' : 'Save Changes'}
                 </Button>
+
                 <Button
                   variant='outline'
                   size='sm'
                   onClick={() => {
                     setIsEditing(false);
-                    loadPermissions(); // Reload to discard changes
+                    loadPermissions();
                   }}
                   disabled={isLoading}
                   className='border-gray-600 text-white hover:bg-gray-800'
@@ -382,6 +381,7 @@ export default function PermissionsTable() {
             </TableHead>
           </TableRow>
         </TableHeader>
+
         <TableBody>
           {defaultPermissionConfigs.map((config, index) => (
             <TableRow
@@ -397,12 +397,12 @@ export default function PermissionsTable() {
                 )}
               </TableCell>
 
-              {/* Owner - Always true and not editable */}
+              {/* Owner */}
               <TableCell className='px-0 text-center'>
                 <Check className='text-success-500 mx-auto h-4 w-4' />
               </TableCell>
 
-              {/* Admin - Separate control */}
+              {/* Admin */}
               <TableCell className='px-0 text-center'>
                 {isEditing && canEdit ? (
                   <input
@@ -411,7 +411,7 @@ export default function PermissionsTable() {
                     onChange={e =>
                       handleAdminPermissionChange(config.key, e.target.checked)
                     }
-                    className='h-4 w-4 rounded border-gray-600 bg-gray-800 text-green-500 focus:ring-green-500 focus:ring-offset-gray-900'
+                    className='h-4 w-4 rounded border-gray-600 bg-gray-800'
                   />
                 ) : (
                   <div className='flex items-center justify-center'>
@@ -431,7 +431,7 @@ export default function PermissionsTable() {
                 )}
               </TableCell>
 
-              {/* Member - Separate control */}
+              {/* Member */}
               <TableCell className='px-0 text-center'>
                 {isEditing && canEdit ? (
                   <input
@@ -440,7 +440,7 @@ export default function PermissionsTable() {
                     onChange={e =>
                       handleMemberPermissionChange(config.key, e.target.checked)
                     }
-                    className='h-4 w-4 rounded border-gray-600 bg-gray-800 text-green-500 focus:ring-green-500 focus:ring-offset-gray-900'
+                    className='h-4 w-4 rounded border-gray-600 bg-gray-800'
                   />
                 ) : (
                   <div className='flex items-center justify-center'>
