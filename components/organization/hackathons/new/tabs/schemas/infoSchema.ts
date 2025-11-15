@@ -20,26 +20,24 @@ export const infoSchema = z
       .max(5000, 'Description must be less than 5000 characters'),
 
     category: z
-      .string()
-      .min(1, 'Category is required')
-      .refine(
-        val =>
-          [
-            'DeFi',
-            'NFTs',
-            'DAOs',
-            'Layer 2',
-            'Cross-chain',
-            'Web3 Gaming',
-            'Social Tokens',
-            'Infrastructure',
-            'Privacy',
-            'Sustainability',
-            'Real World Assets',
-            'Other',
-          ].includes(val),
-        'Please select a valid category'
-      ),
+      .array(
+        z.enum([
+          'DeFi',
+          'NFTs',
+          'DAOs',
+          'Layer 2',
+          'Cross-chain',
+          'Web3 Gaming',
+          'Social Tokens',
+          'Infrastructure',
+          'Privacy',
+          'Sustainability',
+          'Real World Assets',
+          'Other',
+        ])
+      )
+      .min(1, 'At least one category is required')
+      .refine(val => val.length > 0, 'Please select at least one category'),
 
     venueType: z.enum(['virtual', 'physical'], {
       message: 'Venue type is required',

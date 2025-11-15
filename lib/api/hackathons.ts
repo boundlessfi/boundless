@@ -42,7 +42,8 @@ export interface HackathonInformation {
   title: string;
   banner: string;
   description: string;
-  category: HackathonCategory;
+  category?: HackathonCategory; // Legacy format (single category)
+  categories?: HackathonCategory[]; // New format (array of categories)
   venue: HackathonVenue;
 }
 
@@ -698,7 +699,8 @@ interface FlatHackathonData {
   // Flat fields that map to nested structure
   banner?: string;
   description?: string;
-  category?: string | HackathonCategory;
+  category?: string | HackathonCategory; // Legacy format
+  categories?: HackathonCategory[]; // New format
   venue?: HackathonVenue;
   startDate?: string;
   submissionDeadline?: string;
@@ -769,6 +771,12 @@ const transformHackathonResponse = (
       title: flat.title || '',
       banner: flat.banner || '',
       description: flat.description || '',
+      // Support both new format (categories) and legacy format (category)
+      categories: Array.isArray(flat.categories)
+        ? (flat.categories as HackathonCategory[])
+        : flat.category
+          ? [flat.category as HackathonCategory]
+          : [HackathonCategory.OTHER],
       category: (flat.category as HackathonCategory) || HackathonCategory.OTHER,
       venue: flat.venue || {
         type: VenueType.VIRTUAL,

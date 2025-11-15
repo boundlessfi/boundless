@@ -37,7 +37,7 @@ export default function SettingsPage() {
       name: 'Web3 Innovation Hackathon',
       banner: 'https://example.com/banner.jpg',
       description: '<p>Join us for an exciting hackathon...</p>',
-      category: 'DeFi',
+      category: ['DeFi' as const],
       venueType: 'virtual' as const,
       country: '',
       state: '',
