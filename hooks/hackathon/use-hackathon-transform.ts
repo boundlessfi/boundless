@@ -100,12 +100,12 @@ export function useHackathonTransform() {
       }
 
       // Generate slug from title (simple version)
-      const title =
-        hackathon.information?.title || hackathon.title || 'untitled';
-      const slug = title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
+      // const title =
+      //   hackathon.information?.title || hackathon.title || 'untitled';
+      // const slug = title
+      //   .toLowerCase()
+      //   .replace(/[^a-z0-9]+/g, '-')
+      //   .replace(/(^-|-$)/g, '');
 
       // Get organization name - check if it's in the hackathon object or use provided
       const extendedHackathon = hackathon as ExtendedHackathon;
@@ -139,7 +139,7 @@ export function useHackathonTransform() {
       return {
         hackathonId: hackathon._id,
         organizationName: orgName,
-        hackathonSlug: slug,
+        hackathonSlug: hackathon.information.slug,
         organizerName: orgName,
         organizerLogo: '/avatar.png', // This should come from organization data
         hackathonImage:

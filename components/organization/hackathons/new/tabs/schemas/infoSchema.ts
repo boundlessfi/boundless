@@ -50,6 +50,7 @@ export const infoSchema = z
     city: z.string().optional(),
     venueName: z.string().optional(),
     venueAddress: z.string().optional(),
+    slug: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.venueType === 'physical') {

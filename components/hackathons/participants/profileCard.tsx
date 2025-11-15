@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Participant } from '@/types/hackathon';
 import Image from 'next/image';
+import { MessageCircle } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface ProfileCardProps {
   participant: Participant;
@@ -46,7 +48,7 @@ export function ProfileCard({ participant }: ProfileCardProps) {
             </h3>
             <p className='text-sm text-gray-400'>@{participant.username}</p>
             <p className='text-xs text-gray-500'>
-              Joined {participant.joinedDate}
+              Joined {format(new Date(participant.joinedDate!), 'MMM, yyyy')}
             </p>
           </div>
         </div>
@@ -65,19 +67,7 @@ export function ProfileCard({ participant }: ProfileCardProps) {
           {isFollowing ? 'Following' : 'Follow'}
         </Button>
         <Button className='rounded-lg bg-gray-700 px-4 py-2 text-white transition-all hover:bg-gray-600'>
-          <svg
-            className='h-5 w-5'
-            fill='none'
-            stroke='currentColor'
-            viewBox='0 0 24 24'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'
-            />
-          </svg>
+          <MessageCircle className='' />
         </Button>
       </div>
 

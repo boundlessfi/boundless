@@ -11,6 +11,7 @@ import { HackathonParticipants } from '@/components/hackathons/participants/hack
 import { HackathonResources } from '@/components/hackathons/resources/resources';
 import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
 import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
+import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/LoadingScreen';
 
 export default function HackathonPage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function HackathonPage() {
     participants,
     submissions,
     prizes,
+    loading,
     setCurrentHackathon,
   } = useHackathonData();
 
@@ -62,6 +64,10 @@ export default function HackathonPage() {
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   if (!currentHackathon) {
     return (
       <div className='flex min-h-screen items-center justify-center'>
@@ -79,7 +85,7 @@ export default function HackathonPage() {
 
   return (
     <div className='mx-auto mt-10 max-w-[1440px] px-5 py-5 text-center text-4xl font-bold text-white md:px-[50px] lg:px-[100px]'>
-      {/* Banner Section */}
+      {/* Banner */}
       <HackathonBanner
         title={currentHackathon.title}
         subtitle={currentHackathon.subtitle}

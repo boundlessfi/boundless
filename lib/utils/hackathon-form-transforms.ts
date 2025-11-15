@@ -33,6 +33,7 @@ export const transformToApiFormat = (stepData: {
       title: info?.name || '',
       banner: info?.banner || '',
       description: info?.description || '',
+      slug: info?.slug || '',
       category:
         Array.isArray(info?.category) && info.category.length > 0
           ? (info.category[0] as HackathonCategory)
