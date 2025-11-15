@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 
@@ -29,17 +29,20 @@ export default function HackathonPage() {
     setCurrentHackathon,
   } = useHackathonData();
 
-  const hackathonTabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'participants', label: 'Participants', badge: participants.length },
-    { id: 'resources', label: 'Resources' },
-    {
-      id: 'submission',
-      label: 'Submissions',
-      badge: submissions.filter(p => p.status === 'Approved').length,
-    },
-    { id: 'discussions', label: 'Discussions' },
-  ];
+  const hackathonTabs = useMemo(
+    () => [
+      { id: 'overview', label: 'Overview' },
+      { id: 'participants', label: 'Participants', badge: participants.length },
+      { id: 'resources', label: 'Resources' },
+      {
+        id: 'submission',
+        label: 'Submissions',
+        badge: submissions.filter(p => p.status === 'Approved').length,
+      },
+      { id: 'discussions', label: 'Discussions' },
+    ],
+    [participants.length, submissions]
+  );
 
   const hackathonId = params.slug as string;
   const [activeTab, setActiveTab] = useState('overview');
@@ -55,7 +58,7 @@ export default function HackathonPage() {
     if (tabFromUrl && hackathonTabs.some(tab => tab.id === tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
-  }, [searchParams]);
+  }, [searchParams, hackathonTabs]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -95,6 +98,7 @@ export default function HackathonPage() {
         participants={currentHackathon.participants}
         totalPrizePool={currentHackathon.totalPrizePool}
         imageUrl={currentHackathon.imageUrl}
+        startDate={currentHackathon.startDate} // if upcoming
       />
 
       {/* Tabs */}

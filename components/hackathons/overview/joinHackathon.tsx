@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
@@ -17,18 +17,21 @@ export function JoinHackathonBanner({
   prizePool = '1,000',
   isEnded = false,
 }: JoinHackathonBannerProps) {
-  const titles = [
-    'Ready to Build Something Amazing?',
-    'Show Your Coding Superpowers!',
-    'Build. Compete. Win Big!',
-    'Hack the Future with Us!',
-    'Your Next Great Project Starts Here!',
-    'Push the Limits of Innovation!',
-    'Create. Collaborate. Conquer!',
-    'Turn Your Ideas into Impact!',
-    'Join the Ultimate Dev Challenge!',
-    'Code Today, Lead Tomorrow!',
-  ];
+  const titles = useMemo(
+    () => [
+      'Ready to Build Something Amazing?',
+      'Show Your Coding Superpowers!',
+      'Build. Compete. Win Big!',
+      'Hack the Future with Us!',
+      'Your Next Great Project Starts Here!',
+      'Push the Limits of Innovation!',
+      'Create. Collaborate. Conquer!',
+      'Turn Your Ideas into Impact!',
+      'Join the Ultimate Dev Challenge!',
+      'Code Today, Lead Tomorrow!',
+    ],
+    []
+  );
 
   const [currentTitle, setCurrentTitle] = useState(
     titles[Math.floor(Math.random() * titles.length)]
@@ -38,7 +41,7 @@ export function JoinHackathonBanner({
     const interval = setInterval(() => {
       const randomIndex = Math.floor(Math.random() * titles.length);
       setCurrentTitle(titles[randomIndex]);
-    }, 3000 * 5);
+    }, 3000 * 5); // every 15 seconds
 
     return () => clearInterval(interval);
   }, [titles]);

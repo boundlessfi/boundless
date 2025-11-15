@@ -7,14 +7,18 @@ export function useSubmissions() {
   const [selectedSort, setSelectedSort] = useState('newest');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
 
-  const sortOptions = [
-    { label: 'Newest First', value: 'newest' },
-    { label: 'Oldest First', value: 'oldest' },
-    { label: 'Most Upvoted', value: 'upvotes_high' },
-    { label: 'Least Upvoted', value: 'upvotes_low' },
-    { label: 'Highest Score', value: 'score_high' },
-    { label: 'Most Commented', value: 'comments_high' },
-  ];
+  // Memoize sort options to avoid changing reference each render
+  const sortOptions = useMemo(
+    () => [
+      { label: 'Newest First', value: 'newest' },
+      { label: 'Oldest First', value: 'oldest' },
+      { label: 'Most Upvoted', value: 'upvotes_high' },
+      { label: 'Least Upvoted', value: 'upvotes_low' },
+      { label: 'Highest Score', value: 'score_high' },
+      { label: 'Most Commented', value: 'comments_high' },
+    ],
+    []
+  );
 
   const categoryOptions = useMemo(() => {
     const categoriesSet = new Set<string>();

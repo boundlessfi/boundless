@@ -441,7 +441,7 @@ export function HackathonDataProvider({
     if (hackathonSlug && !currentHackathon) {
       setCurrentHackathon(hackathonSlug);
     }
-  }, [hackathonSlug]);
+  }, [hackathonSlug, currentHackathon, setCurrentHackathon]);
 
   // --------------------------------
   // Context Value
