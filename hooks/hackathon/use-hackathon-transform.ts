@@ -25,6 +25,7 @@ interface TransformedHackathon {
   categories: string[];
   location?: string;
   venueType?: 'virtual' | 'physical';
+  participantType?: 'individual' | 'team' | 'team_or_individual';
   participants?: {
     current: number;
     goal?: number;
@@ -76,10 +77,20 @@ export function useHackathonTransform() {
       const venue = hackathon.information?.venue;
       let locationText: string | undefined;
       if (venue) {
-        if (venue.type === 'physical' && venue.city && venue.country) {
-          locationText = `${venue.city}, ${venue.country}`;
-        } else if (venue.type === 'physical' && venue.country) {
-          locationText = venue.country;
+        if (venue.type === 'physical') {
+          // For physical venues, prioritize city + country, then country, then state, then venue name
+          if (venue.city && venue.country) {
+            locationText = `${venue.city}, ${venue.country}`;
+          } else if (venue.country) {
+            locationText = venue.country;
+          } else if (venue.state) {
+            locationText = venue.state;
+          } else if (venue.venueName) {
+            locationText = venue.venueName;
+          } else if (venue.venueAddress) {
+            locationText = venue.venueAddress;
+          }
+          // If still no location, we'll rely on venueType in the card component
         } else if (venue.type === 'virtual') {
           locationText = 'Virtual';
         }
@@ -136,6 +147,9 @@ export function useHackathonTransform() {
         categories.push('Other');
       }
 
+      // Extract participantType
+      const participantType = hackathon.participation?.participantType;
+
       return {
         hackathonId: hackathon._id,
         organizationName: orgName,
@@ -154,7 +168,14 @@ export function useHackathonTransform() {
         deadlineInDays: Math.max(0, deadlineInDays),
         categories: categories,
         location: locationText,
-        venueType: venue?.type,
+        venueType: venue?.type
+          ? venue.type === 'virtual'
+            ? 'virtual'
+            : 'physical'
+          : undefined,
+        participantType: participantType
+          ? (participantType as 'individual' | 'team' | 'team_or_individual')
+          : undefined,
         participants: {
           current: extendedHackathon.participants || 0, // Use participants from public API if available
           // goal could be calculated from participation settings
