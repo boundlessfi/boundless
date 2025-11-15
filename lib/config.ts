@@ -1,5 +1,7 @@
 export const config = {
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+  apiUrl:
+    process.env.NEXT_PUBLIC_API_URL ||
+    'https://staging-api.boundlessfi.xyz/api',
 };
 
 export const socialLinks = {
