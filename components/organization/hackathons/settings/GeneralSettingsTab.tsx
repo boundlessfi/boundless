@@ -78,11 +78,9 @@ export default function GeneralSettingsTab({
       name: initialData?.name || '',
       banner: initialData?.banner || '',
       description: initialData?.description || '',
-      category: Array.isArray(initialData?.category)
-        ? initialData.category
-        : initialData?.category
-          ? [initialData.category]
-          : [],
+      categories: Array.isArray(initialData?.categories)
+        ? initialData.categories
+        : [],
       venueType: initialData?.venueType || 'virtual',
       country: initialData?.country || '',
       state: initialData?.state || '',
@@ -205,7 +203,7 @@ export default function GeneralSettingsTab({
             )}
           />
 
-          <CategorySelection control={form.control} name='category' />
+          <CategorySelection control={form.control} name='categories' />
 
           <VenueSection
             control={form.control}

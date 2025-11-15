@@ -32,7 +32,7 @@ const calculateDraftCompletion = (draft: HackathonDraft): number => {
     draft.information?.title,
     draft.information?.banner,
     draft.information?.description,
-    draft.information?.category,
+    draft.information?.categories,
     draft.timeline?.startDate,
     draft.timeline?.submissionDeadline,
     draft.timeline?.judgingDate,
@@ -123,8 +123,9 @@ export default function HackathonsPage() {
 
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(item => {
-        const category = item.data.information?.category?.toLowerCase() || '';
-        return category === categoryFilter.toLowerCase();
+        const category =
+          item.data.information?.categories?.join(',')?.toLowerCase() || '';
+        return category.includes(categoryFilter.toLowerCase());
       });
     }
 

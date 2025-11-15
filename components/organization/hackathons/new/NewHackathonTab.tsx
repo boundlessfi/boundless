@@ -113,6 +113,7 @@ export default function NewHackathonTab({
   const { isPublishing, publish } = useHackathonPublish({
     organizationId: derivedOrgId || '',
     stepData,
+    draftId,
     publishHackathonAction,
   });
 
