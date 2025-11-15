@@ -2,8 +2,8 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/lib/stores/auth-store';
 
-const API_BASE_URL = 'https://staging-api.boundlessfi.xyz/api';
-// const API_BASE_URL = 'http://localhost:8000/api';
+// const API_BASE_URL = 'https://staging-api.boundlessfi.xyz/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 if (!API_BASE_URL) {
   throw new Error('NEXT_PUBLIC_API_URL environment variable is not defined');
@@ -277,20 +277,27 @@ const convertAxiosResponse = <T>(
   statusText: response.statusText,
 });
 
-const convertRequestConfig = (config?: RequestConfig): AxiosRequestConfig => ({
-  headers: config?.headers,
-  timeout: config?.timeout,
-  withCredentials: true,
-});
+const convertRequestConfig = (
+  config?: RequestConfig
+): AxiosRequestConfig & { skipAuthRefresh?: boolean } => {
+  const axiosConfig = {
+    headers: config?.headers,
+    timeout: config?.timeout,
+    withCredentials: true,
+    skipAuthRefresh: config?.skipAuthRefresh,
+  } as AxiosRequestConfig & { skipAuthRefresh?: boolean };
+  return axiosConfig;
+};
 
 const clientApi = {
   get: async <T = unknown>(
     url: string,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> => {
+    const axiosConfig = convertRequestConfig(config);
     const response = await axiosInstance.get<T>(
       url,
-      convertRequestConfig(config)
+      axiosConfig as AxiosRequestConfig
     );
     return convertAxiosResponse(response);
   },

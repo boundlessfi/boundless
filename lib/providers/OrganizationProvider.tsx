@@ -398,31 +398,69 @@ export function OrganizationProvider({
         return;
       }
 
-      type OrgLike = Partial<Organization> & { id?: string } & Record<
-          string,
-          unknown
-        >;
+      type OrgLike = Partial<Organization> & {
+        id?: string;
+        _id?: string;
+        avatar?: string;
+        role?: 'owner' | 'member';
+        memberCount?: number;
+        hackathonCount?: number;
+        grantCount?: number;
+      } & Record<string, unknown>;
       const orgs = organizations as OrgLike[];
       const organizationSummaries: OrganizationSummary[] = orgs
         .filter(org => org && typeof org === 'object' && (org._id || org.id))
         .map(org => ({
           _id: (org._id as string) ?? (org.id as string),
           name: (org.name as string) || 'Unnamed Organization',
-          logo: (org.avatar as string) || '',
+          logo: (org.avatar as string) || (org.logo as string) || '',
           tagline: (org.tagline as string) || '',
           isProfileComplete: Boolean(org.isProfileComplete),
-          role: org.owner === response.email ? 'owner' : 'member',
-          memberCount: Array.isArray(org.members) ? org.members.length : 0,
-          hackathonCount: Array.isArray(org.hackathons)
-            ? org.hackathons.length
-            : 0,
-          grantCount: Array.isArray(org.grants) ? org.grants.length : 0,
+          role:
+            org.role === 'owner' || org.role === 'member'
+              ? (org.role as 'owner' | 'member')
+              : org.owner === response.email
+                ? 'owner'
+                : 'member',
+          memberCount:
+            typeof org.memberCount === 'number'
+              ? org.memberCount
+              : typeof org.memberCount === 'string'
+                ? parseInt(org.memberCount, 10) || 0
+                : Array.isArray(org.members)
+                  ? org.members.length
+                  : 0,
+          hackathonCount:
+            typeof org.hackathonCount === 'number'
+              ? org.hackathonCount
+              : typeof org.hackathonCount === 'string'
+                ? parseInt(org.hackathonCount, 10) || 0
+                : Array.isArray(org.hackathons)
+                  ? org.hackathons.length
+                  : 0,
+          grantCount:
+            typeof org.grantCount === 'number'
+              ? org.grantCount
+              : typeof org.grantCount === 'string'
+                ? parseInt(org.grantCount, 10) || 0
+                : Array.isArray(org.grants)
+                  ? org.grants.length
+                  : 0,
           createdAt: (org.createdAt as string) || new Date().toISOString(),
         }));
 
       logger.info({
         eventType: 'org.fetchOrganizations.transformed',
         count: organizationSummaries.length,
+        sampleOrg: organizationSummaries[0]
+          ? {
+              _id: organizationSummaries[0]._id,
+              name: organizationSummaries[0].name,
+              hackathonCount: organizationSummaries[0].hackathonCount,
+              grantCount: organizationSummaries[0].grantCount,
+              memberCount: organizationSummaries[0].memberCount,
+            }
+          : null,
       });
       dispatch({ type: 'SET_ORGANIZATIONS', payload: organizationSummaries });
       dispatch({ type: 'SET_LAST_UPDATED', payload: Date.now() });

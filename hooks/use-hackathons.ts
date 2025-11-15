@@ -10,6 +10,7 @@ import {
   updateHackathon,
   getHackathon,
   getHackathons,
+  getParticipants,
   type Hackathon,
   type HackathonDraft,
   type CreateDraftRequest,
@@ -17,6 +18,7 @@ import {
   type PublishHackathonRequest,
   type UpdateHackathonRequest,
   type HackathonCategory,
+  type Participant,
 } from '@/lib/api/hackathons';
 import { useOrganization } from '@/lib/providers/OrganizationProvider';
 
@@ -28,6 +30,11 @@ export interface UseHackathonsOptions {
   filters?: {
     status?: 'published' | 'ongoing' | 'completed' | 'cancelled';
     category?: HackathonCategory;
+    search?: string;
+  };
+  participantFilters?: {
+    status?: 'submitted' | 'not_submitted';
+    type?: 'individual' | 'team';
     search?: string;
   };
 }
@@ -87,6 +94,25 @@ export interface UseHackathonsReturn {
     filters?: UseHackathonsOptions['filters']
   ) => Promise<void>;
 
+  // Participants
+  participants: Participant[];
+  participantsLoading: boolean;
+  participantsError: string | null;
+  participantsPagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  fetchParticipants: (
+    hackathonId: string,
+    page?: number,
+    limit?: number,
+    filters?: UseHackathonsOptions['participantFilters']
+  ) => Promise<void>;
+
   // Utility
   refetchAll: () => Promise<void>;
   setCurrentHackathon: (hackathon: Hackathon | null) => void;
@@ -103,6 +129,7 @@ export function useHackathons(
     initialPage = 1,
     pageSize = 10,
     filters: initialFilters = {},
+    participantFilters: initialParticipantFilters = {},
   } = options;
 
   // Get organizationId from context if not provided
@@ -143,14 +170,31 @@ export function useHackathons(
   const [currentLoading, setCurrentLoading] = useState(false);
   const [currentError, setCurrentError] = useState<string | null>(null);
 
+  // Participants State
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
+  const [participantsError, setParticipantsError] = useState<string | null>(
+    null
+  );
+  const [participantsPagination, setParticipantsPagination] = useState({
+    currentPage: initialPage,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: pageSize,
+    hasNext: false,
+    hasPrev: false,
+  });
+
   // Refs to prevent duplicate fetches
   const isFetchingHackathonsRef = useRef(false);
   const isFetchingDraftsRef = useRef(false);
   const isFetchingCurrentRef = useRef(false);
+  const isFetchingParticipantsRef = useRef(false);
 
   // Refs to track current page values (to avoid closure issues)
   const hackathonsPageRef = useRef(initialPage);
   const draftsPageRef = useRef(initialPage);
+  const participantsPageRef = useRef(initialPage);
 
   // Fetch Published Hackathons
   const fetchHackathons = useCallback(
@@ -429,6 +473,52 @@ export function useHackathons(
     [organizationId, currentHackathon]
   );
 
+  // Fetch Participants
+  const fetchParticipants = useCallback(
+    async (
+      hackathonId: string,
+      page?: number,
+      limit?: number,
+      filters?: UseHackathonsOptions['participantFilters']
+    ) => {
+      if (!organizationId) {
+        setParticipantsError('Organization ID is required');
+        return;
+      }
+
+      if (isFetchingParticipantsRef.current) return;
+
+      isFetchingParticipantsRef.current = true;
+      setParticipantsLoading(true);
+      setParticipantsError(null);
+
+      try {
+        const currentPage = page ?? participantsPageRef.current;
+        const response = await getParticipants(
+          organizationId,
+          hackathonId,
+          currentPage,
+          limit ?? pageSize,
+          filters ?? initialParticipantFilters
+        );
+
+        setParticipants(response.data);
+        setParticipantsPagination(response.pagination);
+        participantsPageRef.current = response.pagination.currentPage;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch participants';
+        setParticipantsError(errorMessage);
+      } finally {
+        setParticipantsLoading(false);
+        isFetchingParticipantsRef.current = false;
+      }
+    },
+    [organizationId, pageSize, initialParticipantFilters]
+  );
+
   // Refetch All
   const refetchAll = useCallback(async () => {
     if (!organizationId) return;
@@ -475,6 +565,13 @@ export function useHackathons(
     updateHackathonAction,
     fetchHackathon,
     fetchHackathons,
+
+    // Participants
+    participants,
+    participantsLoading,
+    participantsError,
+    participantsPagination,
+    fetchParticipants,
 
     // Utility
     refetchAll,

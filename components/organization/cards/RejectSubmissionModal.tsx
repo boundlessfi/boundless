@@ -30,7 +30,7 @@ export default function RejectSubmissionModal({
   onConfirm,
 }: RejectSubmissionModalProps) {
   const [comment, setComment] = useState('');
-  const maxCommentLength = 300;
+  const maxCommentLength = 1000; // Matches API requirement
 
   const handleConfirm = () => {
     onConfirm?.(comment.trim() || undefined);

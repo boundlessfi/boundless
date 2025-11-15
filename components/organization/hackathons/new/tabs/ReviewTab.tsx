@@ -5,30 +5,22 @@ import { ParticipantFormData } from './schemas/participantSchema';
 import { RewardsFormData } from './schemas/rewardsSchema';
 import { JudgingFormData } from './schemas/judgingSchema';
 import { CollaborationFormData } from './schemas/collaborationSchema';
-import { BoundlessButton } from '@/components/buttons';
-import {
-  CheckCircle2,
-  FileText,
-  Calendar,
-  Users,
-  Trophy,
-  Scale,
-  Handshake,
-} from 'lucide-react';
+import { useWalletContext } from '@/components/providers/wallet-provider';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import InformationSection from './components/review/InformationSection';
-import TimelineSection from './components/review/TimelineSection';
-import ParticipationSection from './components/review/ParticipationSection';
-import RewardsSection from './components/review/RewardsSection';
-import JudgingSection from './components/review/JudgingSection';
-import CollaborationSection from './components/review/CollaborationSection';
 import DraftSavedModal from './components/review/DraftSavedModal';
 import HackathonPublishedModal from './components/review/HackathonPublishedModal';
+import { ReviewHeader } from './components/review/ReviewHeader';
+import { EscrowSummary } from './components/review/EscrowSummary';
+import { WalletConnectionWarning } from './components/review/WalletConnectionWarning';
+import { PublishSection } from './components/review/PublishSection';
+import { SectionRenderer } from './components/review/SectionRenderer';
+import { usePrizePoolCalculations } from '@/hooks/use-prize-pool-calculations';
+import { REVIEW_SECTION_CONFIG } from './constants/review-sections';
 import { toast } from 'sonner';
 
 interface ReviewTabProps {
@@ -48,45 +40,6 @@ interface ReviewTabProps {
   hackathonUrl?: string;
 }
 
-const sectionConfig = [
-  {
-    id: 'information',
-    title: 'Information',
-    icon: FileText,
-    key: 'information' as const,
-  },
-  {
-    id: 'timeline',
-    title: 'Timeline',
-    icon: Calendar,
-    key: 'timeline' as const,
-  },
-  {
-    id: 'participation',
-    title: 'Participation',
-    icon: Users,
-    key: 'participation' as const,
-  },
-  {
-    id: 'rewards',
-    title: 'Rewards',
-    icon: Trophy,
-    key: 'rewards' as const,
-  },
-  {
-    id: 'judging',
-    title: 'Judging Criteria',
-    icon: Scale,
-    key: 'judging' as const,
-  },
-  {
-    id: 'collaboration',
-    title: 'Collaboration',
-    icon: Handshake,
-    key: 'collaboration' as const,
-  },
-];
-
 export default function ReviewTab({
   allData,
   onEdit,
@@ -98,15 +51,10 @@ export default function ReviewTab({
 }: ReviewTabProps) {
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [showPublishedModal, setShowPublishedModal] = useState(false);
-  const formatDate = (date: Date | string | undefined) => {
-    if (!date) return 'Not set';
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+  const { walletAddress } = useWalletContext();
+
+  const { totalPrizePool, platformFee, totalFunding } =
+    usePrizePoolCalculations(allData.rewards);
 
   const handlePublish = async () => {
     try {
@@ -130,82 +78,16 @@ export default function ReviewTab({
     }
   };
 
-  const renderSectionContent = (config: (typeof sectionConfig)[0]) => {
-    const data = allData[config.key];
-    if (!data) return null;
-
-    switch (config.key) {
-      case 'information':
-        return (
-          <InformationSection
-            data={data as InfoFormData}
-            onEdit={onEdit ? () => onEdit('information') : undefined}
-          />
-        );
-      case 'timeline':
-        return (
-          <TimelineSection
-            data={data as TimelineFormData}
-            onEdit={onEdit ? () => onEdit('timeline') : undefined}
-            formatDate={formatDate}
-          />
-        );
-      case 'participation':
-        return (
-          <ParticipationSection
-            data={data as ParticipantFormData}
-            onEdit={onEdit ? () => onEdit('participation') : undefined}
-          />
-        );
-      case 'rewards':
-        return (
-          <RewardsSection
-            data={data as RewardsFormData}
-            onEdit={onEdit ? () => onEdit('rewards') : undefined}
-          />
-        );
-      case 'judging':
-        return (
-          <JudgingSection
-            data={data as JudgingFormData}
-            onEdit={onEdit ? () => onEdit('judging') : undefined}
-          />
-        );
-      case 'collaboration':
-        return (
-          <CollaborationSection
-            data={data as CollaborationFormData}
-            onEdit={onEdit ? () => onEdit('collaboration') : undefined}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className='space-y-6'>
-      {/* Header */}
-      <div className='flex items-center justify-between'>
-        <div>
-          <h2 className='text-2xl font-bold text-white'>Review & Publish</h2>
-          <p className='mt-1 text-sm text-gray-400'>
-            Review all your hackathon details before publishing
-          </p>
-        </div>
-        <div className='flex items-center gap-2 text-sm text-green-400'>
-          <CheckCircle2 className='h-5 w-5' />
-          <span>All sections complete</span>
-        </div>
-      </div>
+      <ReviewHeader />
 
-      {/* Accordion Sections */}
       <Accordion
         type='multiple'
-        defaultValue={sectionConfig.map(s => s.id)}
+        defaultValue={REVIEW_SECTION_CONFIG.map(s => s.id)}
         className='space-y-4'
       >
-        {sectionConfig.map(config => {
+        {REVIEW_SECTION_CONFIG.map(config => {
           const data = allData[config.key];
           if (!data) return null;
 
@@ -228,47 +110,31 @@ export default function ReviewTab({
                 </div>
               </AccordionTrigger>
               <AccordionContent className='pt-0 pb-6'>
-                {renderSectionContent(config)}
+                <SectionRenderer config={config} data={data} onEdit={onEdit} />
               </AccordionContent>
             </AccordionItem>
           );
         })}
       </Accordion>
 
-      {/* Publish Section */}
-      <div className='from-primary/10 to-primary/5 border-primary/20 rounded-xl border bg-gradient-to-br p-6'>
-        <div className='flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center'>
-          <div className='flex-1'>
-            <h3 className='mb-1 text-lg font-semibold text-white'>
-              Ready to Publish?
-            </h3>
-            <p className='text-sm text-gray-400'>
-              Review all sections above and publish your hackathon when ready
-            </p>
-          </div>
-          <div className='flex w-full items-center gap-3 sm:w-auto'>
-            {onSaveDraft && (
-              <BoundlessButton
-                onClick={handleSaveDraft}
-                size='xl'
-                disabled={isSavingDraft || isLoading}
-                variant='outline'
-                className='flex-1 border-gray-700 hover:border-gray-600 hover:bg-gray-800 sm:flex-none'
-              >
-                {isSavingDraft ? 'Saving...' : 'Save as Draft'}
-              </BoundlessButton>
-            )}
-            <BoundlessButton
-              onClick={handlePublish}
-              size='xl'
-              disabled={isLoading || isSavingDraft}
-              className='flex-1 sm:flex-none'
-            >
-              {isLoading ? 'Publishing...' : 'Publish Hackathon'}
-            </BoundlessButton>
-          </div>
-        </div>
-      </div>
+      {allData.rewards && allData.rewards.prizeTiers.length > 0 && (
+        <EscrowSummary
+          rewards={allData.rewards}
+          totalPrizePool={totalPrizePool}
+          platformFee={platformFee}
+          totalFunding={totalFunding}
+        />
+      )}
+
+      {!walletAddress && <WalletConnectionWarning />}
+
+      <PublishSection
+        walletAddress={walletAddress}
+        isLoading={isLoading}
+        isSavingDraft={isSavingDraft}
+        onPublish={handlePublish}
+        onSaveDraft={onSaveDraft ? handleSaveDraft : undefined}
+      />
 
       {/* Success Modals */}
       <DraftSavedModal
