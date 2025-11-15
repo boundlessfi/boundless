@@ -34,12 +34,14 @@ export default function OrganizationHeader() {
     <header className='sticky top-0 z-50 flex w-full flex-wrap items-center justify-between overflow-x-hidden border-b border-b-zinc-800 bg-black px-4 py-3 md:flex-nowrap md:px-10'>
       <div className='flex min-w-0 flex-1 items-center gap-4 overflow-x-auto md:overflow-visible'>
         <div className='flex items-center gap-2'>
-          <Image
-            src='/footer/logo.svg'
-            width={50}
-            height={50}
-            alt='Boundless Logo'
-          />
+          <Link href='/'>
+            <Image
+              src='/footer/logo.svg'
+              width={50}
+              height={50}
+              alt='Boundless Logo'
+            />
+          </Link>
         </div>
 
         <Link href='/organizations'>
