@@ -20,6 +20,7 @@ type HackathonCardProps = {
   categories: string[];
   location?: string;
   venueType?: 'virtual' | 'physical';
+  participantType?: 'individual' | 'team' | 'team_or_individual';
   participants?: {
     current: number;
     goal?: number;
@@ -76,26 +77,97 @@ function HackathonCard({
   };
 
   const getDeadlineInfo = () => {
-    if (deadlineInDays <= 0)
+    // Handle completed or cancelled status
+    if (status === 'Completed') {
       return { text: 'Ended', className: 'text-gray-500' };
-    if (deadlineInDays <= 3)
-      return { text: `${deadlineInDays} days left`, className: 'text-red-400' };
-    if (deadlineInDays <= 15)
+    }
+    if (status === 'Cancelled') {
+      return { text: 'Cancelled', className: 'text-gray-500' };
+    }
+
+    // Handle cases where deadline has passed
+    if (deadlineInDays <= 0) {
+      if (status === 'Ongoing') {
+        return { text: 'Ending soon', className: 'text-red-400' };
+      }
+      return { text: 'Started', className: 'text-gray-500' };
+    }
+
+    // Handle different statuses with contextual messages
+    if (status === 'Published') {
+      // Upcoming hackathons - show "starting in X days"
+      if (deadlineInDays <= 3) {
+        return {
+          text: `starting in ${deadlineInDays} day${deadlineInDays !== 1 ? 's' : ''}`,
+          className: 'text-red-400',
+        };
+      }
+      if (deadlineInDays <= 15) {
+        return {
+          text: `starting in ${deadlineInDays} days`,
+          className: 'text-yellow-400',
+        };
+      }
+      return {
+        text: `starting in ${deadlineInDays} days`,
+        className: 'text-green-400',
+      };
+    }
+
+    if (status === 'Ongoing') {
+      // Ongoing hackathons - show "ending in X days"
+      if (deadlineInDays <= 3) {
+        return {
+          text: `ending in ${deadlineInDays} day${deadlineInDays !== 1 ? 's' : ''}`,
+          className: 'text-red-400',
+        };
+      }
+      if (deadlineInDays <= 15) {
+        return {
+          text: `ending in ${deadlineInDays} days`,
+          className: 'text-yellow-400',
+        };
+      }
+      return {
+        text: `ending in ${deadlineInDays} days`,
+        className: 'text-green-400',
+      };
+    }
+
+    // Fallback for any other status
+    if (deadlineInDays <= 3) {
+      return {
+        text: `${deadlineInDays} day${deadlineInDays !== 1 ? 's' : ''} left`,
+        className: 'text-red-400',
+      };
+    }
+    if (deadlineInDays <= 15) {
       return {
         text: `${deadlineInDays} days left`,
         className: 'text-yellow-400',
       };
-    return { text: `${deadlineInDays} days left`, className: 'text-green-400' };
+    }
+    return {
+      text: `${deadlineInDays} days left`,
+      className: 'text-green-400',
+    };
   };
 
   const deadlineInfo = getDeadlineInfo();
-  const locationText =
-    location ||
-    (venueType === 'virtual'
-      ? 'Virtual'
-      : venueType === 'physical'
-        ? 'Physical'
-        : 'TBD');
+  const locationText = (() => {
+    // If location is provided (from transform hook), use it
+    if (location) {
+      return location;
+    }
+    // Otherwise, fall back to venueType
+    if (venueType === 'virtual') {
+      return 'Virtual';
+    }
+    if (venueType === 'physical') {
+      return 'Physical';
+    }
+    return undefined;
+  })();
 
   const CategoriesDisplay = ({
     categoriesList,
@@ -211,7 +283,9 @@ function HackathonCard({
         </div>
 
         <div className='flex items-center justify-between border-t border-neutral-800 px-4 py-3 sm:px-5'>
-          <span className={`text-xs font-medium ${deadlineInfo.className}`}>
+          <span
+            className={`text-xs font-medium capitalize ${deadlineInfo.className}`}
+          >
             {deadlineInfo.text}
           </span>
           {participants?.goal && (

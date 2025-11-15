@@ -42,8 +42,9 @@ export interface HackathonInformation {
   title: string;
   banner: string;
   description: string;
-  category: HackathonCategory;
-  venue: HackathonVenue;
+  category?: HackathonCategory; // Legacy format (single category)
+  categories?: HackathonCategory[]; // New format (array of categories)
+  venue?: HackathonVenue;
   slug: string;
 }
 
@@ -84,7 +85,7 @@ export interface TabVisibility {
 }
 
 export interface HackathonParticipation {
-  participantType: ParticipantType;
+  participantType?: ParticipantType;
   teamMin?: number;
   teamMax?: number;
   about?: string;
@@ -654,6 +655,15 @@ export interface PublicHackathon {
   organizer: string;
   featured: boolean;
   resources: string[];
+  venue?: {
+    type: 'virtual' | 'physical';
+    country?: string;
+    state?: string;
+    city?: string;
+    venueName?: string;
+    venueAddress?: string;
+  };
+  participantType?: 'individual' | 'team' | 'team_or_individual';
 }
 
 export interface PublicHackathonsListData {
@@ -699,7 +709,8 @@ interface FlatHackathonData {
   // Flat fields that map to nested structure
   banner?: string;
   description?: string;
-  category?: string | HackathonCategory;
+  category?: string | HackathonCategory; // Legacy format
+  categories?: HackathonCategory[]; // New format
   venue?: HackathonVenue;
   startDate?: string;
   submissionDeadline?: string;
@@ -771,11 +782,15 @@ const transformHackathonResponse = (
       title: flat.title || '',
       banner: flat.banner || '',
       description: flat.description || '',
-      slug: flat.slug,
+      slug: flat.slug || '',
+      // Support both new format (categories) and legacy format (category)
+      categories: Array.isArray(flat.categories)
+        ? (flat.categories as HackathonCategory[])
+        : flat.category
+          ? [flat.category as HackathonCategory]
+          : [HackathonCategory.OTHER],
       category: (flat.category as HackathonCategory) || HackathonCategory.OTHER,
-      venue: flat.venue || {
-        type: VenueType.VIRTUAL,
-      },
+      venue: flat.venue,
     },
     timeline: {
       startDate: flat.startDate || '',
@@ -786,8 +801,7 @@ const transformHackathonResponse = (
       phases: flat.phases || [],
     },
     participation: {
-      participantType:
-        (flat.participantType as ParticipantType) || ParticipantType.INDIVIDUAL,
+      participantType: flat.participantType as ParticipantType | undefined,
       teamMin: flat.teamMin,
       teamMax: flat.teamMax,
       about: flat.about,
@@ -1343,11 +1357,20 @@ export const transformPublicHackathonToHackathon = (
   const prizePoolAmount =
     parseFloat(publicHackathon.totalPrizePool.replace(/,/g, '')) || 0;
 
-  // Determine venue type from location or default to virtual
-  // Since API doesn't provide venue details, we'll default to virtual
-  const venue: HackathonVenue = {
-    type: VenueType.VIRTUAL,
-  };
+  // Extract venue from API response or default to virtual
+  const venue: HackathonVenue | undefined = publicHackathon.venue
+    ? {
+        type:
+          publicHackathon.venue.type === 'physical'
+            ? VenueType.PHYSICAL
+            : VenueType.VIRTUAL,
+        country: publicHackathon.venue.country,
+        state: publicHackathon.venue.state,
+        city: publicHackathon.venue.city,
+        venueName: publicHackathon.venue.venueName,
+        venueAddress: publicHackathon.venue.venueAddress,
+      }
+    : undefined;
 
   // Map API status to internal status
   // API uses: upcoming, ongoing, ended
@@ -1402,7 +1425,13 @@ export const transformPublicHackathonToHackathon = (
       phases: [],
     },
     participation: {
-      participantType: ParticipantType.TEAM_OR_INDIVIDUAL,
+      participantType: publicHackathon.participantType
+        ? publicHackathon.participantType === 'individual'
+          ? ParticipantType.INDIVIDUAL
+          : publicHackathon.participantType === 'team'
+            ? ParticipantType.TEAM
+            : ParticipantType.TEAM_OR_INDIVIDUAL
+        : undefined,
       teamMin: undefined,
       teamMax: undefined,
       about: publicHackathon.subtitle,

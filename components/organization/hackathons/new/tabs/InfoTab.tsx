@@ -53,8 +53,10 @@ export default function InfoTab({
       banner: initialData?.banner || '',
       description: initialData?.description || '',
       category: Array.isArray(initialData?.category)
-        ? (initialData.category[0] as string) || ''
-        : (initialData?.category as string) || '',
+        ? initialData.category
+        : initialData?.category
+          ? [initialData.category]
+          : [],
       venueType: initialData?.venueType || 'physical',
       country: initialData?.country || '',
       state: initialData?.state || '',
