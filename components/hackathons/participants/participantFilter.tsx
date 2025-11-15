@@ -32,7 +32,7 @@ const ParticipantsFilter = ({
   className,
   searchPlaceholder = 'Search by name, role, or skills...',
   totalParticipants = 0,
-  submittedCount = 0,
+  // submittedCount = 0,
 }: ParticipantsFilterProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSort, setSelectedSort] = useState('Newest First');
@@ -103,11 +103,6 @@ const ParticipantsFilter = ({
             {totalParticipants}
           </span>{' '}
           total participants
-        </span>
-        <span className='text-gray-600'>•</span>
-        <span className='text-gray-400'>
-          <span className='font-semibold text-[#a7f950]'>{submittedCount}</span>{' '}
-          projects submitted
         </span>
       </div>
 

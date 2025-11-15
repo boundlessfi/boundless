@@ -12,14 +12,6 @@ import { HackathonResources } from '@/components/hackathons/resources/resources'
 import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
 import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
 
-const hackathonTabs = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'participants', label: 'Participants', badge: 48 },
-  { id: 'resources', label: 'Resources' },
-  { id: 'submission', label: 'Submissions' },
-  { id: 'discussions', label: 'Discussions' },
-];
-
 export default function HackathonPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,9 +21,23 @@ export default function HackathonPage() {
     currentHackathon,
     content,
     timelineEvents,
+    participants,
+    submissions,
     prizes,
     setCurrentHackathon,
   } = useHackathonData();
+
+  const hackathonTabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'participants', label: 'Participants', badge: participants.length },
+    { id: 'resources', label: 'Resources' },
+    {
+      id: 'submission',
+      label: 'Submissions',
+      badge: submissions.filter(p => p.status === 'Approved').length,
+    },
+    { id: 'discussions', label: 'Discussions' },
+  ];
 
   const hackathonId = params.slug as string;
   const [activeTab, setActiveTab] = useState('overview');

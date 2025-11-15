@@ -31,9 +31,9 @@ const SubmissionTab: React.FC = () => {
       <div className='mb-6 flex items-center gap-4 text-left text-sm'>
         <span className='text-gray-400'>
           <span className='font-semibold text-[#a7f950]'>
-            {submissions.length}
+            {submissions.filter(p => p.status === 'Approved').length}
           </span>{' '}
-          total submissions
+          total approved submissions
         </span>
       </div>
 
@@ -111,15 +111,18 @@ const SubmissionTab: React.FC = () => {
       {/* Submissions Grid */}
       {submissions.length > 0 ? (
         <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-          {submissions.map((submission, index) => (
-            <SubmissionCard
-              key={index}
-              {...submission}
-              onViewClick={() => {}}
-              onUpvoteClick={() => {}}
-              onCommentClick={() => {}}
-            />
-          ))}
+          {submissions.map(
+            (submission, index) =>
+              submission.status === 'Approved' && (
+                <SubmissionCard
+                  key={index}
+                  {...submission}
+                  onViewClick={() => {}}
+                  onUpvoteClick={() => {}}
+                  onCommentClick={() => {}}
+                />
+              )
+          )}
         </div>
       ) : (
         <div className='flex min-h-[400px] items-center justify-center'>

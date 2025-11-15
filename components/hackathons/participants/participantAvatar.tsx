@@ -45,7 +45,7 @@ export function ParticipantAvatar({ participant }: ParticipantAvatarProps) {
               {/* Green status dot if submitted */}
               {participant.hasSubmitted && (
                 <div
-                  className='absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-gray-900 bg-[#a7f950]'
+                  className='bg-primary/45 absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-gray-900'
                   title='Project submitted'
                 />
               )}

@@ -2,6 +2,7 @@
 
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/lib/utils';
 
 interface HackathonBannerProps {
   title: string;
@@ -13,7 +14,6 @@ interface HackathonBannerProps {
   participants?: number;
   totalPrizePool?: string;
 }
-
 export function HackathonBanner({
   title,
   subtitle,
@@ -80,7 +80,7 @@ export function HackathonBanner({
             </h1>
             {subtitle && (
               <p className='max-w-2xl text-left text-base text-gray-200 drop-shadow-md md:text-lg'>
-                {subtitle}
+                {subtitle.slice(3)}
               </p>
             )}
             {subtitle && (
@@ -95,7 +95,9 @@ export function HackathonBanner({
                 <span className='text-sm font-semibold text-[#a7f950]'>
                   Deadline:
                 </span>
-                <span className='text-sm text-gray-200'>{deadline}</span>
+                <span className='text-sm text-gray-200'>
+                  {formatDate(new Date(deadline))}
+                </span>
               </div>
             )}
             {categories && categories.length > 0 && (
