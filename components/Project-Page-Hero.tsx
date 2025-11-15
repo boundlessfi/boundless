@@ -1,80 +1,57 @@
 'use client';
 import React from 'react';
-import Image from 'next/image';
 import { ArrowDown } from 'lucide-react';
 import { BoundlessButton } from './buttons/BoundlessButton';
 
 export default function ProjectPageHero() {
   const scrollToProjects = () => {
-    const projectsSection = document.getElementById('explore-project');
-    if (projectsSection) {
-      const targetPosition = projectsSection.offsetTop - 100;
-      const startPosition = window.pageYOffset;
-      const distance = targetPosition - startPosition;
-      const duration = 1000;
-      let start: number | null = null;
+    const section = document.getElementById('explore-project');
+    if (!section) return;
 
-      const animation = (currentTime: number) => {
-        if (start === null) start = currentTime;
-        const timeElapsed = currentTime - start;
-        const run = easeInOutQuad(
-          timeElapsed,
-          startPosition,
-          distance,
-          duration
-        );
-        window.scrollTo(0, run);
-        if (timeElapsed < duration) requestAnimationFrame(animation);
-      };
+    const targetPosition = section.offsetTop - 100;
+    const startPosition = window.pageYOffset;
+    const distance = targetPosition - startPosition;
+    const duration = 1000;
+    let start: number | null = null;
 
-      const easeInOutQuad = (t: number, b: number, c: number, d: number) => {
-        t /= d / 2;
-        if (t < 1) return (c / 2) * t * t + b;
-        t--;
-        return (-c / 2) * (t * (t - 2) - 1) + b;
-      };
+    const easeInOutQuad = (t: number, b: number, c: number, d: number) => {
+      t /= d / 2;
+      if (t < 1) return (c / 2) * t * t + b;
+      t--;
+      return (-c / 2) * (t * (t - 2) - 1) + b;
+    };
 
-      requestAnimationFrame(animation);
-    }
+    const animation = (currentTime: number) => {
+      if (start === null) start = currentTime;
+      const timeElapsed = currentTime - start;
+      const run = easeInOutQuad(timeElapsed, startPosition, distance, duration);
+      window.scrollTo(0, run);
+      if (timeElapsed < duration) requestAnimationFrame(animation);
+    };
+
+    requestAnimationFrame(animation);
   };
 
   return (
-    <div className='relative min-h-screen overflow-hidden text-white'>
-      <div className='pointer-events-none absolute inset-0'>
-        <div className='absolute bottom-1/3 left-[220px] h-[393px] w-[476px] rounded-[476px] border-[20px] border-[#DBFFB7] opacity-[0.30px] mix-blend-overlay blur-[25px] md:block lg:!hidden' />
-        <div
-          className='absolute bottom-1/3 left-[200px] h-[397px] w-[493px] rounded-[493px] border-[100px] border-[#6DC01A] opacity-[0.15px] mix-blend-hard-light blur-[100px] md:block lg:!hidden'
-          style={{
-            background:
-              'linear-gradient(270deg, rgba(3, 3, 3, 0.00) 0%, rgba(109, 192, 26, 0.64) 100%)',
-          }}
-        />
-        <div
-          className='absolute top-1/4 left-[100px] h-[560px] w-[696px] rounded-[696px] bg-[#A7F950] opacity-10 blur-[140px] md:block lg:!hidden'
-          style={{
-            background:
-              'linear-gradient(270deg, rgba(3, 3, 3, 0.00) 0%, rgba(167, 249, 80, 0.64) 100%)',
-          }}
-        />
-      </div>
-
+    <div className='bg-background-card relative overflow-hidden rounded-2xl px-6 py-10 text-white'>
       <div className='relative z-10'>
-        <div className='mx-auto grid min-h-[85vh] max-w-[1300px] items-center gap-6 space-y-[60px] md:grid-cols-2 md:gap-8 md:space-y-[80px] lg:gap-12'>
+        <div className='mx-auto grid max-w-[1300px] items-center justify-baseline gap-6 md:grid-cols-2 md:gap-8 lg:gap-12'>
+          {/* Left Text */}
           <div className='z-10 space-y-6 text-left md:space-y-6 lg:space-y-8'>
-            <h1 className='text-3xl leading-[1.1] tracking-tight sm:text-4xl md:text-4xl lg:text-5xl'>
+            <h1 className='text-3xl leading-[1.1] tracking-tight sm:text-4xl md:text-4xl lg:text-3xl'>
               <span className='bg-gradient-to-r from-[#3AE6B2] to-[#A7F95080] bg-clip-text text-transparent'>
                 Discover projects
-              </span>
-              <br />
-              <span className='text-white'>that are shaping</span>
-              <br />
-              <span className='text-white'>the future on Stellar</span>
+              </span>{' '}
+              that are shaping the future on Stellar
             </h1>
 
             <p className='max-w-[300px] text-base font-normal text-white md:max-w-[350px] lg:max-w-[400px]'>
               Validated by the community. Backed milestone by milestone.
             </p>
+          </div>
 
+          {/* Buttons */}
+          <div className='flex flex-col gap-4 sm:flex-row'>
             <BoundlessButton
               onClick={scrollToProjects}
               size='xl'
@@ -85,59 +62,6 @@ export default function ProjectPageHero() {
                 <ArrowDown className='h-4 w-4 transition-transform group-hover:translate-y-1 md:h-4 md:w-4 lg:h-5 lg:w-5' />
               </span>
             </BoundlessButton>
-          </div>
-
-          <div className='relative hidden h-[60vh] md:block lg:h-[70vh]'>
-            <div className='relative mx-auto w-full'>
-              <div className='h-full w-full overflow-hidden rounded-2xl bg-black shadow-2xl shadow-black/80'>
-                <div className='relative h-full w-full'>
-                  <Image
-                    src='/projects.png'
-                    alt='Project cards showcase'
-                    width={520}
-                    height={580}
-                    className='h-auto w-full rounded-lg object-cover'
-                    priority
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            className='bg-gradient-radial pointer-events-none absolute inset-0 hidden rounded-lg from-transparent via-transparent to-black md:block'
-            style={{
-              background:
-                'linear-gradient(0deg, #030303 0%, rgba(3, 3, 3, 0.80) 20%, rgba(3, 3, 3, 0.44) 41.63%, rgba(3, 3, 3, 0.02) 55.9%, rgba(3, 3, 3, 0.90) 80%, #030303 100%)',
-            }}
-          />
-          <div
-            className='bg-gradient-radial pointer-events-none absolute inset-0 hidden rounded-lg from-transparent via-transparent to-black md:block'
-            style={{
-              background:
-                'linear-gradient(270deg, #030303 0%, rgba(3, 3, 3, 0.24) 18%, rgba(3, 3, 3, 0.24) 40%, #030303 53.9%, rgba(3, 3, 3, 0.00) 100%)',
-            }}
-          />
-
-          <div className='md:hidden lg:hidden'>
-            <div className='mx-auto max-w-sm overflow-hidden rounded-xl border border-[#1A1A1A] bg-black p-6 shadow-2xl shadow-black/80'>
-              <div className='relative'>
-                <Image
-                  src='/projects-mobile.png'
-                  alt='Project cards showcase'
-                  width={320}
-                  height={420}
-                  className='h-auto w-full rounded-lg'
-                  priority
-                />
-                <div
-                  className='pointer-events-none absolute inset-0 rounded-lg'
-                  style={{
-                    background:
-                      'radial-gradient(circle at center, transparent 25%, rgba(0,0,0,0.5) 55%, black 80%)',
-                  }}
-                />
-              </div>
-            </div>
           </div>
         </div>
       </div>

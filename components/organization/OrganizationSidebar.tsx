@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useWindowSize } from '@/hooks/use-window-size';
+import { FutureFeature } from '../FeatureFuture';
 
 interface OrganizationSidebarProps {
   organizationId?: string;
@@ -42,6 +43,7 @@ export default function OrganizationSidebar({
       icon: HandCoins,
       label: 'Grants',
       href: derivedOrgId ? `/organizations/${derivedOrgId}/grants` : '#',
+      disabled: true,
     },
     {
       icon: Settings,
@@ -71,8 +73,18 @@ export default function OrganizationSidebar({
             isValidHref &&
             (normalizedPath === item.href ||
               normalizedPath?.startsWith(item.href + '/'));
-
-          return (
+          return item.disabled ? (
+            <FutureFeature key={item.label} badgeClassName='left-26 -top-1.5'>
+              <div
+                className={cn(
+                  'flex items-center gap-3 px-11 py-2.5 text-sm font-medium text-zinc-500'
+                )}
+              >
+                <Icon className='h-4 w-4' />
+                {item.label}
+              </div>
+            </FutureFeature>
+          ) : (
             <Link
               key={item.label}
               href={item.href}
@@ -98,17 +110,14 @@ export default function OrganizationSidebar({
             </div>
             <span>Host Hackathon</span>
           </Link>
-          <Link
-            href={`/organizations/${derivedOrgId}/grants/new`}
-            className='flex items-center gap-3'
-          >
+          <FutureFeature label='Coming Soon'>
             <div className='flex items-center gap-3'>
               <div className='bg-primary grid h-6 w-6 place-content-center rounded-full'>
                 <Plus className='h-5 w-5 text-black' />
               </div>
               <span>Create Grants</span>
             </div>
-          </Link>
+          </FutureFeature>
         </div>
       </nav>
     </aside>
