@@ -42,7 +42,6 @@ export interface HackathonInformation {
   title: string;
   banner: string;
   description: string;
-  category?: HackathonCategory; // Legacy format (single category)
   categories?: HackathonCategory[]; // New format (array of categories)
   venue?: HackathonVenue;
 }
@@ -176,6 +175,7 @@ export type CreateDraftRequest = Partial<HackathonData>;
 export type UpdateDraftRequest = Partial<HackathonData>;
 
 export interface PublishHackathonRequest extends HackathonData {
+  draftId?: string;
   contractId?: string;
   escrowAddress?: string;
   transactionHash?: string;
@@ -786,7 +786,6 @@ const transformHackathonResponse = (
         : flat.category
           ? [flat.category as HackathonCategory]
           : [HackathonCategory.OTHER],
-      category: (flat.category as HackathonCategory) || HackathonCategory.OTHER,
       venue: flat.venue,
     },
     timeline: {
@@ -1379,13 +1378,22 @@ export const transformPublicHackathonToHackathon = (
     internalStatus = 'completed';
   }
 
-  // Get first category or default to OTHER
-  const category = publicHackathon.categories?.[0] || HackathonCategory.OTHER;
-  const categoryEnum = Object.values(HackathonCategory).includes(
-    category as HackathonCategory
-  )
-    ? (category as HackathonCategory)
-    : HackathonCategory.OTHER;
+  // Map all categories from API response
+  const categoriesArray: HackathonCategory[] = publicHackathon.categories
+    ? publicHackathon.categories
+        .map(cat => {
+          // Check if the category string matches any HackathonCategory enum value
+          const matchedCategory = Object.values(HackathonCategory).find(
+            enumCat => enumCat === cat
+          );
+          return matchedCategory || null;
+        })
+        .filter((cat): cat is HackathonCategory => cat !== null)
+    : [];
+
+  // Ensure at least one category
+  const categories: HackathonCategory[] =
+    categoriesArray.length > 0 ? categoriesArray : [HackathonCategory.OTHER];
 
   // Extract resources (telegram, discord, etc.) from resources array
   const telegram = publicHackathon.resources?.find(
@@ -1409,7 +1417,7 @@ export const transformPublicHackathonToHackathon = (
       title: publicHackathon.title,
       banner: publicHackathon.imageUrl,
       description: publicHackathon.description,
-      category: categoryEnum,
+      categories,
       venue,
     },
     timeline: {

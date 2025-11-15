@@ -19,7 +19,7 @@ export const infoSchema = z
       .min(10, 'Description must be at least 10 characters')
       .max(5000, 'Description must be less than 5000 characters'),
 
-    category: z
+    categories: z
       .array(
         z.enum([
           'DeFi',

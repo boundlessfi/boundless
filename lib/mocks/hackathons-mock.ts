@@ -25,7 +25,6 @@ export const mockHackathons: (Hackathon & {
       banner: '/banner.png',
       description:
         'Build the next generation of DeFi applications on Stellar. Create innovative solutions for lending, borrowing, and yield farming.',
-      category: HackathonCategory.DEFI,
       venue: {
         type: VenueType.VIRTUAL,
       },
@@ -115,7 +114,6 @@ export const mockHackathons: (Hackathon & {
       banner: '/blog1.png',
       description:
         'Create a fully-featured NFT marketplace on Stellar with minting, trading, and auction capabilities.',
-      category: HackathonCategory.NFTS,
       venue: {
         type: VenueType.PHYSICAL,
         country: 'United States',
@@ -202,7 +200,6 @@ export const mockHackathons: (Hackathon & {
       banner: '/blog2.jpg',
       description:
         'Develop a secure and efficient bridge protocol connecting Stellar with other blockchain networks.',
-      category: HackathonCategory.CROSS_CHAIN,
       venue: {
         type: VenueType.VIRTUAL,
       },
@@ -292,7 +289,6 @@ export const mockHackathons: (Hackathon & {
       banner: '/blog3.jpg',
       description:
         'Build Layer 2 solutions to improve Stellar network throughput and reduce transaction costs.',
-      category: HackathonCategory.LAYER_2,
       venue: {
         type: VenueType.VIRTUAL,
       },
@@ -369,7 +365,6 @@ export const mockHackathons: (Hackathon & {
       banner: '/blog4.jpg',
       description:
         'Create a Web3 gaming platform with NFT integration, play-to-earn mechanics, and Stellar-based transactions.',
-      category: HackathonCategory.WEB3_GAMING,
       venue: {
         type: VenueType.PHYSICAL,
         country: 'United Kingdom',
@@ -461,7 +456,6 @@ export const mockHackathons: (Hackathon & {
       banner: '/blog5.jpg',
       description:
         'Build a comprehensive DAO governance platform with voting, proposals, and treasury management on Stellar.',
-      category: HackathonCategory.DAOS,
       venue: {
         type: VenueType.VIRTUAL,
       },
@@ -545,7 +539,6 @@ export const mockHackathons: (Hackathon & {
       banner: '/blog6.jpg',
       description:
         'Develop essential infrastructure tools and SDKs to make building on Stellar easier for developers.',
-      category: HackathonCategory.INFRASTRUCTURE,
       venue: {
         type: VenueType.VIRTUAL,
       },
@@ -620,7 +613,6 @@ export const mockHackathons: (Hackathon & {
       banner: '/landing/explore/project-placeholder-1.png',
       description:
         'Build privacy-preserving solutions using zero-knowledge proofs and other cryptographic techniques on Stellar.',
-      category: HackathonCategory.PRIVACY,
       venue: {
         type: VenueType.VIRTUAL,
       },

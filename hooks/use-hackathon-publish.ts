@@ -40,6 +40,7 @@ interface StepData {
 interface UseHackathonPublishProps {
   organizationId: string;
   stepData: StepData;
+  draftId?: string | null;
   publishHackathonAction: (
     data: PublishHackathonRequest
   ) => Promise<{ _id: string }>;
@@ -48,6 +49,7 @@ interface UseHackathonPublishProps {
 export const useHackathonPublish = ({
   organizationId,
   stepData,
+  draftId,
   publishHackathonAction,
 }: UseHackathonPublishProps) => {
   const router = useRouter();
@@ -196,6 +198,9 @@ export const useHackathonPublish = ({
 
       toast.info('Publishing hackathon...');
       const apiData = transformToApiFormat(stepData) as PublishHackathonRequest;
+      if (draftId) {
+        apiData.draftId = draftId;
+      }
       apiData.contractId = contractId;
       apiData.escrowAddress = escrowAddress;
       apiData.transactionHash = transactionHash;
