@@ -44,7 +44,7 @@ export default function OrganizationCard({
           <div className='flex min-w-0 flex-1 items-center gap-3'>
             <Image
               src={logo || '/placeholder.svg'}
-              alt={`${name} Logo`}
+              alt={`Org Logo`}
               width={40}
               height={40}
               className='flex-shrink-0 rounded-lg object-contain'

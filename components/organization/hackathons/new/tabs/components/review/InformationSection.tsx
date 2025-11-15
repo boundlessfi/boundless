@@ -80,7 +80,14 @@ export default function InformationSection({
       <div className='grid grid-cols-1 gap-4'>
         <InfoItem label='Title' value={data.name} />
         <Separator className='bg-gray-900' />
-        <InfoItem label='Category' value={data.category} />
+        <InfoItem
+          label='Categories'
+          value={
+            Array.isArray(data.category)
+              ? data.category.join(', ')
+              : data.category || ''
+          }
+        />
         <Separator className='bg-gray-900' />
         <InfoItem label='Venue Type' value={data.venueType} />
         <Separator className='bg-gray-900' />

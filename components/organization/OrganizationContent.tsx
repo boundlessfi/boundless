@@ -67,14 +67,20 @@ export default function OrganizationContent() {
         {hasOrganizations && (
           <div className='grid grid-cols-1 gap-6'>
             {organizations.map(org => (
-              <Link href={`/organizations/${org._id}/settings`} key={org._id}>
+              <Link href={`/organizations/${org._id}`} key={org._id}>
                 <OrganizationCard
                   id={org._id}
                   name={org.name}
                   logo={org.logo}
                   createdAt={org.createdAt}
-                  hackathons={{ count: 0, submissions: 0 }}
-                  grants={{ count: 0, applications: 0 }}
+                  hackathons={{
+                    count: org.hackathonCount ?? 0,
+                    submissions: 0, // TODO: Add submissions count to OrganizationSummary if available
+                  }}
+                  grants={{
+                    count: org.grantCount ?? 0,
+                    applications: 0, // TODO: Add applications count to OrganizationSummary if available
+                  }}
                 />
               </Link>
             ))}

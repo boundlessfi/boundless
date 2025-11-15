@@ -8,17 +8,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import React from 'react';
-import {
-  loadCountries,
-  loadStatesByCountry,
-  loadCitiesByState,
-  geocodeAddress,
-  Country,
-  State,
-  City,
-} from '@/lib/country-utils';
 import dynamic from 'next/dynamic';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { infoSchema, InfoFormData } from './schemas/infoSchema';
@@ -27,6 +18,8 @@ import CategorySelection from './components/CategorySelection';
 import VenueSection from './components/VenueSection';
 import { BoundlessButton } from '@/components/buttons';
 import { toast } from 'sonner';
+import { useLocationData } from '@/hooks/use-location-data';
+import { useGeocoding } from '@/hooks/use-geocoding';
 
 const DynamicMinimalTiptap = dynamic(
   () =>
@@ -59,7 +52,9 @@ export default function InfoTab({
       name: initialData?.name || '',
       banner: initialData?.banner || '',
       description: initialData?.description || '',
-      category: initialData?.category || '',
+      category: Array.isArray(initialData?.category)
+        ? (initialData.category[0] as string) || ''
+        : (initialData?.category as string) || '',
       venueType: initialData?.venueType || 'physical',
       country: initialData?.country || '',
       state: initialData?.state || '',
@@ -69,16 +64,23 @@ export default function InfoTab({
     },
   });
 
-  const [countries, setCountries] = useState<Country[]>([]);
-  const [states, setStates] = useState<State[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedState, setSelectedState] = useState<string>('');
-  const [mapLocation, setMapLocation] = useState<{
-    lat: number;
-    lng: number;
-    address: string;
-  } | null>(null);
+
+  const { countries, states, cities } = useLocationData({
+    selectedCountry,
+    selectedState,
+    setValue: form.setValue,
+  });
+
+  const { mapLocation } = useGeocoding({
+    countries,
+    states,
+    cities,
+    selectedCountry,
+    selectedState,
+    watch: form.watch,
+  });
 
   const onSubmit = async (data: InfoFormData) => {
     try {
@@ -91,147 +93,6 @@ export default function InfoTab({
       toast.error('Failed to save information. Please try again.');
     }
   };
-
-  useEffect(() => {
-    const loadCountriesData = async () => {
-      try {
-        const countriesData = await loadCountries();
-        setCountries(countriesData);
-      } catch {
-        toast.error('Failed to load countries. Please try again.');
-      }
-    };
-    loadCountriesData();
-  }, []);
-
-  useEffect(() => {
-    if (selectedCountry) {
-      const loadStatesData = async () => {
-        try {
-          const statesData = await loadStatesByCountry(selectedCountry);
-          setStates(statesData);
-          setCities([]);
-          setSelectedState('');
-          form.setValue('state', '');
-          form.setValue('city', '');
-        } catch {
-          toast.error('Failed to load states');
-          setStates([]);
-        }
-      };
-      loadStatesData();
-    } else {
-      setStates([]);
-      setCities([]);
-      setSelectedState('');
-    }
-  }, [selectedCountry, form]);
-
-  useEffect(() => {
-    if (selectedCountry && selectedState) {
-      const loadCitiesData = async () => {
-        try {
-          const citiesData = await loadCitiesByState(
-            selectedCountry,
-            selectedState
-          );
-          setCities(citiesData);
-
-          form.setValue('city', '');
-        } catch {
-          toast.error('Failed to load cities');
-          setCities([]);
-        }
-      };
-      loadCitiesData();
-    } else {
-      setCities([]);
-    }
-  }, [selectedCountry, selectedState, form]);
-
-  const getLocationCenter = useCallback(() => {
-    const country = countries.find(c => c.iso2 === selectedCountry);
-    const state = states.find(s => s.state_code === selectedState);
-    const city = cities.find(c => c.name === form.watch('city'));
-
-    if (city) {
-      return {
-        lat: city.latitude,
-        lng: city.longitude,
-        address: `${city.name}, ${state?.name || ''}, ${country?.name || ''}`
-          .replace(/,\s*,/g, ',')
-          .replace(/,$/, ''),
-      };
-    } else if (state) {
-      return {
-        lat: state.latitude,
-        lng: state.longitude,
-        address: `${state.name}, ${country?.name || ''}`
-          .replace(/,\s*,/g, ',')
-          .replace(/,$/, ''),
-      };
-    } else if (country) {
-      return {
-        lat: country.latitude,
-        lng: country.longitude,
-        address: country.name,
-      };
-    }
-    return null;
-  }, [countries, states, cities, selectedCountry, selectedState, form]);
-
-  const geocodeAddressHandler = useCallback(
-    async (address: string) => {
-      if (!address.trim()) return;
-
-      try {
-        const country = countries.find(c => c.iso2 === selectedCountry);
-        const state = states.find(s => s.state_code === selectedState);
-        const city = form.watch('city');
-
-        let searchQuery = address;
-        if (city && city !== 'other') {
-          searchQuery = `${address}, ${city}`;
-        }
-        if (state && state.name) {
-          searchQuery += `, ${state.name}`;
-        }
-        if (country && country.name) {
-          searchQuery += `, ${country.name}`;
-        }
-
-        const result = await geocodeAddress(searchQuery);
-        if (result) {
-          setMapLocation(result);
-        }
-      } catch {
-        // Silently fail geocoding as it's not critical
-      }
-    },
-    [countries, states, selectedCountry, selectedState, form]
-  );
-
-  useEffect(() => {
-    const address = form.watch('venueAddress');
-    const country = form.watch('country');
-    const state = form.watch('state');
-    const city = form.watch('city');
-
-    if (form.watch('venueType') === 'physical') {
-      if (address && address.trim()) {
-        const timeoutId = setTimeout(() => {
-          geocodeAddressHandler(address);
-        }, 1000);
-
-        return () => clearTimeout(timeoutId);
-      } else if (country || state || city) {
-        const locationCenter = getLocationCenter();
-        if (locationCenter) {
-          setMapLocation(locationCenter);
-        }
-      }
-    }
-  }, [form, geocodeAddressHandler, getLocationCenter]);
 
   return (
     <Form {...form}>

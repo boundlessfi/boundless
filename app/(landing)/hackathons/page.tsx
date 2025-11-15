@@ -1,15 +1,15 @@
-import React from 'react';
 import { Metadata } from 'next';
 import { generatePageMetadata } from '@/lib/metadata';
+import HackathonsPageHero from '@/components/hackathons/HackathonsPageHero';
+import HackathonsPage from '@/components/hackathons/HackathonsPage';
 
 export const metadata: Metadata = generatePageMetadata('hackathons');
 
-const HackathonsPage = () => {
+export default function HackathonsPageRoute() {
   return (
-    <div className='mx-auto mt-10 max-w-[1440px] px-5 py-5 text-center text-4xl font-bold text-white md:px-[50px] lg:px-[100px]'>
-      Hackathons Page
+    <div className='relative mx-auto min-h-screen max-w-[1440px] px-5 py-5 md:px-[50px] lg:px-[100px]'>
+      <HackathonsPageHero />
+      <HackathonsPage />
     </div>
   );
-};
-
-export default HackathonsPage;
+}
