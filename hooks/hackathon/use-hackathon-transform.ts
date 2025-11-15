@@ -125,14 +125,12 @@ export function useHackathonTransform() {
         extendedHackathon._organizationName ||
         'organization';
 
-      // Extract categories - support both single category and multiple categories
+      // Extract categories
       const categories: string[] = [];
-      if (hackathon.information?.category) {
-        // If category is an array, use it; otherwise convert single category to array
-        if (Array.isArray(hackathon.information.category)) {
-          categories.push(...hackathon.information.category);
-        } else {
-          categories.push(hackathon.information.category);
+      if (hackathon.information?.categories) {
+        // If categories is an array, use it
+        if (Array.isArray(hackathon.information.categories)) {
+          categories.push(...hackathon.information.categories);
         }
       }
       // Add additional categories if they exist in the hackathon object

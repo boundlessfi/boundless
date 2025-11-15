@@ -28,14 +28,12 @@ export const transformToApiFormat = (stepData: {
   const judging = stepData.judging;
   const collaboration = stepData.collaboration;
 
-  // Convert form category array to API format
-  const categoriesArray: HackathonCategory[] = Array.isArray(info?.category)
-    ? (info.category as HackathonCategory[]).filter(cat =>
+  // Convert form categories array to API format
+  const categoriesArray: HackathonCategory[] = Array.isArray(info?.categories)
+    ? (info.categories as HackathonCategory[]).filter(cat =>
         Object.values(HackathonCategory).includes(cat)
       )
-    : info?.category && typeof info.category === 'string'
-      ? [info.category as HackathonCategory]
-      : [];
+    : [];
 
   return {
     information: {
@@ -48,11 +46,6 @@ export const transformToApiFormat = (stepData: {
         categoriesArray.length > 0
           ? categoriesArray
           : [HackathonCategory.OTHER],
-      // Also include legacy category for backward compatibility (first category)
-      category:
-        categoriesArray.length > 0
-          ? categoriesArray[0]
-          : HackathonCategory.OTHER,
       venue: {
         type: (info?.venueType as VenueType) || VenueType.VIRTUAL,
         country: info?.country,
@@ -144,19 +137,15 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
   const judging = draft.judging;
   const collaboration = draft.collaboration;
 
-  // Handle both new format (categories array) and legacy format (category string)
-  const categoriesArray: string[] = info?.categories
-    ? info.categories
-    : info?.category
-      ? [info.category]
-      : [];
+  // Handle categories array
+  const categoriesArray: string[] = info?.categories ? info.categories : [];
 
   return {
     information: {
       name: info?.title || '',
       banner: info?.banner || '',
       description: info?.description || '',
-      category: categoriesArray,
+      categories: categoriesArray,
       venueType: info?.venue?.type || 'physical',
       country: info?.venue?.country || '',
       state: info?.venue?.state || '',

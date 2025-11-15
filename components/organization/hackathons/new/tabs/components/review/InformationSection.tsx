@@ -83,9 +83,7 @@ export default function InformationSection({
         <InfoItem
           label='Categories'
           value={
-            Array.isArray(data.category)
-              ? data.category.join(', ')
-              : data.category || ''
+            Array.isArray(data.categories) ? data.categories.join(', ') : ''
           }
         />
         <Separator className='bg-gray-900' />
