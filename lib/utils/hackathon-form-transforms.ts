@@ -42,6 +42,7 @@ export const transformToApiFormat = (stepData: {
       title: info?.name || '',
       banner: info?.banner || '',
       description: info?.description || '',
+      slug: info?.slug || '',
       // Send categories array (new format, recommended)
       categories:
         categoriesArray.length > 0

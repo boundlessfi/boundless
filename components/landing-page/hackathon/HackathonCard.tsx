@@ -38,7 +38,7 @@ const formatFullNumber = (num: number): string =>
 
 function HackathonCard({
   hackathonId,
-  organizationName,
+  // organizationName,
   hackathonSlug,
   organizerName,
   organizerLogo,
@@ -58,7 +58,7 @@ function HackathonCard({
 
   const handleClick = () => {
     const slug = hackathonSlug || hackathonId || '';
-    router.push(`/hackathons/${organizationName}/${slug}`);
+    router.push(`/hackathons/${slug}`);
   };
 
   const getStatusColor = () => {

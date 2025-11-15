@@ -45,6 +45,7 @@ export interface HackathonInformation {
   category?: HackathonCategory; // Legacy format (single category)
   categories?: HackathonCategory[]; // New format (array of categories)
   venue?: HackathonVenue;
+  slug: string;
 }
 
 // Timeline Tab Types
@@ -737,6 +738,7 @@ interface FlatHackathonData {
   rewards?: HackathonRewards;
   judging?: HackathonJudging;
   collaboration?: HackathonCollaboration;
+  slug: string;
 }
 
 /**
@@ -780,6 +782,7 @@ const transformHackathonResponse = (
       title: flat.title || '',
       banner: flat.banner || '',
       description: flat.description || '',
+      slug: flat.slug || '',
       // Support both new format (categories) and legacy format (category)
       categories: Array.isArray(flat.categories)
         ? (flat.categories as HackathonCategory[])
@@ -1410,6 +1413,7 @@ export const transformPublicHackathonToHackathon = (
       banner: publicHackathon.imageUrl,
       description: publicHackathon.description,
       category: categoryEnum,
+      slug: publicHackathon.slug,
       venue,
     },
     timeline: {
