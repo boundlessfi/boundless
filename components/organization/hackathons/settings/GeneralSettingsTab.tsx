@@ -78,7 +78,11 @@ export default function GeneralSettingsTab({
       name: initialData?.name || '',
       banner: initialData?.banner || '',
       description: initialData?.description || '',
-      category: initialData?.category || '',
+      category: Array.isArray(initialData?.category)
+        ? initialData.category
+        : initialData?.category
+          ? [initialData.category]
+          : [],
       venueType: initialData?.venueType || 'virtual',
       country: initialData?.country || '',
       state: initialData?.state || '',
