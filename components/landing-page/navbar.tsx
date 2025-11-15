@@ -27,12 +27,13 @@ import {
 } from '../ui/dropdown-menu';
 import { User, LogOut, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import WalletConnectButton from '../wallet/WalletConnectButton';
+// import WalletConnectButton from '../wallet/WalletConnectButton';
 import CreateProjectModal from './project/CreateProjectModal';
 import { useProtectedAction } from '@/hooks/use-protected-action';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 import { useWindowSize } from '@/hooks/use-window-size';
+import { WalletButton } from '../wallet/WalletButton';
 
 gsap.registerPlugin(useGSAP);
 
@@ -262,7 +263,7 @@ function AuthenticatedNav({
   });
   return (
     <div className='flex items-center space-x-2 lg:space-x-3'>
-      <WalletConnectButton />
+      <WalletButton />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <BoundlessButton className='hover:!text-primary tr bg-transparent text-white hover:bg-transparent'>
@@ -696,10 +697,10 @@ function MobileMenu({
                   <h3 className='text-xs font-semibold tracking-wider text-white/60 uppercase'>
                     Wallet
                   </h3>
-                  <WalletConnectButton
-                    variant='outline'
-                    size='sm'
-                    className='w-full border-white/20 bg-white/5 text-white hover:border-white/30 hover:bg-white/10'
+                  <WalletButton
+                  // variant='outline'
+                  // size='sm'
+                  // className='w-full border-white/20 bg-white/5 text-white hover:border-white/30 hover:bg-white/10'
                   />
                 </div>
 
@@ -754,10 +755,10 @@ function MobileMenu({
                   <h3 className='text-xs font-semibold tracking-wider text-white/60 uppercase'>
                     Connect Wallet
                   </h3>
-                  <WalletConnectButton
-                    variant='outline'
-                    size='sm'
-                    className='w-full border-white/20 bg-white/5 text-white hover:border-white/30 hover:bg-white/10'
+                  <WalletButton
+                  // variant='outline'
+                  // size='sm'
+                  // className='w-full border-white/20 bg-white/5 text-white hover:border-white/30 hover:bg-white/10'
                   />
                 </div>
 

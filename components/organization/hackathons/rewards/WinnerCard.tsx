@@ -5,6 +5,11 @@ import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Submission } from './types';
 import Ribbon from '@/components/svg/Ribbon';
@@ -38,7 +43,7 @@ export default function WinnerCard({
   return (
     <div
       className={cn(
-        'bg-background-card relative overflow-hidden rounded-lg p-6 transition-transform',
+        'bg-background-card relative w-fit overflow-hidden rounded-lg p-6 transition-transform',
         getScaleClass()
       )}
     >
@@ -101,9 +106,16 @@ export default function WinnerCard({
               />
             </div>
             <div className='flex items-center gap-1'>
-              <p className='text-sm font-medium text-white'>
-                {winner.projectName}
-              </p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className='line-clamp-1 cursor-help text-sm font-medium text-white'>
+                    {winner.projectName}
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent side='top' className='max-w-xs'>
+                  <p className='break-words'>{winner.projectName}</p>
+                </TooltipContent>
+              </Tooltip>
               <Badge className='bg-office-brown border-office-brown-darker text-office-brown-darker rounded-[4px] border px-1 py-0.5 text-xs font-medium'>
                 Category
               </Badge>

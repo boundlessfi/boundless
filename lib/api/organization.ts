@@ -418,6 +418,50 @@ export const getOrganizationStats = async (
 };
 
 /**
+ * Organization Analytics Trend Data
+ */
+export interface OrganizationTrend {
+  current: number;
+  previous: number;
+  change: number;
+  changePercentage: number;
+  isPositive: boolean;
+}
+
+/**
+ * Organization Analytics Time Series Data Point
+ */
+export interface OrganizationTimeSeriesPoint {
+  month: string;
+  year: number;
+  count: number;
+  timestamp: string;
+}
+
+/**
+ * Get organization analytics (trends and time series data)
+ */
+export const getOrganizationAnalytics = async (
+  organizationId: string
+): Promise<{
+  success: boolean;
+  data: {
+    trends: {
+      members: OrganizationTrend;
+      hackathons: OrganizationTrend;
+      grants: OrganizationTrend;
+    };
+    timeSeries: {
+      hackathons: OrganizationTimeSeriesPoint[];
+    };
+  };
+  message: string;
+}> => {
+  const res = await api.get(`/organizations/${organizationId}/analytics`);
+  return res.data;
+};
+
+/**
  * Search organizations
  */
 export const searchOrganizations = async (

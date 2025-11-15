@@ -384,7 +384,7 @@ export interface CrowdfundingSocialLink {
 
 export interface CreateCrowdfundingProjectRequest {
   title: string;
-  logo?: string;
+  logo: string;
   vision: string;
   category: string;
   details: string;
@@ -398,7 +398,11 @@ export interface CreateCrowdfundingProjectRequest {
   team: CrowdfundingTeamMember[];
   contact: CrowdfundingContact;
   socialLinks?: CrowdfundingSocialLink[];
-  signer: string;
+  // Blockchain transaction data (handled by frontend)
+  contractId: string;
+  escrowAddress: string;
+  transactionHash: string;
+  escrowDetails?: object; // Optional escrow details from frontend
 }
 
 // Step 1: Prepare Project Response
@@ -651,6 +655,8 @@ export interface CrowdfundingProject {
   };
   trustlessWorkStatus: string;
   escrowType: string;
+  contractId?: string; // Escrow contract ID
+  escrowAddress?: string; // Escrow address (same as contractId in Stellar)
   createdAt: string;
   updatedAt: string;
   __v: number;
@@ -752,6 +758,27 @@ export interface DeleteCrowdfundingProjectResponse {
 }
 
 // Funding Types
+export interface FundCrowdfundingProjectRequest {
+  amount: number;
+  transactionHash: string; // Blockchain transaction hash from frontend after signing
+}
+
+export interface FundCrowdfundingProjectResponse {
+  success: boolean;
+  message: string;
+  data: {
+    project: CrowdfundingProject;
+    funding: {
+      amount: number;
+      transactionHash: string;
+      newTotalRaised: number;
+      isFullyFunded: boolean;
+      remainingGoal: number;
+    };
+  };
+}
+
+// Deprecated: Legacy funding types (kept for backward compatibility)
 export interface PrepareFundingRequest {
   amount: number;
   signer: string;

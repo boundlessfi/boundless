@@ -130,7 +130,6 @@ export default function PermissionsTable() {
     isOwner,
   } = useOrganization();
 
-  // ✔ FIX: useCallback so exhaustive-deps is happy
   const loadPermissions = useCallback(async () => {
     if (!activeOrgId) return;
 
@@ -167,7 +166,6 @@ export default function PermissionsTable() {
     }
   }, [activeOrgId, getOrganizationPermissions]);
 
-  // ✔ FIX: safe dependency array
   useEffect(() => {
     loadPermissions();
   }, [loadPermissions]);

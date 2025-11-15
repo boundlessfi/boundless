@@ -7,4 +7,8 @@ export interface Submission {
   maxScore: number;
   rank?: number;
   submissionTitle: string;
+  participantId?: string;
+  walletAddress?: string;
+  averageScore?: number;
+  judgeCount?: number;
 }

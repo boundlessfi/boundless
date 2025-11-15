@@ -8,7 +8,7 @@ import { SidebarTrigger } from '../ui/sidebar';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { fadeInUp, slideInFromLeft, slideInFromRight } from '@/lib/motion';
-import WalletConnectButton from '../wallet/WalletConnectButton';
+import { WalletButton } from '../wallet/WalletButton';
 import { ProjectSheetFlow } from '../project';
 import { useProjectSheetStore } from '@/lib/stores/project-sheet-store';
 import { useProtectedAction } from '@/hooks/use-protected-action';
@@ -110,11 +110,7 @@ const Header = () => {
 
         {/* Wallet Connect Button */}
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <WalletConnectButton
-            variant='default'
-            size='default'
-            className='min-w-[140px] border border-[#2B2B2B] bg-[#101010] text-[#fff] hover:border-[#2B2B2B] hover:bg-[#101010]'
-          />
+          <WalletButton />
         </motion.div>
       </motion.div>
       <ProjectSheetFlow

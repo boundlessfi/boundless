@@ -1,7 +1,6 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   outputFileTracingRoot: __dirname,
   images: {
     domains: ['i.pravatar.cc'],
@@ -36,7 +35,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'api.dicebear.com',
+        hostname: 'example.com',
       },
       {
         protocol: 'https',

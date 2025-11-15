@@ -41,8 +41,9 @@ export function FundingModal({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [unsignedXdr, setUnsignedXdr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { signTransaction } = useWalletSigning();
-  const { address } = useWalletInfo() || { address: '' };
+  const walletSigning = useWalletSigning();
+  const walletInfo = useWalletInfo();
+  const address = walletInfo?.address || '';
 
   const remainingGoal = Math.max(0, fundingGoal - currentRaised);
   const progressPercentage = (currentRaised / fundingGoal) * 100;
@@ -78,7 +79,9 @@ export function FundingModal({
       setUnsignedXdr(prepareResponse.data.unsignedXdr);
 
       // Step 2: Sign transaction
-      const signedXdr = await signTransaction(prepareResponse.data.unsignedXdr);
+      const signedXdr = await walletSigning.signTransaction(
+        prepareResponse.data.unsignedXdr
+      );
 
       // Step 3: Confirm funding
       setStep('confirming');

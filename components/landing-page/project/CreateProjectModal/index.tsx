@@ -11,17 +11,23 @@ import LoadingScreen from './LoadingScreen';
 import SuccessScreen from './SuccessScreen';
 import TransactionSigningScreen from './TransactionSigningScreen';
 import { z } from 'zod';
-import {
-  prepareCrowdfundingProject,
-  confirmCrowdfundingProject,
-} from '@/lib/api/project';
-import {
-  CreateCrowdfundingProjectRequest,
-  PrepareCrowdfundingProjectResponse,
-} from '@/lib/api/types';
-import { useWalletInfo, useWalletSigning } from '@/hooks/use-wallet';
+import { createCrowdfundingProject } from '@/lib/api/project';
+import { CreateCrowdfundingProjectRequest } from '@/lib/api/types';
 import { useWalletProtection } from '@/hooks/use-wallet-protection';
 import { cn } from '@/lib/utils';
+import { useWalletContext } from '@/components/providers/wallet-provider';
+import { signTransaction } from '@/lib/config/wallet-kit';
+import {
+  useInitializeEscrow,
+  useSendTransaction,
+} from '@trustless-work/escrow';
+import {
+  InitializeMultiReleaseEscrowPayload,
+  EscrowType,
+  EscrowRequestResponse,
+  Status,
+  InitializeMultiReleaseEscrowResponse,
+} from '@trustless-work/escrow';
 
 type StepHandle = { validate: () => boolean; markSubmitted?: () => void };
 
@@ -49,15 +55,19 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
   );
   const [isSigningTransaction, setIsSigningTransaction] = useState(false);
 
-  // New state for two-step flow
-  const [preparedData, setPreparedData] = useState<
-    PrepareCrowdfundingProjectResponse['data'] | null
-  >(null);
+  // Escrow hooks
+  const { deployEscrow } = useInitializeEscrow();
+  const { sendTransaction } = useSendTransaction();
+
+  // Flow state
   const [flowStep, setFlowStep] = useState<
-    'form' | 'preparing' | 'signing' | 'confirming' | 'success'
+    'form' | 'initializing' | 'signing' | 'confirming' | 'success'
   >('form');
 
-  const { address } = useWalletInfo() || { address: '' };
+  const { walletAddress } = useWalletContext() || {
+    walletAddress: '',
+    walletName: '',
+  };
 
   // Form data state
   const [formData, setFormData] = useState<ProjectFormData>({
@@ -81,7 +91,6 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Wallet signing hooks
-  const { signTransaction } = useWalletSigning();
   const { requireWallet } = useWalletProtection({
     actionName: 'sign project creation transaction',
   });
@@ -222,7 +231,7 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
 
     return {
       title: basic.projectName || '',
-      logo: basic.logoUrl || undefined, // Use uploaded logo URL
+      logo: basic.logoUrl || '',
       vision: basic.vision || '',
       category: basic.category || '',
       details: details.vision || '',
@@ -239,7 +248,10 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
         backup: contact.backupContact || '',
       },
       socialLinks: apiSocialLinks,
-      signer: address,
+      contractId: '',
+      escrowAddress: '',
+      transactionHash: '',
+      escrowDetails: {},
     };
   };
 
@@ -249,8 +261,8 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
   };
 
   const handleSignTransaction = async () => {
-    if (!unsignedTransaction || !preparedData) {
-      setSubmitErrors(['No transaction to sign or prepared data missing']);
+    if (!unsignedTransaction) {
+      setSubmitErrors(['No transaction to sign']);
       return;
     }
 
@@ -259,29 +271,45 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
       setFlowStep('confirming');
 
       try {
-        // Sign the transaction using the wallet
-        const signedXdr = await signTransaction(unsignedTransaction);
-
-        // Submit the signed transaction to the backend (Step 2)
-        const confirmResponse = await confirmCrowdfundingProject({
-          signedXdr,
-          escrowAddress: preparedData.escrowAddress,
-          projectData: preparedData.projectData,
-          mappedMilestones: preparedData.mappedMilestones,
-          teamInvitations: preparedData.teamInvitations,
+        // Step 3: Sign transaction with wallet
+        const signedXdr = await signTransaction({
+          unsignedTransaction,
+          address: walletAddress || '',
         });
 
-        if (confirmResponse.success) {
-          // Project created successfully
-          setFlowStep('success');
-          setShowSuccess(true);
-          setIsSigningTransaction(false);
-          setIsSubmitting(false);
-        } else {
-          throw new Error(
-            confirmResponse.message || 'Failed to create project'
-          );
+        // Step 4: Send transaction
+        const sendResponse = await sendTransaction(signedXdr);
+
+        // Type guard: Check if response is successful
+        if (
+          'status' in sendResponse &&
+          sendResponse.status !== ('SUCCESS' as Status)
+        ) {
+          const errorMessage =
+            'message' in sendResponse &&
+            typeof sendResponse.message === 'string'
+              ? sendResponse.message
+              : 'Failed to send transaction';
+          throw new Error(errorMessage);
         }
+
+        // Extract contractId and transaction hash from response
+        if (!('contractId' in sendResponse)) {
+          throw new Error('Response does not contain contractId');
+        }
+
+        const responseData =
+          sendResponse as InitializeMultiReleaseEscrowResponse;
+        const contractId = responseData.contractId;
+
+        // Extract transaction hash
+        // Note: The actual transaction hash will be available after the transaction is submitted
+        // For now, we use the contractId as the transaction identifier
+        // The backend may accept this or we can update it with the actual hash later
+        const transactionHash = contractId;
+
+        // Now create the project with escrow data
+        await handleCreateProject(contractId, transactionHash);
       } catch (error) {
         let errorMessage = 'Failed to sign transaction. Please try again.';
 
@@ -314,10 +342,51 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
     }
   };
 
+  const handleCreateProject = async (
+    contractId: string,
+    transactionHash: string
+  ) => {
+    try {
+      // Map form data to API request format
+      const apiRequest = mapFormDataToApiRequest(formData);
+
+      // Add escrow data
+      const projectRequest: CreateCrowdfundingProjectRequest = {
+        ...apiRequest,
+        contractId,
+        escrowAddress: contractId, // In Stellar, contractId is the escrow address
+        transactionHash,
+        escrowDetails: {}, // Optional escrow details
+      };
+
+      // Create the project
+      const response = await createCrowdfundingProject(projectRequest);
+
+      if (response.success) {
+        // Project created successfully
+        setFlowStep('success');
+        setShowSuccess(true);
+        setIsSigningTransaction(false);
+        setIsSubmitting(false);
+      } else {
+        throw new Error(response.message || 'Failed to create project');
+      }
+    } catch (error) {
+      let errorMessage = 'Failed to create project. Please try again.';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      setSubmitErrors([errorMessage]);
+      setIsSigningTransaction(false);
+      setFlowStep('signing');
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setIsLoading(true);
-    setFlowStep('preparing');
 
     try {
       const milestoneSchema = z
@@ -532,21 +601,70 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
 
       setSubmitErrors([]);
 
-      // Map form data to API request format
-      const apiRequest = mapFormDataToApiRequest(payload);
-
-      // Step 1: Prepare project and get unsigned transaction
-      const prepareResponse = await prepareCrowdfundingProject(apiRequest);
-
-      if (prepareResponse.success) {
-        // Store prepared data for step 2
-        setPreparedData(prepareResponse.data);
-        setUnsignedTransaction(prepareResponse.data.unsignedXdr);
-        setFlowStep('signing');
-        setIsLoading(false);
-      } else {
-        throw new Error(prepareResponse.message || 'Failed to prepare project');
+      if (!walletAddress) {
+        throw new Error(
+          'Wallet not connected. Please connect your wallet first.'
+        );
       }
+
+      // Map form data to escrow payload
+      const milestones = payload.milestones || {
+        milestones: [],
+        fundingAmount: '0',
+      };
+      const totalFunding = parseFloat(milestones.fundingAmount || '0');
+      const milestoneCount = milestones.milestones?.length || 1;
+      const amountPerMilestone = Math.floor(totalFunding / milestoneCount);
+
+      // Step 1: Initialize escrow with Trustless Work
+      const escrowPayload: InitializeMultiReleaseEscrowPayload = {
+        signer: walletAddress,
+        engagementId: `project-${Date.now()}`, // Generate unique engagement ID
+        title: payload.basic?.projectName || 'Crowdfunding Project',
+        description: payload.basic?.vision || payload.details?.vision || '',
+        platformFee: 4, // 4% platform fee
+        trustline: {
+          address: 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA', // USDC trustline
+        },
+        roles: {
+          approver: walletAddress,
+          serviceProvider: walletAddress,
+          platformAddress: walletAddress,
+          releaseSigner: walletAddress,
+          disputeResolver: walletAddress,
+        },
+        milestones: (milestones.milestones || []).map(milestone => ({
+          description: `${milestone.title}: ${milestone.description}`,
+          amount: amountPerMilestone,
+          receiver: walletAddress, // Funds go to project creator
+        })),
+      };
+
+      setFlowStep('initializing');
+
+      // Step 2: Execute function from Trustless Work
+      const escrowResponse: EscrowRequestResponse = await deployEscrow(
+        escrowPayload,
+        'multi-release' as EscrowType
+      );
+
+      // Type guard: Check if response is successful
+      if (
+        escrowResponse.status !== ('SUCCESS' as Status) ||
+        !escrowResponse.unsignedTransaction
+      ) {
+        const errorMessage =
+          'message' in escrowResponse &&
+          typeof escrowResponse.message === 'string'
+            ? escrowResponse.message
+            : 'Failed to initialize escrow';
+        throw new Error(errorMessage);
+      }
+
+      const { unsignedTransaction } = escrowResponse;
+      setUnsignedTransaction(unsignedTransaction);
+      setFlowStep('signing');
+      setIsLoading(false);
     } catch (error) {
       let errorMessage = 'Error preparing project. Please try again.';
 
@@ -623,7 +741,6 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
     setUnsignedTransaction(null);
     setIsSigningTransaction(false);
     setSubmitErrors([]);
-    setPreparedData(null);
     setFlowStep('form');
     setOpen(false);
   };
@@ -732,8 +849,8 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
   };
 
   const renderStepContent = () => {
-    // Handle the new two-step flow states
-    if (flowStep === 'preparing' || isLoading) {
+    // Handle the flow states
+    if (flowStep === 'initializing' || (isLoading && flowStep !== 'signing')) {
       return <LoadingScreen />;
     }
     if (flowStep === 'success' || showSuccess) {

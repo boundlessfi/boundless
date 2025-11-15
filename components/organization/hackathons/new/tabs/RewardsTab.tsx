@@ -352,7 +352,6 @@ const ValidationAlert = ({ totalPool }: { totalPool: number }) => {
 };
 
 export default function RewardsTab({
-  onContinue,
   onSave,
   initialData,
   isLoading = false,
@@ -514,10 +513,8 @@ export default function RewardsTab({
     try {
       if (onSave) {
         await onSave(data);
+        // Navigation is handled automatically in saveRewardsStep
         toast.success('Rewards saved successfully!');
-      }
-      if (onContinue) {
-        onContinue();
       }
     } catch {
       toast.error('Failed to save rewards. Please try again.');

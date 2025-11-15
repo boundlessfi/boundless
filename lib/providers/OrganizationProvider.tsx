@@ -398,31 +398,69 @@ export function OrganizationProvider({
         return;
       }
 
-      type OrgLike = Partial<Organization> & { id?: string } & Record<
-          string,
-          unknown
-        >;
+      type OrgLike = Partial<Organization> & {
+        id?: string;
+        _id?: string;
+        avatar?: string;
+        role?: 'owner' | 'member';
+        memberCount?: number;
+        hackathonCount?: number;
+        grantCount?: number;
+      } & Record<string, unknown>;
       const orgs = organizations as OrgLike[];
       const organizationSummaries: OrganizationSummary[] = orgs
         .filter(org => org && typeof org === 'object' && (org._id || org.id))
         .map(org => ({
           _id: (org._id as string) ?? (org.id as string),
           name: (org.name as string) || 'Unnamed Organization',
-          logo: (org.avatar as string) || '',
+          logo: (org.avatar as string) || (org.logo as string) || '',
           tagline: (org.tagline as string) || '',
           isProfileComplete: Boolean(org.isProfileComplete),
-          role: org.owner === response.email ? 'owner' : 'member',
-          memberCount: Array.isArray(org.members) ? org.members.length : 0,
-          hackathonCount: Array.isArray(org.hackathons)
-            ? org.hackathons.length
-            : 0,
-          grantCount: Array.isArray(org.grants) ? org.grants.length : 0,
+          role:
+            org.role === 'owner' || org.role === 'member'
+              ? (org.role as 'owner' | 'member')
+              : org.owner === response.email
+                ? 'owner'
+                : 'member',
+          memberCount:
+            typeof org.memberCount === 'number'
+              ? org.memberCount
+              : typeof org.memberCount === 'string'
+                ? parseInt(org.memberCount, 10) || 0
+                : Array.isArray(org.members)
+                  ? org.members.length
+                  : 0,
+          hackathonCount:
+            typeof org.hackathonCount === 'number'
+              ? org.hackathonCount
+              : typeof org.hackathonCount === 'string'
+                ? parseInt(org.hackathonCount, 10) || 0
+                : Array.isArray(org.hackathons)
+                  ? org.hackathons.length
+                  : 0,
+          grantCount:
+            typeof org.grantCount === 'number'
+              ? org.grantCount
+              : typeof org.grantCount === 'string'
+                ? parseInt(org.grantCount, 10) || 0
+                : Array.isArray(org.grants)
+                  ? org.grants.length
+                  : 0,
           createdAt: (org.createdAt as string) || new Date().toISOString(),
         }));
 
       logger.info({
         eventType: 'org.fetchOrganizations.transformed',
         count: organizationSummaries.length,
+        sampleOrg: organizationSummaries[0]
+          ? {
+              _id: organizationSummaries[0]._id,
+              name: organizationSummaries[0].name,
+              hackathonCount: organizationSummaries[0].hackathonCount,
+              grantCount: organizationSummaries[0].grantCount,
+              memberCount: organizationSummaries[0].memberCount,
+            }
+          : null,
       });
       dispatch({ type: 'SET_ORGANIZATIONS', payload: organizationSummaries });
       dispatch({ type: 'SET_LAST_UPDATED', payload: Date.now() });
@@ -435,15 +473,43 @@ export function OrganizationProvider({
     } catch (error) {
       logger.error({ eventType: 'org.fetchOrganizations.error', error });
 
-      let errorMessage = 'Failed to fetch organizations';
+      let errorMessage: string | null = 'Failed to fetch organizations';
 
       if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'object' && error !== null) {
-        if (
+        // Check for ApiError structure (after interceptor transformation)
+        const apiErrorStatus = (error as { status?: number }).status;
+        if (apiErrorStatus === 429) {
+          errorMessage =
+            'Too many requests. Please wait a moment and try again.';
+          // Don't show error if we have cached data - use it instead
+          const cachedOrgs = localStorage.getItem(
+            STORAGE_KEYS.ORGANIZATIONS_CACHE
+          );
+          if (cachedOrgs) {
+            try {
+              const parsed = JSON.parse(cachedOrgs);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                dispatch({
+                  type: 'SET_ORGANIZATIONS',
+                  payload: parsed,
+                });
+                errorMessage = null; // Clear error since we have cached data
+                logger.info({
+                  eventType: 'org.fetchOrganizations.rateLimited_using_cache',
+                  cachedCount: parsed.length,
+                });
+              }
+            } catch {
+              // Cache parse failed, keep error message
+            }
+          }
+        } else if (
           'response' in (error as Record<string, unknown>) &&
           (error as Record<string, unknown>).response
         ) {
+          // Check axios error structure (before interceptor)
           const apiError = (
             error as {
               response?: {
@@ -471,10 +537,12 @@ export function OrganizationProvider({
         }
       }
 
-      dispatch({
-        type: 'SET_ERROR',
-        payload: { error: null, organizationsError: errorMessage },
-      });
+      if (errorMessage) {
+        dispatch({
+          type: 'SET_ERROR',
+          payload: { error: null, organizationsError: errorMessage },
+        });
+      }
 
       if (process.env.NODE_ENV === 'development') {
         logger.warn({
@@ -526,12 +594,54 @@ export function OrganizationProvider({
       });
       dispatch({ type: 'SET_LAST_UPDATED', payload: Date.now() });
     } catch (error) {
-      const errorMessage =
+      let errorMessage: string | null =
         error instanceof Error ? error.message : 'Failed to fetch organization';
-      dispatch({
-        type: 'SET_ERROR',
-        payload: { error: null, activeOrgError: errorMessage },
-      });
+
+      // Handle 429 rate limit errors gracefully
+      const apiError = error as {
+        status?: number;
+        message?: string;
+        code?: string;
+      };
+      if (apiError?.status === 429) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+        // Try to use cached organization if available
+        const cachedOrgs = localStorage.getItem(
+          STORAGE_KEYS.ORGANIZATIONS_CACHE
+        );
+        if (cachedOrgs) {
+          try {
+            const parsed = JSON.parse(cachedOrgs);
+            if (Array.isArray(parsed)) {
+              const cachedOrg = parsed.find(
+                (org: { _id: string }) => org._id === orgId
+              );
+              if (cachedOrg) {
+                // Use cached organization data
+                dispatch({
+                  type: 'SET_ACTIVE_ORG',
+                  payload: { org: cachedOrg, orgId },
+                });
+                errorMessage = null; // Clear error since we have cached data
+                logger.info({
+                  eventType:
+                    'org.fetchActiveOrganization.rateLimited_using_cache',
+                  orgId,
+                });
+              }
+            }
+          } catch {
+            // Cache parse failed, keep error message
+          }
+        }
+      }
+
+      if (errorMessage) {
+        dispatch({
+          type: 'SET_ERROR',
+          payload: { error: null, activeOrgError: errorMessage },
+        });
+      }
       logger.error({ eventType: 'org.fetchActiveOrganization.error', error });
     } finally {
       isFetchingActiveOrgRef.current = false;
@@ -915,7 +1025,6 @@ export function OrganizationProvider({
         .then(() => {
           const savedOrgId =
             initialOrgId || localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID);
-          initialOrgId || localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID);
           if (savedOrgId) {
             logger.info({
               eventType: 'org.initialize.set_active_after_fetch',

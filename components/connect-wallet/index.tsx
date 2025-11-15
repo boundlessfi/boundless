@@ -112,8 +112,8 @@ const ConnectWallet = ({
 
   // Filter available wallets and map them to our UI format
   const walletOptions = availableWallets
-    .filter(wallet => wallet.isAvailable)
-    .map(wallet => ({
+    .filter((wallet: { isAvailable: boolean }) => wallet.isAvailable)
+    .map((wallet: { id: string; name: string; icon: string }) => ({
       id: wallet.id,
       name: wallet.name,
       icon: wallet.icon,
@@ -215,15 +215,22 @@ const ConnectWallet = ({
 
           <ScrollArea className='h-[280px] pr-2 sm:h-[225px]'>
             <div className='space-y-3'>
-              {wallets.map(wallet => (
-                <WalletCard
-                  key={wallet.id}
-                  disabled={wallet.disabled || isConnecting}
-                  onClick={() => handleWalletSelect(wallet.id)}
-                  icon={wallet.icon}
-                  label={wallet.name}
-                />
-              ))}
+              {wallets.map(
+                (wallet: {
+                  id: string;
+                  name: string;
+                  icon: string;
+                  disabled?: boolean;
+                }) => (
+                  <WalletCard
+                    key={wallet.id}
+                    disabled={wallet.disabled || isConnecting}
+                    onClick={() => handleWalletSelect(wallet.id)}
+                    icon={wallet.icon}
+                    label={wallet.name}
+                  />
+                )
+              )}
             </div>
           </ScrollArea>
         </div>

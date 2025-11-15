@@ -155,6 +155,41 @@ const createClientApi = (): AxiosInstance => {
     async error => {
       const originalRequest = error.config;
 
+      // Handle 429 errors (Rate Limiting) with exponential backoff
+      if (error.response?.status === 429) {
+        const retryCount = originalRequest._retryCount || 0;
+        const maxRetries = 3;
+
+        if (retryCount < maxRetries) {
+          originalRequest._retryCount = retryCount + 1;
+
+          // Get Retry-After header if available, otherwise use exponential backoff
+          const retryAfter = error.response.headers['retry-after'];
+          let delay: number;
+
+          if (retryAfter) {
+            // Use Retry-After header value (in seconds)
+            delay = parseInt(retryAfter, 10) * 1000;
+          } else {
+            // Exponential backoff: 1s, 2s, 4s
+            delay = Math.pow(2, retryCount) * 1000;
+          }
+
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, delay));
+
+          // Retry the request
+          return instance(originalRequest);
+        }
+
+        // Max retries reached, reject with rate limit error
+        return Promise.reject({
+          message: 'Too many requests. Please try again later.',
+          status: 429,
+          code: 'RATE_LIMIT_EXCEEDED',
+        });
+      }
+
       // Handle 401 errors with automatic token refresh
       if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
@@ -242,20 +277,27 @@ const convertAxiosResponse = <T>(
   statusText: response.statusText,
 });
 
-const convertRequestConfig = (config?: RequestConfig): AxiosRequestConfig => ({
-  headers: config?.headers,
-  timeout: config?.timeout,
-  withCredentials: true,
-});
+const convertRequestConfig = (
+  config?: RequestConfig
+): AxiosRequestConfig & { skipAuthRefresh?: boolean } => {
+  const axiosConfig = {
+    headers: config?.headers,
+    timeout: config?.timeout,
+    withCredentials: true,
+    skipAuthRefresh: config?.skipAuthRefresh,
+  } as AxiosRequestConfig & { skipAuthRefresh?: boolean };
+  return axiosConfig;
+};
 
 const clientApi = {
   get: async <T = unknown>(
     url: string,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> => {
+    const axiosConfig = convertRequestConfig(config);
     const response = await axiosInstance.get<T>(
       url,
-      convertRequestConfig(config)
+      axiosConfig as AxiosRequestConfig
     );
     return convertAxiosResponse(response);
   },

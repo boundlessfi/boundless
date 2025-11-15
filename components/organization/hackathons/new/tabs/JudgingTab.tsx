@@ -249,7 +249,6 @@ const SortableCriterionItem = ({
 };
 
 export default function JudgingTab({
-  onContinue,
   onSave,
   initialData,
   isLoading = false,
@@ -366,10 +365,8 @@ export default function JudgingTab({
     try {
       if (onSave) {
         await onSave(data);
+        // Navigation is handled automatically in saveJudgingStep
         toast.success('Judging settings saved successfully!');
-      }
-      if (onContinue) {
-        onContinue();
       }
     } catch {
       toast.error('Failed to save judging settings. Please try again.');

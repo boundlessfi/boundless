@@ -1,11 +1,22 @@
-// Main exports
 export {
   OrganizationProvider,
   useOrganization,
   OrganizationContext,
 } from './OrganizationProvider';
 
-// Hook exports
+export {
+  NavigationLoadingProvider,
+  useNavigationLoading,
+} from './NavigationLoadingProvider';
+
+export {
+  TrustlessWorkProvider,
+  useTrustlessWorkConfig,
+  TrustlessWorkContext,
+} from './TrustlessWorkProvider';
+
+export { EscrowProvider, useEscrowContext } from './EscrowProvider';
+
 export {
   useActiveOrganization,
   useOrganizations,
@@ -22,7 +33,6 @@ export {
   default as useOrganizationHook,
 } from './useOrganization';
 
-// Type exports
 export type {
   OrganizationSummary,
   UserProfileResponse,
@@ -43,7 +53,6 @@ export type {
   OrganizationContextActions,
 } from './organization-types';
 
-// Utility exports
 export {
   organizationToSummary,
   isOrganizationComplete,
