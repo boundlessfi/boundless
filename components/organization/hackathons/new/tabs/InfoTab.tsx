@@ -20,16 +20,16 @@ import { BoundlessButton } from '@/components/buttons';
 import { toast } from 'sonner';
 import { useLocationData } from '@/hooks/use-location-data';
 import { useGeocoding } from '@/hooks/use-geocoding';
+import { Loader2 } from 'lucide-react';
 
-const DynamicMinimalTiptap = dynamic(
-  () =>
-    import('@/components/ui/shadcn-io/minimal-tiptap').then(mod => ({
-      default: mod.MinimalTiptap,
-    })),
+const MDEditor = dynamic(
+  () => import('@uiw/react-md-editor').then(mod => mod.default),
   {
     ssr: false,
     loading: () => (
-      <div className='h-32 w-full animate-pulse rounded-lg bg-gray-800' />
+      <div className='flex h-32 w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/30'>
+        <Loader2 className='h-6 w-6 animate-spin text-zinc-500' />
+      </div>
     ),
   }
 );
@@ -55,7 +55,7 @@ export default function InfoTab({
       categories: Array.isArray(initialData?.categories)
         ? initialData.categories
         : [],
-      venueType: initialData?.venueType || 'physical',
+      venueType: initialData?.venueType || 'virtual',
       country: initialData?.country || '',
       state: initialData?.state || '',
       city: initialData?.city || '',
@@ -86,8 +86,7 @@ export default function InfoTab({
     try {
       if (onSave) {
         await onSave(data);
-        // Navigation is handled automatically in saveInformationStep
-        toast.success('Information saved successfully!');
+        toast.success('Information saved successfully');
       }
     } catch {
       toast.error('Failed to save information. Please try again.');
@@ -97,54 +96,83 @@ export default function InfoTab({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+        {/* Title */}
         <FormField
           control={form.control}
           name='name'
           render={({ field }) => (
-            <FormItem className='gap-3'>
-              <FormLabel className='text-sm'>
-                Title <span className='text-error-400'>*</span>
+            <FormItem>
+              <FormLabel className='text-sm font-medium text-white'>
+                Hackathon Title <span className='text-red-500'>*</span>
               </FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   type='text'
-                  placeholder='Enter a title for your hackathon'
-                  className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'
+                  placeholder='Enter hackathon title'
+                  className='h-11 border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
                 />
               </FormControl>
-              <FormMessage className='text-error-400 text-xs' />
+              <FormMessage className='text-xs text-red-500' />
             </FormItem>
           )}
         />
 
+        {/* Banner */}
         <BannerUpload
           control={form.control}
           name='banner'
           setValue={form.setValue}
         />
 
+        {/* Description */}
         <FormField
           control={form.control}
           name='description'
           render={({ field }) => (
-            <FormItem className='gap-3'>
-              <FormLabel className='text-sm'>
-                Details <span className='text-error-400'>*</span>
+            <FormItem>
+              <FormLabel className='text-sm font-medium text-white'>
+                Description <span className='text-red-500'>*</span>
               </FormLabel>
               <FormControl>
-                <DynamicMinimalTiptap
-                  content={field.value}
-                  onChange={field.onChange}
-                />
+                <div className='overflow-hidden rounded-xl border border-zinc-800'>
+                  <MDEditor
+                    value={field.value}
+                    onChange={value => field.onChange(value || '')}
+                    height={300}
+                    data-color-mode='dark'
+                    preview='edit'
+                    hideToolbar={false}
+                    visibleDragbar={true}
+                    textareaProps={{
+                      placeholder:
+                        "Tell your hackathon's story...\n\nUse markdown for formatting: headings, lists, links, and more.",
+                      style: {
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        color: '#ffffff',
+                        backgroundColor: '#18181b',
+                        fontFamily: 'inherit',
+                        border: 'none',
+                      },
+                    }}
+                    style={{
+                      backgroundColor: '#18181b',
+                      color: '#ffffff',
+                      border: 'none',
+                    }}
+                  />
+                </div>
               </FormControl>
-              <FormMessage className='text-error-400 text-xs' />
+              <FormMessage className='text-xs text-red-500' />
             </FormItem>
           )}
         />
 
+        {/* Categories */}
         <CategorySelection control={form.control} name='categories' />
 
+        {/* Venue */}
         <VenueSection
           control={form.control}
           watch={form.watch}
@@ -157,9 +185,25 @@ export default function InfoTab({
           onCountryChange={setSelectedCountry}
           onStateChange={setSelectedState}
         />
-        <BoundlessButton type='submit' size='xl' disabled={isLoading}>
-          {isLoading ? 'Saving...' : 'Continue'}
-        </BoundlessButton>
+
+        {/* Submit Button */}
+        <div className='flex justify-end pt-4'>
+          <BoundlessButton
+            type='submit'
+            size='lg'
+            disabled={isLoading}
+            className='min-w-32'
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                Saving...
+              </>
+            ) : (
+              'Continue'
+            )}
+          </BoundlessButton>
+        </div>
       </form>
     </Form>
   );

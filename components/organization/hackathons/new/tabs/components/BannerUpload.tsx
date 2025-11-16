@@ -12,14 +12,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { uploadService } from '@/lib/api/upload';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from '@/components/ui/tooltip';
-import { Info } from 'lucide-react';
+import { Upload, Loader2, AlertCircle, Image as ImageIcon } from 'lucide-react';
 
 interface BannerUploadProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,7 +29,6 @@ export default function BannerUpload({
 }: BannerUploadProps) {
   const [bannerPreview, setBannerPreview] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,8 +46,6 @@ export default function BannerUpload({
         toast.error('File size must be less than 10MB');
         return;
       }
-
-      setUploadError(null);
 
       const reader = new FileReader();
       reader.onload = e => {
@@ -89,7 +79,6 @@ export default function BannerUpload({
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Upload failed';
-        setUploadError(errorMessage);
         toast.error(`Failed to upload banner: ${errorMessage}`);
       } finally {
         setIsUploading(false);
@@ -128,8 +117,6 @@ export default function BannerUpload({
         return;
       }
 
-      setUploadError(null);
-
       const reader = new FileReader();
       reader.onload = e => {
         const result = e.target?.result as string;
@@ -162,7 +149,6 @@ export default function BannerUpload({
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Upload failed';
-        setUploadError(errorMessage);
         toast.error(`Failed to upload banner: ${errorMessage}`);
       } finally {
         setIsUploading(false);
@@ -175,20 +161,20 @@ export default function BannerUpload({
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem className='gap-3'>
-          <FormLabel className='text-sm'>
-            Banner <span className='text-error-400'>*</span>
+        <FormItem>
+          <FormLabel className='text-sm font-medium text-white'>
+            Banner <span className='text-red-500'>*</span>
           </FormLabel>
-          <span className='text-sm text-gray-500'>
-            Upload a banner image for the hackathon page. We recommend including
-            key details and showcasing the theme of the hackathon.
-          </span>
+          <p className='mb-3 text-sm text-zinc-500'>
+            Upload a banner showcasing your hackathon's theme and key details
+          </p>
+
           <FormControl>
             <div className='relative'>
               <input
                 ref={fileInputRef}
                 type='file'
-                accept='image/jpeg,image/jpg,image/png,image/gif'
+                accept='image/jpeg,image/jpg,image/png,image/gif,image/webp'
                 className='hidden'
                 id='banner-upload'
                 onChange={handleBannerUpload}
@@ -200,112 +186,70 @@ export default function BannerUpload({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={cn(
-                  'hover:border-primary bg-background-card flex h-75 w-full cursor-pointer items-center justify-center overflow-hidden rounded-[12px] border border-gray-900 transition-colors',
-                  isUploading && 'cursor-not-allowed opacity-50',
-                  isDragOver && 'border-primary bg-primary/5'
+                  'group relative flex aspect-[2/1] w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-all',
+                  isDragOver
+                    ? 'border-primary bg-primary/10 scale-[1.02]'
+                    : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50',
+                  isUploading && 'cursor-not-allowed opacity-50'
                 )}
               >
-                {bannerPreview || field.value ? (
-                  <div className='flex flex-col items-center space-y-2'>
-                    {isUploading ? (
-                      <div className='flex flex-col items-center space-y-2'>
-                        <LoadingSpinner
-                          size='xl'
-                          color='primary'
-                          variant='spinner'
-                        />
-                      </div>
-                    ) : (
-                      <Image
-                        src={field.value || bannerPreview || ''}
-                        alt='Banner preview'
-                        width={1200}
-                        height={600}
-                        className='aspect-[2400/1200] h-full w-full object-cover'
-                      />
-                    )}
+                {isUploading ? (
+                  <div className='flex flex-col items-center gap-3'>
+                    <Loader2 className='text-primary h-10 w-10 animate-spin' />
+                    <div className='text-center'>
+                      <p className='text-sm font-medium text-white'>
+                        Uploading banner...
+                      </p>
+                      <p className='text-xs text-zinc-500'>Please wait</p>
+                    </div>
                   </div>
-                ) : isDragOver ? (
-                  <div className='flex flex-col items-center space-y-2'>
-                    <svg
-                      width='48'
-                      height='48'
-                      viewBox='0 0 36 36'
-                      fill='none'
-                      xmlns='http://www.w3.org/2000/svg'
-                    >
-                      <path
-                        d='M17.875 2.75012H9.65C6.70972 2.75012 5.23959 2.75012 4.11655 3.32234C3.1287 3.82567 2.32555 4.62882 1.82222 5.61667C1.25 6.73971 1.25 8.20985 1.25 11.1501V25.8501C1.25 28.7904 1.25 30.2605 1.82222 31.3836C2.32555 32.3714 3.1287 33.1746 4.11655 33.6779C5.23959 34.2501 6.70972 34.2501 9.65 34.2501H25.75C27.3775 34.2501 28.1912 34.2501 28.8588 34.0712C30.6705 33.5858 32.0857 32.1707 32.5711 30.3589C32.75 29.6913 32.75 28.8776 32.75 27.2501M29.25 11.5001V1.00012M24 6.25012H34.5M14.375 12.3751C14.375 14.3081 12.808 15.8751 10.875 15.8751C8.942 15.8751 7.375 14.3081 7.375 12.3751C7.375 10.4421 8.942 8.87512 10.875 8.87512C12.808 8.87512 14.375 10.4421 14.375 12.3751ZM22.2326 18.3569L7.42951 31.8142C6.59688 32.5711 6.18057 32.9496 6.14375 33.2775C6.11183 33.5616 6.22079 33.8435 6.43557 34.0323C6.68336 34.2501 7.24599 34.2501 8.37125 34.2501H24.798C27.3165 34.2501 28.5758 34.2501 29.5649 33.827C30.8065 33.2959 31.7957 32.3066 32.3269 31.065C32.75 30.0759 32.75 28.8166 32.75 26.2981C32.75 25.4507 32.75 25.027 32.6574 24.6324C32.5409 24.1365 32.3177 23.672 32.0032 23.2713C31.7529 22.9525 31.4221 22.6878 30.7604 22.1584L25.8652 18.2423C25.2029 17.7125 24.8718 17.4476 24.5071 17.3541C24.1857 17.2717 23.8475 17.2823 23.5319 17.3848C23.1739 17.5011 22.8601 17.7864 22.2326 18.3569Z'
-                        stroke='#A7F950'
-                        strokeWidth='2'
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                      />
-                    </svg>
-                    <span className='text-primary text-sm font-medium'>
-                      Drop banner here
-                    </span>
+                ) : bannerPreview || field.value ? (
+                  <div className='relative h-full w-full'>
+                    <Image
+                      src={field.value || bannerPreview || ''}
+                      alt='Banner'
+                      fill
+                      className='object-cover'
+                    />
+                    <div className='absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100'>
+                      <div className='flex flex-col items-center gap-2'>
+                        <div className='flex h-12 w-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm'>
+                          <Upload className='h-6 w-6 text-white' />
+                        </div>
+                        <span className='text-sm font-medium text-white'>
+                          Change banner
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <div className='flex flex-col items-center space-y-2'>
-                    <svg
-                      width='48'
-                      height='48'
-                      viewBox='0 0 36 36'
-                      fill='none'
-                      xmlns='http://www.w3.org/2000/svg'
-                    >
-                      <path
-                        d='M17.875 2.75012H9.65C6.70972 2.75012 5.23959 2.75012 4.11655 3.32234C3.1287 3.82567 2.32555 4.62882 1.82222 5.61667C1.25 6.73971 1.25 8.20985 1.25 11.1501V25.8501C1.25 28.7904 1.25 30.2605 1.82222 31.3836C2.32555 32.3714 3.1287 33.1746 4.11655 33.6779C5.23959 34.2501 6.70972 34.2501 9.65 34.2501H25.75C27.3775 34.2501 28.1912 34.2501 28.8588 34.0712C30.6705 33.5858 32.0857 32.1707 32.5711 30.3589C32.75 29.6913 32.75 28.8776 32.75 27.2501M29.25 11.5001V1.00012M24 6.25012H34.5M14.375 12.3751C14.375 14.3081 12.808 15.8751 10.875 15.8751C8.942 15.8751 7.375 14.3081 7.375 12.3751C7.375 10.4421 8.942 8.87512 10.875 8.87512C12.808 8.87512 14.375 10.4421 14.375 12.3751ZM22.2326 18.3569L7.42951 31.8142C6.59688 32.5711 6.18057 32.9496 6.14375 33.2775C6.11183 33.5616 6.22079 33.8435 6.43557 34.0323C6.68336 34.2501 7.24599 34.2501 8.37125 34.2501H24.798C27.3165 34.2501 28.5758 34.2501 29.5649 33.827C30.8065 33.2959 31.7957 32.3066 32.3269 31.065C32.75 30.0759 32.75 28.8166 32.75 26.2981C32.75 25.4507 32.75 25.027 32.6574 24.6324C32.5409 24.1365 32.3177 23.672 32.0032 23.2713C31.7529 22.9525 31.4221 22.6878 30.7604 22.1584L25.8652 18.2423C25.2029 17.7125 24.8718 17.4476 24.5071 17.3541C24.1857 17.2717 23.8475 17.2823 23.5319 17.3848C23.1739 17.5011 22.8601 17.7864 22.2326 18.3569Z'
-                        stroke='#919191'
-                        strokeWidth='2'
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                      />
-                    </svg>
-                    <span className='text-sm text-[#919191]'>
-                      Click or drag to upload banner
-                    </span>
+                  <div className='flex flex-col items-center gap-4 px-4 py-12'>
+                    <div className='flex h-16 w-16 items-center justify-center rounded-xl bg-zinc-800'>
+                      <ImageIcon className='h-8 w-8 text-zinc-500' />
+                    </div>
+                    <div className='text-center'>
+                      <p className='mb-1 text-sm font-medium text-white'>
+                        {isDragOver ? 'Drop banner here' : 'Upload banner'}
+                      </p>
+                      <p className='text-xs text-zinc-500'>
+                        Click to browse or drag and drop
+                      </p>
+                    </div>
                   </div>
                 )}
               </label>
             </div>
           </FormControl>
-          <div className='flex space-y-1 text-sm text-[#B5B5B5]'>
-            <div className='w-8'>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className='h-4 w-4' />
-                  </TooltipTrigger>
-                  <TooltipContent side='right'>
-                    <p>
-                      Accepted file types:{' '}
-                      <span className='font-medium'>JPEG, PNG, GIF</span>, and
-                      less than <span className='font-medium'>2 MB</span>.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div>
-              <p>
-                Accepted file types:{' '}
-                <span className='font-medium text-white'>JPEG, PNG, GIF</span>,
-                and less than{' '}
-                <span className='font-medium text-white'>2 MB</span>.
-              </p>
-              <p>
-                A size of{' '}
-                <span className='font-medium text-white'>2400 x 1200 px</span>{' '}
-                is recommended.
-              </p>
-              {uploadError && (
-                <p className='text-sm text-red-500'>{uploadError}</p>
-              )}
+
+          <div className='mt-3 flex items-start gap-2 rounded-lg bg-zinc-900/30 p-3 text-xs text-zinc-500'>
+            <AlertCircle className='h-4 w-4 flex-shrink-0 text-zinc-600' />
+            <div className='space-y-1'>
+              <p>JPEG, PNG, GIF, or WebP • Max 10MB</p>
+              <p>Recommended: 2400 × 1200 px (2:1 ratio)</p>
             </div>
           </div>
-          <FormMessage className='text-error-400 text-xs' />
+
+          <FormMessage className='text-xs text-red-500' />
         </FormItem>
       )}
     />

@@ -112,7 +112,7 @@ export default function CollaborationSection({
                     <div className='relative aspect-square w-full overflow-hidden rounded-lg border border-gray-800 bg-gray-900'>
                       <Image
                         src={sponsor.logo}
-                        alt={sponsor.name}
+                        alt={sponsor.name || 'Sponsor logo'}
                         fill
                         className='object-contain p-2'
                       />
@@ -120,7 +120,7 @@ export default function CollaborationSection({
                   ) : (
                     <div className='flex aspect-square w-full items-center justify-center rounded-lg border border-gray-800 bg-gray-900'>
                       <span className='text-xs text-gray-600'>
-                        {sponsor.name.charAt(0)}
+                        {sponsor.name?.charAt(0) || 'S'}
                       </span>
                     </div>
                   )}

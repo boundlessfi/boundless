@@ -6,9 +6,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Control } from 'react-hook-form';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
 
 const categories = [
   'DeFi',
@@ -40,60 +39,64 @@ export default function CategorySelection({
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem className='gap-3'>
-          <FormLabel className='text-sm'>
-            Categories <span className='text-error-400'>*</span>
+        <FormItem>
+          <FormLabel className='text-sm font-medium text-white'>
+            Categories <span className='text-red-500'>*</span>
           </FormLabel>
+          <p className='mb-3 text-sm text-zinc-500'>
+            Select all categories that apply to your hackathon
+          </p>
+
           <FormControl>
-            <div className='flex flex-wrap gap-3'>
+            <div className='flex flex-wrap gap-2'>
               {categories.map(category => {
                 const isChecked = Array.isArray(field.value)
                   ? field.value.includes(category)
                   : false;
 
                 return (
-                  <div
+                  <button
                     key={category}
+                    type='button'
+                    onClick={() => {
+                      const currentValue = Array.isArray(field.value)
+                        ? field.value
+                        : [];
+                      if (isChecked) {
+                        field.onChange(
+                          currentValue.filter(cat => cat !== category)
+                        );
+                      } else {
+                        field.onChange([...currentValue, category]);
+                      }
+                    }}
                     className={cn(
-                      'flex w-fit items-center space-x-3 rounded-[6px] border border-[#2B2B2B] bg-[#2B2B2B3D] p-3 transition-colors',
-                      isChecked && 'border-primary bg-[#A7F9501F]'
+                      'group flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all',
+                      isChecked
+                        ? 'border-primary/50 bg-primary/10 text-primary shadow-primary/10 shadow-sm'
+                        : 'border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-900/50 hover:text-zinc-300'
                     )}
                   >
-                    <Checkbox
-                      id={category}
-                      checked={isChecked}
-                      onCheckedChange={checked => {
-                        const currentValue = Array.isArray(field.value)
-                          ? field.value
-                          : [];
-                        if (checked) {
-                          field.onChange([...currentValue, category]);
-                        } else {
-                          field.onChange(
-                            currentValue.filter(cat => cat !== category)
-                          );
-                        }
-                      }}
+                    <div
                       className={cn(
-                        'border-[#B5B5B5] bg-transparent',
-                        isChecked && 'border-primary'
-                      )}
-                    />
-                    <Label
-                      htmlFor={category}
-                      className={cn(
-                        'cursor-pointer text-sm font-normal',
-                        isChecked ? 'text-primary' : 'text-[#B5B5B5]'
+                        'flex h-4 w-4 items-center justify-center rounded border transition-all',
+                        isChecked
+                          ? 'border-primary bg-primary'
+                          : 'border-zinc-700 bg-transparent group-hover:border-zinc-600'
                       )}
                     >
-                      {category}
-                    </Label>
-                  </div>
+                      {isChecked && (
+                        <Check className='h-3 w-3 text-black' strokeWidth={3} />
+                      )}
+                    </div>
+                    <span>{category}</span>
+                  </button>
                 );
               })}
             </div>
           </FormControl>
-          <FormMessage className='text-error-400 text-xs' />
+
+          <FormMessage className='text-xs text-red-500' />
         </FormItem>
       )}
     />

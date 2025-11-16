@@ -10,6 +10,7 @@ import {
   FileText,
   ExternalLink,
   Settings,
+  Eye,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -168,13 +169,13 @@ export default function HackathonsPage() {
           {/* Filters */}
           <div className='flex items-center gap-3'>
             <div className='relative flex-1'>
-              <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-600' />
+              <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500' />
               <Input
                 type='search'
                 placeholder='Search hackathons...'
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className='h-10 border-zinc-800 bg-zinc-900/50 pl-10 text-sm text-white placeholder:text-zinc-600'
+                className='focus:border-primary focus:ring-primary/20 h-10 border-zinc-800/50 bg-zinc-900/30 pl-10 text-sm text-white transition-all placeholder:text-zinc-500 hover:border-zinc-700 hover:bg-zinc-900/50'
               />
             </div>
 
@@ -182,12 +183,22 @@ export default function HackathonsPage() {
               value={sortBy}
               onValueChange={value => setSortBy(value as 'newest' | 'oldest')}
             >
-              <SelectTrigger className='h-10 w-32 border-zinc-800 bg-zinc-900/50 text-sm text-white'>
+              <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-32 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='newest'>Newest</SelectItem>
-                <SelectItem value='oldest'>Oldest</SelectItem>
+              <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
+                <SelectItem
+                  value='newest'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  Newest
+                </SelectItem>
+                <SelectItem
+                  value='oldest'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  Oldest
+                </SelectItem>
               </SelectContent>
             </Select>
 
@@ -197,29 +208,84 @@ export default function HackathonsPage() {
                 setStatusFilter(value as 'all' | 'open' | 'draft')
               }
             >
-              <SelectTrigger className='h-10 w-32 border-zinc-800 bg-zinc-900/50 text-sm text-white'>
+              <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-32 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='all'>All Status</SelectItem>
-                <SelectItem value='open'>Published</SelectItem>
-                <SelectItem value='draft'>Draft</SelectItem>
+              <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
+                <SelectItem
+                  value='all'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  All Status
+                </SelectItem>
+                <SelectItem
+                  value='open'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  Published
+                </SelectItem>
+                <SelectItem
+                  value='draft'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  Draft
+                </SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className='h-10 w-36 border-zinc-800 bg-zinc-900/50 text-sm text-white'>
+              <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-36 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='all'>All Categories</SelectItem>
-                <SelectItem value='defi'>DeFi</SelectItem>
-                <SelectItem value='nfts'>NFTs</SelectItem>
-                <SelectItem value='daos'>DAOs</SelectItem>
-                <SelectItem value='layer 2'>Layer 2</SelectItem>
-                <SelectItem value='cross-chain'>Cross-chain</SelectItem>
-                <SelectItem value='web3 gaming'>Web3 Gaming</SelectItem>
-                <SelectItem value='infrastructure'>Infrastructure</SelectItem>
+              <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
+                <SelectItem
+                  value='all'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  All Categories
+                </SelectItem>
+                <SelectItem
+                  value='defi'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  DeFi
+                </SelectItem>
+                <SelectItem
+                  value='nfts'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  NFTs
+                </SelectItem>
+                <SelectItem
+                  value='daos'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  DAOs
+                </SelectItem>
+                <SelectItem
+                  value='layer 2'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  Layer 2
+                </SelectItem>
+                <SelectItem
+                  value='cross-chain'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  Cross-chain
+                </SelectItem>
+                <SelectItem
+                  value='web3 gaming'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  Web3 Gaming
+                </SelectItem>
+                <SelectItem
+                  value='infrastructure'
+                  className='text-white focus:bg-zinc-900/50 focus:text-white'
+                >
+                  Infrastructure
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -294,19 +360,33 @@ export default function HackathonsPage() {
                           {completion}% complete
                         </span>
                       </div>
-                      <BoundlessButton
-                        size='sm'
-                        variant='outline'
-                        className='opacity-0 transition-opacity group-hover:opacity-100'
-                        onClick={e => {
-                          e.stopPropagation();
-                          router.push(
-                            `/organizations/${organizationId}/hackathons/drafts/${hackathon._id}`
-                          );
-                        }}
-                      >
-                        Continue
-                      </BoundlessButton>
+                      <div className='flex items-center gap-2'>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            router.push(
+                              `/hackathons/preview/${organizationId}/${hackathon._id}`
+                            );
+                          }}
+                          className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 opacity-0 transition-all group-hover:opacity-100 hover:border-zinc-700 hover:text-white'
+                          title='Preview'
+                        >
+                          <Eye className='h-4 w-4' />
+                        </button>
+                        <BoundlessButton
+                          size='sm'
+                          variant='outline'
+                          className='opacity-0 transition-opacity group-hover:opacity-100'
+                          onClick={e => {
+                            e.stopPropagation();
+                            router.push(
+                              `/organizations/${organizationId}/hackathons/drafts/${hackathon._id}`
+                            );
+                          }}
+                        >
+                          Continue
+                        </BoundlessButton>
+                      </div>
                     </div>
 
                     <h3 className='mb-3 text-lg font-medium text-white'>

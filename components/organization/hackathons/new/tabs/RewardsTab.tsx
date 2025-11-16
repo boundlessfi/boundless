@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BoundlessButton } from '@/components/buttons';
 import { toast } from 'sonner';
 import {
@@ -8,13 +8,18 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useForm, useFieldArray, Control, Path } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { rewardsSchema, RewardsFormData } from './schemas/rewardsSchema';
+import {
+  rewardsSchema,
+  RewardsFormData,
+  PrizeTier,
+} from './schemas/rewardsSchema';
 import { cn } from '@/lib/utils';
+import type { Control } from 'react-hook-form';
 import {
   Plus,
   GripVertical,
@@ -25,12 +30,11 @@ import {
   CheckCircle2,
   Sparkles,
   ChevronDown,
-  ChevronUp,
+  Loader2,
 } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
@@ -38,24 +42,10 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  useSortable,
 } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Separator } from '@/components/ui/separator';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface RewardsTabProps {
   onContinue?: () => void;
@@ -64,75 +54,33 @@ interface RewardsTabProps {
   isLoading?: boolean;
 }
 
-// Prize Structure Presets
 const PRIZE_PRESETS = {
-  standard: {
-    name: 'Standard Split',
-    description: '50/30/20 distribution',
-    tiers: [
-      { place: '1st Place', percentage: 50 },
-      { place: '2nd Place', percentage: 30 },
-      { place: '3rd Place', percentage: 20 },
-    ],
-  },
-  topHeavy: {
-    name: 'Winner Takes Most',
-    description: '70/20/10 distribution',
-    tiers: [
-      { place: '1st Place', percentage: 70 },
-      { place: '2nd Place', percentage: 20 },
-      { place: '3rd Place', percentage: 10 },
-    ],
-  },
-  even: {
-    name: 'Equal Split',
-    description: 'Equal prizes for all',
-    tiers: [
-      { place: '1st Place', percentage: 33.33 },
-      { place: '2nd Place', percentage: 33.33 },
-      { place: '3rd Place', percentage: 33.34 },
-    ],
-  },
-  fiveWay: {
-    name: 'Top 5 Split',
-    description: '40/25/20/10/5 distribution',
-    tiers: [
-      { place: '1st Place', percentage: 40 },
-      { place: '2nd Place', percentage: 25 },
-      { place: '3rd Place', percentage: 20 },
-      { place: '4th Place', percentage: 10 },
-      { place: '5th Place', percentage: 5 },
-    ],
-  },
+  standard: { name: 'Standard', tiers: [50, 30, 20] },
+  topHeavy: { name: 'Winner Takes Most', tiers: [70, 20, 10] },
+  even: { name: 'Equal Split', tiers: [33.33, 33.33, 33.34] },
+  fiveWay: { name: 'Top 5', tiers: [40, 25, 20, 10, 5] },
 };
 
-// Enhanced Sortable Prize Tier Item with Description
-const SortablePrizeTierItem = ({
-  tier,
-  index,
-  onTierChange,
-  onRemoveTier,
-  canRemove,
-  control,
-  totalTiers,
-}: {
-  tier: {
-    id: string;
-    place: string;
-    prizeAmount: string;
-    description?: string;
-    passMark: number;
-    currency?: string;
-  };
+const RANK_EMOJIS = ['🥇', '🥈', '🥉', '🏅', '🏅'];
+
+interface PrizeTierProps {
+  tier: Omit<PrizeTier, 'currency'> & { id: string; currency?: string };
   index: number;
-  onTierChange: (id: string, field: string, value: string | number) => void;
-  onRemoveTier: (id: string) => void;
+  onRemove: (id: string) => void;
   canRemove: boolean;
   control: Control<RewardsFormData>;
   totalTiers: number;
-}) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+}
 
+// Sortable Prize Tier Component
+const PrizeTierComponent = ({
+  tier,
+  index,
+  onRemove,
+  canRemove,
+  control,
+  totalTiers,
+}: PrizeTierProps) => {
   const {
     attributes,
     listeners,
@@ -142,52 +90,32 @@ const SortablePrizeTierItem = ({
     isDragging,
   } = useSortable({ id: tier.id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  const getRankEmoji = (idx: number) => {
-    const emojis = ['🥇', '🥈', '🥉', '🏅', '🏅'];
-    return emojis[idx] || '🏅';
-  };
-
   return (
-    <motion.div
+    <div
       ref={setNodeRef}
-      style={style}
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -100 }}
-      transition={{ duration: 0.2 }}
-      className={cn(
-        'group relative mx-5 transition-all duration-200',
-        isDragging && 'z-50 opacity-50'
-      )}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn('group', isDragging && 'opacity-50')}
     >
-      <div className={cn('flex flex-col gap-3 rounded-xl transition-all')}>
-        {/* Main Row */}
-        <div className='flex items-center gap-3'>
-          {/* Drag Handle */}
+      <div className='flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/30 p-4'>
+        {/* Drag Handle */}
+        {totalTiers > 1 && (
           <div
             {...attributes}
             {...listeners}
-            className={cn(
-              'flex cursor-grab items-center justify-center active:cursor-grabbing',
-              'rounded-lg p-2 transition-colors hover:bg-gray-800',
-              totalTiers === 1 && 'invisible'
-            )}
+            className='cursor-grab pt-2 active:cursor-grabbing'
           >
-            <GripVertical className='h-5 w-5 text-gray-500' />
+            <GripVertical className='h-5 w-5 text-zinc-600 transition-colors hover:text-zinc-400' />
           </div>
+        )}
 
-          {/* Rank Badge */}
-          <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-800 text-2xl'>
-            {getRankEmoji(index)}
-          </div>
+        {/* Rank Badge */}
+        <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-2xl'>
+          {RANK_EMOJIS[index] || '🏅'}
+        </div>
 
-          {/* Prize Details */}
-          <div className='grid flex-1 grid-cols-1 gap-3 md:grid-cols-2'>
+        {/* Form Fields */}
+        <div className='flex-1 space-y-3'>
+          <div className='grid gap-3 md:grid-cols-2'>
             {/* Place Name */}
             <FormField
               control={control}
@@ -196,16 +124,12 @@ const SortablePrizeTierItem = ({
                 <FormItem>
                   <FormControl>
                     <Input
+                      {...field}
                       placeholder='1st Place'
-                      value={field.value}
-                      onChange={e => {
-                        field.onChange(e.target.value);
-                        onTierChange(tier.id, 'place', e.target.value);
-                      }}
-                      className='focus-visible:border-primary h-12 border-gray-900 text-white placeholder:text-gray-600'
+                      className='h-11 border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
                     />
                   </FormControl>
-                  <FormMessage className='text-xs text-red-400' />
+                  <FormMessage className='text-xs text-red-500' />
                 </FormItem>
               )}
             />
@@ -218,74 +142,27 @@ const SortablePrizeTierItem = ({
                 <FormItem>
                   <FormControl>
                     <div className='relative'>
-                      <div className='absolute top-1/2 left-3 -translate-y-1/2 text-sm font-medium text-gray-500'>
+                      <div className='absolute top-1/2 left-3 -translate-y-1/2 text-sm text-zinc-500'>
                         $
                       </div>
                       <Input
+                        {...field}
                         type='number'
                         placeholder='0'
-                        value={field.value}
-                        onChange={e => {
-                          field.onChange(e.target.value);
-                          onTierChange(tier.id, 'prizeAmount', e.target.value);
-                        }}
-                        className='focus-visible:border-primary h-12 border-gray-900 pr-16 pl-7 text-right font-medium text-white placeholder:text-gray-600'
+                        className='h-11 border-zinc-800 bg-zinc-900/50 pr-16 pl-7 text-right font-medium text-white placeholder:text-zinc-600'
                       />
-                      <div className='absolute top-1/2 right-3 -translate-y-1/2 text-xs font-medium text-gray-500'>
+                      <div className='absolute top-1/2 right-3 -translate-y-1/2 text-xs text-zinc-500'>
                         USDC
                       </div>
                     </div>
                   </FormControl>
-                  <FormMessage className='text-xs text-red-400' />
+                  <FormMessage className='text-xs text-red-500' />
                 </FormItem>
               )}
             />
           </div>
 
-          {/* Actions */}
-          <div className='flex shrink-0 items-center gap-1'>
-            {/* Expand Button - Mobile Only */}
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              onClick={() => setIsExpanded(!isExpanded)}
-              className='hover:text-primary text-gray-500 md:hidden'
-            >
-              {isExpanded ? (
-                <ChevronUp className='h-4 w-4' />
-              ) : (
-                <ChevronDown className='h-4 w-4' />
-              )}
-            </Button>
-
-            {/* Delete Button */}
-            {canRemove && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='icon'
-                      onClick={() => onRemoveTier(tier.id)}
-                      className={cn(
-                        'text-gray-500 transition-all hover:bg-red-500/10 hover:text-red-400',
-                        'opacity-0 group-hover:opacity-100'
-                      )}
-                    >
-                      <Trash2 className='h-4 w-4' />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Remove tier</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-        </div>
-
-        {/* Expandable Description - Always visible on desktop, collapsible on mobile */}
-        <div className={cn('md:block', isExpanded ? 'block' : 'hidden')}>
+          {/* Description */}
           <FormField
             control={control}
             name={`prizeTiers.${index}.description`}
@@ -293,22 +170,89 @@ const SortablePrizeTierItem = ({
               <FormItem>
                 <FormControl>
                   <Textarea
-                    placeholder='Optional: Add prize description (e.g., "Grand prize includes mentorship, swag, and demo day slot")'
+                    {...field}
                     value={field.value || ''}
-                    onChange={e => {
-                      field.onChange(e.target.value);
-                      onTierChange(tier.id, 'description', e.target.value);
-                    }}
-                    className='focus-visible:border-primary min-h-[80px] resize-none border-gray-900 text-white placeholder:text-gray-600'
+                    placeholder='Optional: Add prize description'
+                    className='min-h-20 resize-none border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
                   />
                 </FormControl>
-                <FormMessage className='text-xs text-red-400' />
+                <FormMessage className='text-xs text-red-500' />
               </FormItem>
             )}
           />
         </div>
+
+        {/* Delete Button */}
+        {canRemove && (
+          <Button
+            type='button'
+            variant='ghost'
+            size='icon'
+            onClick={() => onRemove(tier.id)}
+            className='shrink-0 text-zinc-500 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-400'
+          >
+            <Trash2 className='h-4 w-4' />
+          </Button>
+        )}
       </div>
-    </motion.div>
+    </div>
+  );
+};
+
+interface PrizeSummaryProps {
+  totalPool: number;
+  platformFee: number;
+  totalFunds: number;
+}
+
+// Summary Card Component
+const PrizeSummary = ({
+  totalPool,
+  platformFee,
+  totalFunds,
+}: PrizeSummaryProps) => {
+  const formatCurrency = (amount: number) =>
+    amount.toLocaleString('en-US', { minimumFractionDigits: 0 });
+
+  return (
+    <div className='border-primary/20 from-primary/10 to-primary/5 rounded-xl border bg-gradient-to-br p-4'>
+      <div className='text-primary mb-3 flex items-center gap-2'>
+        <Trophy className='h-4 w-4' />
+        <span className='text-xs font-semibold tracking-wide uppercase'>
+          Prize Pool Summary
+        </span>
+      </div>
+
+      <div className='space-y-3'>
+        <div className='flex items-baseline justify-between'>
+          <span className='text-sm text-zinc-400'>Total Prizes</span>
+          <span className='text-2xl font-bold text-white'>
+            ${formatCurrency(totalPool)}
+          </span>
+        </div>
+
+        <div className='flex items-center justify-between text-xs'>
+          <span className='text-zinc-500'>Platform Fee (2%)</span>
+          <span className='text-zinc-400'>${formatCurrency(platformFee)}</span>
+        </div>
+
+        <div className='bg-primary/20 h-px' />
+
+        <div className='flex items-baseline justify-between'>
+          <span className='text-sm font-medium text-zinc-300'>You'll Pay</span>
+          <span className='text-primary text-xl font-bold'>
+            ${formatCurrency(totalFunds)}
+          </span>
+        </div>
+
+        <div className='border-primary/10 flex items-start gap-2 border-t pt-3'>
+          <Info className='text-primary mt-0.5 h-4 w-4 shrink-0' />
+          <p className='text-xs text-zinc-400'>
+            Funds locked in escrow until winners announced
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -320,14 +264,12 @@ const ValidationAlert = ({ totalPool }: { totalPool: number }) => {
   if (totalPool === 0) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className={cn(
-        'flex items-start gap-3 rounded-xl border p-4',
+        'flex items-start gap-3 rounded-lg border p-4',
         isValid
-          ? 'border-green-500/20 bg-green-500/10 text-green-400'
-          : 'border-amber-500/20 bg-amber-500/10 text-amber-400'
+          ? 'border-green-900/50 bg-green-500/5 text-green-400'
+          : 'border-amber-900/50 bg-amber-500/5 text-amber-400'
       )}
     >
       {isValid ? (
@@ -335,19 +277,19 @@ const ValidationAlert = ({ totalPool }: { totalPool: number }) => {
       ) : (
         <AlertCircle className='mt-0.5 h-5 w-5 shrink-0' />
       )}
-      <div className='space-y-1'>
+      <div>
         <p className='text-sm font-medium'>
           {isValid
             ? 'Prize pool looks good!'
             : 'Minimum prize pool recommended'}
         </p>
-        <p className='text-xs opacity-80'>
+        <p className='mt-1 text-xs opacity-80'>
           {isValid
-            ? 'Your prize pool meets the minimum threshold for a quality hackathon.'
+            ? 'Your prize pool meets the minimum threshold.'
             : `We recommend at least $${minPool.toLocaleString()} to attract quality participants.`}
         </p>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -360,6 +302,7 @@ export default function RewardsTab({
 
   const form = useForm<RewardsFormData>({
     resolver: zodResolver(rewardsSchema),
+    mode: 'onChange',
     defaultValues: initialData || {
       prizeTiers: [
         {
@@ -394,14 +337,11 @@ export default function RewardsTab({
     control: form.control,
     name: 'prizeTiers',
   });
-
   const prizeTiers = form.watch('prizeTiers');
 
   // Calculate totals
-  const totalPool = React.useMemo(() => {
-    if (!prizeTiers || prizeTiers.length === 0) return 0;
+  const totalPool = useMemo(() => {
     return prizeTiers.reduce((sum, tier) => {
-      if (!tier || !tier.prizeAmount) return sum;
       const amount = parseFloat(
         String(tier.prizeAmount).replace(/[^\d.-]/g, '')
       );
@@ -409,80 +349,46 @@ export default function RewardsTab({
     }, 0);
   }, [prizeTiers]);
 
-  const platformFeePercentage = 2;
-  const platformFee = React.useMemo(() => {
-    return Math.round(totalPool * (platformFeePercentage / 100) * 100) / 100;
-  }, [totalPool]);
-
-  const totalFunds = React.useMemo(() => {
-    return totalPool + platformFee;
-  }, [totalPool, platformFee]);
-
-  const formatCurrency = (amount: number) => {
-    return amount.toLocaleString('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
-  };
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+  const platformFee = useMemo(
+    () => Math.round(totalPool * 0.02 * 100) / 100,
+    [totalPool]
+  );
+  const totalFunds = useMemo(
+    () => totalPool + platformFee,
+    [totalPool, platformFee]
   );
 
-  // Apply preset prize structure
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
   const applyPreset = (presetKey: keyof typeof PRIZE_PRESETS) => {
     const preset = PRIZE_PRESETS[presetKey];
-    const baseAmount = totalPool || 10000; // Use existing total or default
-
-    const newTiers = preset.tiers.map((tier, idx) => ({
+    const baseAmount = totalPool || 10000;
+    const newTiers = preset.tiers.map((percentage, idx) => ({
       id: `tier-${Date.now()}-${idx}`,
-      place: tier.place,
-      prizeAmount: String(Math.round((baseAmount * tier.percentage) / 100)),
+      place: `${['1st', '2nd', '3rd', '4th', '5th'][idx]} Place`,
+      prizeAmount: String(Math.round((baseAmount * percentage) / 100)),
       description: '',
       currency: 'USDC',
       passMark: 80 - idx * 10,
     }));
-
     replace(newTiers);
     toast.success(`Applied ${preset.name} preset`);
     setShowPresets(false);
   };
 
-  const handleTierChange = (
-    id: string,
-    field: string,
-    value: string | number
-  ) => {
-    const index = fields.findIndex(tier => tier.id === id);
-    if (index !== -1) {
-      const path = `prizeTiers.${index}.${field}` as Path<RewardsFormData>;
-      form.setValue(path, value as never, { shouldValidate: true });
-      form.trigger('prizeTiers');
-    }
-  };
-
-  const handleRemoveTier = (id: string) => {
+  const handleRemove = (id: string) => {
     const index = fields.findIndex(tier => tier.id === id);
     if (index !== -1 && fields.length > 1) {
       remove(index);
       toast.success('Prize tier removed');
-      form.trigger('prizeTiers');
     }
   };
 
-  const handleAddTier = () => {
-    const placeLabels = [
-      '1st Place',
-      '2nd Place',
-      '3rd Place',
-      '4th Place',
-      '5th Place',
-    ];
-    const nextPlace =
-      placeLabels[fields.length] || `${fields.length + 1}th Place`;
+  const handleAdd = () => {
+    const placeLabels = ['1st', '2nd', '3rd', '4th', '5th'];
+    const nextPlace = `${placeLabels[fields.length] || `${fields.length + 1}th`} Place`;
     append({
       id: `tier-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       place: nextPlace,
@@ -492,20 +398,14 @@ export default function RewardsTab({
       passMark: 0,
     });
     toast.success('Prize tier added');
-    form.trigger('prizeTiers');
   };
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
-    if (active.id !== over?.id) {
+    if (over && active.id !== over.id) {
       const oldIndex = fields.findIndex(tier => tier.id === active.id);
-      const newIndex = fields.findIndex(tier => tier.id === over?.id);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        move(oldIndex, newIndex);
-        form.trigger('prizeTiers');
-      }
+      const newIndex = fields.findIndex(tier => tier.id === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) move(oldIndex, newIndex);
     }
   };
 
@@ -513,8 +413,7 @@ export default function RewardsTab({
     try {
       if (onSave) {
         await onSave(data);
-        // Navigation is handled automatically in saveRewardsStep
-        toast.success('Rewards saved successfully!');
+        toast.success('Rewards saved successfully');
       }
     } catch {
       toast.error('Failed to save rewards. Please try again.');
@@ -524,112 +423,65 @@ export default function RewardsTab({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-        {/* Header with Live Summary */}
-        <div className='flex flex-col items-start justify-between gap-6'>
-          <div className='w-full flex-1 lg:w-auto'>
-            <h3 className='text-lg font-semibold text-white'>
-              Prize Distribution
-            </h3>
-            <p className='mt-1 text-sm text-gray-400'>
-              Set up your hackathon prizes. Drag to reorder winners.
-            </p>
-          </div>
-
-          {/* Live Summary Card - Sticky on Desktop */}
-          <div className='lgs:sw-80 from-primary/10 to-primary/5 border-primary/20 w-full space-y-3 rounded-xl border bg-gradient-to-br p-4 lg:sticky lg:top-4'>
-            <div className='text-primary flex items-center gap-2'>
-              <Trophy className='h-4 w-4' />
-              <span className='text-xs font-semibold tracking-wide uppercase'>
-                Prize Pool Summary
-              </span>
-            </div>
-
-            <div className='space-y-2'>
-              <div className='flex items-baseline justify-between'>
-                <span className='text-sm text-gray-400'>Total Prizes</span>
-                <span className='text-2xl font-bold text-white'>
-                  ${formatCurrency(totalPool)}
-                </span>
-              </div>
-
-              <div className='flex items-center justify-between text-xs'>
-                <span className='text-gray-500'>
-                  Platform Fee ({platformFeePercentage}%)
-                </span>
-                <span className='text-gray-400'>
-                  ${formatCurrency(platformFee)}
-                </span>
-              </div>
-
-              <Separator className='bg-primary/20' />
-
-              <div className='flex items-baseline justify-between'>
-                <span className='text-sm font-medium text-gray-300'>
-                  You'll Pay
-                </span>
-                <span className='text-primary text-xl font-bold'>
-                  ${formatCurrency(totalFunds)}
-                </span>
-              </div>
-            </div>
-
-            <div className='border-primary/10 flex items-start gap-2 border-t pt-2'>
-              <Info className='text-primary mt-0.5 h-4 w-4 flex-shrink-0' />
-              <p className='text-xs text-gray-400'>
-                Funds locked in escrow until winners are announced
-              </p>
-            </div>
-          </div>
+        {/* Header */}
+        <div>
+          <h3 className='text-lg font-medium text-white'>Prize Distribution</h3>
+          <p className='mt-1 text-sm text-zinc-500'>
+            Set up prizes and drag to reorder winners
+          </p>
         </div>
 
-        {/* Validation Alert */}
+        {/* Summary Card */}
+        <PrizeSummary
+          totalPool={totalPool}
+          platformFee={platformFee}
+          totalFunds={totalFunds}
+        />
+
+        {/* Validation */}
         <ValidationAlert totalPool={totalPool} />
 
-        {/* Preset Buttons */}
-        <Collapsible open={showPresets} onOpenChange={setShowPresets}>
-          <CollapsibleTrigger asChild>
-            <Button
-              type='button'
-              variant='outline'
-              className='hover:border-primary hover:bg-primary/5 w-full border-gray-800 transition-all'
-            >
-              <Sparkles className='mr-2 h-4 w-4' />
-              {showPresets ? 'Hide' : 'Use'} Prize Structure Presets
-              {showPresets ? (
-                <ChevronUp className='ml-2 h-4 w-4' />
-              ) : (
-                <ChevronDown className='ml-2 h-4 w-4' />
+        {/* Presets */}
+        <div className='space-y-3'>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => setShowPresets(!showPresets)}
+            className='w-full border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/50'
+          >
+            <Sparkles className='mr-2 h-4 w-4' />
+            {showPresets ? 'Hide' : 'Use'} Prize Presets
+            <ChevronDown
+              className={cn(
+                'ml-2 h-4 w-4 transition-transform',
+                showPresets && 'rotate-180'
               )}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'
-            >
+            />
+          </Button>
+
+          {showPresets && (
+            <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
               {Object.entries(PRIZE_PRESETS).map(([key, preset]) => (
                 <button
                   key={key}
                   type='button'
                   onClick={() => applyPreset(key as keyof typeof PRIZE_PRESETS)}
-                  className='hover:border-primary hover:bg-primary/5 group rounded-xl border border-gray-800 bg-gray-900/50 p-4 text-left transition-all'
+                  className='group hover:border-primary/50 hover:bg-primary/5 rounded-lg border border-zinc-800 bg-zinc-900/30 p-3 text-left transition-all'
                 >
                   <p className='group-hover:text-primary font-medium text-white transition-colors'>
                     {preset.name}
                   </p>
-                  <p className='mt-1 text-xs text-gray-500'>
-                    {preset.description}
+                  <p className='mt-1 text-xs text-zinc-500'>
+                    {preset.tiers.join('/')}
                   </p>
                 </button>
               ))}
-            </motion.div>
-          </CollapsibleContent>
-        </Collapsible>
+            </div>
+          )}
+        </div>
 
         {/* Prize Tiers */}
-        <div className='bg-background-card space-y-3 rounded-[12px] border border-gray-900 py-5'>
+        <div className='space-y-3'>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -639,81 +491,58 @@ export default function RewardsTab({
               items={fields.map(tier => tier.id)}
               strategy={verticalListSortingStrategy}
             >
-              <AnimatePresence>
-                {fields.map((tier, index) => (
-                  <div key={tier.id}>
-                    <SortablePrizeTierItem
-                      tier={tier}
-                      index={index}
-                      onTierChange={handleTierChange}
-                      onRemoveTier={handleRemoveTier}
-                      canRemove={fields.length > 1}
-                      control={form.control}
-                      totalTiers={fields.length}
-                    />
-
-                    <Separator className='mt-3 bg-gray-900' />
-                  </div>
-                ))}
-              </AnimatePresence>
+              {fields.map((tier, index) => (
+                <PrizeTierComponent
+                  key={tier.id}
+                  tier={tier}
+                  index={index}
+                  onRemove={handleRemove}
+                  canRemove={fields.length > 1}
+                  control={form.control}
+                  totalTiers={fields.length}
+                />
+              ))}
             </SortableContext>
           </DndContext>
 
-          {/* Add Prize Button */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className='mx-5'
+          {/* Add Button */}
+          <Button
+            type='button'
+            variant='outline'
+            onClick={handleAdd}
+            className='hover:border-primary hover:bg-primary/5 hover:text-primary h-11 w-full border-dashed border-zinc-700 text-zinc-400'
           >
-            <Button
-              type='button'
-              variant='outline'
-              onClick={handleAddTier}
-              className='hover:border-primary hover:bg-primary/5 hover:text-primary h-11 w-full border-dashed border-gray-700 text-gray-400 transition-all'
-            >
-              <Plus className='mr-2 h-4 w-4' />
-              Add Another Prize Tier
-            </Button>
-          </motion.div>
+            <Plus className='mr-2 h-4 w-4' />
+            Add Prize Tier
+          </Button>
 
           {form.formState.errors.prizeTiers && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className='flex items-center gap-2 text-sm text-red-400'
-            >
+            <p className='flex items-center gap-2 text-sm text-red-400'>
               <AlertCircle className='h-4 w-4' />
               {form.formState.errors.prizeTiers.message}
-            </motion.p>
+            </p>
           )}
         </div>
 
-        {/* Submit Button */}
-        <div className='flex flex-col items-center justify-between gap-4 border-t border-gray-800 pt-6 sm:flex-row'>
-          <p className='text-sm text-gray-500'>
+        {/* Submit */}
+        <div className='flex items-center justify-between border-t border-zinc-800 pt-6'>
+          <p className='text-sm text-zinc-500'>
             {fields.length} prize tier{fields.length !== 1 ? 's' : ''}{' '}
             configured
           </p>
           <BoundlessButton
             type='submit'
-            size='xl'
+            size='lg'
             disabled={isLoading}
-            className='w-full sm:w-auto'
+            className='min-w-32'
           >
             {isLoading ? (
               <>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className='mr-2'
-                >
-                  <Sparkles className='h-4 w-4' />
-                </motion.div>
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Saving...
               </>
             ) : (
-              'Continue to Review'
+              'Continue'
             )}
           </BoundlessButton>
         </div>

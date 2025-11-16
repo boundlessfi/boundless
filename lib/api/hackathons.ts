@@ -73,14 +73,15 @@ export interface SubmissionRequirements {
 
 export interface TabVisibility {
   detailsTab?: boolean;
-  scheduleTab?: boolean;
-  rulesTab?: boolean;
-  rewardTab?: boolean;
-  announcementsTab?: boolean;
-  partnersTab?: boolean;
-  joinATeamTab?: boolean;
-  projectsTab?: boolean;
   participantsTab?: boolean;
+  resourcesTab?: boolean;
+  submissionTab?: boolean;
+  announcementsTab?: boolean;
+  discussionTab?: boolean;
+  winnersTab?: boolean;
+  sponsorsTab?: boolean;
+  joinATeamTab?: boolean;
+  rulesTab?: boolean;
 }
 
 export interface HackathonParticipation {
@@ -201,6 +202,12 @@ export interface UpdateDraftResponse extends ApiResponse<HackathonDraft> {
 export interface GetDraftResponse extends ApiResponse<HackathonDraft> {
   success: true;
   data: HackathonDraft;
+  message: string;
+}
+
+export interface PreviewDraftResponse extends ApiResponse<PublicHackathon> {
+  success: true;
+  data: PublicHackathon;
   message: string;
 }
 
@@ -894,6 +901,20 @@ export const getDraft = async (
     ...res.data,
     data: transformedData,
   };
+};
+
+/**
+ * Preview a hackathon draft (returns data in published hackathon format)
+ */
+export const previewDraft = async (
+  organizationId: string,
+  draftId: string
+): Promise<PreviewDraftResponse> => {
+  const res = await api.get(
+    `/organizations/${organizationId}/hackathons/drafts/${draftId}/preview`
+  );
+
+  return res.data;
 };
 
 /**

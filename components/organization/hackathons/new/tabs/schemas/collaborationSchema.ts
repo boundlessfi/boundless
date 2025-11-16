@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const sponsorPartnerSchema = z.object({
   id: z.string(),
-  name: z.string().trim().min(1, 'Sponsor/Partner name is required'),
+  name: z.string().trim().optional(),
   logo: z
     .string()
     .optional()
@@ -35,9 +35,7 @@ export const collaborationSchema = z.object({
         )
     )
     .default([]),
-  sponsorsPartners: z
-    .array(sponsorPartnerSchema)
-    .min(1, 'At least one sponsor or partner is required'),
+  sponsorsPartners: z.array(sponsorPartnerSchema).default([]),
 });
 
 export type SponsorPartner = z.infer<typeof sponsorPartnerSchema>;

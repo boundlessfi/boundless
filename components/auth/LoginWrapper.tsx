@@ -193,7 +193,7 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
         setLoadingState(false);
       }
     },
-    [form, handleAuthError, setLoadingState, router, callbackUrl]
+    [handleAuthError, setLoadingState, callbackUrl]
   );
 
   return (

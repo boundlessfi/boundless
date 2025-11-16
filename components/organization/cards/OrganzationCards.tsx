@@ -8,6 +8,7 @@ import {
   Edit,
   Archive,
   Trash2,
+  Loader2,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -40,6 +41,7 @@ interface OrganizationCardProps {
   onEdit?: (id: string) => void;
   onArchive?: (id: string) => void;
   onDelete?: (id: string) => void;
+  isDeleting?: boolean;
 }
 
 export default function OrganizationCard({
@@ -52,6 +54,7 @@ export default function OrganizationCard({
   onEdit,
   onArchive,
   onDelete,
+  isDeleting = false,
 }: OrganizationCardProps) {
   const router = useRouter();
 
@@ -168,10 +171,15 @@ export default function OrganizationCard({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleDelete}
-                  className='cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-300'
+                  disabled={isDeleting}
+                  className='cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-300 disabled:cursor-not-allowed disabled:opacity-50'
                 >
-                  <Trash2 className='mr-2 h-4 w-4' />
-                  Delete
+                  {isDeleting ? (
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  ) : (
+                    <Trash2 className='mr-2 h-4 w-4' />
+                  )}
+                  {isDeleting ? 'Deleting...' : 'Delete'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

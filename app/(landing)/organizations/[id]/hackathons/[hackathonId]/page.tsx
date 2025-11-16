@@ -61,7 +61,7 @@ export default function HackathonPage() {
   return (
     <div className='min-h-screen bg-black'>
       {/* Hero Section with Hackathon Name */}
-      <div className='border-b border-gray-900 px-6 py-12 sm:px-8 lg:px-12'>
+      <div className='border-b border-gray-900 p-4'>
         <div className='mx-auto max-w-7xl'>
           <h1 className='text-3xl font-light tracking-tight text-white sm:text-4xl'>
             {currentHackathon?.title || 'Hackathon Dashboard'}

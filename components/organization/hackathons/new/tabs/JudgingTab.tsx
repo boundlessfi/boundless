@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BoundlessButton } from '@/components/buttons';
 import { toast } from 'sonner';
 import {
@@ -8,7 +8,7 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useForm, useFieldArray, Control, Path } from 'react-hook-form';
+import { useForm, useFieldArray, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,6 +26,9 @@ import {
   GripVertical,
   Info,
   LucideArrowUpRight,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   DndContext,
@@ -45,6 +48,12 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { motion } from 'framer-motion';
 
 interface JudgingTabProps {
   onContinue?: () => void;
@@ -53,10 +62,128 @@ interface JudgingTabProps {
   isLoading?: boolean;
 }
 
+// Judging Criteria Templates
+const JUDGING_TEMPLATES = {
+  standard: {
+    name: 'Standard Criteria',
+    description:
+      'Innovation, Impact, Technical Quality, Usability, Presentation',
+    criteria: [
+      {
+        name: 'Innovation',
+        weight: 25,
+        description: 'How original or creative is the idea?',
+      },
+      {
+        name: 'Impact',
+        weight: 20,
+        description: 'What problem does it solve and for whom?',
+      },
+      {
+        name: 'Technical Quality',
+        weight: 20,
+        description: 'Code quality, architecture, and technical implementation',
+      },
+      {
+        name: 'Usability',
+        weight: 20,
+        description: 'User experience and ease of use',
+      },
+      {
+        name: 'Presentation',
+        weight: 15,
+        description: 'Clarity of pitch and demonstration',
+      },
+    ],
+  },
+  technical: {
+    name: 'Technical Focus',
+    description: 'Emphasizes technical excellence and implementation',
+    criteria: [
+      {
+        name: 'Technical Implementation',
+        weight: 40,
+        description: 'Code quality, architecture, and technical depth',
+      },
+      {
+        name: 'Innovation',
+        weight: 25,
+        description: 'Novel approaches and creative solutions',
+      },
+      {
+        name: 'Scalability',
+        weight: 20,
+        description: 'Can it handle growth and scale?',
+      },
+      {
+        name: 'Documentation',
+        weight: 15,
+        description: 'Code documentation and technical writing',
+      },
+    ],
+  },
+  impact: {
+    name: 'Impact Focus',
+    description: 'Emphasizes real-world impact and user value',
+    criteria: [
+      {
+        name: 'Impact',
+        weight: 35,
+        description: 'Real-world problem solving and user value',
+      },
+      {
+        name: 'Market Potential',
+        weight: 25,
+        description: 'Market size and business viability',
+      },
+      {
+        name: 'User Experience',
+        weight: 25,
+        description: 'Usability and user satisfaction',
+      },
+      {
+        name: 'Innovation',
+        weight: 15,
+        description: 'Creative and original approach',
+      },
+    ],
+  },
+  balanced: {
+    name: 'Balanced',
+    description: 'Equal weight across all criteria',
+    criteria: [
+      {
+        name: 'Innovation',
+        weight: 20,
+        description: 'Originality and creativity',
+      },
+      {
+        name: 'Impact',
+        weight: 20,
+        description: 'Problem solving and value creation',
+      },
+      {
+        name: 'Technical Quality',
+        weight: 20,
+        description: 'Code quality and implementation',
+      },
+      {
+        name: 'Design',
+        weight: 20,
+        description: 'UI/UX and visual design',
+      },
+      {
+        name: 'Presentation',
+        weight: 20,
+        description: 'Pitch quality and demonstration',
+      },
+    ],
+  },
+};
+
 const SortableCriterionItem = ({
   criterion,
   index,
-  onCriterionChange,
   onRemoveCriterion,
   canRemove,
   control,
@@ -65,11 +192,6 @@ const SortableCriterionItem = ({
 }: {
   criterion: Criterion;
   index: number;
-  onCriterionChange: (
-    id: string,
-    field: string,
-    value: string | number
-  ) => void;
   onRemoveCriterion: (id: string) => void;
   canRemove: boolean;
   control: Control<JudgingFormData>;
@@ -90,8 +212,7 @@ const SortableCriterionItem = ({
     transition,
   };
 
-  const hasError =
-    Math.abs(totalWeight - 100) > 0.01 && index === totalCriteria - 1;
+  const hasError = Math.abs(totalWeight - 100) > 0.01;
 
   return (
     <div
@@ -125,11 +246,7 @@ const SortableCriterionItem = ({
                   <FormControl>
                     <Input
                       placeholder='Innovation'
-                      value={field.value}
-                      onChange={e => {
-                        field.onChange(e.target.value);
-                        onCriterionChange(criterion.id, 'name', e.target.value);
-                      }}
+                      {...field}
                       className='focus-visible:border-primary h-12 border-gray-900 bg-[#101010] text-white placeholder:text-gray-600'
                     />
                   </FormControl>
@@ -139,7 +256,7 @@ const SortableCriterionItem = ({
             />
 
             <div className='space-y-2'>
-              <label className='text-sm text-gray-400'>Weight</label>
+              <label className='text-sm text-gray-400'>Weight (%)</label>
               <FormField
                 control={control}
                 name={`criteria.${index}.weight`}
@@ -147,55 +264,62 @@ const SortableCriterionItem = ({
                   <FormItem>
                     <FormControl>
                       <div className='flex h-12 items-stretch overflow-hidden rounded-[12px] border border-gray-900 bg-[#101010]'>
-                        <div className='flex-1 px-4 py-3 text-white'>
-                          {field.value}%
+                        <Button
+                          type='button'
+                          variant='outline'
+                          className='h-full rounded-none border-r border-gray-900 bg-gray-900 hover:bg-gray-800'
+                          onClick={() => {
+                            const newValue = Math.max(
+                              0,
+                              Number(field.value) - 1
+                            );
+                            field.onChange(newValue);
+                          }}
+                        >
+                          <Minus className='h-4 w-4 text-white' />
+                        </Button>
+                        <Input
+                          type='number'
+                          min={0}
+                          max={100}
+                          {...field}
+                          value={field.value || 0}
+                          onChange={e => {
+                            const value = Math.max(
+                              0,
+                              Math.min(100, Number(e.target.value) || 0)
+                            );
+                            field.onChange(value);
+                          }}
+                          className='h-full border-0 bg-transparent text-center text-white focus-visible:ring-0 focus-visible:ring-offset-0'
+                        />
+                        <div className='flex items-center px-2 text-sm text-gray-400'>
+                          %
                         </div>
-                        <div className='flex gap-px'>
-                          <Button
-                            type='button'
-                            variant='outline'
-                            className='h-full rounded-none border-l border-gray-900 bg-gray-900 hover:bg-gray-800'
-                            onClick={() => {
-                              const newValue = Math.max(0, field.value - 1);
-                              field.onChange(newValue);
-                              onCriterionChange(
-                                criterion.id,
-                                'weight',
-                                newValue
-                              );
-                            }}
-                          >
-                            <Minus className='h-4 w-4 text-white' />
-                          </Button>
-                          <Button
-                            type='button'
-                            variant='outline'
-                            className='h-full rounded-none border-l border-gray-900 bg-gray-900 hover:bg-gray-800'
-                            onClick={() => {
-                              const newValue = Math.min(100, field.value + 1);
-                              field.onChange(newValue);
-                              onCriterionChange(
-                                criterion.id,
-                                'weight',
-                                newValue
-                              );
-                            }}
-                          >
-                            <Plus className='h-4 w-4 text-white' />
-                          </Button>
-                        </div>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          className='h-full rounded-none border-l border-gray-900 bg-gray-900 hover:bg-gray-800'
+                          onClick={() => {
+                            const newValue = Math.min(
+                              100,
+                              Number(field.value) + 1
+                            );
+                            field.onChange(newValue);
+                          }}
+                        >
+                          <Plus className='h-4 w-4 text-white' />
+                        </Button>
                       </div>
                     </FormControl>
                     {hasError && (
                       <p className='text-error-400 mt-1 flex items-center gap-1 text-xs'>
                         <span>▲</span>
                         <span>
-                          Weight must equal{' '}
-                          {Math.max(
-                            0,
-                            Math.round(100 - (totalWeight - field.value))
-                          )}
-                          % to sum up 100%
+                          Total weight is {totalWeight.toFixed(1)}%. Must equal
+                          100%.{' '}
+                          {index === totalCriteria - 1 &&
+                            `Adjust this criterion to ${Math.max(0, Math.round((100 - (totalWeight - Number(field.value))) * 10) / 10)}% to reach 100%`}
                         </span>
                       </p>
                     )}
@@ -213,15 +337,8 @@ const SortableCriterionItem = ({
                   <FormControl>
                     <Textarea
                       placeholder='Description (optional)'
+                      {...field}
                       value={field.value || ''}
-                      onChange={e => {
-                        field.onChange(e.target.value);
-                        onCriterionChange(
-                          criterion.id,
-                          'description',
-                          e.target.value
-                        );
-                      }}
                       className='focus-visible:border-primary min-h-[80px] resize-none border-gray-900 bg-[#101010] text-white placeholder:text-gray-600'
                     />
                   </FormControl>
@@ -253,82 +370,46 @@ export default function JudgingTab({
   initialData,
   isLoading = false,
 }: JudgingTabProps) {
+  const [showTemplates, setShowTemplates] = useState(false);
+
   const form = useForm<JudgingFormData>({
     resolver: zodResolver(judgingSchema),
+    mode: 'onChange',
     defaultValues: initialData || {
-      criteria: [
-        {
-          id: `criterion-${Date.now()}-1`,
-          name: 'Innovation',
-          weight: 25,
-          description: 'How original or creative is the idea?',
-        },
-        {
-          id: `criterion-${Date.now()}-2`,
-          name: 'Impact',
-          weight: 20,
-          description: '',
-        },
-        {
-          id: `criterion-${Date.now()}-3`,
-          name: 'Technical Quality',
-          weight: 20,
-          description: '',
-        },
-        {
-          id: `criterion-${Date.now()}-4`,
-          name: 'Usability',
-          weight: 20,
-          description: '',
-        },
-        {
-          id: `criterion-${Date.now()}-5`,
-          name: 'Presentation',
-          weight: 15,
-          description: '',
-        },
-      ],
+      criteria: [],
     },
   });
 
-  const { fields, append, remove, move } = useFieldArray({
+  const { fields, append, remove, move, replace } = useFieldArray({
     control: form.control,
     name: 'criteria',
   });
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
+  // Watch criteria for real-time updates
   const criteria = form.watch('criteria');
   const totalWeight = React.useMemo(() => {
+    if (!criteria || criteria.length === 0) return 0;
     return criteria.reduce(
-      (sum, criterion) => sum + (criterion.weight || 0),
+      (sum, criterion) => sum + (Number(criterion.weight) || 0),
       0
     );
   }, [criteria]);
-
-  const handleCriterionChange = (
-    id: string,
-    field: string,
-    value: string | number
-  ) => {
-    const index = fields.findIndex(criterion => criterion.id === id);
-    if (index !== -1) {
-      const path = `criteria.${index}.${field}` as Path<JudgingFormData>;
-      form.setValue(path, value as never, { shouldValidate: true });
-      form.trigger('criteria');
-    }
-  };
 
   const handleRemoveCriterion = (id: string) => {
     const index = fields.findIndex(criterion => criterion.id === id);
     if (index !== -1 && fields.length > 1) {
       remove(index);
-      form.trigger('criteria');
     }
   };
 
@@ -342,21 +423,33 @@ export default function JudgingTab({
       weight: newWeight,
       description: '',
     });
-    form.trigger('criteria');
+  };
+
+  const applyTemplate = (templateKey: keyof typeof JUDGING_TEMPLATES) => {
+    const template = JUDGING_TEMPLATES[templateKey];
+    const newCriteria = template.criteria.map((criterion, idx) => ({
+      id: `criterion-${Date.now()}-${idx}`,
+      name: criterion.name,
+      weight: criterion.weight,
+      description: criterion.description || '',
+    }));
+
+    replace(newCriteria);
+    toast.success(`Applied ${template.name} template`);
+    setShowTemplates(false);
   };
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (active.id !== over?.id) {
+    if (over && active.id !== over.id) {
       const oldIndex = fields.findIndex(
         criterion => criterion.id === active.id
       );
-      const newIndex = fields.findIndex(criterion => criterion.id === over?.id);
+      const newIndex = fields.findIndex(criterion => criterion.id === over.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
         move(oldIndex, newIndex);
-        form.trigger('criteria');
       }
     }
   };
@@ -365,7 +458,6 @@ export default function JudgingTab({
     try {
       if (onSave) {
         await onSave(data);
-        // Navigation is handled automatically in saveJudgingStep
         toast.success('Judging settings saved successfully!');
       }
     } catch {
@@ -415,6 +507,71 @@ export default function JudgingTab({
             Define how submissions will be evaluated. Assign weight percentages
             to each criterion so that the total adds up to 100%.
           </p>
+
+          {/* Template Selection */}
+          {fields.length === 0 && (
+            <Collapsible open={showTemplates} onOpenChange={setShowTemplates}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  type='button'
+                  variant='outline'
+                  className='hover:border-primary hover:bg-primary/5 w-full border-gray-800 transition-all'
+                >
+                  <Sparkles className='mr-2 h-4 w-4' />
+                  {showTemplates ? 'Hide' : 'Use'} Judging Criteria Templates
+                  {showTemplates ? (
+                    <ChevronUp className='ml-2 h-4 w-4' />
+                  ) : (
+                    <ChevronDown className='ml-2 h-4 w-4' />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'
+                >
+                  {Object.entries(JUDGING_TEMPLATES).map(([key, template]) => (
+                    <button
+                      key={key}
+                      type='button'
+                      onClick={() =>
+                        applyTemplate(key as keyof typeof JUDGING_TEMPLATES)
+                      }
+                      className='hover:border-primary hover:bg-primary/5 group rounded-xl border border-gray-800 bg-gray-900/50 p-4 text-left transition-all'
+                    >
+                      <p className='group-hover:text-primary font-medium text-white transition-colors'>
+                        {template.name}
+                      </p>
+                      <p className='mt-1 text-xs text-gray-500'>
+                        {template.description}
+                      </p>
+                    </button>
+                  ))}
+                </motion.div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Weight Summary */}
+          {fields.length > 0 && (
+            <div className='mb-3 flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-2'>
+              <span className='text-sm text-gray-400'>Total Weight</span>
+              <span
+                className={cn(
+                  'text-lg font-semibold',
+                  Math.abs(totalWeight - 100) < 0.01
+                    ? 'text-green-400'
+                    : 'text-amber-400'
+                )}
+              >
+                {totalWeight.toFixed(1)}%
+              </span>
+            </div>
+          )}
+
           <div className='bg-background-card mt-3 rounded-[12px] border border-gray-900'>
             <DndContext
               sensors={sensors}
@@ -426,21 +583,31 @@ export default function JudgingTab({
                 strategy={verticalListSortingStrategy}
               >
                 <div className='space-y-0 py-4'>
-                  {fields.map((criterion, index) => (
-                    <div key={criterion.id} className={index > 0 ? 'mt-4' : ''}>
-                      <SortableCriterionItem
-                        criterion={criterion}
-                        index={index}
-                        onCriterionChange={handleCriterionChange}
-                        onRemoveCriterion={handleRemoveCriterion}
-                        canRemove={fields.length > 1}
-                        control={form.control}
-                        totalCriteria={fields.length}
-                        totalWeight={totalWeight}
-                      />
-                      <Separator className='mt-3 bg-gray-900' />
+                  {fields.length === 0 ? (
+                    <div className='flex flex-col items-center justify-center px-4 py-12'>
+                      <p className='text-sm text-gray-500'>
+                        No criteria added yet. Add your first criterion or use a
+                        template above.
+                      </p>
                     </div>
-                  ))}
+                  ) : (
+                    fields.map((criterion, index) => (
+                      <div key={criterion.id}>
+                        <SortableCriterionItem
+                          criterion={criterion}
+                          index={index}
+                          onRemoveCriterion={handleRemoveCriterion}
+                          canRemove={fields.length > 1}
+                          control={form.control}
+                          totalCriteria={fields.length}
+                          totalWeight={totalWeight}
+                        />
+                        {index < fields.length - 1 && (
+                          <Separator className='mt-3 bg-gray-900' />
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </SortableContext>
             </DndContext>

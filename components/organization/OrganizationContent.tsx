@@ -22,6 +22,8 @@ import { useOrganization } from '@/lib/providers/OrganizationProvider';
 import LoadingSpinner from '../LoadingSpinner';
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import DeleteOrganizationDialog from './DeleteOrganizationDialog';
 
 type SortOption = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
 
@@ -32,9 +34,16 @@ export default function OrganizationContent() {
     isLoading,
     isLoadingOrganizations,
     deleteOrganization,
+    activeOrg,
   } = useOrganization();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [orgToDelete, setOrgToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const loading = isLoading || isLoadingOrganizations;
 
@@ -75,15 +84,41 @@ export default function OrganizationContent() {
 
   const hasOrganizations = organizations.length > 0;
 
-  const handleDelete = async (orgId: string) => {
-    if (!confirm('Are you sure you want to delete this organization?')) {
-      return;
+  const handleDeleteClick = (orgId: string) => {
+    const org = organizations.find(org => org._id === orgId);
+    if (org) {
+      setOrgToDelete({ id: org._id, name: org.name });
+      setDeleteDialogOpen(true);
     }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!orgToDelete) return;
+
+    setDeletingId(orgToDelete.id);
+    setDeleteDialogOpen(false);
 
     try {
-      await deleteOrganization(orgId);
-    } catch {
-      alert('Failed to delete organization. Please try again.');
+      await deleteOrganization(orgToDelete.id);
+      toast.success('Organization deleted successfully', {
+        description: `"${orgToDelete.name}" has been permanently deleted.`,
+      });
+
+      // If the deleted org was the active org, redirect to organizations page
+      if (activeOrg?._id === orgToDelete.id) {
+        router.push('/organizations');
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to delete organization. Please try again.';
+      toast.error('Failed to delete organization', {
+        description: errorMessage,
+      });
+    } finally {
+      setDeletingId(null);
+      setOrgToDelete(null);
     }
   };
 
@@ -91,15 +126,31 @@ export default function OrganizationContent() {
     router.push(`/organizations/${orgId}/edit`);
   };
 
-  const handleArchive = async () => {
-    if (!confirm('Are you sure you want to archive this organization?')) {
+  const handleArchive = async (orgId: string) => {
+    const orgToArchive = organizations.find(org => org._id === orgId);
+    const orgName = orgToArchive?.name || 'this organization';
+
+    if (
+      !confirm(
+        `Are you sure you want to archive "${orgName}"? This will hide the organization from your active list.`
+      )
+    ) {
       return;
     }
 
     try {
-      alert('Archive functionality will be implemented soon.');
-    } catch {
-      alert('Failed to archive organization. Please try again.');
+      // TODO: Implement archive functionality
+      toast.info('Archive functionality coming soon', {
+        description: 'This feature will be available in a future update.',
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to archive organization. Please try again.';
+      toast.error('Failed to archive organization', {
+        description: errorMessage,
+      });
     }
   };
 
@@ -212,7 +263,7 @@ export default function OrganizationContent() {
         </section>
       )}
 
-      <section className='mx-auto max-w-6xl px-8 py-12'>
+      <section className='mx-auto max-w-6xl px-8'>
         {hasOrganizations ? (
           <>
             <div className='mb-8 flex items-center justify-between'>
@@ -256,7 +307,8 @@ export default function OrganizationContent() {
                     }}
                     onEdit={handleEdit}
                     onArchive={handleArchive}
-                    onDelete={handleDelete}
+                    onDelete={handleDeleteClick}
+                    isDeleting={deletingId === org._id}
                   />
                 ))}
               </div>
@@ -358,6 +410,17 @@ export default function OrganizationContent() {
           </div>
         )}
       </section>
+
+      {/* Delete Organization Dialog */}
+      {orgToDelete && (
+        <DeleteOrganizationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          organizationName={orgToDelete.name}
+          onConfirm={handleDeleteConfirm}
+          isDeleting={deletingId === orgToDelete.id}
+        />
+      )}
     </main>
   );
 }

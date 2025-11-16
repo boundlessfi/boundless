@@ -75,22 +75,22 @@ export const transformToApiFormat = (stepData: {
         ParticipantType.INDIVIDUAL,
       teamMin: participation?.teamMin,
       teamMax: participation?.teamMax,
-      about: participation?.about,
       submissionRequirements: {
         requireGithub: participation?.require_github,
         requireDemoVideo: participation?.require_demo_video,
         requireOtherLinks: participation?.require_other_links,
       },
       tabVisibility: {
-        detailsTab: participation?.details_tab,
-        scheduleTab: participation?.schedule_tab,
-        rulesTab: participation?.rules_tab,
-        rewardTab: participation?.reward_tab,
-        announcementsTab: participation?.announcements_tab,
-        partnersTab: participation?.partners_tab,
-        joinATeamTab: participation?.join_a_team_tab,
-        projectsTab: participation?.projects_tab,
-        participantsTab: participation?.participants_tab,
+        detailsTab: participation?.detailsTab,
+        participantsTab: participation?.participantsTab,
+        resourcesTab: participation?.resourcesTab,
+        submissionTab: participation?.submissionTab,
+        announcementsTab: participation?.announcementsTab,
+        discussionTab: participation?.discussionTab,
+        winnersTab: participation?.winnersTab,
+        sponsorsTab: participation?.sponsorsTab,
+        joinATeamTab: participation?.joinATeamTab,
+        rulesTab: participation?.rulesTab,
       },
     },
     rewards: {
@@ -120,11 +120,13 @@ export const transformToApiFormat = (stepData: {
           link => link && link.trim() !== ''
         ) || [],
       sponsorsPartners:
-        collaboration?.sponsorsPartners?.map(sp => ({
-          sponsorName: sp.name,
-          sponsorLogo: sp.logo || '',
-          partnerLink: sp.link || '',
-        })) || [],
+        collaboration?.sponsorsPartners
+          ?.filter(sp => sp.name) // Filter out sponsors without names
+          .map(sp => ({
+            sponsorName: sp.name || '',
+            sponsorLogo: sp.logo || '',
+            partnerLink: sp.link || '',
+          })) || [],
     },
   };
 };
@@ -177,22 +179,22 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
       participantType: participation?.participantType || 'individual',
       teamMin: participation?.teamMin,
       teamMax: participation?.teamMax,
-      about: participation?.about || '',
       require_github:
         participation?.submissionRequirements?.requireGithub || false,
       require_demo_video:
         participation?.submissionRequirements?.requireDemoVideo || false,
       require_other_links:
         participation?.submissionRequirements?.requireOtherLinks || false,
-      details_tab: participation?.tabVisibility?.detailsTab || true,
-      schedule_tab: participation?.tabVisibility?.scheduleTab || true,
-      rules_tab: participation?.tabVisibility?.rulesTab || true,
-      reward_tab: participation?.tabVisibility?.rewardTab || true,
-      announcements_tab: participation?.tabVisibility?.announcementsTab || true,
-      partners_tab: participation?.tabVisibility?.partnersTab || true,
-      join_a_team_tab: participation?.tabVisibility?.joinATeamTab || true,
-      projects_tab: participation?.tabVisibility?.projectsTab || true,
-      participants_tab: participation?.tabVisibility?.participantsTab || true,
+      detailsTab: participation?.tabVisibility?.detailsTab || true,
+      participantsTab: participation?.tabVisibility?.participantsTab || true,
+      resourcesTab: participation?.tabVisibility?.resourcesTab || true,
+      submissionTab: participation?.tabVisibility?.submissionTab || true,
+      announcementsTab: participation?.tabVisibility?.announcementsTab || true,
+      discussionTab: participation?.tabVisibility?.discussionTab || true,
+      winnersTab: participation?.tabVisibility?.winnersTab || true,
+      sponsorsTab: participation?.tabVisibility?.sponsorsTab || true,
+      joinATeamTab: participation?.tabVisibility?.joinATeamTab || true,
+      rulesTab: participation?.tabVisibility?.rulesTab || true,
     } as ParticipantFormData,
     rewards: {
       prizeTiers:

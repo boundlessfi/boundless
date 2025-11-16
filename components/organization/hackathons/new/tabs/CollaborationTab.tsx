@@ -182,14 +182,7 @@ export default function CollaborationTab({
       telegram: '',
       discord: '',
       socialLinks: ['', ''],
-      sponsorsPartners: [
-        {
-          id: `sponsor-${Date.now()}-1`,
-          name: '',
-          logo: '',
-          link: '',
-        },
-      ],
+      sponsorsPartners: [],
     },
   });
 
@@ -334,16 +327,13 @@ export default function CollaborationTab({
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <div className='relative flex items-center justify-between gap-1'>
-                          <div className='relative flex h-12 w-full items-center gap-2 rounded-[12px] border border-gray-900 p-2'>
-                            <span className='text-sm text-white'>www.</span>
-                            <Input
-                              placeholder='x, website, or other relevant links'
-                              value={field.value || ''}
-                              onChange={field.onChange}
-                              className='h-auto flex-1 border-none bg-transparent px-0 text-white placeholder:text-gray-600 focus-visible:border-none focus-visible:ring-0'
-                            />
-                          </div>
+                        <div className='relative flex items-center gap-2'>
+                          <Input
+                            placeholder='x, website, or other relevant links'
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            className='focus-visible:border-primary h-12 flex-1 border-gray-900 bg-[#101010] text-white placeholder:text-gray-600'
+                          />
                           <Button
                             type='button'
                             variant='ghost'
@@ -376,20 +366,25 @@ export default function CollaborationTab({
 
         {/* Sponsors & Partners Section */}
         <div>
-          <h3 className='text-sm'>
-            Sponsors & Partners <span className='text-error-400'>*</span>
-          </h3>
+          <h3 className='text-sm'>Sponsors & Partners</h3>
           <p className='mt-1 mb-3 text-sm text-gray-500'>
             Showcase the organizations supporting your hackathon. Add logos,
             names, and links to highlight their role.
           </p>
           <div className='bg-background-card mt-3 space-y-6 rounded-[12px] border border-gray-900 p-6'>
-            {sponsorFields.map((sponsor, index) => (
-              <div
-                key={sponsor.id}
-                className='relative rounded-[12px] border border-gray-900 p-6'
-              >
-                {sponsorFields.length > 1 && (
+            {sponsorFields.length === 0 ? (
+              <div className='flex flex-col items-center justify-center px-4 py-12'>
+                <p className='text-sm text-gray-500'>
+                  No sponsors or partners added yet. Click below to add your
+                  first one.
+                </p>
+              </div>
+            ) : (
+              sponsorFields.map((sponsor, index) => (
+                <div
+                  key={sponsor.id}
+                  className='relative rounded-[12px] border border-gray-900 p-6'
+                >
                   <Button
                     type='button'
                     variant='ghost'
@@ -399,65 +394,59 @@ export default function CollaborationTab({
                   >
                     <X className='h-4 w-4' />
                   </Button>
-                )}
-                <div className='grid grid-cols-1 gap-6'>
-                  <div className='space-y-4'>
-                    <FormField
-                      control={form.control}
-                      name={`sponsorsPartners.${index}.name`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className='text-sm'>
-                            Organizer / Sponsor Name
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder='Enter organizer or sponsor name'
-                              value={field.value}
-                              onChange={field.onChange}
-                              className='focus-visible:border-primary h-12 border-gray-900 bg-[#101010] text-white placeholder:text-gray-600'
-                            />
-                          </FormControl>
-                          <FormMessage className='text-error-400 text-xs' />
-                        </FormItem>
-                      )}
-                    />
-                    <LogoUpload
-                      control={form.control}
-                      name={`sponsorsPartners.${index}.logo`}
-                      setValue={form.setValue}
-                      index={index}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`sponsorsPartners.${index}.link`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className='text-sm'>
-                            Partnership Links{' '}
-                            <span className='text-error-500'>*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <div className='relative flex items-center justify-between gap-1'>
-                              <div className='relative flex h-12 w-full items-center gap-2 rounded-[12px] border border-gray-900 p-2'>
-                                <span className='text-sm text-white'>www.</span>
-                                <Input
-                                  placeholder='Link to the organization website'
-                                  value={field.value || ''}
-                                  onChange={field.onChange}
-                                  className='h-auto flex-1 border-none bg-transparent px-0 text-white placeholder:text-gray-600 focus-visible:border-none focus-visible:ring-0'
-                                />
-                              </div>
-                            </div>
-                          </FormControl>
-                          <FormMessage className='text-error-400 text-xs' />
-                        </FormItem>
-                      )}
-                    />
+                  <div className='grid grid-cols-1 gap-6'>
+                    <div className='space-y-4'>
+                      <FormField
+                        control={form.control}
+                        name={`sponsorsPartners.${index}.name`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className='text-sm'>
+                              Organizer / Sponsor Name
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder='Enter organizer or sponsor name'
+                                value={field.value}
+                                onChange={field.onChange}
+                                className='focus-visible:border-primary h-12 border-gray-900 bg-[#101010] text-white placeholder:text-gray-600'
+                              />
+                            </FormControl>
+                            <FormMessage className='text-error-400 text-xs' />
+                          </FormItem>
+                        )}
+                      />
+                      <LogoUpload
+                        control={form.control}
+                        name={`sponsorsPartners.${index}.logo`}
+                        setValue={form.setValue}
+                        index={index}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`sponsorsPartners.${index}.link`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className='text-sm'>
+                              Partnership Links
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder='Link to the organization website'
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                className='focus-visible:border-primary h-12 border-gray-900 bg-[#101010] text-white placeholder:text-gray-600'
+                              />
+                            </FormControl>
+                            <FormMessage className='text-error-400 text-xs' />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
             <BoundlessButton
               type='button'
               variant='outline'
