@@ -171,6 +171,7 @@ export default function Explore() {
       <div className='mt-10 grid w-fit grid-cols-1 gap-6 px-4 md:grid-cols-2 md:px-6 lg:grid-cols-3 xl:px-0'>
         {projects.map(project => (
           <ProjectCard
+            isFullWidth={true}
             key={project.id}
             deadlineInDays={project.daysToDeadline || 0}
             votes={
@@ -208,7 +209,6 @@ export default function Explore() {
         ))}
       </div>
 
-      {/* Footer */}
       <div className='mt-20 flex cursor-pointer items-center gap-1'>
         <Link href='/projects'>
           <p className='font-medium underline'>View More Opportunities</p>

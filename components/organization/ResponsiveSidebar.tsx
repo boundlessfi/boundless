@@ -1,6 +1,6 @@
 'use client';
 
-import { Trophy, HandCoins, Settings, Plus } from 'lucide-react';
+import { Trophy, HandCoins, Settings, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -45,8 +45,16 @@ export default function ResponsiveSidebar({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side='left'
-        className='w-[350px] border-r border-zinc-800 bg-black p-0'
+        className='w-[350px] border-r border-zinc-800 bg-black p-0 [&_[data-radix-sheet-close-icon]]:text-white'
       >
+        <button
+          onClick={() => onOpenChange?.(false)}
+          className='absolute top-4 right-4 rounded-md p-2 transition hover:bg-zinc-800'
+          aria-label='Close'
+        >
+          <X className='cursor-pointer text-white' />
+        </button>
+
         <nav className='flex h-full flex-col gap-1 py-4'>
           <h3 className='mb-2 px-6 text-xs font-semibold tracking-wider text-zinc-500 uppercase'>
             Menu
@@ -64,7 +72,7 @@ export default function ResponsiveSidebar({
                 className={cn(
                   'flex items-center gap-3 px-6 py-2.5 text-sm font-medium transition-colors',
                   isActive
-                    ? 'border-r-4 border-r-lime-500 bg-lime-500/10 text-lime-500'
+                    ? 'border-r-primary bg-primary/10 text-primary border-r-4'
                     : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                 )}
               >
@@ -76,11 +84,11 @@ export default function ResponsiveSidebar({
 
           <div className='mt-6 space-y-3 px-4'>
             <Link
-              href=''
+              href={`/organizations/${organizationId}/hackathons/new`}
               onClick={() => onOpenChange?.(false)}
               className='flex items-center gap-3 px-3 py-2'
             >
-              <div className='grid h-6 w-6 flex-shrink-0 place-content-center rounded-full bg-lime-500'>
+              <div className='bg-primary grid h-6 w-6 flex-shrink-0 place-content-center rounded-full'>
                 <Plus className='h-5 w-5 text-black' />
               </div>
               <span className='text-sm font-medium text-zinc-300'>
@@ -88,11 +96,11 @@ export default function ResponsiveSidebar({
               </span>
             </Link>
             <Link
-              href=''
+              href={`/organizations/${organizationId}/grants/new`}
               onClick={() => onOpenChange?.(false)}
               className='flex items-center gap-3 px-3 py-2'
             >
-              <div className='grid h-6 w-6 flex-shrink-0 place-content-center rounded-full bg-lime-500'>
+              <div className='bg-primary grid h-6 w-6 flex-shrink-0 place-content-center rounded-full'>
                 <Plus className='h-5 w-5 text-black' />
               </div>
               <span className='text-sm font-medium text-zinc-300'>

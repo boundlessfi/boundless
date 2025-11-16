@@ -4,13 +4,8 @@ import OrganizationSettings from '@/components/organization/OrganizationSettings
 
 export default function NewOrganizationPage() {
   return (
-    <OrganizationSettings
-      initialData={{
-        name: 'Organization 1',
-        logo: '',
-        tagline: '',
-        about: '',
-      }}
-    />
+    <div className='min-h-screen bg-black'>
+      <OrganizationSettings isCreating={true} />
+    </div>
   );
 }

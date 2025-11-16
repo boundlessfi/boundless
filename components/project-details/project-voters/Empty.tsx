@@ -4,6 +4,7 @@ import { ArrowUpIcon } from 'lucide-react';
 import LottieAnimation from '@/components/LottieAnimation';
 
 interface EmptyProps {
+  projectStatus: string;
   onVote?: () => void;
 }
 

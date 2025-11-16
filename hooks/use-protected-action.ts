@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useWalletStore } from './use-wallet';
+import { useState, useCallback } from 'react';
+import { useWalletContext } from '@/components/providers/wallet-provider';
 import { useWalletProtection } from './use-wallet-protection';
 
 interface UseProtectedActionOptions {
@@ -13,7 +13,8 @@ export function useProtectedAction({
   onSuccess,
   redirectTo,
 }: UseProtectedActionOptions) {
-  const { isConnected, publicKey } = useWalletStore();
+  const { walletAddress } = useWalletContext();
+  const isConnected = Boolean(walletAddress);
   const {
     requireWallet,
     showWalletModal,
@@ -24,31 +25,10 @@ export function useProtectedAction({
     showModal: true,
   });
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    const checkHydration = () => {
-      if (useWalletStore.persist.hasHydrated()) {
-        setIsHydrated(true);
-      } else {
-        const unsubscribe = useWalletStore.persist.onFinishHydration(() => {
-          setIsHydrated(true);
-        });
-        return unsubscribe;
-      }
-    };
-
-    const cleanup = checkHydration();
-    return cleanup;
-  }, []);
 
   const executeProtectedAction = useCallback(
     async (action: () => void | Promise<void>) => {
-      if (!isHydrated) {
-        return false;
-      }
-
-      if (!isConnected || !publicKey) {
+      if (!isConnected || !walletAddress) {
         setPendingAction(() => action);
         requireWallet();
         return false;
@@ -68,7 +48,7 @@ export function useProtectedAction({
         return false;
       }
     },
-    [isHydrated, isConnected, publicKey, requireWallet, actionName, onSuccess]
+    [isConnected, walletAddress, requireWallet, onSuccess]
   );
 
   const handleWalletConnectedWithRedirect = useCallback(() => {

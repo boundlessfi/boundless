@@ -13,7 +13,7 @@ export function ProjectSidebarHeader({
       case 'campaigning':
         return 'bg-secondary-75 border-secondary-600 text-secondary-600';
       case 'Funded':
-        return 'bg-[rgba(167,249,80,0.08)] border-primary text-primary';
+        return 'bg-active-bg border-primary text-primary';
       case 'Completed':
         return 'bg-success-75 border-success-600 text-success-600';
       case 'Validation':

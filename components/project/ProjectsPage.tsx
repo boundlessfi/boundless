@@ -38,7 +38,7 @@ export default function ProjectsClient({
   const projectCards = React.useMemo(() => {
     return projects.map(project => {
       const cardData = transformProjectForCard(project);
-      return <ProjectCard key={project._id} {...cardData} />;
+      return <ProjectCard isFullWidth={true} key={project._id} {...cardData} />;
     });
   }, [projects, transformProjectForCard]);
 

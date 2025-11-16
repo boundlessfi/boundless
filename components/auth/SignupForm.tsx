@@ -1,5 +1,4 @@
 'use client';
-import { register } from '@/lib/api/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LockIcon, MailIcon, User } from 'lucide-react';
 // import Image from 'next/image';
@@ -20,6 +19,7 @@ import {
 } from '../ui/form';
 import { Input } from '../ui/input';
 import OtpForm from './OtpForm';
+import { authClient } from '@/lib/auth-client';
 
 const formSchema = z.object({
   email: z.string().email({
@@ -63,50 +63,57 @@ const SignupForm = ({ onLoadingChange, invitation }: SignupFormProps) => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      // const response = await fetch('/api/auth/register', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     email: values.email,
-      //     firstName: values.firstName,
-      //     lastName: values.lastName,
-      //     password: values.password,
-      //   }),
-      // });
-      const response = await register({
+      const signUpData = {
         email: values.email,
-        firstName: values.firstName,
-        lastName: values.lastName,
         password: values.password,
-        username: values.email.split('@')[0],
-        invitation: invitation || undefined,
+        name: `${values.firstName} ${values.lastName}`,
+        ...(invitation && { invitation }),
+      } as {
+        email: string;
+        password: string;
+        name: string;
+        invitation?: string;
+      };
+
+      const { error } = await authClient.signUp.email(signUpData, {
+        onRequest: () => {
+          // Loading state handled by form
+        },
+        onSuccess: () => {
+          setUserData({ email: values.email });
+          setStep('otp');
+          toast.success('OTP sent to your email!');
+        },
+        onError: ctx => {
+          if (ctx.error.status === 409 || ctx.error.code === 'CONFLICT') {
+            form.setError('email', {
+              type: 'manual',
+              message: 'This email is already registered',
+            });
+          } else {
+            form.setError('root', {
+              type: 'manual',
+              message:
+                ctx.error.message ||
+                'Failed to create account. Please try again.',
+            });
+          }
+        },
       });
 
-      if (response.message) {
-        setUserData({ email: values.email });
-        setStep('otp');
-        toast.success('OTP sent to your email!');
-      } else {
-        // const error = response.message;
-        // if (error.field) {
-        //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        //   form.setError(error.field as any, {
-        //     type: 'manual',
-        //     message: error.message,
-        //   });
-        // } else if (error.message) {
-        //   form.setError('root', {
-        //     type: 'manual',
-        //     message: error.message,
-        //   });
-        // } else {
-        //   form.setError('root', {
-        //     type: 'manual',
-        //     message: 'Failed to create account',
-        //   });
-        // }
+      if (error) {
+        if (error.status === 409 || error.code === 'CONFLICT') {
+          form.setError('email', {
+            type: 'manual',
+            message: 'This email is already registered',
+          });
+        } else {
+          form.setError('root', {
+            type: 'manual',
+            message:
+              error.message || 'Failed to create account. Please try again.',
+          });
+        }
       }
     } catch (error) {
       form.setError('root', {
@@ -117,27 +124,22 @@ const SignupForm = ({ onLoadingChange, invitation }: SignupFormProps) => {
   };
 
   const handleOtpSuccess = () => {
-    router.push('/auth');
+    router.push('/auth?mode=signin');
   };
 
   const handleResendOtp = async () => {
     if (!userData) return;
 
     try {
-      const response = await fetch('/api/auth/resend-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userData.email,
-        }),
+      const { data, error } = await authClient.emailOtp.sendVerificationOtp({
+        email: userData.email,
+        type: 'email-verification',
       });
 
-      if (response.ok) {
+      if (data) {
         toast.success('OTP resent successfully!');
-      } else {
-        toast.error('Failed to resend OTP');
+      } else if (error) {
+        toast.error(error.message || 'Failed to resend OTP');
       }
     } catch {
       toast.error('Failed to resend OTP');
@@ -280,7 +282,7 @@ const SignupForm = ({ onLoadingChange, invitation }: SignupFormProps) => {
                       <LockIcon className='h-5 w-5 flex-shrink-0 text-[#B5B5B5]' />
                       <Input
                         {...field}
-                        type='text'
+                        type='password'
                         placeholder='Enter your password'
                         className='w-full border-none bg-transparent text-white caret-white placeholder:text-[#B5B5B5] focus-visible:ring-0 focus-visible:ring-offset-0'
                       />
@@ -311,7 +313,7 @@ const SignupForm = ({ onLoadingChange, invitation }: SignupFormProps) => {
 
         <p className='text-center text-xs text-[#D9D9D9] lg:text-sm'>
           Already have an account?{' '}
-          <Link href='/auth/signin' className='text-primary underline'>
+          <Link href='/auth?mode=signin' className='text-primary underline'>
             Sign in
           </Link>
         </p>

@@ -1,12 +1,16 @@
-import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useCallback } from 'react';
 import { useAuthStore } from '@/lib/stores/auth-store';
+import { authClient } from '@/lib/auth-client';
 import { refreshUserData } from '@/lib/api/auth';
 
-// Enhanced auth hook that works with Zustand store
+// Enhanced auth hook that works with Zustand store and Better Auth
 export function useAuth(requireAuth = true) {
-  const { data: session, status } = useSession();
+  const {
+    data: session,
+    isPending: sessionPending,
+    error: sessionError,
+  } = authClient.useSession();
   const router = useRouter();
 
   // Get Zustand store state
@@ -20,18 +24,18 @@ export function useAuth(requireAuth = true) {
     syncWithSession,
   } = useAuthStore();
 
-  // Sync with NextAuth session when available
+  // Sync with Better Auth session when available
   useEffect(() => {
-    if (session?.user && status === 'authenticated') {
-      // Convert NextAuth session user to SessionUser format
+    if (session && 'user' in session && session.user) {
+      // Convert Better Auth session user to SessionUser format
       const sessionUser = {
-        ...session.user,
-        name:
-          session.user.firstName && session.user.lastName
-            ? `${session.user.firstName} ${session.user.lastName}`
-            : session.user.firstName || session.user.lastName || undefined, // Convert null to undefined
-        image: session.user.image || undefined, // Convert null to undefined
-        username: session.user.username || undefined, // Convert null to undefined
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name || undefined,
+        image: session.user.image || undefined,
+        username: undefined, // Better Auth doesn't include username by default
+        role: 'USER', // Default role, can be extended if backend provides it
+        accessToken: undefined, // Better Auth handles tokens via cookies
       };
 
       // Only sync if we don't already have user data in Zustand store
@@ -41,7 +45,7 @@ export function useAuth(requireAuth = true) {
         });
       }
     }
-  }, [session?.user, status, syncWithSession, user, isAuthenticated]);
+  }, [session, syncWithSession, user, isAuthenticated]);
 
   // Memoize auth data to prevent unnecessary re-renders
   const shouldUseStore = useMemo(
@@ -60,28 +64,39 @@ export function useAuth(requireAuth = true) {
           clearAuth,
         }
       : {
-          user: session?.user,
-          isAuthenticated: status === 'authenticated',
-          isLoading: status === 'loading',
-          error: null,
+          user:
+            session && 'user' in session && session.user
+              ? {
+                  id: session.user.id,
+                  email: session.user.email,
+                  name: session.user.name || null,
+                  image: session.user.image || null,
+                  role: 'USER' as 'USER' | 'ADMIN', // Default role
+                  username: null,
+                }
+              : null,
+          isAuthenticated: !!(session && 'user' in session && session.user),
+          isLoading: sessionPending,
+          error: sessionError?.message || null,
           refreshUser: () => refreshUserData(),
           clearAuth: () => clearAuth(),
         };
   }, [
     shouldUseStore,
+    session,
     user,
     isAuthenticated,
     storeLoading,
     error,
     refreshUser,
     clearAuth,
-    session?.user,
-    status,
+    sessionPending,
+    sessionError,
   ]);
 
   useEffect(() => {
     if (requireAuth && !authData.isAuthenticated && !authData.isLoading) {
-      router.push('/auth/signin');
+      router.push('/auth?mode=signin');
     }
   }, [requireAuth, authData.isAuthenticated, authData.isLoading, router]);
 
@@ -119,7 +134,7 @@ export function useZustandAuth(requireAuth = true) {
 
   useEffect(() => {
     if (requireAuth && !isAuthenticated && !isLoading) {
-      router.push('/auth/signin');
+      router.push('/auth?mode=signin');
     }
   }, [requireAuth, isAuthenticated, isLoading, router]);
 
@@ -144,35 +159,36 @@ export function useZustandAuth(requireAuth = true) {
 
 // Hook for checking auth status without redirecting
 export function useAuthStatus() {
-  const { data: session, status } = useSession();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
   const { isAuthenticated, isLoading, user, syncWithSession } = useAuthStore();
 
-  // Sync NextAuth session with Zustand store if needed
+  // Sync Better Auth session with Zustand store if needed
   useEffect(() => {
     if (
-      session?.user &&
-      status === 'authenticated' &&
+      session &&
+      'user' in session &&
+      session.user &&
       (!user || !isAuthenticated)
     ) {
       const sessionUser = {
-        ...session.user,
-        name:
-          session.user.firstName && session.user.lastName
-            ? `${session.user.firstName} ${session.user.lastName}`
-            : session.user.firstName || session.user.lastName || undefined,
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name || undefined,
         image: session.user.image || undefined,
-        username: session.user.username || undefined, // Convert null to undefined
+        username: undefined, // Better Auth doesn't include username by default
+        role: 'USER', // Default role
+        accessToken: undefined,
       };
       syncWithSession(sessionUser).catch(() => {
         // Silently handle sync failure
       });
     }
-  }, [session?.user, status, user, isAuthenticated, syncWithSession]);
+  }, [session, user, isAuthenticated, syncWithSession]);
 
-  // Return Zustand store state (which should be synced with NextAuth)
+  // Return Zustand store state (which should be synced with Better Auth)
   return {
     isAuthenticated,
-    isLoading: isLoading || status === 'loading',
+    isLoading: isLoading || sessionPending,
     user,
   };
 }
@@ -183,10 +199,21 @@ export function useAuthActions() {
 
   const unifiedLogout = useCallback(async () => {
     try {
-      // Clear Zustand store
-      await logout();
-      // Clear NextAuth session
-      await signOut({ redirect: false });
+      // Clear Better Auth session
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            // Clear Zustand store after Better Auth sign out
+            logout().catch(() => {
+              clearAuth();
+            });
+          },
+          onError: () => {
+            // Force clear local state even if API calls fail
+            clearAuth();
+          },
+        },
+      });
     } catch {
       // Force clear local state even if API calls fail
       clearAuth();
@@ -210,7 +237,7 @@ export function useAuthErrorHandler() {
   const handleAuthError = (error: { status?: number; code?: string }) => {
     if (error?.status === 401 || error?.code === 'UNAUTHORIZED') {
       clearAuth();
-      router.push('/auth/signin');
+      router.push('/auth?mode=signin');
       return true; // Error was handled
     }
     return false; // Error was not handled

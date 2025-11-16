@@ -86,9 +86,8 @@ const ProjectVoters = ({ project }: ProjectVotersProps) => {
     // Could implement navigation to user profile page
     window.open(`/profile/${voter.profile.username}`, '_blank');
   };
-
   if (voters.length === 0) {
-    return <Empty />;
+    return <Empty projectStatus={project?.status ?? ''} />;
   }
   return (
     <div>

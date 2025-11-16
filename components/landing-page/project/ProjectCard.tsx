@@ -13,6 +13,7 @@ type ProjectCardProps = {
   status: 'Validation' | 'Funding' | 'Funded' | 'Completed';
   deadlineInDays: number;
   milestoneRejected?: boolean;
+  isFullWidth?: boolean;
   votes?: {
     current: number;
     goal: number;
@@ -37,6 +38,7 @@ function ProjectCard({
   status,
   deadlineInDays,
   milestoneRejected,
+  isFullWidth = false,
   votes,
   funding,
   milestones,
@@ -93,7 +95,7 @@ function ProjectCard({
   return (
     <div
       onClick={handleClick}
-      className='font-inter hover:border-primary/45 flex w-full max-w-[397px] cursor-pointer flex-col gap-4 rounded-[8px] border border-gray-900 bg-[#030303] p-4 transition-all duration-300 sm:p-5'
+      className={`font-inter hover:border-primary/45 flex w-full ${isFullWidth ? 'max-w-full' : 'max-w-[397px]'} cursor-pointer flex-col gap-4 rounded-[8px] border border-gray-900 bg-[#030303] p-4 transition-all duration-300 sm:p-5`}
     >
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>

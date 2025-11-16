@@ -19,6 +19,9 @@ export interface ExtendedProject extends CrowdfundingProject {
   validation?: string;
   date?: string;
   totalVotes?: number;
+  // Escrow fields
+  contractId?: string;
+  escrowAddress?: string;
 }
 
 export interface CrowdfundData {

@@ -14,6 +14,8 @@ import {
   UpdateCrowdfundingProjectRequest,
   UpdateCrowdfundingProjectResponse,
   DeleteCrowdfundingProjectResponse,
+  FundCrowdfundingProjectRequest,
+  FundCrowdfundingProjectResponse,
   PrepareFundingRequest,
   PrepareFundingResponse,
   ConfirmFundingRequest,
@@ -121,7 +123,11 @@ export const generateCampaignLink = async (_projectId: string) => {
   });
 };
 
-// Legacy function for backward compatibility
+/**
+ * Create a crowdfunding project
+ * Frontend handles all blockchain transactions and provides escrow data
+ * @param data - Project data including contractId, escrowAddress, and transactionHash
+ */
 export const createCrowdfundingProject = async (
   data: CreateCrowdfundingProjectRequest
 ): Promise<CreateCrowdfundingProjectResponse> => {
@@ -129,20 +135,30 @@ export const createCrowdfundingProject = async (
   return res.data;
 };
 
-// Step 1: Prepare project and get unsigned transaction
+/**
+ * @deprecated This endpoint no longer exists in the backend.
+ * All blockchain transactions are now handled in the frontend.
+ * Use createCrowdfundingProject directly with contractId, escrowAddress, and transactionHash.
+ */
 export const prepareCrowdfundingProject = async (
   data: CreateCrowdfundingProjectRequest
 ): Promise<PrepareCrowdfundingProjectResponse> => {
-  const res = await api.post('/crowdfunding/projects/prepare', data);
-  return res.data;
+  throw new Error(
+    'prepareCrowdfundingProject is deprecated. All blockchain transactions should be handled in the frontend. Use createCrowdfundingProject with contractId, escrowAddress, and transactionHash.'
+  );
 };
 
-// Step 2: Submit signed transaction and create project
+/**
+ * @deprecated This endpoint no longer exists in the backend.
+ * All blockchain transactions are now handled in the frontend.
+ * Use createCrowdfundingProject directly with contractId, escrowAddress, and transactionHash.
+ */
 export const confirmCrowdfundingProject = async (
   data: ConfirmCrowdfundingProjectRequest
 ): Promise<ConfirmCrowdfundingProjectResponse> => {
-  const res = await api.post('/crowdfunding/projects/confirm', data);
-  return res.data;
+  throw new Error(
+    'confirmCrowdfundingProject is deprecated. All blockchain transactions should be handled in the frontend. Use createCrowdfundingProject with contractId, escrowAddress, and transactionHash.'
+  );
 };
 
 // Crowdfunding Project API Functions
@@ -207,30 +223,45 @@ export const deleteCrowdfundingProject = async (
 };
 
 /**
- * Prepare funding for a crowdfunding project
- * Step 1: Get unsigned transaction for funding
+ * Fund a crowdfunding project
+ * Frontend handles all blockchain transactions and provides transaction hash
+ * @param projectId - The ID of the project to fund
+ * @param data - Funding data including amount and transactionHash
  */
-export const prepareProjectFunding = async (
+export const fundCrowdfundingProject = async (
   projectId: string,
-  data: PrepareFundingRequest
-): Promise<PrepareFundingResponse> => {
+  data: FundCrowdfundingProjectRequest
+): Promise<FundCrowdfundingProjectResponse> => {
   const res = await api.post(`/crowdfunding/projects/${projectId}/fund`, data);
   return res.data;
 };
 
 /**
- * Confirm funding for a crowdfunding project
- * Step 2: Submit signed transaction and update project
+ * @deprecated This endpoint no longer exists in the backend.
+ * All blockchain transactions are now handled in the frontend.
+ * Use fundCrowdfundingProject directly with amount and transactionHash.
+ */
+export const prepareProjectFunding = async (
+  projectId: string,
+  data: PrepareFundingRequest
+): Promise<PrepareFundingResponse> => {
+  throw new Error(
+    'prepareProjectFunding is deprecated. All blockchain transactions should be handled in the frontend. Use fundCrowdfundingProject with amount and transactionHash.'
+  );
+};
+
+/**
+ * @deprecated This endpoint no longer exists in the backend.
+ * All blockchain transactions are now handled in the frontend.
+ * Use fundCrowdfundingProject directly with amount and transactionHash.
  */
 export const confirmProjectFunding = async (
   projectId: string,
   data: ConfirmFundingRequest
 ): Promise<ConfirmFundingResponse> => {
-  const res = await api.post(
-    `/crowdfunding/projects/${projectId}/fund/confirm`,
-    data
+  throw new Error(
+    'confirmProjectFunding is deprecated. All blockchain transactions should be handled in the frontend. Use fundCrowdfundingProject with amount and transactionHash.'
   );
-  return res.data;
 };
 export const voteProject = async (
   projectId: string,

@@ -20,6 +20,7 @@ interface ProjectCardProps {
   onValidationClick?: () => void;
   onVoteClick?: () => void;
   className?: string;
+  isFullWidth?: boolean;
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = memo(
@@ -28,6 +29,7 @@ const ProjectCard: React.FC<ProjectCardProps> = memo(
     creatorName = 'Creator Name',
     creatorAvatar,
     className = '',
+    isFullWidth = false,
   }) => {
     const cardRef = useRef<HTMLDivElement>(null);
     const imageRef = useRef<HTMLDivElement>(null);
@@ -160,7 +162,7 @@ const ProjectCard: React.FC<ProjectCardProps> = memo(
     return (
       <div
         ref={cardRef}
-        className={`group mx-auto w-full max-w-[397px] cursor-pointer overflow-hidden rounded-[8px] border border-[#2B2B2B] bg-[#030303] p-3 will-change-transform sm:p-5 ${className}`}
+        className={`group mx-auto ${isFullWidth ? 'w-full' : 'w-full max-w-[397px]'} cursor-pointer overflow-hidden rounded-[8px] border border-[#2B2B2B] bg-[#030303] p-3 will-change-transform sm:p-5 ${className}`}
         style={{ transform: 'translateZ(0)' }}
       >
         <div className='mb-3 flex items-center justify-between sm:mb-4'>
@@ -184,7 +186,7 @@ const ProjectCard: React.FC<ProjectCardProps> = memo(
             <Badge className='flex-shrink-0 rounded-[4px] border border-[#645D5D] bg-[#E4DBDB] px-1 py-0.5 text-xs font-medium text-[#645D5D]'>
               {project.category}
             </Badge>
-            <Badge className='flex-shrink-0 rounded-[4px] border border-[#A7F950] bg-[rgba(167,249,80,0.08)] px-1 py-0.5 text-xs font-medium text-[#A7F950]'>
+            <Badge className='bg-active-bg flex-shrink-0 rounded-[4px] border border-[#A7F950] px-1 py-0.5 text-xs font-medium text-[#A7F950]'>
               {project.category}
             </Badge>
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { AuthModeNav } from '@/components/auth/AuthModeNav';
 import LoginWrapper from '@/components/auth/LoginWrapper';
 import SignupWrapper from '@/components/auth/SignupWrapper';
@@ -10,15 +10,35 @@ import AuthLoadingState from '@/components/auth/AuthLoadingState';
 export default function AuthPage() {
   const [loadingState, setLoadingState] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const mode = searchParams.get('mode') || 'signin';
+  const modeParam = searchParams.get('mode');
   const invitation = searchParams.get('invitation');
+
+  // Determine initial mode from query parameter, default to 'signin'
+  const getModeFromQuery = (mode: string | null): 'signin' | 'signup' => {
+    if (mode === 'signup') return 'signup';
+    if (mode === 'signin') return 'signin';
+    return 'signin'; // default
+  };
+
   const [currentMode, setCurrentMode] = useState<'signin' | 'signup'>(
-    mode as 'signin' | 'signup'
+    getModeFromQuery(modeParam)
   );
+
+  // Sync state with query parameter changes
+  useEffect(() => {
+    const mode = getModeFromQuery(modeParam);
+    setCurrentMode(mode);
+  }, [modeParam]);
 
   const handleModeChange = (newMode: 'signin' | 'signup') => {
     setCurrentMode(newMode);
+
+    // Update URL with new mode, preserving other query parameters
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('mode', newMode);
+    router.replace(`/auth?${params.toString()}`, { scroll: false });
   };
 
   return (
