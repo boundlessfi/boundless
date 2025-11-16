@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from '../ui/form';
 import { Input } from '../ui/input';
+import { authClient } from '@/lib/auth-client';
 
 const resetPasswordSchema = z
   .object({
@@ -46,7 +47,7 @@ const ResetPasswordWrapper = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [token, setToken] = useState<string | null>(null);
-  const [isValidToken, setIsValidToken] = useState(true);
+  const [isValidParams, setIsValidParams] = useState(true);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -60,12 +61,22 @@ const ResetPasswordWrapper = ({
   });
 
   useEffect(() => {
+    // Check for token parameter (token-based reset flow)
     const tokenParam = searchParams.get('token');
+    // Also check for otp and email (OTP-based reset flow) for backward compatibility
+    const otpParam = searchParams.get('otp');
+    const emailParam = searchParams.get('email');
+
     if (tokenParam) {
+      // Token-based flow
       setToken(tokenParam);
-      setIsValidToken(true);
+      setIsValidParams(true);
+    } else if (otpParam && emailParam) {
+      // OTP-based flow (for backward compatibility)
+      // Note: This would require using emailOtp.resetPassword instead
+      setIsValidParams(false); // OTP flow not fully implemented in this component
     } else {
-      setIsValidToken(false);
+      setIsValidParams(false);
     }
   }, [searchParams]);
 
@@ -77,32 +88,40 @@ const ResetPasswordWrapper = ({
       setLoadingState(true);
 
       try {
-        const response = await fetch('/api/auth/reset-password', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        const { error } = await authClient.resetPassword(
+          {
             token,
             newPassword: data.password,
-          }),
-        });
+          },
+          {
+            onRequest: () => {
+              setIsLoading(true);
+              setLoadingState(true);
+            },
+            onSuccess: () => {
+              setIsSuccess(true);
+              toast.success('Password reset successfully!');
+              form.reset();
+              setTimeout(() => {
+                router.push('/auth?mode=signin');
+              }, 2000);
+            },
+            onError: ctx => {
+              form.setError('root', {
+                type: 'manual',
+                message: ctx.error.message || 'Failed to reset password',
+              });
+              toast.error(ctx.error.message || 'Failed to reset password');
+            },
+          }
+        );
 
-        const result = await response.json();
-
-        if (response.ok) {
-          setIsSuccess(true);
-          toast.success('Password reset successfully!');
-          form.reset();
-          setTimeout(() => {
-            router.push('/auth');
-          }, 2000);
-        } else {
+        if (error) {
           form.setError('root', {
             type: 'manual',
-            message: result.message || 'Failed to reset password',
+            message: error.message || 'Failed to reset password',
           });
-          toast.error(result.message || 'Failed to reset password');
+          toast.error(error.message || 'Failed to reset password');
         }
       } catch {
         form.setError('root', {
@@ -118,7 +137,7 @@ const ResetPasswordWrapper = ({
     [token, form, router, setLoadingState]
   );
 
-  if (!isValidToken) {
+  if (!isValidParams) {
     return (
       <div className='space-y-6'>
         <div className='text-center'>
@@ -164,7 +183,7 @@ const ResetPasswordWrapper = ({
 
         <div className='text-center'>
           <Link
-            href='/auth'
+            href='/auth?mode=signin'
             className='text-primary hover:text-primary/80 inline-flex items-center text-sm'
           >
             Continue to sign in
@@ -286,7 +305,7 @@ const ResetPasswordWrapper = ({
 
       <div className='text-center'>
         <Link
-          href='/auth'
+          href='/auth?mode=signin'
           className='text-primary hover:text-primary/80 inline-flex items-center text-sm'
         >
           Back to sign in

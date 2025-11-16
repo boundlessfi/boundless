@@ -1335,7 +1335,7 @@ export const getPublicHackathonsList = async (
   const url = `/hackathons${queryString ? `?${queryString}` : ''}`;
 
   // Use skipAuthRefresh to ensure no auth token is sent for public endpoint
-  const config: RequestConfig = { skipAuthRefresh: true };
+  const config: RequestConfig = { headers: { 'skip-auth-refresh': 'true' } };
   const res = await api.get<PublicHackathonsListResponse>(url, config);
 
   return res.data;

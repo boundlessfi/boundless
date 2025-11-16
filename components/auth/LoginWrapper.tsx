@@ -4,11 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import Cookies from 'js-cookie';
-import { getSession, signIn } from 'next-auth/react';
 import { toast } from 'sonner';
 import z from 'zod';
 import LoginForm from './LoginForm';
+import { authClient } from '@/lib/auth-client';
 import { useAuthStore } from '@/lib/stores/auth-store';
 
 const formSchema = z.object({
@@ -43,68 +42,67 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
   });
 
   const handleAuthError = useCallback(
-    (error: string, values: FormData) => {
-      switch (error) {
-        case 'UNVERIFIED_EMAIL':
-          toast.error(
-            'Please verify your email before signing in. Check your inbox for a verification link.'
+    (
+      error:
+        | { message?: string; status?: number; code?: string }
+        | null
+        | undefined,
+      values: FormData
+    ) => {
+      // Log error for debugging
+      console.error('Auth error:', error);
+
+      if (!error) {
+        const defaultMessage = 'Authentication failed. Please try again.';
+        form.setError('root', {
+          type: 'manual',
+          message: defaultMessage,
+        });
+        return;
+      }
+
+      // Extract error message - handle different error formats
+      const errorMessage =
+        error.message ||
+        (typeof error === 'string'
+          ? error
+          : 'Authentication failed. Please try again.');
+      const errorStatus = error.status;
+      const errorCode = error.code;
+
+      if (errorStatus === 403 || errorCode === 'FORBIDDEN') {
+        const message =
+          'Please verify your email before signing in. Check your inbox for a verification link.';
+        form.setError('root', {
+          type: 'manual',
+          message,
+        });
+        // Show toast for email verification since it requires user action
+        toast.error(message);
+        setTimeout(() => {
+          router.push(
+            `/auth?mode=signin&email=${encodeURIComponent(values.email)}`
           );
-          setTimeout(() => {
-            router.push(
-              `/auth/verify-email?email=${encodeURIComponent(values.email)}`
-            );
-          }, 3000);
-          break;
-        case 'CredentialsSignin':
-          form.setError('root', {
-            type: 'manual',
-            message: 'Invalid email or password',
-          });
-          break;
-        default:
-          form.setError('root', {
-            type: 'manual',
-            message: 'Authentication failed. Please try again.',
-          });
+        }, 3000);
+      } else if (
+        errorStatus === 401 ||
+        errorCode === 'UNAUTHORIZED' ||
+        errorCode === 'INVALID_EMAIL_OR_PASSWORD'
+      ) {
+        const message = 'Invalid email or password';
+        form.setError('root', {
+          type: 'manual',
+          message,
+        });
+      } else {
+        // Show all other errors in the form
+        form.setError('root', {
+          type: 'manual',
+          message: errorMessage,
+        });
       }
     },
     [form, router]
-  );
-
-  const handleSessionSetup = useCallback(
-    async (session: {
-      user?: {
-        accessToken?: string;
-        refreshToken?: string;
-        id?: string;
-        email?: string;
-        name?: string | null;
-        image?: string | null;
-        role?: 'USER' | 'ADMIN';
-      };
-    }) => {
-      if (session?.user?.accessToken) {
-        // Set cookies for NextAuth compatibility
-        Cookies.set('accessToken', session.user.accessToken);
-        if (session.user.refreshToken) {
-          Cookies.set('refreshToken', session.user.refreshToken);
-        }
-
-        // Sync with Zustand store for navbar and other components
-        const authStore = useAuthStore.getState();
-        await authStore.syncWithSession({
-          id: session.user.id || '',
-          email: session.user.email || '',
-          name: session.user.name || undefined,
-          image: session.user.image || undefined,
-          role: session.user.role || 'USER',
-          accessToken: session.user.accessToken,
-          refreshToken: session.user.refreshToken,
-        });
-      }
-      router.push(callbackUrl);
-    },
-    [router, callbackUrl]
   );
 
   const onSubmit = useCallback(
@@ -113,46 +111,93 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
       setLoadingState(true);
 
       try {
-        const result = await signIn('credentials', {
-          email: values.email,
-          password: values.password,
-          redirect: false,
-        });
+        const { error } = await authClient.signIn.email(
+          {
+            email: values.email,
+            password: values.password,
+            rememberMe: true,
+            callbackURL: callbackUrl,
+          },
+          {
+            onRequest: () => {
+              setIsLoading(true);
+              setLoadingState(true);
+            },
+            onSuccess: async () => {
+              setIsLoading(false);
+              setLoadingState(false);
 
-        if (result?.error) {
-          handleAuthError(result.error, values);
-          return;
-        }
+              // Wait a bit for cookies to be set by Better Auth
+              await new Promise(resolve => setTimeout(resolve, 100));
 
-        if (result?.ok) {
-          const session = await getSession();
+              const session = await authClient.getSession();
 
-          if (session) {
-            await handleSessionSetup(session);
-          } else {
-            form.setError('root', {
-              type: 'manual',
-              message:
-                'Login successful but session not found. Please try again.',
-            });
+              if (session && typeof session === 'object' && 'user' in session) {
+                const sessionUser = session.user as
+                  | {
+                      id: string;
+                      email: string;
+                      name?: string | null;
+                      image?: string | null;
+                    }
+                  | null
+                  | undefined;
+
+                if (sessionUser && sessionUser.id && sessionUser.email) {
+                  const authStore = useAuthStore.getState();
+                  await authStore.syncWithSession({
+                    id: sessionUser.id,
+                    email: sessionUser.email,
+                    name: sessionUser.name || undefined,
+                    image: sessionUser.image || undefined,
+                    role: 'USER',
+                    username: undefined,
+                    accessToken: undefined,
+                  });
+                }
+              }
+
+              // Use full page reload to ensure cookies are available in middleware
+              // Use callbackUrl if provided, otherwise redirect to home
+              window.location.href = callbackUrl;
+            },
+            onError: ctx => {
+              console.error('Better Auth onError:', ctx);
+              // Handle error from Better Auth callback
+              const errorObj = ctx.error || ctx;
+              handleAuthError(
+                typeof errorObj === 'object'
+                  ? errorObj
+                  : { message: String(errorObj) },
+                values
+              );
+              setIsLoading(false);
+              setLoadingState(false);
+            },
           }
-        } else {
-          form.setError('root', {
-            type: 'manual',
-            message: 'An unexpected error occurred. Please try again.',
-          });
+        );
+
+        // Handle error from return value
+        if (error) {
+          console.error('Better Auth error return:', error);
+          handleAuthError(error, values);
+          setIsLoading(false);
+          setLoadingState(false);
         }
-      } catch {
-        form.setError('root', {
-          type: 'manual',
-          message: 'An unexpected error occurred. Please try again.',
-        });
-      } finally {
+      } catch (error) {
+        console.error('Login catch error:', error);
+        // Handle unexpected errors
+        const errorObj =
+          error instanceof Error
+            ? { message: error.message, status: undefined, code: undefined }
+            : { message: String(error), status: undefined, code: undefined };
+
+        handleAuthError(errorObj, values);
         setIsLoading(false);
         setLoadingState(false);
       }
     },
-    [form, handleAuthError, handleSessionSetup, setLoadingState]
+    [form, handleAuthError, setLoadingState, router, callbackUrl]
   );
 
   return (

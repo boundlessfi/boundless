@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthActions, useAuthErrorHandler } from '@/hooks/use-auth';
-import { login } from '@/lib/api/auth';
+import { authClient } from '@/lib/auth-client';
+import { useAuthStore } from '@/lib/stores/auth-store';
 import { toast } from 'sonner';
 
 const loginSchema = z.object({
@@ -41,15 +42,72 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       setIsLoading(true);
       setError(null);
 
-      await login(data);
+      const { error } = await authClient.signIn.email(
+        {
+          email: data.email,
+          password: data.password,
+          rememberMe: true,
+        },
+        {
+          onSuccess: async () => {
+            // Get session after successful login
+            const session = await authClient.getSession();
 
-      toast.success('Login successful!');
-      onSuccess?.();
-    } catch (error: unknown) {
-      if (handleAuthError(error as { status?: number; code?: string })) {
-        return;
+            if (session && typeof session === 'object' && 'user' in session) {
+              const sessionUser = session.user as
+                | {
+                    id: string;
+                    email: string;
+                    name?: string | null;
+                    image?: string | null;
+                  }
+                | null
+                | undefined;
+
+              if (sessionUser && sessionUser.id && sessionUser.email) {
+                const authStore = useAuthStore.getState();
+                await authStore.syncWithSession({
+                  id: sessionUser.id,
+                  email: sessionUser.email,
+                  name: sessionUser.name || undefined,
+                  image: sessionUser.image || undefined,
+                  role: 'USER',
+                  username: undefined,
+                  accessToken: undefined,
+                });
+              }
+            }
+
+            toast.success('Login successful!');
+            onSuccess?.();
+          },
+          onError: ctx => {
+            const errorObj = ctx.error || ctx;
+            const errorMessage =
+              typeof errorObj === 'object' && errorObj?.message
+                ? errorObj.message
+                : 'Login failed. Please try again.';
+
+            if (
+              handleAuthError(errorObj as { status?: number; code?: string })
+            ) {
+              return;
+            }
+
+            setError(errorMessage);
+            onError?.(errorMessage);
+            toast.error(errorMessage);
+          },
+        }
+      );
+
+      if (error) {
+        const errorMessage = error.message || 'Login failed. Please try again.';
+        setError(errorMessage);
+        onError?.(errorMessage);
+        toast.error(errorMessage);
       }
-
+    } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
           ? error.message

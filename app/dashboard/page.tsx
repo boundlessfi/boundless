@@ -1,6 +1,5 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -13,22 +12,26 @@ import {
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, LogOut, User, Mail, Shield } from 'lucide-react';
+import { authClient } from '@/lib/auth-client';
+import { useAuthActions } from '@/hooks/use-auth';
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
   const router = useRouter();
+  const { logout } = useAuthActions();
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
+    if (!sessionPending && !session?.user) {
+      router.push('/auth?mode=signin');
     }
-  }, [status, router]);
+  }, [session, sessionPending, router]);
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/' });
+    await logout();
+    router.push('/');
   };
 
-  if (status === 'loading') {
+  if (sessionPending) {
     return (
       <div className='flex min-h-screen items-center justify-center'>
         <div className='flex items-center space-x-2'>
@@ -39,7 +42,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!session) {
+  if (!session?.user) {
     return null;
   }
 
@@ -67,18 +70,13 @@ export default function DashboardPage() {
                 <Avatar className='h-12 w-12'>
                   <AvatarImage src={session.user.image || ''} />
                   <AvatarFallback>
-                    {(session.user.firstName || session.user.lastName)?.charAt(
-                      0
-                    ) || session.user.email.charAt(0)}
+                    {session.user.name?.charAt(0) ||
+                      session.user.email.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className='font-medium'>
-                    {session.user.firstName && session.user.lastName
-                      ? `${session.user.firstName} ${session.user.lastName}`
-                      : session.user.firstName ||
-                        session.user.lastName ||
-                        'No name'}
+                    {session.user.name || 'No name'}
                   </p>
                   <p className='text-sm text-gray-500'>{session.user.email}</p>
                 </div>
@@ -117,7 +115,7 @@ export default function DashboardPage() {
                 <div className='flex justify-between'>
                   <span className='text-sm text-gray-500'>Role:</span>
                   <span className='text-sm font-medium capitalize'>
-                    {session.user.role}
+                    {session.user.emailVerified ? 'Verified' : 'Unverified'}
                   </span>
                 </div>
                 <div className='flex justify-between'>

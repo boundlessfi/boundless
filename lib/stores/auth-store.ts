@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { getMe, logout } from '@/lib/api/auth';
+import { getMe } from '@/lib/api/auth';
 import Cookies from 'js-cookie';
 
 // Debounce utility for API calls
@@ -158,14 +158,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
 
-          // Check if token is expired before proceeding
-          if (isTokenExpired(accessToken)) {
-            throw new Error('Access token has expired');
-          }
-
+          // Store tokens for backward compatibility (though not used for API calls)
           get().setTokens(accessToken, refreshToken);
 
-          const user = await getMe(accessToken);
+          // Fetch user data using cookie-based auth (Better Auth)
+          const user = await getMe();
 
           const transformedUser: User = {
             id: (user._id || user.id) as string,
@@ -210,17 +207,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true });
 
-          const { accessToken } = get();
-
-          // Call logout API if we have a token
-          if (accessToken) {
-            try {
-              await logout(accessToken);
-            } catch {
-              // Don't throw error for logout API failure
-              // Silently handle logout API failures
-            }
-          }
+          // Better Auth handles logout via its own API
+          // We just need to clear local state
+          // The actual logout is handled by authClient.signOut() in useAuthActions
 
           // Clear all auth data
           get().clearAuth();
@@ -243,64 +232,10 @@ export const useAuthStore = create<AuthState>()(
         return new Promise<void>((resolve, reject) => {
           refreshTimeout = setTimeout(async () => {
             try {
-              const { accessToken, refreshToken } = get();
-
-              if (!accessToken) {
-                throw new Error('No access token available');
-              }
-
-              // Check if token is expired
-              if (isTokenExpired(accessToken)) {
-                // Try to refresh the token if we have a refresh token
-                if (refreshToken && !isTokenExpired(refreshToken)) {
-                  try {
-                    // This will be handled by the API interceptor
-                    const user = await getMe(accessToken);
-                    // If we get here, the token was refreshed by the interceptor
-                    const transformedUser: User = {
-                      id: (user._id || user.id) as string,
-                      email: user.email as string,
-                      name: (user.profile?.firstName || user.name) as
-                        | string
-                        | null,
-                      image: (user.profile?.avatar || user.image) as
-                        | string
-                        | null,
-                      username: (user.profile?.username || user.username) as
-                        | string
-                        | null,
-                      role: (user.roles?.[0] === 'ADMIN' ? 'ADMIN' : 'USER') as
-                        | 'USER'
-                        | 'ADMIN',
-                      isVerified: user.isVerified as boolean | undefined,
-                      profile: user.profile as User['profile'],
-                    };
-
-                    set({
-                      user: transformedUser,
-                      isAuthenticated: true,
-                      isLoading: false,
-                    });
-                    resolve();
-                    return;
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  } catch (refreshError) {
-                    // Refresh failed, clear auth data
-                    get().clearAuth();
-                    reject(new Error('Session expired. Please login again.'));
-                    return;
-                  }
-                } else {
-                  // No valid refresh token, clear auth data
-                  get().clearAuth();
-                  reject(new Error('Session expired. Please login again.'));
-                  return;
-                }
-              }
-
               set({ isLoading: true, error: null });
 
-              const user = await getMe(accessToken);
+              // Fetch user data using cookie-based auth (Better Auth handles session)
+              const user = await getMe();
 
               const transformedUser: User = {
                 id: (user._id || user.id) as string,
@@ -356,13 +291,12 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
           error: null,
         });
-        // await signOut({ redirect: false });
 
         // Clear cookies only on client side
         if (typeof window !== 'undefined') {
-          Cookies.remove('authjs.session-token');
           Cookies.remove('accessToken');
           Cookies.remove('refreshToken');
+          // Better Auth uses its own cookie names, but we'll let it handle cleanup
         }
       },
 
@@ -374,17 +308,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       syncWithSession: async sessionUser => {
-        if (sessionUser && sessionUser.accessToken) {
-          // Check if token is expired before proceeding
-          if (isTokenExpired(sessionUser.accessToken)) {
-            // Clear auth data if token is expired
-            get().clearAuth();
-            return;
-          }
-
+        if (sessionUser && sessionUser.id && sessionUser.email) {
           try {
-            // Use the access token to fetch fresh user data
-            const user = await getMe(sessionUser.accessToken || '');
+            // Always fetch fresh user data from API using cookie-based auth
+            // Better Auth handles authentication via cookies automatically
+            const user = await getMe();
 
             const transformedUser: User = {
               id: (user._id || user.id) as string,
@@ -407,29 +335,22 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
             });
           } catch {
-            // Fallback: try to extract user ID from JWT token
-            const decodedToken = decodeJWT(sessionUser.accessToken);
-            const userId =
-              decodedToken?.userId ||
-              decodedToken?.user_id ||
-              decodedToken?.sub;
+            // Fallback to session user data if API call fails
+            // This ensures we still have user data even if API is unavailable
+            const fallbackUser: User = {
+              id: sessionUser.id,
+              email: sessionUser.email,
+              name: sessionUser.name || null,
+              image: sessionUser.image || null,
+              username: sessionUser.username || null,
+              role: (sessionUser.role as 'USER' | 'ADMIN') || 'USER',
+            };
 
-            if (sessionUser.email) {
-              const fallbackUser: User = {
-                id: userId || 'unknown',
-                email: sessionUser.email,
-                name: sessionUser.name || null,
-                image: sessionUser.image || null,
-                username: sessionUser.username || null,
-                role: 'USER',
-              };
-
-              set({
-                user: fallbackUser,
-                isAuthenticated: true,
-                isLoading: false,
-              });
-            }
+            set({
+              user: fallbackUser,
+              isAuthenticated: true,
+              isLoading: false,
+            });
           }
         }
       },

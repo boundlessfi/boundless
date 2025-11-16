@@ -1,20 +1,33 @@
-import { auth } from '@/auth';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getBetterAuthSession } from '@/lib/auth/server-auth';
 
 const protectedRoutes = ['/dashboard', '/user', '/admin', '/me'];
 
 const authRoutes = ['/auth', '/auth/signup', '/auth/forgot-password'];
 
-export default auth(req => {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const isAuthenticated = !!req.auth;
 
-  const hasValidToken =
-    req.auth?.user?.accessToken &&
-    typeof req.auth.user.accessToken === 'string' &&
-    req.auth.user.accessToken.length > 0;
+  // Get cookies from request for Better Auth session check
+  const cookieHeader = req.headers.get('cookie') || '';
 
-  const isReallyAuthenticated = isAuthenticated && hasValidToken;
+  // Debug: Log if better-auth.session_token cookie is present
+  if (process.env.NODE_ENV === 'development') {
+    const hasSessionToken = cookieHeader.includes('better-auth.session_token');
+    console.log(
+      `[Middleware] ${pathname} - Has session token: ${hasSessionToken}`
+    );
+  }
+
+  // Check authentication using Better Auth session
+  // In middleware, we need to pass cookies directly
+  const betterAuthSession = await getBetterAuthSession(cookieHeader);
+  const isAuthenticated = !!betterAuthSession?.user;
+
+  // Debug: Log authentication status
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Middleware] ${pathname} - Authenticated: ${isAuthenticated}`);
+  }
 
   const isProtectedRoute = protectedRoutes.some(route =>
     pathname.startsWith(route)
@@ -44,27 +57,27 @@ export default auth(req => {
 
   // if (process.env.NODE_ENV === 'development') {
   //   // eslint-disable-next-line no-console
-  //   console.log(`Middleware: ${pathname} - Auth: ${isAuthenticated}, Token: ${hasValidToken}, Really Auth: ${isReallyAuthenticated}, Protected: ${isProtectedRoute}, Profile: ${isOtherUserProfile}`);
+  //   console.log(`Middleware: ${pathname} - Auth: ${isAuthenticated}, Protected: ${isProtectedRoute}, Profile: ${isOtherUserProfile}`);
   // }
 
-  if (isAuthRoute && isReallyAuthenticated) {
+  if (isAuthRoute && isAuthenticated) {
     return NextResponse.redirect(new URL('/', req.url));
   }
 
-  if (isProtectedRoute && !isReallyAuthenticated) {
+  if (isProtectedRoute && !isAuthenticated) {
     const signinUrl = new URL('/auth', req.url);
     signinUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(signinUrl);
   }
 
-  if (isOtherUserProfile && !isReallyAuthenticated) {
+  if (isOtherUserProfile && !isAuthenticated) {
     const signinUrl = new URL('/auth', req.url);
     signinUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(signinUrl);
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
