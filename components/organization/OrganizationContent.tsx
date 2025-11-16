@@ -86,7 +86,7 @@ export default function OrganizationContent() {
   };
 
   const handleEdit = (orgId: string) => {
-    router.push(`/organizations/${orgId}/edit`);
+    router.push(`/organizations/${orgId}/settings`);
   };
 
   const handleArchive = async (orgId: string) => {
