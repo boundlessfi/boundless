@@ -35,7 +35,6 @@ export default function OrganizationContent() {
   } = useOrganization();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loading = isLoading || isLoadingOrganizations;
 
@@ -82,13 +81,9 @@ export default function OrganizationContent() {
     }
 
     try {
-      setDeletingId(orgId);
       await deleteOrganization(orgId);
-    } catch (error) {
-      console.error('Failed to delete organization:', error);
+    } catch {
       alert('Failed to delete organization. Please try again.');
-    } finally {
-      setDeletingId(null);
     }
   };
 
@@ -96,20 +91,15 @@ export default function OrganizationContent() {
     router.push(`/organizations/${orgId}/edit`);
   };
 
-  const handleArchive = async (orgId: string) => {
+  const handleArchive = async () => {
     if (!confirm('Are you sure you want to archive this organization?')) {
       return;
     }
 
     try {
-      setDeletingId(orgId);
-      console.log('Archive organization:', orgId, deletingId);
       alert('Archive functionality will be implemented soon.');
-    } catch (error) {
-      console.error('Failed to archive organization:', error);
+    } catch {
       alert('Failed to archive organization. Please try again.');
-    } finally {
-      setDeletingId(null);
     }
   };
 

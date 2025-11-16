@@ -50,7 +50,6 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
       values: FormData
     ) => {
       // Log error for debugging
-      console.error('Auth error:', error);
 
       if (!error) {
         const defaultMessage = 'Authentication failed. Please try again.';
@@ -162,7 +161,6 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
               window.location.href = callbackUrl;
             },
             onError: ctx => {
-              console.error('Better Auth onError:', ctx);
               // Handle error from Better Auth callback
               const errorObj = ctx.error || ctx;
               handleAuthError(
@@ -179,13 +177,11 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
 
         // Handle error from return value
         if (error) {
-          console.error('Better Auth error return:', error);
           handleAuthError(error, values);
           setIsLoading(false);
           setLoadingState(false);
         }
       } catch (error) {
-        console.error('Login catch error:', error);
         // Handle unexpected errors
         const errorObj =
           error instanceof Error

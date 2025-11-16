@@ -12,17 +12,6 @@ export const getMeServer = async (): Promise<GetMeResponse> => {
   // Get cookies from request headers to forward to API
   const authHeaders = await getServerAuthHeaders();
 
-  // Debug logging
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[getMeServer] Forwarding cookies:', !!authHeaders.Cookie);
-    if (authHeaders.Cookie) {
-      console.log(
-        '[getMeServer] Cookie includes better-auth.session_token:',
-        authHeaders.Cookie.includes('better-auth.session_token')
-      );
-    }
-  }
-
   const res = await api.get<{
     success: boolean;
     data: GetMeResponse;

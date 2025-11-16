@@ -1,13 +1,6 @@
 'use client';
 import Link from 'next/link';
-import {
-  Menu,
-  XIcon,
-  Plus,
-  ChevronDown,
-  Building2,
-  ArrowUpRight,
-} from 'lucide-react';
+import { Menu, XIcon, Plus, Building2, ArrowUpRight } from 'lucide-react';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
@@ -21,11 +14,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { User, LogOut, Settings } from 'lucide-react';
+import { UserMenu } from '../user/UserMenu';
 import { cn } from '@/lib/utils';
 // import WalletConnectButton from '../wallet/WalletConnectButton';
 import CreateProjectModal from './project/CreateProjectModal';
@@ -225,7 +217,7 @@ export function Navbar() {
                 <div className='h-4 w-20 animate-pulse rounded bg-gray-200' />
               </div>
             ) : isAuthenticated ? (
-              <AuthenticatedNav user={user} />
+              <AuthenticatedNav />
             ) : (
               <UnauthenticatedNav />
             )}
@@ -237,19 +229,7 @@ export function Navbar() {
   );
 }
 
-function AuthenticatedNav({
-  user,
-}: {
-  user: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-    profile?: { firstName?: string | null; avatar?: string | null };
-    username?: string | null;
-  } | null;
-}) {
-  const { logout } = useAuthActions();
-  const { isLoading } = useAuthStore();
+function AuthenticatedNav() {
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
 
   const {
@@ -306,98 +286,7 @@ function AuthenticatedNav({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className='flex items-center space-x-2 rounded-full p-1 transition-colors hover:bg-white/10'>
-            <Avatar className='h-12 w-12'>
-              <AvatarImage
-                src={user?.image || user?.profile?.avatar || ''}
-                alt={user?.name || user?.profile?.firstName || ''}
-              />
-              <AvatarFallback>
-                {/* {user?.name?.charAt(0) ||
-                  user?.profile?.firstName?.charAt(0) ||
-                  user?.email?.charAt(0) ||
-                  'U'} */}
-                <Image
-                  src={
-                    user?.image ||
-                    user?.profile?.avatar ||
-                    'https://i.pravatar.cc/150?img=10'
-                  }
-                  alt='logo'
-                  width={116}
-                  height={22}
-                  className='h-full w-full object-cover'
-                />
-              </AvatarFallback>
-            </Avatar>
-            <ChevronDown className='h-5 w-5 text-white' />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          className='bg-background w-[320px] rounded-[8px] border border-[#2B2B2B] p-0 !text-white shadow-[0_4px_4px_0_rgba(26,26,26,0.25)] sm:w-[350px]'
-          align='end'
-          forceMount
-        >
-          <DropdownMenuLabel className='p-6 !pb-3 font-normal'>
-            <div className='flex flex-col space-y-1'>
-              <p className='text-sm leading-[160%]'>
-                Signed in as{' '}
-                <span className='leading-[145%] font-semibold'>
-                  {user?.name || user?.profile?.firstName || 'User'}
-                </span>
-              </p>
-              <p className='text-sm leading-[145%] text-[#B5B5B5]'>
-                {user?.email}
-              </p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator className='h-[0.5px] bg-[#2B2B2B]' />
-          <DropdownMenuItem
-            className='group hover:!text-primary cursor-pointer px-6 py-3.5 pt-3 hover:!bg-transparent'
-            asChild
-          >
-            <Link
-              href='/me'
-              className='group-hover:!text-primary flex items-center'
-            >
-              <User className='teext-white group-hover:!text-primary mr-2 h-4 w-4 text-white' />
-              Profile
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className='group hover:!text-primary cursor-pointer px-6 py-3.5 hover:!bg-transparent'
-            asChild
-          >
-            <Link
-              href='/organizations'
-              className='group-hover:text-primary flex items-center'
-            >
-              <Building2 className='group-hover:!text-primary mr-2 h-4 w-4 text-white' />
-              Organizations
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className='group hover:!text-primary cursor-pointer px-6 py-3.5 pb-6 hover:!bg-transparent'
-            asChild
-          >
-            <Link href='/settings' className='flex items-center'>
-              <Settings className='group-hover:!text-primary mr-2 h-4 w-4 text-white' />
-              Settings
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className='h-[0.5px] bg-[#2B2B2B]' />
-          <DropdownMenuItem
-            onClick={() => !isLoading && logout()}
-            disabled={isLoading}
-            className='group flex cursor-pointer items-center px-6 pt-3 pb-6 text-red-600 hover:!bg-transparent hover:!text-red-700 disabled:cursor-not-allowed disabled:opacity-50'
-          >
-            <LogOut className='mr-2 h-4 w-4 text-red-600 group-hover:!text-red-700' />
-            {isLoading ? 'Signing Out...' : 'Sign Out'}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <UserMenu />
       <CreateProjectModal
         open={createProjectModalOpen}
         setOpen={setCreateProjectModalOpen}
