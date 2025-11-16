@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { useAuthStore } from '@/lib/stores/auth-store';
 
-const API_BASE_URL = 'https://api.boundlessfi.xyz/api';
+const API_BASE_URL = 'https://staging-api.boundlessfi.xyz/api';
 // const API_BASE_URL = 'http://localhost:8000/api';
 // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 if (!API_BASE_URL) {
