@@ -5,7 +5,7 @@ import { emailOTPClient } from 'better-auth/client/plugins';
 // Better Auth endpoints are at /api/auth, so we need to construct the baseURL correctly
 const getAuthBaseURL = () => {
   const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL || 'https://api.boundlessfi.xyz';
+    process.env.NEXT_PUBLIC_API_URL || 'https://staging-api.boundlessfi.xyz';
   // Remove trailing slash
   const baseURL = apiUrl.replace(/\/$/, '');
 
