@@ -115,7 +115,7 @@ export const WalletButton = () => {
   return (
     <Button
       onClick={handleConnect}
-      className='flex items-center gap-2 bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
+      className='bg-primary hover:bg-primary/60 flex items-center gap-2 text-black dark:bg-blue-600 dark:hover:bg-blue-700'
     >
       <Wallet className='h-4 w-4' />
       Connect Wallet

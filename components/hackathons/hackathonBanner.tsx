@@ -4,10 +4,11 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '@/lib/utils/renderHtml';
 
 interface HackathonBannerProps {
   title: string;
-  subtitle?: string;
+  subtitle?: string | React.ReactNode;
   imageUrl?: string;
   deadline?: string;
   startDate?: string;
@@ -244,11 +245,17 @@ export function HackathonBanner({
             <h1 className='text-left text-3xl leading-tight font-bold text-white drop-shadow-lg md:text-4xl lg:text-5xl'>
               {title}
             </h1>
-            {subtitle && (
-              <p className='max-w-2xl text-left text-base text-gray-200 drop-shadow-md md:text-lg'>
-                {subtitle.slice(3)}
-              </p>
+            {subtitle && typeof subtitle === 'string' ? (
+              <div
+                className='max-w-2xl text-left text-base text-gray-200 drop-shadow-md md:text-lg'
+                dangerouslySetInnerHTML={sanitizeHtml(subtitle)}
+              />
+            ) : (
+              <div className='max-w-2xl text-left text-base text-gray-200 drop-shadow-md md:text-lg'>
+                {subtitle}
+              </div>
             )}
+
             {subtitle && (
               <div className='h-1 w-20 rounded-full bg-[#a7f950] md:w-24' />
             )}
