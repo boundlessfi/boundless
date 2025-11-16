@@ -102,9 +102,8 @@ export const useHackathonPublish = ({
     try {
       toast.info('Creating escrow contract...');
       const escrowPayload = createHackathonEscrow({
-        signer: 'GA2XHHR6RMQXPYQGUGXMOAGC5N5RFPM4HPUPOZJCHOO6LINM7DJIQFFJ',
-        organizationAddress:
-          'GA2XHHR6RMQXPYQGUGXMOAGC5N5RFPM4HPUPOZJCHOO6LINM7DJIQFFJ',
+        signer: walletAddress,
+        organizationAddress: walletAddress,
         hackathonTitle: stepData.information.name || 'Hackathon',
         hackathonDescription: stepData.information.description || '',
         rewards: stepData.rewards,
@@ -156,7 +155,7 @@ export const useHackathonPublish = ({
       toast.info('Funding escrow with prize pool...');
       const fundPayload: FundEscrowPayload = {
         contractId: contractId,
-        signer: 'GA2XHHR6RMQXPYQGUGXMOAGC5N5RFPM4HPUPOZJCHOO6LINM7DJIQFFJ',
+        signer: walletAddress,
         amount: totalPrizeAmount,
       };
 
@@ -179,7 +178,7 @@ export const useHackathonPublish = ({
       toast.info('Please sign the funding transaction...');
       const signedFundXdr = await signTransaction({
         unsignedTransaction: fundResponse.unsignedTransaction,
-        address: 'GA2XHHR6RMQXPYQGUGXMOAGC5N5RFPM4HPUPOZJCHOO6LINM7DJIQFFJ',
+        address: walletAddress,
       });
 
       const fundSendResponse = await sendTransaction(signedFundXdr);

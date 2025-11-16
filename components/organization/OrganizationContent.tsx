@@ -9,17 +9,124 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import OrganizationCard from './cards/OrganzationCards';
 import Link from 'next/link';
 import { BoundlessButton } from '../buttons';
 import { useOrganization } from '@/lib/providers/OrganizationProvider';
 import LoadingSpinner from '../LoadingSpinner';
+import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+
+type SortOption = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
 
 export default function OrganizationContent() {
-  const { organizations, isLoading, isLoadingOrganizations } =
-    useOrganization();
+  const router = useRouter();
+  const {
+    organizations,
+    isLoading,
+    isLoadingOrganizations,
+    deleteOrganization,
+  } = useOrganization();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const loading = isLoading || isLoadingOrganizations;
+
+  // Filter and sort organizations
+  const filteredAndSortedOrganizations = useMemo(() => {
+    let filtered = organizations;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = organizations.filter(org =>
+        org.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case 'oldest':
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [organizations, searchQuery, sortBy]);
+
   const hasOrganizations = organizations.length > 0;
+
+  const handleDelete = async (orgId: string) => {
+    if (!confirm('Are you sure you want to delete this organization?')) {
+      return;
+    }
+
+    try {
+      setDeletingId(orgId);
+      await deleteOrganization(orgId);
+    } catch (error) {
+      console.error('Failed to delete organization:', error);
+      alert('Failed to delete organization. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleEdit = (orgId: string) => {
+    router.push(`/organizations/${orgId}/edit`);
+  };
+
+  const handleArchive = async (orgId: string) => {
+    if (!confirm('Are you sure you want to archive this organization?')) {
+      return;
+    }
+
+    try {
+      setDeletingId(orgId);
+      console.log('Archive organization:', orgId, deletingId);
+      alert('Archive functionality will be implemented soon.');
+    } catch (error) {
+      console.error('Failed to archive organization:', error);
+      alert('Failed to archive organization. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const getSortLabel = () => {
+    switch (sortBy) {
+      case 'newest':
+        return 'Newest First';
+      case 'oldest':
+        return 'Oldest First';
+      case 'name-asc':
+        return 'Name (A-Z)';
+      case 'name-desc':
+        return 'Name (Z-A)';
+      default:
+        return 'Sort';
+    }
+  };
 
   if (loading) {
     return (
@@ -44,7 +151,7 @@ export default function OrganizationContent() {
 
   return (
     <main className='min-h-screen'>
-      {!hasOrganizations && (
+      {hasOrganizations && (
         <section className='sticky top-0 z-10 mb-8 border-b border-zinc-800 bg-black/80 px-8 backdrop-blur-xl'>
           <div className='mx-auto flex max-w-6xl items-center gap-4 py-6'>
             <div className='relative flex-1'>
@@ -52,16 +159,53 @@ export default function OrganizationContent() {
               <Input
                 type='text'
                 placeholder='Search organizations, hackathons, or grants...'
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
                 className='focus-visible:border-primary focus-visible:ring-primary/20 h-12 w-full rounded-xl border-zinc-800 bg-zinc-900/50 pr-4 pl-12 text-white transition-all placeholder:text-zinc-500 focus-visible:bg-zinc-900 focus-visible:ring-2'
               />
             </div>
-            <Button
-              variant='outline'
-              className='h-12 gap-2 rounded-xl border-zinc-800 bg-zinc-900/50 px-6 text-zinc-300 transition-all hover:border-zinc-700 hover:bg-zinc-800 hover:text-white'
-            >
-              <ArrowUpDown className='h-4 w-4' />
-              Sort
-            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant='outline'
+                  className='h-12 gap-2 rounded-xl border-zinc-800 bg-zinc-900/50 px-6 text-zinc-300 transition-all hover:border-zinc-700 hover:bg-zinc-800 hover:text-white'
+                >
+                  <ArrowUpDown className='h-4 w-4' />
+                  {getSortLabel()}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align='end'
+                className='w-48 border-zinc-800 bg-zinc-950'
+              >
+                <DropdownMenuItem
+                  onClick={() => setSortBy('newest')}
+                  className={`cursor-pointer ${sortBy === 'newest' ? 'text-primary bg-zinc-800' : 'text-zinc-300'}`}
+                >
+                  Newest First
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setSortBy('oldest')}
+                  className={`cursor-pointer ${sortBy === 'oldest' ? 'text-primary bg-zinc-800' : 'text-zinc-300'}`}
+                >
+                  Oldest First
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setSortBy('name-asc')}
+                  className={`cursor-pointer ${sortBy === 'name-asc' ? 'text-primary bg-zinc-800' : 'text-zinc-300'}`}
+                >
+                  Name (A-Z)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setSortBy('name-desc')}
+                  className={`cursor-pointer ${sortBy === 'name-desc' ? 'text-primary bg-zinc-800' : 'text-zinc-300'}`}
+                >
+                  Name (Z-A)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <div className='hidden md:block'>
               <Link href='/organizations/new'>
                 <BoundlessButton
@@ -79,7 +223,7 @@ export default function OrganizationContent() {
       )}
 
       <section className='mx-auto max-w-6xl px-8 py-12'>
-        {!hasOrganizations ? (
+        {hasOrganizations ? (
           <>
             <div className='mb-8 flex items-center justify-between'>
               <div>
@@ -87,8 +231,10 @@ export default function OrganizationContent() {
                   Your Organizations
                 </h2>
                 <p className='mt-1 text-sm text-zinc-400'>
-                  Manage {organizations.length} organization
-                  {organizations.length !== 1 ? 's' : ''}
+                  {filteredAndSortedOrganizations.length ===
+                  organizations.length
+                    ? `Manage ${organizations.length} organization${organizations.length !== 1 ? 's' : ''}`
+                    : `Showing ${filteredAndSortedOrganizations.length} of ${organizations.length} organizations`}
                 </p>
               </div>
               <div className='md:hidden'>
@@ -101,14 +247,11 @@ export default function OrganizationContent() {
               </div>
             </div>
 
-            <div className='grid grid-cols-1 gap-6'>
-              {organizations.map(org => (
-                <Link
-                  href={`/organizations/${org._id}`}
-                  key={org._id}
-                  className='group transition-transform hover:scale-[1.01]'
-                >
+            {filteredAndSortedOrganizations.length > 0 ? (
+              <div className='grid grid-cols-1 gap-6'>
+                {filteredAndSortedOrganizations.map(org => (
                   <OrganizationCard
+                    key={org._id}
                     id={org._id}
                     name={org.name}
                     logo={org.logo}
@@ -121,10 +264,34 @@ export default function OrganizationContent() {
                       count: org.grantCount ?? 0,
                       applications: 0,
                     }}
+                    onEdit={handleEdit}
+                    onArchive={handleArchive}
+                    onDelete={handleDelete}
                   />
-                </Link>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className='flex min-h-[40vh] items-center justify-center rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/20 p-12'>
+                <div className='text-center'>
+                  <div className='mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800/50'>
+                    <Search className='h-8 w-8 text-zinc-500' />
+                  </div>
+                  <h3 className='mb-2 text-lg font-semibold text-white'>
+                    No organizations found
+                  </h3>
+                  <p className='mb-6 text-sm text-zinc-400'>
+                    No organizations match "{searchQuery}"
+                  </p>
+                  <Button
+                    variant='outline'
+                    onClick={() => setSearchQuery('')}
+                    className='rounded-xl border-zinc-700 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800 hover:text-white'
+                  >
+                    Clear search
+                  </Button>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className='flex min-h-[60vh] items-center justify-center'>

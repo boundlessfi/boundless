@@ -1,6 +1,14 @@
 'use client';
 
-import { ArrowRight, HandCoins, Trophy, Calendar } from 'lucide-react';
+import {
+  MoreVertical,
+  HandCoins,
+  Trophy,
+  Calendar,
+  Edit,
+  Archive,
+  Trash2,
+} from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
@@ -9,6 +17,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface OrganizationCardProps {
   id: string;
@@ -23,6 +37,9 @@ interface OrganizationCardProps {
     count: number;
     applications: number;
   };
+  onEdit?: (id: string) => void;
+  onArchive?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export default function OrganizationCard({
@@ -32,6 +49,9 @@ export default function OrganizationCard({
   createdAt,
   hackathons,
   grants,
+  onEdit,
+  onArchive,
+  onDelete,
 }: OrganizationCardProps) {
   const router = useRouter();
 
@@ -42,6 +62,39 @@ export default function OrganizationCard({
       day: 'numeric',
       year: 'numeric',
     });
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEdit) {
+      onEdit(id);
+    } else {
+      router.push(`/organizations/${id}/edit`);
+    }
+  };
+
+  const handleArchive = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onArchive) {
+      onArchive(id);
+    } else {
+      if (confirm('Are you sure you want to archive this organization?')) {
+        console.log('Archive organization:', id);
+        // TODO: Implement archive functionality
+      }
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(id);
+    } else {
+      if (confirm('Are you sure you want to delete this organization?')) {
+        console.log('Delete organization:', id);
+        // TODO: Implement delete functionality
+      }
+    }
   };
 
   return (
@@ -62,7 +115,7 @@ export default function OrganizationCard({
               {/* Logo with glow effect */}
               <div className='relative'>
                 <div className='bg-primary/20 absolute inset-0 rounded-xl opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100'></div>
-                <div className='relative h-16 w-16 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition-all duration-300 group-hover:scale-105 group-hover:border-zinc-700'>
+                <div className='relative h-16 w-16 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 p-2 transition-all duration-300 group-hover:scale-105 group-hover:border-zinc-700'>
                   <Image
                     src={logo || '/placeholder.svg'}
                     alt={`${name} logo`}
@@ -85,10 +138,45 @@ export default function OrganizationCard({
               </div>
             </div>
 
-            {/* Arrow indicator */}
-            <div className='group-hover:border-primary group-hover:bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 transition-all duration-300 group-hover:translate-x-1'>
-              <ArrowRight className='group-hover:text-primary h-5 w-5 text-zinc-500 transition-colors' />
-            </div>
+            {/* More options dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  onClick={e => e.stopPropagation()}
+                  className='focus:ring-primary/50 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-zinc-400 transition-all duration-300 hover:border-zinc-700 hover:bg-zinc-800 hover:text-white focus:ring-2 focus:outline-none'
+                  title='More options'
+                >
+                  <MoreVertical className='h-5 w-5' />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align='end'
+                className='w-48 border-zinc-800 bg-zinc-950'
+                onClick={e => e.stopPropagation()}
+              >
+                <DropdownMenuItem
+                  onClick={handleEdit}
+                  className='focus:bg-primary cursor-pointer text-zinc-300 focus:text-black'
+                >
+                  <Edit className='mr-2 h-4 w-4' />
+                  Edit Organization
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleArchive}
+                  className='cursor-pointer text-zinc-300 focus:bg-zinc-800 focus:text-white'
+                >
+                  <Archive className='mr-2 h-4 w-4' />
+                  Archive
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  className='cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-300'
+                >
+                  <Trash2 className='mr-2 h-4 w-4' />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Stats Section */}
