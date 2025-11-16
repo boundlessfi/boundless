@@ -90,7 +90,7 @@ export default function OrganizationCard({
 
   return (
     <TooltipProvider>
-      <Link href={`/organizations/${id}`}>
+      <Link href={`/organizations/${id}/settings`}>
         <section className='hover:shadow-primary/10 cursor-pointer rounded-lg border border-zinc-800 bg-black transition-shadow duration-300 hover:shadow-lg'>
           <div className='flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 md:px-5 md:py-4'>
             <div className='flex min-w-0 flex-1 items-center gap-3'>
