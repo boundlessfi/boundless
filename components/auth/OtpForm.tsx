@@ -1,7 +1,6 @@
 'use client';
 import { maskEmail } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Cookies from 'js-cookie';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -15,6 +14,8 @@ import {
   FormMessage,
 } from '../ui/form';
 import { InputOTP, InputOTPSlot } from '../ui/input-otp';
+import { authClient } from '@/lib/auth-client';
+import { useAuthStore } from '@/lib/stores/auth-store';
 
 const formSchema = z.object({
   otp: z.string().length(6, {
@@ -47,54 +48,132 @@ const OtpForm = ({
     onLoadingChange?.(form.formState.isSubmitting);
   }, [form.formState.isSubmitting, onLoadingChange]);
 
+  const handleOtpError = (
+    error:
+      | { message?: string; status?: number; code?: string }
+      | null
+      | undefined
+  ) => {
+    // Log error for debugging
+    console.error('OTP verification error:', error);
+
+    const errorMessage =
+      error?.message ||
+      (typeof error === 'string' ? error : 'Invalid OTP. Please try again.');
+
+    form.setError('otp', {
+      type: 'manual',
+      message: errorMessage,
+    });
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const response = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { error } = await authClient.emailOtp.verifyEmail(
+        {
           email,
           otp: values.otp,
-        }),
-      });
+        },
+        {
+          onRequest: () => {
+            // Loading state handled by form
+          },
+          onSuccess: async () => {
+            // Get session after successful verification
+            const session = await authClient.getSession();
 
-      if (response.ok) {
-        const data = await response.json();
+            // Type guard for Better Auth session
+            if (session && typeof session === 'object' && 'user' in session) {
+              const sessionUser = session.user as
+                | {
+                    id: string;
+                    email: string;
+                    name?: string | null;
+                    image?: string | null;
+                  }
+                | null
+                | undefined;
 
-        if (data.accessToken) {
-          Cookies.set('accessToken', data.accessToken);
+              if (sessionUser && sessionUser.id && sessionUser.email) {
+                // Sync with Zustand store
+                const authStore = useAuthStore.getState();
+                await authStore.syncWithSession({
+                  id: sessionUser.id,
+                  email: sessionUser.email,
+                  name: sessionUser.name || undefined,
+                  image: sessionUser.image || undefined,
+                  role: 'USER', // Default role
+                  username: undefined,
+                  accessToken: undefined, // Better Auth handles tokens via cookies
+                });
+              }
+            }
+
+            toast.success('Email verified successfully!');
+            onOtpSuccess();
+          },
+          onError: (ctx: {
+            error?: { message?: string; status?: number; code?: string };
+          }) => {
+            console.error('Better Auth OTP onError:', ctx);
+            // Handle error from Better Auth callback
+            const errorObj = ctx.error
+              ? ctx.error
+              : { message: 'Invalid OTP. Please try again.' };
+            handleOtpError(errorObj);
+          },
         }
-        if (data.refreshToken) {
-          Cookies.set('refreshToken', data.refreshToken);
-        }
+      );
 
-        toast.success('Account created successfully!');
-        window.location.reload();
-        onOtpSuccess();
-      } else {
-        const error = await response.json();
-
-        form.setError('otp', {
-          type: 'manual',
-          message: error.message || 'Invalid OTP',
-        });
+      // Handle error from return value
+      if (error) {
+        console.error('Better Auth OTP error return:', error);
+        handleOtpError(error);
       }
-    } catch {
-      form.setError('otp', {
-        type: 'manual',
-        message: 'Failed to verify OTP. Please try again.',
-      });
+    } catch (error) {
+      console.error('OTP verification catch error:', error);
+      // Handle unexpected errors
+      const errorObj =
+        error instanceof Error
+          ? { message: error.message }
+          : { message: 'Failed to verify OTP. Please try again.' };
+
+      handleOtpError(errorObj);
     }
   };
 
   const handleResendOtp = async () => {
     try {
-      onResendOtp();
-      toast.success('OTP resent successfully!');
-    } catch {
-      toast.error('Failed to resend OTP. Please try again.');
+      const { data, error } = await authClient.emailOtp.sendVerificationOtp(
+        {
+          email,
+          type: 'email-verification',
+        },
+        {
+          onError: (ctx: {
+            error?: { message?: string; status?: number; code?: string };
+          }) => {
+            console.error('Resend OTP error:', ctx);
+            const errorMessage = ctx.error?.message || 'Failed to resend OTP';
+            toast.error(errorMessage);
+          },
+        }
+      );
+
+      if (data) {
+        onResendOtp();
+        toast.success('OTP resent successfully!');
+      } else if (error) {
+        console.error('Resend OTP error return:', error);
+        toast.error(error.message || 'Failed to resend OTP');
+      }
+    } catch (error) {
+      console.error('Resend OTP catch error:', error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to resend OTP. Please try again.';
+      toast.error(errorMessage);
     }
   };
 

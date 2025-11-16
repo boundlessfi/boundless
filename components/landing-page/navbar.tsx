@@ -437,7 +437,7 @@ function UnauthenticatedNav() {
   if (!showDevAddProject) {
     return (
       <BoundlessButton>
-        <Link href='/auth'>Get Started</Link>
+        <Link href='/auth?mode=signup'>Get Started</Link>
       </BoundlessButton>
     );
   }
@@ -457,7 +457,7 @@ function UnauthenticatedNav() {
         <span className='sm:hidden'>Add</span>
       </BoundlessButton>
       <BoundlessButton size={width && width < 1024 ? 'sm' : 'default'}>
-        <Link href='/auth'>Sign in</Link>
+        <Link href='/auth?mode=signin'>Sign in</Link>
       </BoundlessButton>
       <CreateProjectModal
         open={createProjectModalOpen}
@@ -773,7 +773,7 @@ function MobileMenu({
                     className='w-full bg-gradient-to-r from-blue-600 to-purple-600 font-semibold text-white hover:from-blue-700 hover:to-purple-700'
                   >
                     <Link
-                      href='/auth'
+                      href='/auth?mode=signup'
                       className='flex items-center justify-center'
                     >
                       <Plus className='mr-2 h-4 w-4' />

@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from '../ui/form';
 import { Input } from '../ui/input';
-import { forgotPassword } from '@/lib/api/auth';
+import { authClient } from '@/lib/auth-client';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email({
@@ -50,27 +50,39 @@ const ForgotPasswordWrapper = ({
       setLoadingState(true);
 
       try {
-        //   const response = await fetch('/api/auth/forgot-password', {
-        //     method: 'POST',
-        //     headers: {
-        //       'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify({ email: data.email }),
-        //   });
-        const response = await forgotPassword({ email: data.email });
+        // Use token-based password reset flow
+        // This sends a reset link with a token to the user's email
+        const { error } = await authClient.requestPasswordReset(
+          {
+            email: data.email,
+            redirectTo: `${window.location.origin}/auth/reset-password`,
+          },
+          {
+            onRequest: () => {
+              setIsLoading(true);
+              setLoadingState(true);
+            },
+            onSuccess: () => {
+              setIsSuccess(true);
+              toast.success('Password reset link sent to your email');
+              form.reset();
+            },
+            onError: ctx => {
+              form.setError('root', {
+                type: 'manual',
+                message: ctx.error.message || 'Failed to send reset link',
+              });
+              toast.error(ctx.error.message || 'Failed to send reset link');
+            },
+          }
+        );
 
-        const result = response;
-
-        if (response) {
-          setIsSuccess(true);
-          toast.success('Password reset instructions sent to your email');
-          form.reset();
-        } else {
+        if (error) {
           form.setError('root', {
             type: 'manual',
-            message: result.message || 'Failed to send reset email',
+            message: error.message || 'Failed to send reset link',
           });
-          toast.error(result.message || 'Failed to send reset email');
+          toast.error(error.message || 'Failed to send reset link');
         }
       } catch {
         form.setError('root', {
@@ -103,7 +115,7 @@ const ForgotPasswordWrapper = ({
 
         <div className='text-center'>
           <Link
-            href='/auth'
+            href='/auth?mode=signin'
             className='text-primary hover:text-primary/80 inline-flex items-center text-sm'
           >
             <ArrowLeft className='mr-1 h-4 w-4' />
@@ -172,7 +184,7 @@ const ForgotPasswordWrapper = ({
 
       <div className='text-center'>
         <Link
-          href='/auth'
+          href='/auth?mode=signin'
           className='text-primary hover:text-primary/80 inline-flex items-center text-sm'
         >
           <ArrowLeft className='mr-1 h-4 w-4' />

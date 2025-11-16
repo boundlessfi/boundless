@@ -80,6 +80,11 @@ const LoginForm = ({
             onSubmit={form.handleSubmit(onSubmit)}
             className='w-full space-y-4'
           >
+            {form.formState.errors.root && (
+              <div className='text-center text-sm text-red-500'>
+                {form.formState.errors.root.message}
+              </div>
+            )}
             <FormField
               control={form.control}
               name='email'

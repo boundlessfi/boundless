@@ -1,9 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import Cookies from 'js-cookie';
 import { useAuthStore } from '@/lib/stores/auth-store';
 
-const API_BASE_URL = 'https://staging-api.boundlessfi.xyz/api';
-// const API_BASE_URL = 'http://localhost:8000/api';
+// const API_BASE_URL = 'https://staging-api.boundlessfi.xyz/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 if (!API_BASE_URL) {
   throw new Error('NEXT_PUBLIC_API_URL environment variable is not defined');
@@ -24,70 +23,7 @@ export interface ApiError {
 export interface RequestConfig {
   headers?: Record<string, string>;
   timeout?: number;
-  skipAuthRefresh?: boolean;
 }
-
-// Check if token is expired
-const isTokenExpired = (token: string): boolean => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(function (c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join('')
-    );
-    const payload = JSON.parse(jsonPayload);
-    const currentTime = Math.floor(Date.now() / 1000);
-    return payload.exp < currentTime;
-  } catch {
-    return true;
-  }
-};
-
-// Token refresh function
-const refreshAccessToken = async (): Promise<string | null> => {
-  try {
-    // Only access cookies on client side
-    if (typeof window === 'undefined') {
-      return null;
-    }
-
-    const refreshToken = Cookies.get('refreshToken');
-    if (!refreshToken || isTokenExpired(refreshToken)) {
-      // Clear auth data if refresh token is expired
-      const authStore = useAuthStore.getState();
-      authStore.clearAuth();
-      return null;
-    }
-
-    const response = await axios.post(
-      `${API_BASE_URL}/auth/refresh`,
-      { refreshToken },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-
-    // Update tokens in store and cookies
-    const authStore = useAuthStore.getState();
-    authStore.setTokens(accessToken, newRefreshToken);
-
-    return accessToken;
-  } catch {
-    // If refresh fails, clear auth data
-    const authStore = useAuthStore.getState();
-    authStore.clearAuth();
-    return null;
-  }
-};
 
 const createClientApi = (): AxiosInstance => {
   const instance = axios.create({
@@ -103,6 +39,7 @@ const createClientApi = (): AxiosInstance => {
   // Request interceptor
   instance.interceptors.request.use(
     config => {
+      // Always include credentials for Better Auth cookie-based authentication
       config.withCredentials = true;
 
       // Reject data: URLs proactively to avoid Node adapter decoding large payloads
@@ -120,25 +57,8 @@ const createClientApi = (): AxiosInstance => {
         return Promise.reject(e);
       }
 
-      // Only access cookies on client side
-      if (typeof window !== 'undefined') {
-        const accessToken = Cookies.get('accessToken');
-        if (accessToken && !config.headers?.Authorization) {
-          // Check if token is expired before making the request
-          if (isTokenExpired(accessToken)) {
-            // Clear auth data if token is expired
-            const authStore = useAuthStore.getState();
-            authStore.clearAuth();
-            return Promise.reject({
-              message: 'Token expired',
-              status: 401,
-              code: 'TOKEN_EXPIRED',
-            });
-          }
-          config.headers = config.headers || {};
-          config.headers.Authorization = `Bearer ${accessToken}`;
-        }
-      }
+      // Better Auth handles authentication via cookies automatically
+      // No need to manually add Authorization headers
 
       return config;
     },
@@ -147,7 +67,7 @@ const createClientApi = (): AxiosInstance => {
     }
   );
 
-  // Response interceptor with automatic token refresh
+  // Response interceptor for error handling
   instance.interceptors.response.use(
     (response: AxiosResponse) => {
       return response;
@@ -190,59 +110,21 @@ const createClientApi = (): AxiosInstance => {
         });
       }
 
-      // Handle 401 errors with automatic token refresh
-      if (error.response?.status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true;
+      // Handle 401 errors - Better Auth handles session refresh automatically
+      if (error.response?.status === 401) {
+        const authStore = useAuthStore.getState();
+        authStore.clearAuth();
 
-        // Skip auth refresh if explicitly requested
-        if (originalRequest.skipAuthRefresh) {
-          const authStore = useAuthStore.getState();
-          authStore.clearAuth();
-          return Promise.reject({
-            message: 'Authentication required',
-            status: 401,
-            code: 'UNAUTHORIZED',
-          });
+        // Only redirect if we're on the client side
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth?mode=signin';
         }
 
-        try {
-          const newAccessToken = await refreshAccessToken();
-
-          if (newAccessToken) {
-            // Retry the original request with new token
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-            return instance(originalRequest);
-          } else {
-            // Refresh failed, redirect to login
-            const authStore = useAuthStore.getState();
-            authStore.clearAuth();
-
-            // Only redirect if we're on the client side
-            if (typeof window !== 'undefined') {
-              window.location.href = '/auth';
-            }
-
-            return Promise.reject({
-              message: 'Session expired. Please login again.',
-              status: 401,
-              code: 'SESSION_EXPIRED',
-            });
-          }
-        } catch {
-          const authStore = useAuthStore.getState();
-          authStore.clearAuth();
-
-          // Only redirect if we're on the client side
-          if (typeof window !== 'undefined') {
-            window.location.href = '/auth/signin';
-          }
-
-          return Promise.reject({
-            message: 'Session expired. Please login again.',
-            status: 401,
-            code: 'SESSION_EXPIRED',
-          });
-        }
+        return Promise.reject({
+          message: 'Session expired. Please login again.',
+          status: 401,
+          code: 'SESSION_EXPIRED',
+        });
       }
 
       // Handle other errors
@@ -277,15 +159,19 @@ const convertAxiosResponse = <T>(
   statusText: response.statusText,
 });
 
-const convertRequestConfig = (
-  config?: RequestConfig
-): AxiosRequestConfig & { skipAuthRefresh?: boolean } => {
+const convertRequestConfig = (config?: RequestConfig): AxiosRequestConfig => {
+  // Merge custom headers with default headers
+  const mergedHeaders = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    ...config?.headers, // Custom headers override defaults
+  };
+
   const axiosConfig = {
-    headers: config?.headers,
+    headers: mergedHeaders,
     timeout: config?.timeout,
-    withCredentials: true,
-    skipAuthRefresh: config?.skipAuthRefresh,
-  } as AxiosRequestConfig & { skipAuthRefresh?: boolean };
+    withCredentials: true, // Always include credentials for Better Auth cookie-based auth
+  } as AxiosRequestConfig;
   return axiosConfig;
 };
 

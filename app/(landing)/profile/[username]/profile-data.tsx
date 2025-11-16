@@ -1,6 +1,9 @@
-import { getUserProfileByUsername, getMe } from '@/lib/api/auth';
+import {
+  getUserProfileByUsernameServer,
+  getMeServer,
+} from '@/lib/api/auth-server';
 import { GetMeResponse } from '@/lib/api/types';
-import { auth } from '@/auth';
+import { getServerUser } from '@/lib/auth/server-auth';
 import ProfileOverview from '@/components/profile/ProfileOverview';
 
 interface ProfileDataProps {
@@ -8,10 +11,10 @@ interface ProfileDataProps {
 }
 
 export async function ProfileData({ username }: ProfileDataProps) {
-  const session = await auth();
+  const user = await getServerUser();
 
   // Check if user is authenticated
-  if (!session?.user?.accessToken) {
+  if (!user) {
     return (
       <section className='flex min-h-screen items-center justify-center'>
         <div className='text-red-500'>Please sign in to view profiles</div>
@@ -20,16 +23,22 @@ export async function ProfileData({ username }: ProfileDataProps) {
   }
 
   try {
-    const isOwnProfile = session?.user?.username === username;
+    // Check if viewing own profile by comparing with user data
+    // We need to fetch user data first to get the username
+    const currentUserData = await getMeServer();
+    const isOwnProfile =
+      currentUserData.profile?.username === username ||
+      currentUserData._id === username;
+
     let userData: GetMeResponse;
 
+    // Use server-side versions that forward cookies from request headers
     if (isOwnProfile) {
-      userData = await getMe(session.user.accessToken);
+      // For own profile, use the already fetched user data
+      userData = currentUserData;
     } else {
-      userData = await getUserProfileByUsername(
-        username,
-        session.user.accessToken
-      );
+      // For other profiles, fetch by username
+      userData = await getUserProfileByUsernameServer(username);
     }
 
     return <ProfileOverview username={username} user={userData} />;

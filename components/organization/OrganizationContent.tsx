@@ -1,5 +1,12 @@
 'use client';
-import { Search, ArrowUpDown, Plus } from 'lucide-react';
+import {
+  Search,
+  ArrowUpDown,
+  Plus,
+  Building2,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -124,27 +131,37 @@ export default function OrganizationContent() {
   if (loading) {
     return (
       <main className='flex h-[70vh] items-center justify-center'>
-        <div className='flex flex-col items-center gap-3 text-zinc-400'>
-          <LoadingSpinner size='lg' color='primary' variant='spinner' />
-          <p className='text-sm text-zinc-400'>Loading organizations...</p>
+        <div className='flex flex-col items-center gap-4'>
+          <div className='relative'>
+            <LoadingSpinner size='lg' color='primary' variant='spinner' />
+            <div className='absolute inset-0 animate-ping opacity-20'>
+              <LoadingSpinner size='lg' color='primary' variant='spinner' />
+            </div>
+          </div>
+          <div className='text-center'>
+            <p className='text-sm font-medium text-zinc-300'>
+              Loading organizations
+            </p>
+            <p className='text-xs text-zinc-500'>Please wait a moment...</p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className=''>
+    <main className='min-h-screen'>
       {hasOrganizations && (
-        <section className='mb-8 hidden border-b border-b-zinc-800 px-8 md:block'>
-          <div className='mx-auto flex max-w-5xl items-center gap-4'>
+        <section className='sticky top-0 z-10 mb-8 border-b border-zinc-800 bg-black/80 px-8 backdrop-blur-xl'>
+          <div className='mx-auto flex max-w-6xl items-center gap-4 py-6'>
             <div className='relative flex-1'>
-              <Search className='absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-zinc-500' />
+              <Search className='group-focus-within:text-primary absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-zinc-400 transition-colors' />
               <Input
                 type='text'
-                placeholder='Search organization, hackathon, or grants'
+                placeholder='Search organizations, hackathons, or grants...'
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className='focus-visible:border-primary focus-visible:ring-primary w-full rounded-lg border-zinc-800 bg-zinc-900 py-6 pr-4 pl-12 text-white placeholder:text-zinc-500 focus-visible:ring-[1px]'
+                className='focus-visible:border-primary focus-visible:ring-primary/20 h-12 w-full rounded-xl border-zinc-800 bg-zinc-900/50 pr-4 pl-12 text-white transition-all placeholder:text-zinc-500 focus-visible:bg-zinc-900 focus-visible:ring-2'
               />
             </div>
 
@@ -152,15 +169,15 @@ export default function OrganizationContent() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant='outline'
-                  className='hover:text-primary rounded-lg border-zinc-800 bg-black px-6 py-6 hover:bg-transparent'
+                  className='h-12 gap-2 rounded-xl border-zinc-800 bg-zinc-900/50 px-6 text-zinc-300 transition-all hover:border-zinc-700 hover:bg-zinc-800 hover:text-white'
                 >
-                  <ArrowUpDown className='mr-2 h-4 w-4' />
+                  <ArrowUpDown className='h-4 w-4' />
                   {getSortLabel()}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align='end'
-                className='w-48 border-zinc-800 bg-black'
+                className='w-48 border-zinc-800 bg-zinc-950'
               >
                 <DropdownMenuItem
                   onClick={() => setSortBy('newest')}
@@ -189,27 +206,47 @@ export default function OrganizationContent() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {hasOrganizations && (
-              <div className='flex h-23 items-center border-l border-l-zinc-800 pl-4'>
-                <Link href='/organizations/new'>
-                  <BoundlessButton
-                    variant='default'
-                    iconPosition='right'
-                    icon={<Plus className='h-4 w-4' />}
-                    className='rounded-lg px-6 py-6 text-black'
-                  >
-                    Add Organization
-                  </BoundlessButton>
-                </Link>
-              </div>
-            )}
+            <div className='hidden md:block'>
+              <Link href='/organizations/new'>
+                <BoundlessButton
+                  variant='default'
+                  iconPosition='right'
+                  icon={<Plus className='h-4 w-4' />}
+                  className='shadow-primary/20 hover:shadow-primary/30 h-12 gap-2 rounded-xl px-6 shadow-lg transition-all hover:shadow-xl'
+                >
+                  Add Organization
+                </BoundlessButton>
+              </Link>
+            </div>
           </div>
         </section>
       )}
 
-      <section className='mx-auto max-w-5xl px-8 py-8 md:px-0'>
-        {hasOrganizations && (
+      <section className='mx-auto max-w-6xl px-8 py-12'>
+        {hasOrganizations ? (
           <>
+            <div className='mb-8 flex items-center justify-between'>
+              <div>
+                <h2 className='text-2xl font-bold text-white'>
+                  Your Organizations
+                </h2>
+                <p className='mt-1 text-sm text-zinc-400'>
+                  {filteredAndSortedOrganizations.length ===
+                  organizations.length
+                    ? `Manage ${organizations.length} organization${organizations.length !== 1 ? 's' : ''}`
+                    : `Showing ${filteredAndSortedOrganizations.length} of ${organizations.length} organizations`}
+                </p>
+              </div>
+              <div className='md:hidden'>
+                <Link href='/organizations/new'>
+                  <Button className='bg-primary hover:bg-primary/90 gap-2 rounded-xl text-black'>
+                    <Plus className='h-4 w-4' />
+                    Add
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
             {filteredAndSortedOrganizations.length > 0 ? (
               <div className='grid grid-cols-1 gap-6'>
                 {filteredAndSortedOrganizations.map(org => (
@@ -234,15 +271,21 @@ export default function OrganizationContent() {
                 ))}
               </div>
             ) : (
-              <div className='border-active-bg2 mx-8 flex items-center justify-center rounded-lg border-1 border-dashed p-32'>
-                <div className='text-center text-zinc-400'>
-                  <p className='mb-4'>
-                    No organizations found matching "{searchQuery}"
+              <div className='flex min-h-[40vh] items-center justify-center rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/20 p-12'>
+                <div className='text-center'>
+                  <div className='mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800/50'>
+                    <Search className='h-8 w-8 text-zinc-500' />
+                  </div>
+                  <h3 className='mb-2 text-lg font-semibold text-white'>
+                    No organizations found
+                  </h3>
+                  <p className='mb-6 text-sm text-zinc-400'>
+                    No organizations match "{searchQuery}"
                   </p>
                   <Button
-                    variant='ghost'
+                    variant='outline'
                     onClick={() => setSearchQuery('')}
-                    className='text-primary hover:text-primary'
+                    className='rounded-xl border-zinc-700 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800 hover:text-white'
                   >
                     Clear search
                   </Button>
@@ -250,16 +293,78 @@ export default function OrganizationContent() {
               </div>
             )}
           </>
-        )}
+        ) : (
+          <div className='flex min-h-[60vh] items-center justify-center'>
+            <div className='w-full max-w-2xl text-center'>
+              {/* Decorative background */}
+              <div className='relative mx-auto mb-8 h-48 w-48'>
+                <div className='from-primary/20 absolute inset-0 animate-pulse rounded-full bg-gradient-to-br to-purple-500/20 blur-3xl'></div>
+                <div className='relative flex h-full w-full items-center justify-center rounded-full border-2 border-dashed border-zinc-800 bg-zinc-900/50'>
+                  <Building2
+                    className='h-20 w-20 text-zinc-700'
+                    strokeWidth={1.5}
+                  />
+                </div>
+              </div>
 
-        {!hasOrganizations && (
-          <div className='border-active-bg2 mx-8 flex items-center justify-center rounded-lg border-1 border-dashed p-32'>
-            <Link href='/organizations/new'>
-              <button className='text-primary hover:text-primary flex items-center gap-2 font-medium transition-colors'>
-                <span>Add Organization</span>
-                <Plus className='h-5 w-5' size={100} />
-              </button>
-            </Link>
+              {/* Content */}
+              <div className='mb-8'>
+                <h2 className='mb-3 text-3xl font-bold text-white'>
+                  Create Your First Organization
+                </h2>
+                <p className='mx-auto max-w-md text-lg text-zinc-400'>
+                  Start building your community by creating an organization to
+                  manage hackathons, grants, and more.
+                </p>
+              </div>
+
+              {/* Features */}
+              <div className='mb-10 grid grid-cols-1 gap-4 md:grid-cols-3'>
+                <div className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
+                  <Sparkles className='text-primary mx-auto mb-3 h-8 w-8' />
+                  <h3 className='mb-2 font-semibold text-white'>
+                    Host Hackathons
+                  </h3>
+                  <p className='text-sm text-zinc-500'>
+                    Organize and manage exciting hackathon events
+                  </p>
+                </div>
+                <div className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
+                  <TrendingUp className='text-primary mx-auto mb-3 h-8 w-8' />
+                  <h3 className='mb-2 font-semibold text-white'>
+                    Manage Grants
+                  </h3>
+                  <p className='text-sm text-zinc-500'>
+                    Create and distribute grant programs
+                  </p>
+                </div>
+                <div className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
+                  <Building2 className='text-primary mx-auto mb-3 h-8 w-8' />
+                  <h3 className='mb-2 font-semibold text-white'>
+                    Build Community
+                  </h3>
+                  <p className='text-sm text-zinc-500'>
+                    Connect with developers worldwide
+                  </p>
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <Link href='/organizations/new'>
+                <BoundlessButton
+                  variant='default'
+                  iconPosition='right'
+                  icon={<Plus className='h-5 w-5' />}
+                  className='group shadow-primary/30 hover:shadow-primary/40 h-14 gap-3 rounded-xl px-8 text-lg shadow-2xl transition-all hover:scale-105'
+                >
+                  <span>Create Organization</span>
+                </BoundlessButton>
+              </Link>
+
+              <p className='mt-6 text-sm text-zinc-500'>
+                It only takes a minute to get started
+              </p>
+            </div>
           </div>
         )}
       </section>
