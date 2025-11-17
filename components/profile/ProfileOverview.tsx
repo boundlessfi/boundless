@@ -19,8 +19,7 @@ export default function ProfileOverview({ user }: ProfileOverviewProps) {
     username: user.profile.username,
     displayName: `${user.profile.firstName} ${user.profile.lastName}`,
     bio: (user as unknown as { bio?: string }).bio || 'No bio available',
-    avatarUrl:
-      user.profile.avatar || '/landing/explore/project-placeholder-2.png',
+    avatarUrl: user.profile.avatar || '',
     socialLinks:
       (user as unknown as { socialLinks?: Record<string, string> })
         .socialLinks || {},
@@ -42,7 +41,6 @@ export default function ProfileOverview({ user }: ProfileOverviewProps) {
   return (
     <article className='flex w-full max-w-[500px] flex-col gap-11 text-white'>
       <ProfileHeader profile={profileData} stats={statsData} user={user} />
-
       {/* Organizations hidden on mobile - moved to tab */}
       <div className='hidden md:block'>
         <OrganizationsList organizations={organizationsData} />

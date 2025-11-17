@@ -1,28 +1,29 @@
-import { getMeServer } from '@/lib/api/auth-server';
+import { getMeServer, getUserSettingsServer } from '@/lib/api/auth-server';
 import { getServerUser } from '@/lib/auth/server-auth';
-import ProfileDataClient from '@/components/profile/ProfileDataClient';
+import ProfileUpdateScreen from '@/components/profile/ProfileUpdateScreen';
 
-export async function ProfileData() {
+export default async function SettingsPage() {
   const user = await getServerUser();
 
   // Check if user is authenticated
   if (!user) {
     return (
       <section className='flex min-h-screen items-center justify-center'>
-        <div className='text-red-500'>Please sign in to view your profile</div>
+        <div className='text-red-500'>Please sign in to view your settings</div>
       </section>
     );
   }
 
   try {
-    // Fetch user profile data - Use server-side version that forwards cookies from request headers
-    const userData = await getMeServer();
+    // Fetch user profile data and settings - Use server-side versions that forward cookies from request headers
+    const [userData, settingsData] = await Promise.all([
+      getMeServer(),
+      getUserSettingsServer().catch(() => ({})), // Fallback to empty object if settings don't exist
+    ]);
 
-    // Extract username from user data with proper fallback
-    const username =
-      userData.profile?.username || userData._id || user.id || 'me';
-
-    return <ProfileDataClient user={userData} username={username} />;
+    return (
+      <ProfileUpdateScreen user={userData} initialSettings={settingsData} />
+    );
   } catch (error) {
     // Handle authentication errors
     if (

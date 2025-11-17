@@ -139,7 +139,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             className='rounded-lg px-3 py-2 text-sm text-white transition-colors hover:bg-zinc-900/50 hover:text-white focus:bg-zinc-900/50'
             asChild
           >
-            <Link href='/settings' className='flex items-center gap-3'>
+            <Link href='/me/settings' className='flex items-center gap-3'>
               <Settings className='h-4 w-4 text-zinc-400' />
               Settings
             </Link>

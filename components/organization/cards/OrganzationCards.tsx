@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { normalizeCloudinaryImageUrl } from '@/lib/utils/cloudinary-url';
 import {
   Tooltip,
   TooltipContent,
@@ -118,7 +119,9 @@ export default function OrganizationCard({
                 <div className='bg-primary/20 absolute inset-0 rounded-xl opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100'></div>
                 <div className='relative h-16 w-16 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition-all duration-300 group-hover:scale-105 group-hover:border-zinc-700'>
                   <Image
-                    src={logo || '/placeholder.svg'}
+                    src={
+                      normalizeCloudinaryImageUrl(logo) || '/placeholder.svg'
+                    }
                     alt={`${name} logo`}
                     width={48}
                     height={48}

@@ -614,7 +614,7 @@ function MobileMenu({
                       Organizations
                     </Link>
                     <Link
-                      href='/settings'
+                      href='/me/settings'
                       className='flex items-center rounded-lg px-4 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-white/10 active:bg-white/15'
                     >
                       <Settings className='mr-3 h-4 w-4' />

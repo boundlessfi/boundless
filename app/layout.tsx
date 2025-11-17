@@ -3,7 +3,8 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
 import { Providers } from './providers';
-import { Analytics } from '@vercel/analytics/next';
+import { AnalyticsWrapper } from '@/components/AnalyticsWrapper';
+import CookieConsent from '@/components/CookieConsent';
 import {
   generateOrganizationStructuredData,
   generateWebsiteStructuredData,
@@ -93,8 +94,9 @@ export default function RootLayout({
         <Providers>
           {children}
           <Toaster />
+          <CookieConsent />
         </Providers>
-        <Analytics />
+        <AnalyticsWrapper />
       </body>
     </html>
   );
