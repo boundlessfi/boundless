@@ -1,10 +1,11 @@
 'use client';
 import { Eye, EyeOff, LockIcon, MailIcon } from 'lucide-react';
-// import Image from 'next/image';
+import Image from 'next/image';
 import Link from 'next/link';
 import { UseFormReturn } from 'react-hook-form';
 import z from 'zod';
 import { BoundlessButton } from '../buttons';
+import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
 import {
   Form,
@@ -32,6 +33,8 @@ interface LoginFormProps {
   showPassword: boolean;
   setShowPassword: (show: boolean) => void;
   isLoading: boolean;
+  onGoogleSignIn?: () => void;
+  lastMethod?: string | null;
 }
 
 const LoginForm = ({
@@ -40,7 +43,11 @@ const LoginForm = ({
   showPassword,
   setShowPassword,
   isLoading,
+  onGoogleSignIn,
+  lastMethod,
 }: LoginFormProps) => {
+  const isGoogleLastUsed = lastMethod === 'google';
+  const isEmailLastUsed = lastMethod === 'email';
   return (
     <>
       <div className='space-y-2'>
@@ -50,30 +57,48 @@ const LoginForm = ({
         </p>
       </div>
       <div className='mt-6 space-y-6'>
-        {/* <BoundlessButton
-          fullWidth
-          size='xl'
-          icon={
-            <Image
-              src='/auth/google.svg'
-              alt='google'
-              width={24}
-              height={24}
-              className='object-cover'
-            />
-          }
-          className='bg-background hover:!text-background border !border-[#484848] text-base !text-white'
-        >
-          Continue with Google
-        </BoundlessButton> */}
-        {/* 
+        <div className='relative'>
+          <BoundlessButton
+            centerContent={true}
+            fullWidth
+            size='xl'
+            icon={
+              <Image
+                src='/auth/google.svg'
+                alt='google'
+                width={24}
+                height={24}
+                className='object-cover'
+              />
+            }
+            className={`group bg-background hover:!text-background flex items-center justify-center gap-2 text-base !text-white transition-all duration-200 ${
+              isGoogleLastUsed
+                ? 'border-2 !border-[#a7f950] shadow-sm shadow-[#a7f950]/20'
+                : 'border !border-[#484848]'
+            }`}
+            onClick={onGoogleSignIn}
+            disabled={isLoading}
+          >
+            <div className='flex w-full items-center justify-between'>
+              <span>Continue with Google</span>
+              {isGoogleLastUsed && (
+                <Badge
+                  variant='secondary'
+                  className='group-hover:bg-background-card ml-2 border-[#a7f950]/30 bg-[#a7f950]/20 text-[#a7f950]'
+                >
+                  Last used
+                </Badge>
+              )}
+            </div>
+          </BoundlessButton>
+        </div>
         <div className='flex items-center justify-center gap-2.5'>
           <div className='h-[1px] w-full bg-[#2B2B2B]'></div>
           <p className='text-center text-sm leading-[145%] text-[#B5B5B5]'>
             Or
           </p>
           <div className='h-[1px] w-full bg-[#2B2B2B]'></div>
-        </div> */}
+        </div>
 
         <Form {...form}>
           <form
@@ -83,6 +108,14 @@ const LoginForm = ({
             {form.formState.errors.root && (
               <div className='text-center text-sm text-red-500'>
                 {form.formState.errors.root.message}
+              </div>
+            )}
+            {isEmailLastUsed && (
+              <div className='rounded-lg border border-[#a7f950]/30 bg-[#a7f950]/10 p-3'>
+                <p className='flex items-center gap-2 text-xs text-[#a7f950]'>
+                  <span className='h-1.5 w-1.5 rounded-full bg-[#a7f950]'></span>
+                  Last signed in with Email
+                </p>
               </div>
             )}
             <FormField

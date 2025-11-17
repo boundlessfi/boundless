@@ -1,13 +1,18 @@
 'use client';
 import Link from 'next/link';
-import { Menu, XIcon, Plus, Building2, ArrowUpRight } from 'lucide-react';
+import {
+  Menu,
+  Plus,
+  Building2,
+  ArrowUpRight,
+  User,
+  LogOut,
+  Settings,
+} from 'lucide-react';
 import Image from 'next/image';
-import { useRef, useState } from 'react';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
-import { BoundlessButton } from '../buttons';
-import { usePathname, useRouter } from 'next/navigation';
-import { Sheet, SheetTrigger, SheetContent, SheetClose } from '../ui/sheet';
+import { useState, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
+import { Sheet, SheetTrigger, SheetContent } from '../ui/sheet';
 import { useAuthStatus, useAuthActions } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
@@ -16,669 +21,512 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { User, LogOut, Settings } from 'lucide-react';
 import { UserMenu } from '../user/UserMenu';
 import { cn } from '@/lib/utils';
-// import WalletConnectButton from '../wallet/WalletConnectButton';
+import { BoundlessButton } from '../buttons';
 import CreateProjectModal from './project/CreateProjectModal';
 import { useProtectedAction } from '@/hooks/use-protected-action';
-import { useAuthStore } from '@/lib/stores/auth-store';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
-import { useWindowSize } from '@/hooks/use-window-size';
 import { WalletButton } from '../wallet/WalletButton';
 
-gsap.registerPlugin(useGSAP);
+// Constants
+const BRAND_COLOR = '#a7f950';
+const ACTIONS = {
+  CREATE_PROJECT: 'create project',
+} as const;
 
-const menuItems = [
+const MENU_ITEMS = [
   { href: '/about', label: 'About' },
   { href: '/projects', label: 'Projects' },
   { href: '/hackathons', label: 'Hackathons' },
   { href: '/grants', label: 'Grants' },
   { href: '/bounties', label: 'Bounties' },
-
   { href: '/blog', label: 'Blog' },
-];
+] as const;
+
+// Types
+interface UserProfile {
+  firstName?: string | null;
+  avatar?: string | null;
+}
+
+interface User {
+  username?: string | null;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  profile?: UserProfile;
+}
 
 export function Navbar() {
-  const navbarRef = useRef<HTMLElement>(null);
-  const logoRef = useRef<HTMLAnchorElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-  const { isAuthenticated, isLoading, user } = useAuthStatus();
   const pathname = usePathname();
-  const { width } = useWindowSize();
+  const { isAuthenticated, isLoading, user } = useAuthStatus();
 
-  useGSAP(
-    () => {
-      gsap.fromTo(
-        navbarRef.current,
-        { opacity: 0 },
-        { opacity: 1, duration: 0.4, ease: 'power2.out' }
-      );
-
-      const logoHover = gsap.to(logoRef.current, {
-        scale: 1,
-        duration: 0.2,
-        ease: 'power2.out',
-        paused: true,
-      });
-
-      const logoEnterHandler = () => logoHover.play();
-      const logoLeaveHandler = () => logoHover.reverse();
-
-      logoRef.current?.addEventListener('mouseenter', logoEnterHandler);
-      logoRef.current?.addEventListener('mouseleave', logoLeaveHandler);
-
-      const menuItems = menuRef.current?.querySelectorAll('a');
-      const menuItemAnimations: Array<{
-        item: Element;
-        hoverTl: gsap.core.Timeline;
-        enterHandler: () => void;
-        leaveHandler: () => void;
-      }> = [];
-
-      menuItems?.forEach(item => {
-        const hoverTl = gsap.timeline({ paused: true });
-        hoverTl.to(item, {
-          duration: 0.2,
-          ease: 'power2.out',
-        });
-
-        const enterHandler = () => hoverTl.play();
-        const leaveHandler = () => hoverTl.reverse();
-
-        item.addEventListener('mouseenter', enterHandler);
-        item.addEventListener('mouseleave', leaveHandler);
-
-        menuItemAnimations.push({
-          item,
-          hoverTl,
-          enterHandler,
-          leaveHandler,
-        });
-      });
-
-      const ctaHover = gsap.to(ctaRef.current, {
-        scale: 1,
-        duration: 0.2,
-        ease: 'power2.out',
-        paused: true,
-      });
-
-      const ctaEnterHandler = () => ctaHover.play();
-      const ctaLeaveHandler = () => ctaHover.reverse();
-
-      ctaRef.current?.addEventListener('mouseenter', ctaEnterHandler);
-      ctaRef.current?.addEventListener('mouseleave', ctaLeaveHandler);
-
-      const scrollTl = gsap.timeline({ paused: true });
-      scrollTl.to(navbarRef.current, {
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        backdropFilter: 'blur(8px)',
-        duration: 0.2,
-        ease: 'power2.out',
-      });
-
-      const handleScroll = () => {
-        if (window.scrollY > 50) {
-          scrollTl.play();
-        } else {
-          scrollTl.reverse();
-        }
-      };
-
-      window.addEventListener('scroll', handleScroll);
-
-      return () => {
-        logoHover.kill();
-        ctaHover.kill();
-        scrollTl.kill();
-
-        logoRef.current?.removeEventListener('mouseenter', logoEnterHandler);
-        logoRef.current?.removeEventListener('mouseleave', logoLeaveHandler);
-
-        menuItemAnimations.forEach(
-          ({ item, hoverTl, enterHandler, leaveHandler }) => {
-            hoverTl.kill();
-            item.removeEventListener('mouseenter', enterHandler);
-            item.removeEventListener('mouseleave', leaveHandler);
-          }
-        );
-
-        ctaRef.current?.removeEventListener('mouseenter', ctaEnterHandler);
-        ctaRef.current?.removeEventListener('mouseleave', ctaLeaveHandler);
-
-        window.removeEventListener('scroll', handleScroll);
-      };
-    },
-    { scope: navbarRef }
-  );
-
+  // Don't show navbar on organization pages
   if (pathname.startsWith('/organizations')) {
     return null;
   }
+
   return (
-    <nav
-      ref={navbarRef}
-      className='sticky top-0 z-50 max-h-[88px] bg-[#030303A3] backdrop-blur-[12px]'
-    >
-      <div className='mx-auto max-w-[1440px] px-3 py-3 sm:px-6 sm:py-5 md:px-8 lg:px-12 xl:px-16 2xl:px-20'>
-        <div className='flex items-center justify-between gap-3 sm:gap-6'>
-          <div className='flex-shrink-0'>
-            <Link
-              ref={logoRef}
-              href='/'
-              onClick={() => router.push('/')}
-              className='flex items-center'
-            >
-              <Image
-                src='/logo-icon.png'
-                alt='logo'
-                width={32}
-                height={32}
-                className='transition-all duration-200 lg:hidden'
-              />
-              <Image
-                src='/logo.png'
-                alt='logo'
-                width={140}
-                height={28}
-                className='hidden transition-all duration-200 lg:block'
-              />
-            </Link>
-          </div>
+    <nav className='sticky top-0 z-50 border-b border-white/10 bg-[#030303]/95 shadow-lg shadow-black/20 backdrop-blur-xl'>
+      <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
+        <div className='flex h-16 items-center justify-between gap-4'>
+          {/* Logo */}
+          <Logo />
 
-          <div
-            ref={menuRef}
-            className='hidden md:flex md:flex-1 md:justify-center'
-          >
-            <div className='flex items-baseline space-x-2 lg:space-x-4'>
-              {menuItems.map(item => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'rounded-md px-2 py-2 font-medium text-white transition-all duration-200 hover:bg-white/5 hover:text-white/80',
-                    'md:text-xs lg:text-sm',
-                    width && width < 1024 ? 'px-2' : 'px-3'
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </div>
+          {/* Desktop Navigation */}
+          <DesktopMenu items={MENU_ITEMS} currentPath={pathname} />
 
-          <div ref={ctaRef} className='hidden md:block'>
+          {/* Desktop Actions - Updated with better alignment */}
+          <div className='hidden flex-shrink-0 md:flex md:items-center md:gap-3'>
             {isLoading ? (
-              <div className='flex items-center space-x-2'>
-                <div className='h-8 w-8 animate-pulse rounded-full bg-gray-200' />
-                <div className='h-4 w-20 animate-pulse rounded bg-gray-200' />
-              </div>
+              <LoadingSkeleton />
             ) : isAuthenticated ? (
-              <AuthenticatedNav />
+              <AuthenticatedActions />
             ) : (
-              <UnauthenticatedNav />
+              <UnauthenticatedActions />
             )}
           </div>
-          <MobileMenu isAuthenticated={isAuthenticated} user={user} />
+
+          {/* Mobile Menu */}
+          <MobileMenu
+            isAuthenticated={isAuthenticated}
+            isLoading={isLoading}
+            user={user}
+          />
         </div>
       </div>
     </nav>
   );
 }
 
-function AuthenticatedNav() {
-  const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
+function Logo() {
+  return (
+    <Link
+      href='/'
+      className='flex-shrink-0 transition-opacity hover:opacity-80'
+      aria-label='Go to homepage'
+    >
+      <Image
+        src='/logo-icon.png'
+        alt='Logo'
+        width={32}
+        height={32}
+        className='md:hidden'
+      />
+      <Image
+        src='/logo.png'
+        alt='Logo'
+        width={140}
+        height={28}
+        className='hidden md:block'
+      />
+    </Link>
+  );
+}
 
+function DesktopMenu({
+  items,
+  currentPath,
+}: {
+  items: typeof MENU_ITEMS;
+  currentPath: string;
+}) {
+  return (
+    <nav
+      className='hidden flex-1 md:flex md:items-center md:justify-center'
+      aria-label='Main navigation'
+    >
+      <div className='flex items-center gap-1'>
+        {items.map(item => {
+          const isActive = currentPath === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive ? 'page' : undefined}
+              className={cn(
+                'rounded-lg px-3 py-2 text-sm font-medium transition-all duration-100',
+                isActive
+                  ? `bg-[${BRAND_COLOR}]/10 text-[${BRAND_COLOR}] border border-[${BRAND_COLOR}]/20 shadow-sm shadow-[${BRAND_COLOR}]/5`
+                  : 'text-white/60 hover:bg-white/5 hover:text-white/90'
+              )}
+              style={
+                isActive
+                  ? {
+                      backgroundColor: `${BRAND_COLOR}1A`,
+                      color: BRAND_COLOR,
+                      borderColor: `${BRAND_COLOR}33`,
+                      boxShadow: `0 1px 2px ${BRAND_COLOR}0D`,
+                    }
+                  : undefined
+              }
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className='flex items-center gap-3' role='status' aria-label='Loading'>
+      <div className='h-10 w-24 animate-pulse rounded-lg border border-white/10 bg-white/5' />
+      <div className='h-10 w-10 animate-pulse rounded-full border border-white/10 bg-white/5' />
+      <span className='sr-only'>Loading...</span>
+    </div>
+  );
+}
+
+function AuthenticatedActions() {
+  const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
   const {
     executeProtectedAction,
     showWalletModal,
     closeWalletModal,
     handleWalletConnected,
   } = useProtectedAction({
-    actionName: 'create project',
+    actionName: ACTIONS.CREATE_PROJECT,
     onSuccess: () => setCreateProjectModalOpen(true),
   });
+
   return (
-    <div className='flex items-center space-x-2 lg:space-x-3'>
-      <WalletButton />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <BoundlessButton className='hover:!text-primary tr bg-transparent text-white hover:bg-transparent'>
-            <Plus className='h-4 w-4' />
-          </BoundlessButton>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align='end'
-          className='bg-background w-[280px] rounded-[8px] border border-[#2B2B2B] pt-3 pb-6 text-white shadow-[0_4px_4px_0_rgba(26,26,26,0.25)] sm:w-[300px]'
-        >
-          <DropdownMenuItem
-            onClick={async () => {
-              await executeProtectedAction(() =>
-                setCreateProjectModalOpen(true)
-              );
-            }}
-            className='group hover:text-primary px-6 py-3.5 text-white hover:!bg-transparent'
+    <>
+      <div className='flex items-center gap-2'>
+        <WalletButton />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <BoundlessButton
+              variant='outline'
+              size='sm'
+              aria-label='Create new content'
+              className='border-white/20 transition-all duration-200'
+              style={
+                {
+                  '--hover-bg': `${BRAND_COLOR}1A`,
+                  '--hover-border': `${BRAND_COLOR}66`,
+                  '--hover-color': BRAND_COLOR,
+                } as React.CSSProperties
+              }
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = `${BRAND_COLOR}1A`;
+                e.currentTarget.style.borderColor = `${BRAND_COLOR}66`;
+                e.currentTarget.style.color = BRAND_COLOR;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = '';
+                e.currentTarget.style.borderColor = '';
+                e.currentTarget.style.color = '';
+              }}
+            >
+              <Plus className='h-4 w-4' />
+            </BoundlessButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align='end'
+            className='w-56 border-white/10 bg-[#030303]/98 shadow-xl shadow-black/40 backdrop-blur-xl'
           >
-            <span className='group-hover:text-primary flex w-full items-center justify-between'>
+            <DropdownMenuItem
+              onClick={() =>
+                executeProtectedAction(() => setCreateProjectModalOpen(true))
+              }
+              className='cursor-pointer text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
+            >
+              <Plus className='mr-2 h-4 w-4' />
               Add Project
-              <Plus className='group-hover:text-primary h-4 w-4' />
-            </span>
-          </DropdownMenuItem>
-          <Link href='/organizations/new' target='_blank' rel='noreferrer'>
-            <DropdownMenuItem className='group hover:text-primary px-6 py-3.5 text-white hover:!bg-transparent'>
-              <span className='group-hover:text-primary flex w-full items-center justify-between'>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link
+                href='/organizations/new'
+                target='_blank'
+                className='text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
+              >
+                <Building2 className='mr-2 h-4 w-4' />
                 Host Hackathon
-                <ArrowUpRight className='group-hover:text-primary h-4 w-4' />
-              </span>
+                <ArrowUpRight className='ml-auto h-4 w-4' />
+              </Link>
             </DropdownMenuItem>
-          </Link>
-          <Link href='/organizations/new' target='_blank' rel='noreferrer'>
-            <DropdownMenuItem className='group hover:text-primary px-6 py-3.5 text-white hover:!bg-transparent'>
-              <span className='group-hover:text-primary flex w-full items-center justify-between'>
+            <DropdownMenuItem asChild>
+              <Link
+                href='/organizations/new'
+                target='_blank'
+                className='text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
+              >
+                <Building2 className='mr-2 h-4 w-4' />
                 Create Grant
-                <ArrowUpRight className='group-hover:text-primary h-4 w-4' />
-              </span>
+                <ArrowUpRight className='ml-auto h-4 w-4' />
+              </Link>
             </DropdownMenuItem>
-          </Link>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      <UserMenu />
+        <UserMenu />
+      </div>
+
       <CreateProjectModal
         open={createProjectModalOpen}
         setOpen={setCreateProjectModalOpen}
       />
 
-      {/* Wallet Required Modal */}
       <WalletRequiredModal
         open={showWalletModal}
         onOpenChange={closeWalletModal}
-        actionName='create project'
+        actionName={ACTIONS.CREATE_PROJECT}
         onWalletConnected={handleWalletConnected}
       />
-    </div>
+    </>
   );
 }
 
-// In development, show a lightweight CTA that opens CreateProjectModal
-// even for unauthenticated users, so designers/QA can test the flow.
-function UnauthenticatedNav() {
+function UnauthenticatedActions() {
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
-  const { width } = useWindowSize();
-
   const {
     executeProtectedAction,
     showWalletModal,
     closeWalletModal,
     handleWalletConnected,
   } = useProtectedAction({
-    actionName: 'create project',
+    actionName: ACTIONS.CREATE_PROJECT,
     onSuccess: () => setCreateProjectModalOpen(true),
   });
 
-  const showDevAddProject =
-    process.env.NODE_ENV !== 'production' &&
-    (process.env.NEXT_PUBLIC_SHOW_ADD_PROJECT_FOR_GUESTS === 'true' || true);
-
-  if (!showDevAddProject) {
-    return (
-      <BoundlessButton>
-        <Link href='/auth?mode=signup'>Get Started</Link>
-      </BoundlessButton>
-    );
-  }
+  const isDev = process.env.NODE_ENV !== 'production';
 
   return (
-    <div className='flex items-center space-x-2 lg:space-x-3'>
-      <BoundlessButton
-        variant='outline'
-        onClick={async () => {
-          await executeProtectedAction(() => setCreateProjectModalOpen(true));
-        }}
-        className='border-white/20 text-white hover:bg-white/10'
-        size={width && width < 1024 ? 'sm' : 'default'}
+    <>
+      {isDev && (
+        <BoundlessButton
+          variant='outline'
+          size='sm'
+          onClick={() =>
+            executeProtectedAction(() => setCreateProjectModalOpen(true))
+          }
+          className='border-white/20 transition-all duration-200'
+          style={
+            {
+              '--hover-bg': `${BRAND_COLOR}1A`,
+              '--hover-border': `${BRAND_COLOR}66`,
+              '--hover-color': BRAND_COLOR,
+            } as React.CSSProperties
+          }
+          onMouseEnter={e => {
+            e.currentTarget.style.backgroundColor = `${BRAND_COLOR}1A`;
+            e.currentTarget.style.borderColor = `${BRAND_COLOR}66`;
+            e.currentTarget.style.color = BRAND_COLOR;
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.backgroundColor = '';
+            e.currentTarget.style.borderColor = '';
+            e.currentTarget.style.color = '';
+          }}
+        >
+          <Plus className='mr-2 h-4 w-4' />
+          Add Project
+        </BoundlessButton>
+      )}
+
+      <Link
+        href='/auth?mode=signin'
+        className='inline-flex h-8 items-center justify-center gap-2 rounded-[10px] bg-[#a7f950] px-3 text-sm font-medium whitespace-nowrap text-black shadow-sm shadow-[#a7f950]/20 transition-all hover:bg-[#a7f950]/90'
       >
-        <Plus className='mr-1 h-3 w-3 lg:mr-2 lg:h-4 lg:w-4' />
-        <span className='hidden sm:inline'>Add Project</span>
-        <span className='sm:hidden'>Add</span>
-      </BoundlessButton>
-      <BoundlessButton size={width && width < 1024 ? 'sm' : 'default'}>
-        <Link href='/auth?mode=signin'>Sign in</Link>
-      </BoundlessButton>
+        Sign In
+      </Link>
+
       <CreateProjectModal
         open={createProjectModalOpen}
         setOpen={setCreateProjectModalOpen}
       />
 
-      {/* Wallet Required Modal */}
       <WalletRequiredModal
         open={showWalletModal}
         onOpenChange={closeWalletModal}
-        actionName='create project'
+        actionName={ACTIONS.CREATE_PROJECT}
         onWalletConnected={handleWalletConnected}
       />
-    </div>
+    </>
   );
 }
 
-function MobileMenu({
+const MobileMenu = ({
   isAuthenticated,
+  isLoading,
   user,
 }: {
   isAuthenticated: boolean;
-  user: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-    profile?: { firstName?: string | null; avatar?: string | null };
-    username?: string | null;
-  } | null;
-}) {
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const mobileButtonRef = useRef<HTMLButtonElement>(null);
-  const mobileLogoRef = useRef<HTMLAnchorElement>(null);
-  const mobileMenuItemsRef = useRef<HTMLDivElement>(null);
-  const mobileCTARef = useRef<HTMLDivElement>(null);
+  isLoading: boolean;
+  user: User | null;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
   const { logout } = useAuthActions();
-  const { isLoading } = useAuthStore();
-  const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
-  const { width } = useWindowSize();
-  useGSAP(
-    () => {
-      gsap.fromTo(
-        mobileButtonRef.current,
-        { opacity: 0 },
-        { opacity: 1, duration: 0.3 }
-      );
+  const pathname = usePathname();
 
-      const buttonHover = gsap.to(mobileButtonRef.current, {
-        scale: 1,
-        duration: 0.2,
-        ease: 'power2.out',
-        paused: true,
-      });
+  const userInitial = useMemo(() => {
+    return user?.name?.charAt(0) || user?.email?.charAt(0) || 'U';
+  }, [user]);
 
-      const buttonEnterHandler = () => buttonHover.play();
-      const buttonLeaveHandler = () => buttonHover.reverse();
-
-      mobileButtonRef.current?.addEventListener(
-        'mouseenter',
-        buttonEnterHandler
-      );
-      mobileButtonRef.current?.addEventListener(
-        'mouseleave',
-        buttonLeaveHandler
-      );
-
-      return () => {
-        buttonHover.kill();
-        mobileButtonRef.current?.removeEventListener(
-          'mouseenter',
-          buttonEnterHandler
-        );
-        mobileButtonRef.current?.removeEventListener(
-          'mouseleave',
-          buttonLeaveHandler
-        );
-      };
-    },
-    { scope: mobileMenuRef }
-  );
-
-  const animateMobileMenuOpen = () => {
-    gsap.fromTo(
-      mobileLogoRef.current,
-      { opacity: 0 },
-      { opacity: 1, duration: 0.3, ease: 'power2.out' }
-    );
-
-    const menuItems = mobileMenuItemsRef.current?.querySelectorAll('a');
-    if (menuItems) {
-      gsap.fromTo(
-        menuItems,
-        { opacity: 0, y: 10 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.3,
-          stagger: 0.1,
-          ease: 'power2.out',
-        }
-      );
-    }
-
-    gsap.fromTo(
-      mobileCTARef.current,
-      { opacity: 0, y: 10 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.3,
-        delay: 0.2,
-        ease: 'power2.out',
-      }
-    );
-  };
-
-  const animateMobileMenuClose = () => {
-    gsap.to(
-      [mobileLogoRef.current, mobileMenuItemsRef.current, mobileCTARef.current],
-      {
-        opacity: 0,
-        duration: 0.2,
-        ease: 'power2.in',
-      }
-    );
-  };
+  const displayName = useMemo(() => {
+    return user?.name || user?.profile?.firstName || 'User';
+  }, [user]);
 
   return (
-    <div ref={mobileMenuRef} className='justify-self-end md:hidden'>
-      <Sheet
-        onOpenChange={open => {
-          if (open) {
-            setTimeout(animateMobileMenuOpen, 100);
-          } else {
-            animateMobileMenuClose();
-          }
-        }}
-      >
+    <div className='md:hidden'>
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
           <BoundlessButton
-            ref={mobileButtonRef}
             variant='outline'
-            size={width && width < 480 ? 'sm' : 'default'}
-            className='border-white/20 transition-all duration-200 hover:border-white/30 hover:bg-white/10 md:hidden'
+            size='sm'
+            aria-label='Open navigation menu'
+            className='border-white/20 transition-all duration-200'
+            style={
+              {
+                '--hover-bg': `${BRAND_COLOR}1A`,
+                '--hover-border': `${BRAND_COLOR}66`,
+                '--hover-color': BRAND_COLOR,
+              } as React.CSSProperties
+            }
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = `${BRAND_COLOR}1A`;
+              e.currentTarget.style.borderColor = `${BRAND_COLOR}66`;
+              e.currentTarget.style.color = BRAND_COLOR;
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = '';
+              e.currentTarget.style.borderColor = '';
+              e.currentTarget.style.color = '';
+            }}
           >
-            <Menu className={width && width < 480 ? 'h-4 w-4' : 'h-5 w-5'} />
+            <Menu className='h-5 w-5' />
           </BoundlessButton>
         </SheetTrigger>
+
         <SheetContent
-          showCloseButton={false}
-          side='top'
-          className='px-4 pt-4 pb-8 sm:px-6 sm:pt-6 sm:pb-12'
+          side='right'
+          className='flex w-full flex-col border-l border-white/10 bg-[#030303] sm:max-w-md'
+          showCloseButton={true}
         >
-          {/* Header with logo and close button */}
-          <div className='mb-6 flex items-center justify-between sm:mb-8'>
-            <div className='flex-shrink-0'>
-              <Link ref={mobileLogoRef} href='/' className='flex items-center'>
-                <Image
-                  src='/logo.png'
-                  alt='logo'
-                  width={116}
-                  height={22}
-                  className='transition-all duration-200 lg:hidden'
-                />
-                <Image
-                  src='/logo.png'
-                  alt='logo'
-                  width={140}
-                  height={28}
-                  className='hidden transition-all duration-200 lg:block'
-                />
-              </Link>
-            </div>
-            <SheetClose>
-              <BoundlessButton
-                variant='outline'
-                size='sm'
-                className='border-white/20 hover:bg-white/10'
-              >
-                <XIcon className='h-4 w-4' />
-              </BoundlessButton>
-            </SheetClose>
-          </div>
-          {/* Navigation Menu */}
-          <div ref={mobileMenuItemsRef} className='mb-6 sm:mb-8'>
-            <h3 className='mb-4 text-xs font-semibold tracking-wider text-white/60 uppercase'>
-              Navigation
-            </h3>
-            <div className='flex flex-col gap-1'>
-              {menuItems.map(item => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className='flex items-center rounded-lg px-4 py-3 text-base font-medium text-white transition-all duration-200 hover:bg-white/10 hover:text-white active:bg-white/15'
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div ref={mobileCTARef}>
-            {isLoading ? (
-              <div className='flex items-center justify-center space-x-2 py-4'>
-                <div className='h-8 w-8 animate-pulse rounded-full bg-gray-200' />
-                <div className='h-4 w-20 animate-pulse rounded bg-gray-200' />
-              </div>
-            ) : isAuthenticated ? (
-              <div className='space-y-6'>
-                {/* User Profile Section */}
-                <div className='rounded-xl border border-white/10 bg-gradient-to-r from-white/5 to-white/10 p-4'>
-                  <div className='flex items-center space-x-3'>
-                    <Avatar className='h-12 w-12 ring-2 ring-white/20'>
-                      <AvatarImage
-                        src={user?.image || user?.profile?.avatar || ''}
-                        alt={user?.name || user?.profile?.firstName || ''}
-                      />
-                      <AvatarFallback className='bg-white/10 font-semibold text-white'>
-                        {user?.name?.charAt(0) ||
-                          user?.profile?.firstName?.charAt(0) ||
-                          user?.email?.charAt(0) ||
-                          'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className='min-w-0 flex-1'>
-                      <p className='truncate text-base font-semibold text-white'>
-                        {user?.name || user?.profile?.firstName || 'User'}
-                      </p>
-                      <p className='truncate text-sm text-white/70'>
-                        {user?.email}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Wallet Connection */}
-                <div className='space-y-3'>
-                  <h3 className='text-xs font-semibold tracking-wider text-white/60 uppercase'>
-                    Wallet
-                  </h3>
-                  <WalletButton
-                  // variant='outline'
-                  // size='sm'
-                  // className='w-full border-white/20 bg-white/5 text-white hover:border-white/30 hover:bg-white/10'
+          <div className='flex flex-1 flex-col gap-6 overflow-y-auto pb-6'>
+            {/* User Info (if authenticated) */}
+            {isAuthenticated && user && (
+              <div className='flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-4 transition-colors hover:bg-white/8'>
+                <Avatar className='h-10 w-10 border border-white/10'>
+                  <AvatarImage
+                    src={user?.image || user?.profile?.avatar || ''}
+                    alt={displayName}
                   />
-                </div>
-
-                {/* Quick Actions */}
-                <div className='space-y-3'>
-                  <h3 className='text-xs font-semibold tracking-wider text-white/60 uppercase'>
-                    Quick Actions
-                  </h3>
-                  <div className='grid grid-cols-1 gap-2'>
-                    <Link
-                      href={`/profile/${user?.username}`}
-                      className='flex items-center rounded-lg px-4 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-white/10 active:bg-white/15'
-                    >
-                      <User className='mr-3 h-4 w-4' />
-                      Profile
-                    </Link>
-                    <Link
-                      href='/organizations'
-                      className='flex items-center rounded-lg px-4 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-white/10 active:bg-white/15'
-                    >
-                      <Building2 className='mr-3 h-4 w-4' />
-                      Organizations
-                    </Link>
-                    <Link
-                      href='/me/settings'
-                      className='flex items-center rounded-lg px-4 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-white/10 active:bg-white/15'
-                    >
-                      <Settings className='mr-3 h-4 w-4' />
-                      Settings
-                    </Link>
-                  </div>
-                </div>
-                {/* Sign Out Button */}
-                <div className='border-t border-white/10 pt-2'>
-                  <BoundlessButton
-                    size='lg'
-                    fullWidth
-                    variant='outline'
-                    onClick={() => !isLoading && logout()}
-                    disabled={isLoading}
-                    className='w-full border-red-500/50 text-red-400 hover:border-red-500 hover:bg-red-500/10 hover:text-red-300'
-                  >
-                    <LogOut className='mr-2 h-4 w-4' />
-                    {isLoading ? 'Signing Out...' : 'Sign Out'}
-                  </BoundlessButton>
-                </div>
-              </div>
-            ) : (
-              <div className='space-y-6'>
-                {/* Wallet Connection */}
-                <div className='space-y-3'>
-                  <h3 className='text-xs font-semibold tracking-wider text-white/60 uppercase'>
-                    Connect Wallet
-                  </h3>
-                  <WalletButton
-                  // variant='outline'
-                  // size='sm'
-                  // className='w-full border-white/20 bg-white/5 text-white hover:border-white/30 hover:bg-white/10'
-                  />
-                </div>
-
-                {/* Get Started Section */}
-                <div className='space-y-3'>
-                  <h3 className='text-xs font-semibold tracking-wider text-white/60 uppercase'>
-                    Get Started
-                  </h3>
-                  <BoundlessButton
-                    size='lg'
-                    fullWidth
-                    className='w-full bg-gradient-to-r from-blue-600 to-purple-600 font-semibold text-white hover:from-blue-700 hover:to-purple-700'
-                  >
-                    <Link
-                      href='/auth?mode=signup'
-                      className='flex items-center justify-center'
-                    >
-                      <Plus className='mr-2 h-4 w-4' />
-                      Get Started
-                    </Link>
-                  </BoundlessButton>
+                  <AvatarFallback className='bg-white/10 text-white/80'>
+                    {userInitial}
+                  </AvatarFallback>
+                </Avatar>
+                <div className='min-w-0 flex-1'>
+                  <p className='truncate text-sm font-medium text-white'>
+                    {displayName}
+                  </p>
+                  <p className='truncate text-xs text-white/60'>
+                    {user?.email}
+                  </p>
                 </div>
               </div>
             )}
+
+            {/* Navigation Links */}
+            <nav className='flex flex-col gap-1' aria-label='Mobile navigation'>
+              {MENU_ITEMS.map(item => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200',
+                      isActive
+                        ? 'border'
+                        : 'text-white/70 hover:border hover:border-white/10 hover:bg-white/5 hover:text-white/90'
+                    )}
+                    style={
+                      isActive
+                        ? {
+                            backgroundColor: `${BRAND_COLOR}1A`,
+                            color: BRAND_COLOR,
+                            borderColor: `${BRAND_COLOR}33`,
+                          }
+                        : undefined
+                    }
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Actions - Only for authenticated users */}
+            {isAuthenticated && (
+              <div className='flex flex-col gap-3 border-t border-white/10 pt-6'>
+                {isLoading ? (
+                  <LoadingSkeleton />
+                ) : (
+                  <>
+                    <WalletButton />
+                    {user?.username && (
+                      <Link
+                        href={`/profile/${user.username}`}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <BoundlessButton variant='outline' className='w-full'>
+                          <User className='mr-2 h-4 w-4' />
+                          Profile
+                        </BoundlessButton>
+                      </Link>
+                    )}
+                    <Link href='/me/settings' onClick={() => setIsOpen(false)}>
+                      <BoundlessButton variant='outline' className='w-full'>
+                        <Settings className='mr-2 h-4 w-4' />
+                        Settings
+                      </BoundlessButton>
+                    </Link>
+                    <BoundlessButton
+                      variant='outline'
+                      className='w-full border-red-500/50 text-red-400 hover:bg-red-500/10'
+                      onClick={() => {
+                        logout();
+                        setIsOpen(false);
+                      }}
+                    >
+                      <LogOut className='mr-2 h-4 w-4' />
+                      Sign Out
+                    </BoundlessButton>
+                  </>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Sign Up / Sign In Buttons - Fixed at bottom for unauthenticated users */}
+          {!isAuthenticated && (
+            <div className='mt-auto flex flex-col gap-3 border-t border-white/10 pt-6 pb-6'>
+              <Link
+                href='/auth?mode=signup'
+                onClick={() => setIsOpen(false)}
+                className='inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-[#a7f950] px-4 py-2 text-sm font-medium whitespace-nowrap text-black shadow-sm shadow-[#a7f950]/20 transition-all hover:bg-[#a7f950]/90'
+              >
+                Get Started
+              </Link>
+              <Link
+                href='/auth?mode=signin'
+                onClick={() => setIsOpen(false)}
+                className='inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] border border-white/30 px-4 py-2 text-sm font-medium whitespace-nowrap text-white transition-all hover:border-white/40 hover:bg-white/10'
+              >
+                Sign In
+              </Link>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
-      <CreateProjectModal
-        open={createProjectModalOpen}
-        setOpen={setCreateProjectModalOpen}
-      />
     </div>
   );
-}
+};
