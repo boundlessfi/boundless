@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import z from 'zod';
@@ -30,8 +30,15 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastMethod, setLastMethod] = useState<string | null>(null);
 
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const callbackUrl =
+    searchParams.get('callbackUrl') || 'http://localhost:3000/';
+
+  useEffect(() => {
+    const method = authClient.getLastUsedLoginMethod();
+    setLastMethod(method);
+  }, []);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -103,6 +110,48 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
     },
     [form, router]
   );
+
+  const handleGoogleSignIn = useCallback(async () => {
+    setIsLoading(true);
+    setLoadingState(true);
+
+    try {
+      await authClient.signIn.social(
+        {
+          provider: 'google',
+          callbackURL: 'http://localhost:3000/',
+        },
+        {
+          onRequest: () => {
+            setIsLoading(true);
+            setLoadingState(true);
+          },
+          onError: ctx => {
+            setIsLoading(false);
+            setLoadingState(false);
+
+            const errorObj = ctx.error || ctx;
+            const errorMessage =
+              typeof errorObj === 'object' && errorObj.message
+                ? errorObj.message
+                : 'Failed to sign in with Google. Please try again.';
+
+            toast.error(errorMessage);
+          },
+        }
+      );
+    } catch (error) {
+      setIsLoading(false);
+      setLoadingState(false);
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred during Google sign-in.';
+
+      toast.error(errorMessage);
+    }
+  }, [setLoadingState]);
 
   const onSubmit = useCallback(
     async (values: FormData) => {
@@ -203,6 +252,8 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
       showPassword={showPassword}
       setShowPassword={setShowPassword}
       isLoading={isLoading}
+      onGoogleSignIn={handleGoogleSignIn}
+      lastMethod={lastMethod}
     />
   );
 };

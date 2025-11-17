@@ -25,6 +25,371 @@ export interface BlogPost {
 
 export const mockBlogPosts: BlogPost[] = [
   {
+    id: 'what-is-boundless',
+    title: 'What is Boundless?',
+    excerpt:
+      'Discover Boundless: the decentralized platform for crowdfunding, grants, and hackathons built on Stellar blockchain. Learn how milestone-based escrow, instant prize payouts, community validation, and smart contracts create a more transparent and secure funding ecosystem.',
+    content: `# What is Boundless?
+
+If you've ever had a brilliant idea but lacked the funds to bring it to life, wanted to compete in a hackathon with fair prize distribution, or needed to support innovative projects with confidence—you're not alone. Traditional funding platforms are filled with uncertainty, high fees, slow payouts, and limited transparency. That's where Boundless comes in.
+
+## The Problem with Traditional Funding Platforms
+
+Let's be honest: traditional funding platforms—whether for crowdfunding, grants, or hackathons—have some serious flaws. You've probably heard the horror stories: projects that raise thousands only to disappear, hackathon winners waiting weeks for prize payouts, creators who never deliver on promises, and backers left with disappointment. Even when projects succeed, the process is often opaque, expensive, and slow.
+
+**The challenges are real:**
+- **All-or-nothing funding**: You either hit your goal or get nothing, with no middle ground
+- **Delayed prize payouts**: Hackathon winners often wait weeks or months to receive their prizes
+- **Lack of accountability**: Once funds are released, there's little oversight on how they're used
+- **High fees**: Platform fees can eat up 5-8% of your hard-earned funds
+- **Slow transactions**: Traditional payment systems can take days or weeks
+- **Limited transparency**: Participants often have no idea if their money is being used as promised
+- **Geographic restrictions**: Many platforms limit who can participate based on location
+- **Manual prize distribution**: Hackathon organizers struggle with complex, error-prone payout processes
+
+## Enter Boundless: A New Way to Fund Innovation
+
+Boundless is a **decentralized platform for crowdfunding, grants, and hackathons** built on the Stellar blockchain that solves these problems through smart contracts, milestone-based funding, instant prize payouts, and community-driven validation. Think of it as combining the best of Kickstarter, Devpost, and grant platforms—but with blockchain-powered accountability, transparency, and instant payouts.
+
+### What Makes Boundless Different?
+
+Boundless isn't just another crowdfunding platform—it's a complete reimagining of how funding works. Here's what sets us apart:
+
+#### 1. **Milestone-Based Escrow System**
+
+Unlike traditional platforms that release all funds at once, Boundless uses **smart contract escrow** to hold funds securely until specific project milestones are completed and verified. This means:
+
+- **Backers are protected**: Funds are only released when creators deliver on their promises
+- **Creators stay accountable**: Milestone verification ensures projects stay on track
+- **Transparent progress**: Everyone can see exactly what's been completed and what's next
+- **Automatic releases**: No waiting for manual approvals—when milestones are met, funds flow automatically
+
+#### 2. **Community Validation Before Funding**
+
+Before any project goes live, it goes through a **community validation process**:
+
+- **Peer review**: Other creators and backers evaluate your idea
+- **Expert feedback**: Industry experts assess feasibility and market potential
+- **Public voting**: The community votes on whether projects should move forward
+- **Refinement opportunity**: Creators can improve their proposals based on feedback
+
+This validation process ensures that only projects with genuine potential and credibility make it to the funding stage, giving backers greater confidence in where their support goes.
+
+#### 3. **Built on Stellar Blockchain**
+
+Stellar isn't just any blockchain—it's designed for fast, affordable, and sustainable transactions:
+
+- **Lightning-fast**: Transactions finalize in 2-5 seconds (compared to minutes or hours on other networks)
+- **Ultra-low fees**: Just $0.00001 per transaction—practically free
+- **Global accessibility**: No geographic restrictions, works anywhere in the world
+- **Energy efficient**: Stellar uses a consensus mechanism that's far more sustainable than proof-of-work systems
+
+#### 4. **Three Powerful Funding Models**
+
+Boundless supports three distinct funding models, each optimized for different needs:
+
+**Hackathons**
+- **Instant prize payouts**: Winners receive prizes immediately via smart contracts—no waiting weeks for bank transfers
+- **Automated prize distribution**: Smart contracts handle tier-based prize pools automatically
+- **Transparent judging**: Community voting combined with expert judging panels
+- **Global participation**: No geographic restrictions—compete from anywhere in the world
+- **Fair competition**: On-chain verification ensures all submissions are legitimate
+- **Real-time leaderboards**: Track your progress and see rankings as they update
+- **Multiple prize tiers**: Support for first, second, third place, and special category prizes
+- **Organizer-friendly**: Set up hackathons in minutes with automated prize pool management
+
+**Crowdfunding Campaigns**
+- Milestone-based releases with escrow protection
+- Set your funding goal and deadline
+- Community backing with transparent progress tracking
+- Funds released only when milestones are verified
+
+**Grant Programs**
+- Apply for grants from organizations and institutions
+- Structured milestone-based funding
+- Professional review and approval processes
+- Automated milestone verification and fund releases
+
+#### 5. **Trustless Escrow with Trustless Work**
+
+All funds are held in **trustless escrow contracts** powered by Trustless Work, which means:
+
+- **No middleman**: Smart contracts handle everything automatically
+- **Transparent**: Every transaction is verifiable on-chain via Stellar.expert
+- **Secure**: Funds are locked in smart contracts until conditions are met
+- **Automated**: No manual intervention needed—the code enforces the rules
+
+#### 6. **Multi-Wallet Support**
+
+We support all major Stellar wallets, so you can use what you're already comfortable with:
+
+- Freighter
+- Albedo
+- Rabet
+- xBull
+- Lobstr
+- Hana
+- HOT Wallet
+
+#### 7. **Lower Fees, Higher Transparency**
+
+At just **4% platform fee** (compared to 5-8% on competitors), Boundless offers:
+
+- **Transparent fee structure**: All fees are clearly defined in smart contracts
+- **No hidden costs**: What you see is what you pay
+- **Fair distribution**: Fees are used to maintain and improve the platform
+
+## How Boundless Works
+
+The Boundless experience is designed to be intuitive, whether you're organizing a hackathon, launching a campaign, applying for grants, or participating as a developer or backer:
+
+### For Hackathon Organizers
+
+1. **Create Your Hackathon**: Set up your competition with prize tiers, rules, and deadlines
+2. **Fund Prize Pool**: Deposit prize funds into secure smart contract escrow
+3. **Launch**: Open registration and let participants join from around the world
+4. **Monitor Submissions**: Track real-time submissions and participant progress
+5. **Judging**: Combine expert judging with community voting for fair evaluation
+6. **Instant Payouts**: Winners receive prizes automatically via smart contracts—no manual processing needed
+7. **Transparent Results**: All winners and prize distributions are verifiable on-chain
+
+### For Hackathon Participants
+
+1. **Discover Hackathons**: Browse active competitions across different categories and themes
+2. **Register & Join**: Sign up for hackathons that interest you—no geographic restrictions
+3. **Build & Submit**: Create your project and submit before the deadline
+4. **Compete Fairly**: All submissions are verified on-chain for legitimacy
+5. **Track Rankings**: See real-time leaderboards and your position
+6. **Win & Get Paid Instantly**: If you win, prizes are automatically sent to your wallet—no waiting
+7. **Build Your Portfolio**: Showcase your wins and build your reputation in the community
+
+### For Crowdfunding Creators
+
+1. **Submit Your Idea**: Start by submitting your project idea for community validation
+2. **Get Feedback**: Receive valuable input from peers, experts, and the community
+3. **Refine and Launch**: Improve your proposal based on feedback, then launch your campaign
+4. **Set Milestones**: Define clear, verifiable milestones for your project
+5. **Raise Funds**: Backers contribute, and funds are held in secure escrow
+6. **Deliver Milestones**: Complete milestones and submit proof
+7. **Get Paid**: Funds are automatically released as milestones are verified
+8. **Build Your Reputation**: Successful projects build your credibility for future campaigns
+
+### For Grant Applicants
+
+1. **Browse Grant Programs**: Discover available grants from organizations and institutions
+2. **Submit Proposal**: Apply with detailed project proposals and milestones
+3. **Review Process**: Participate in community and expert review processes
+4. **Get Approved**: Receive approval with structured milestone-based funding
+5. **Execute & Deliver**: Complete milestones and submit verification
+6. **Receive Funding**: Get automatic fund releases as milestones are verified
+
+### For Backers & Supporters
+
+1. **Discover Projects**: Browse validated projects, active hackathons, and grant programs
+2. **Research and Evaluate**: Review project details, milestones, and creator history
+3. **Support with Confidence**: Contribute knowing your funds are protected in escrow
+4. **Track Progress**: Watch real-time updates as milestones are completed
+5. **Verify on Blockchain**: Check all transactions on Stellar.expert for full transparency
+6. **Support Innovation**: Be part of bringing groundbreaking ideas to life
+
+## The Technology Behind Boundless
+
+Boundless leverages cutting-edge blockchain technology to create a secure, transparent, and efficient platform:
+
+### Soroban Smart Contracts
+
+Built on **Soroban**, Stellar's smart contract platform, our escrow contracts are:
+
+- **Rust-based**: Written in Rust for maximum security and performance
+- **Audited**: Regularly reviewed for security vulnerabilities
+- **Upgradeable**: Can be improved without disrupting existing projects
+- **Gas-efficient**: Optimized for low transaction costs
+
+### Trustless Work Integration
+
+We've integrated **Trustless Work**, a leading escrow infrastructure provider, to handle:
+
+- Multi-release escrow contracts
+- Automated milestone verification
+- Secure fund management
+- Dispute resolution mechanisms
+
+### Modern Web Stack
+
+The platform itself is built with:
+
+- **Next.js 15**: Latest React framework for optimal performance
+- **TypeScript**: Type-safe code for reliability
+- **Tailwind CSS**: Beautiful, responsive design
+- **Stellar SDK**: Seamless blockchain integration
+
+## Real-World Impact
+
+Boundless is more than just technology—it's about creating real opportunities:
+
+### For Hackathon Organizers
+
+- **Instant prize distribution**: No more manual payouts or waiting weeks—winners get paid immediately
+- **Automated management**: Smart contracts handle prize pool distribution automatically
+- **Global reach**: Attract participants from anywhere in the world
+- **Transparent competition**: All submissions and results are verifiable on-chain
+- **Lower operational costs**: Reduced administrative overhead with automated systems
+- **Fair judging**: Combine expert panels with community voting for balanced evaluation
+
+### For Hackathon Participants
+
+- **Instant prize payouts**: Win and receive your prize immediately—no waiting for bank transfers
+- **Fair competition**: On-chain verification ensures all participants play by the rules
+- **Global access**: Compete in hackathons regardless of your location
+- **Portfolio building**: Showcase your wins and build your developer reputation
+- **Real-time feedback**: See rankings and progress as the competition unfolds
+- **Multiple opportunities**: Access to hackathons across different categories and themes
+
+### For Innovators & Creators
+
+- **Access to funding** without traditional gatekeepers
+- **Community support** and validation before launch
+- **Accountability framework** that helps you stay on track
+- **Global reach** without geographic limitations
+- **Lower costs** means more money goes to your project
+
+### For Backers & Grant Providers
+
+- **Reduced risk** through milestone-based releases
+- **Full transparency** with on-chain verification
+- **Community validation** ensures quality projects
+- **Lower fees** mean your support goes further
+- **Global access** to innovative projects worldwide
+- **Automated distribution** for grants and hackathon prizes
+
+### For Communities
+
+- **Democratized funding** accessible to everyone
+- **Quality control** through validation processes
+- **Economic empowerment** for underserved regions
+- **Innovation support** for groundbreaking ideas
+- **Transparent governance** with community participation
+- **Fair competition** in hackathons with instant, verifiable results
+
+## Why "Boundless"?
+
+The name "Boundless" reflects our mission: to remove the boundaries that limit innovation and funding. We believe that great ideas shouldn't be constrained by:
+
+- Geographic location
+- Traditional financial systems
+- High fees and middlemen
+- Lack of transparency
+- Limited accountability
+
+With Boundless, the potential for innovation is truly **boundless**.
+
+## Getting Started with Boundless
+
+Ready to join the future of funding? Here's how to get started:
+
+### If You're a Hackathon Organizer
+
+1. **Sign up** for a Boundless account
+2. **Create your hackathon** with prize tiers, rules, and deadlines
+3. **Fund your prize pool** by depositing into secure escrow
+4. **Launch and promote** your competition globally
+5. **Monitor submissions** in real-time
+6. **Judge and award** winners with instant automatic payouts
+
+### If You're a Hackathon Participant
+
+1. **Create an account** to explore active hackathons
+2. **Browse competitions** across different categories and themes
+3. **Connect your Stellar wallet** to receive prizes
+4. **Register and build** your project during the competition
+5. **Submit your entry** before the deadline
+6. **Win and get paid instantly** if you're selected as a winner
+
+### If You're a Creator
+
+1. **Sign up** for a Boundless account (no wallet needed initially)
+2. **Submit your project idea** for community validation
+3. **Engage with feedback** and refine your proposal
+4. **Connect your Stellar wallet** when you're ready to launch
+5. **Set up milestones** and define your funding goal
+6. **Launch your campaign** and start raising funds
+
+### If You're a Backer
+
+1. **Create an account** to explore projects and hackathons
+2. **Browse validated projects** and active competitions
+3. **Connect your Stellar wallet** to start backing
+4. **Support projects** that align with your interests
+5. **Track progress** and celebrate milestones with creators
+6. **Build your portfolio** of supported innovations
+
+## The Future of Funding is Here
+
+Boundless represents a fundamental shift in how we think about funding innovation. By combining the best of blockchain technology, smart contracts, and community governance, we've created a platform that's:
+
+- **More transparent** than traditional crowdfunding
+- **More secure** than centralized platforms
+- **More affordable** than competitors
+- **More accessible** to global participants
+- **More accountable** through milestone verification
+
+Whether you're organizing a hackathon and need instant prize distribution, competing in competitions and want fair, transparent judging, an entrepreneur with a game-changing idea, a developer looking for grant funding, a creator building a community project, or someone who wants to support innovation—Boundless provides the tools, security, and transparency you need to succeed.
+
+## Join the Boundless Community
+
+Boundless is more than a platform—it's a community of innovators, backers, and dreamers working together to bring bold ideas to life. When you join Boundless, you're not just using a tool; you're becoming part of a movement that's redefining what's possible in funding and innovation.
+
+**The question isn't "What is Boundless?"—it's "What will you build with Boundless?"**
+
+Ready to unlock your boundless potential? [Get started today](/auth/signup) and join thousands of hackathon organizers, participants, creators, and backers who are already building the future.
+
+> "Boundless isn't just a platform—it's a promise that great ideas will find the support they deserve, with transparency, security, and accountability built in from day one." - The Boundless Team
+
+---
+
+**Have questions?** Check out our [About page](/about) or [contact us](/contact) to learn more. We're here to help you succeed.`,
+    image: '/funding.png',
+    date: '1 Aug, 2025',
+    slug: 'what-is-boundless',
+    category: 'Platform',
+    author: {
+      name: 'Boundless Team',
+      avatar: '/admin.png',
+      bio: 'The team behind Boundless, dedicated to revolutionizing how ideas get funded through blockchain technology and community-driven innovation.',
+    },
+    tags: [
+      'Platform',
+      'Introduction',
+      'Crowdfunding',
+      'Hackathons',
+      'Grants',
+      'Blockchain',
+      'Stellar',
+    ],
+    readTime: 10,
+    publishedAt: '2025-08-01T10:00:00Z',
+    seo: {
+      metaTitle:
+        'What is Boundless? | Hackathons, Crowdfunding & Grants Platform',
+      metaDescription:
+        'Discover Boundless: the decentralized platform for hackathons, crowdfunding, and grants on Stellar blockchain. Instant prize payouts, milestone-based funding, smart contract escrow, and community validation.',
+      keywords: [
+        'Boundless',
+        'hackathon platform',
+        'instant prize payouts',
+        'decentralized crowdfunding',
+        'Stellar blockchain',
+        'milestone funding',
+        'smart contracts',
+        'escrow',
+        'community validation',
+        'grants platform',
+        'hackathon prizes',
+        'Trustless Work',
+      ],
+    },
+  },
+  {
     id: '1',
     title: "Milestone-Based Funding: Why It's the Future of Crowdfunding",
     excerpt:
