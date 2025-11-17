@@ -1,200 +1,207 @@
+// ActivityFeed.tsx - Simplified
 'use client';
 
-import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { ChevronDown, Activity } from 'lucide-react';
 import Image from 'next/image';
 import { GetMeResponse } from '@/lib/api/types';
-
-interface ActivityItem {
-  id: string;
-  type: 'comment' | 'back' | 'add' | 'submit' | 'apply' | 'reply';
-  description: string;
-  projectName?: string;
-  amount?: string;
-  hackathonName?: string;
-  grantName?: string;
-  timestamp: string;
-  emoji?: string;
-  image?: string;
-}
-
-const getActivityDescription = (activity: ActivityItem) => {
-  let description = activity.description;
-
-  if (activity.projectName) {
-    description += ` ${activity.projectName}`;
-  }
-
-  if (
-    activity.description.includes('to hackathon:') &&
-    activity.hackathonName
-  ) {
-    description += ` ${activity.hackathonName}`;
-  }
-
-  if (activity.amount) {
-    description += ` — Funded ${activity.amount}`;
-  }
-
-  if (activity.emoji) {
-    description += ` ${activity.emoji}`;
-  }
-
-  return description;
-};
 
 interface ActivityFeedProps {
   filter: string;
   user: GetMeResponse;
 }
 
+interface Activity {
+  id: string;
+  description: string;
+  timestamp: string;
+  image?: string;
+}
+
 export default function ActivityFeed({ filter, user }: ActivityFeedProps) {
   const [showAll, setShowAll] = useState(false);
 
-  // Use real activities from API, fallback to empty array if none
-  const realActivities = (user.activities || []) as ActivityItem[];
+  // Reset showAll when filter changes
+  useEffect(() => {
+    setShowAll(false);
+  }, [filter]);
 
-  // For now, show empty state when no activities
-  if (realActivities.length === 0) {
+  const activities = useMemo(
+    () => (user.activities || []) as Activity[],
+    [user.activities]
+  );
+
+  const filteredActivities = useMemo(() => {
+    if (filter === 'All' || filter === 'All Time') {
+      return activities;
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const thisWeek = new Date(today);
+    thisWeek.setDate(thisWeek.getDate() - 7);
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const thisYear = new Date(now.getFullYear(), 0, 1);
+
+    return activities.filter(activity => {
+      if (!activity.timestamp) return false;
+
+      const activityDate = new Date(activity.timestamp);
+
+      switch (filter) {
+        case 'Today':
+          return activityDate >= today;
+        case 'Yesterday':
+          return activityDate >= yesterday && activityDate < today;
+        case 'This Week':
+          return activityDate >= thisWeek;
+        case 'This Month':
+          return activityDate >= thisMonth;
+        case 'This Year':
+          return activityDate >= thisYear;
+        default:
+          return true;
+      }
+    });
+  }, [activities, filter]);
+
+  const groupedActivities = useMemo(() => {
+    if (filter === 'All' || filter === 'All Time') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const thisWeek = new Date(today);
+      thisWeek.setDate(thisWeek.getDate() - 7);
+
+      const todayActivities: Activity[] = [];
+      const yesterdayActivities: Activity[] = [];
+      const weekActivities: Activity[] = [];
+
+      filteredActivities.forEach(activity => {
+        if (!activity.timestamp) return;
+
+        const activityDate = new Date(activity.timestamp);
+        activityDate.setHours(0, 0, 0, 0);
+
+        if (activityDate.getTime() === today.getTime()) {
+          todayActivities.push(activity);
+        } else if (activityDate.getTime() === yesterday.getTime()) {
+          yesterdayActivities.push(activity);
+        } else if (activityDate >= thisWeek) {
+          weekActivities.push(activity);
+        }
+      });
+
+      return [
+        { title: 'TODAY', activities: todayActivities },
+        { title: 'YESTERDAY', activities: yesterdayActivities },
+        { title: 'THIS WEEK', activities: weekActivities },
+      ].filter(group => group.activities.length > 0);
+    } else {
+      // For specific filters, show all filtered activities in one group
+      return [{ title: filter.toUpperCase(), activities: filteredActivities }];
+    }
+  }, [filteredActivities, filter]);
+
+  const displayedGroups = useMemo(() => {
+    if (showAll) {
+      return groupedActivities;
+    }
+
+    // Show first group with limited activities, or all groups if there's only one
+    if (groupedActivities.length === 0) return [];
+    if (groupedActivities.length === 1) {
+      return [
+        {
+          ...groupedActivities[0],
+          activities: groupedActivities[0].activities.slice(0, 10),
+        },
+      ];
+    }
+
+    // For multiple groups, show first group fully and limit others
+    return [
+      groupedActivities[0],
+      ...groupedActivities.slice(1).map(group => ({
+        ...group,
+        activities: group.activities.slice(0, 5),
+      })),
+    ];
+  }, [groupedActivities, showAll]);
+
+  const hasMoreActivities = useMemo(() => {
+    if (showAll) return false;
+
+    const totalDisplayed = displayedGroups.reduce(
+      (sum, group) => sum + group.activities.length,
+      0
+    );
+    return filteredActivities.length > totalDisplayed;
+  }, [displayedGroups, filteredActivities.length, showAll]);
+
+  if (filteredActivities.length === 0) {
     return (
-      <div className='flex flex-col items-center justify-center py-12 text-center'>
-        <div className='mb-4 rounded-full bg-gray-800 p-4'>
-          <svg
-            className='h-8 w-8 text-gray-400'
-            fill='none'
-            stroke='currentColor'
-            viewBox='0 0 24 24'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'
-            />
-          </svg>
+      <div className='flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-800 py-12'>
+        <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800'>
+          <Activity className='h-8 w-8 text-zinc-500' />
         </div>
         <h3 className='mb-2 text-lg font-medium text-white'>No Activity Yet</h3>
-        <p className='text-sm text-gray-400'>
-          Your activity will appear here once you start engaging with projects.
+        <p className='text-sm text-zinc-500'>
+          {filter === 'All' || filter === 'All Time'
+            ? 'Your activity will appear here once you start engaging'
+            : `No activity found for ${filter.toLowerCase()}`}
         </p>
       </div>
     );
   }
 
-  const todayActivities = realActivities.slice(0, 4);
-  const yesterdayActivities = realActivities.slice(4, 6);
-  const weekActivities = realActivities.slice(6, 10);
-
-  // Filter activities based on selected filter
-  const getFilteredActivities = () => {
-    switch (filter) {
-      case 'Today':
-        return [{ title: 'TODAY', activities: todayActivities }];
-      case 'Yesterday':
-        return [{ title: 'YESTERDAY', activities: yesterdayActivities }];
-      case 'This Week':
-        return [
-          { title: 'TODAY', activities: todayActivities },
-          { title: 'YESTERDAY', activities: yesterdayActivities },
-          { title: 'THIS WEEK', activities: weekActivities },
-        ];
-      case 'This Month':
-        return [
-          { title: 'TODAY', activities: todayActivities },
-          { title: 'YESTERDAY', activities: yesterdayActivities },
-          { title: 'THIS WEEK', activities: weekActivities },
-        ];
-      case 'This Year':
-        return [
-          { title: 'TODAY', activities: todayActivities },
-          { title: 'YESTERDAY', activities: yesterdayActivities },
-          { title: 'THIS WEEK', activities: weekActivities },
-        ];
-      case 'All Time':
-        return [
-          { title: 'TODAY', activities: todayActivities },
-          { title: 'YESTERDAY', activities: yesterdayActivities },
-          { title: 'THIS WEEK', activities: weekActivities },
-        ];
-      default: // 'All'
-        return [
-          { title: 'TODAY', activities: todayActivities },
-          { title: 'YESTERDAY', activities: yesterdayActivities },
-          { title: 'THIS WEEK', activities: weekActivities },
-        ];
-    }
-  };
-
-  const groupedActivities = getFilteredActivities();
-
   return (
-    <div className='space-y-6'>
-      {groupedActivities.map((group, groupIndex) => (
-        <div key={groupIndex}>
-          <h3 className='mb-4 text-sm text-white'>{group.title}</h3>
-          <div className='ml-5 space-y-4'>
-            {group.activities.map(activity => (
-              <div key={activity.id} className='flex items-start gap-3'>
-                <Image
-                  src={activity.image || '/avatar.png'}
-                  alt={activity.projectName || 'Project Image'}
-                  width={20}
-                  height={20}
-                  className='h-8 w-8 rounded-full'
-                />
-                <div className='flex-1'>
-                  <p className='text-sm text-white'>
-                    {getActivityDescription(activity)}
-                  </p>
-                  <p className='mt-1 text-xs text-gray-400'>
-                    {activity.timestamp}
-                  </p>
-                </div>
+    <div className='space-y-8'>
+      {displayedGroups.map(
+        (group, idx) =>
+          group.activities.length > 0 && (
+            <div key={idx}>
+              <h3 className='mb-4 text-xs font-semibold tracking-wider text-zinc-500 uppercase'>
+                {group.title}
+              </h3>
+              <div className='space-y-4'>
+                {group.activities.map(activity => (
+                  <div key={activity.id} className='flex items-start gap-3'>
+                    <Image
+                      src={activity.image || '/avatar.png'}
+                      alt='Activity'
+                      width={40}
+                      height={40}
+                      className='h-10 w-10 rounded-full border border-zinc-800'
+                    />
+                    <div className='min-w-0 flex-1'>
+                      <p className='text-sm text-white'>
+                        {activity.description}
+                      </p>
+                      <p className='mt-1 text-xs text-zinc-500'>
+                        {activity.timestamp}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      {showAll && filter === 'All' && (
-        <div>
-          <h3 className='mb-4 text-sm text-white'>EARLIER</h3>
-          <div className='ml-5 space-y-4'>
-            {realActivities.slice(10).map(activity => (
-              <div key={activity.id} className='flex items-start gap-3'>
-                <Image
-                  src={activity.image || '/admin.png'}
-                  alt={activity.projectName || 'Project Image'}
-                  width={20}
-                  height={20}
-                  className='h-8 w-8 rounded-full'
-                />
-                <div className='flex-1'>
-                  <p className='text-sm text-white'>
-                    {getActivityDescription(activity)}
-                  </p>
-                  <p className='mt-1 text-xs text-gray-400'>
-                    {activity.timestamp}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          )
       )}
 
-      {filter === 'All' && (
-        <div className='flex justify-center pt-4'>
-          <button
-            onClick={() => setShowAll(!showAll)}
-            className='flex items-center gap-2 text-gray-400 transition-colors hover:text-white'
-          >
-            {showAll ? 'Show Less' : 'Show More'}
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${showAll ? 'rotate-180' : ''}`}
-            />
-          </button>
-        </div>
+      {hasMoreActivities && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className='flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-800 py-3 text-sm text-zinc-400 transition-colors hover:bg-zinc-900/50 hover:text-white'
+        >
+          {showAll ? 'Show Less' : 'Show More'}
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${showAll ? 'rotate-180' : ''}`}
+          />
+        </button>
       )}
     </div>
   );

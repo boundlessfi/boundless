@@ -1,6 +1,7 @@
 import api from './api';
 import { GetMeResponse } from '@/lib/api/types';
 import { getServerAuthHeaders } from '@/lib/auth/server-auth';
+import { UserSettings } from './auth';
 
 /**
  * Server-side version of getMe() that forwards cookies from request headers
@@ -44,4 +45,23 @@ export const getUserProfileByUsernameServer = async (
     headers: authHeaders,
   });
   return res.data.data;
+};
+
+/**
+ * Server-side version of getUserSettings() that forwards cookies from request headers
+ * Use this in server components and server actions
+ */
+export const getUserSettingsServer = async (): Promise<UserSettings> => {
+  const authHeaders = await getServerAuthHeaders();
+
+  const res = await api.get<{
+    success: boolean;
+    data: UserSettings;
+    message?: string;
+    timestamp: string;
+    path?: string;
+  }>('/users/settings', {
+    headers: authHeaders,
+  });
+  return res.data.data ?? {};
 };

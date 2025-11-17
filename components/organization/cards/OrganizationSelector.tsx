@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { OrganizationSummary } from '@/lib/providers/organization-types';
 import { useNavigationLoading } from '@/lib/providers';
+import { normalizeCloudinaryImageUrl } from '@/lib/utils/cloudinary-url';
 
 interface OrganizationSelectorProps {
   organizations?: OrganizationSummary[];
@@ -129,7 +130,10 @@ export default function OrganizationSelector({
           >
             <div className='relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-white'>
               <Image
-                src={org.logo || '/placeholder-org.png'}
+                src={
+                  normalizeCloudinaryImageUrl(org.logo) ||
+                  '/placeholder-org.png'
+                }
                 alt={org.name}
                 fill
                 className='object-cover'

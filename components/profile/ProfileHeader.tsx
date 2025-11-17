@@ -7,7 +7,7 @@ import { UserProfile, UserStats as UserStatsType } from '@/types/profile';
 import { GetMeResponse } from '@/lib/api/types';
 import { TeamMember } from '@/components/ui/TeamList';
 import { BoundlessButton } from '@/components/buttons';
-import { BellPlus } from 'lucide-react';
+import { BellPlus, Settings } from 'lucide-react';
 import { ProfileSocialLinks } from '@/lib/config';
 import UserStats from './UserStats';
 import FollowersModal from './FollowersModal';
@@ -103,6 +103,14 @@ export default function ProfileHeader({
         onFollowingClick={handleFollowingClick}
       />
       <div className='flex gap-4'>
+        <Link href='/me/settings'>
+          <BoundlessButton
+            variant='outline'
+            icon={<Settings className='h-4 w-4' />}
+          >
+            Edit Profile
+          </BoundlessButton>
+        </Link>
         <BoundlessButton icon={<BellPlus />} iconPosition='right'>
           Follow
         </BoundlessButton>
