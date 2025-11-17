@@ -1,12 +1,21 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { useAuthStore } from '@/lib/stores/auth-store';
 
-// const API_BASE_URL = 'https://staging-api.boundlessfi.xyz/api';
-const API_BASE_URL = 'http://localhost:8000/api';
-// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_BASE_URL) {
-  throw new Error('NEXT_PUBLIC_API_URL environment variable is not defined');
-}
+// Use Next.js API proxy to avoid CORS issues
+// The proxy route is at /api/proxy/[...path]
+const getApiBaseUrl = () => {
+  // In browser, ALWAYS use the proxy route (same origin, no CORS)
+  if (typeof window !== 'undefined') {
+    // Client-side: use relative proxy path (axios handles this correctly)
+    return '/api/proxy';
+  }
+  // Server-side: use direct backend URL
+  let backendUrl =
+    process.env.NEXT_PUBLIC_API_URL || 'https://staging-api.boundlessfi.xyz';
+  // Remove trailing slash and /api if present
+  backendUrl = backendUrl.replace(/\/$/, '').replace(/\/api$/i, '');
+  return `${backendUrl}/api`;
+};
 
 export interface ApiResponse<T = unknown> {
   data: T;
@@ -26,25 +35,43 @@ export interface RequestConfig {
 }
 
 const createClientApi = (): AxiosInstance => {
+  // Get base URL dynamically (not at module load time)
+  const baseURL = getApiBaseUrl();
+
   const instance = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL,
     timeout: 30000,
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    withCredentials: true,
+    // When using proxy (client-side), cookies are automatically included
+    // When making direct requests (server-side), we don't need withCredentials
+    withCredentials: false,
   });
 
   // Request interceptor
   instance.interceptors.request.use(
     config => {
-      // Always include credentials for Better Auth cookie-based authentication
-      config.withCredentials = true;
+      // Credentials are handled automatically:
+      // - Client-side: Next.js proxy forwards cookies automatically
+      // - Server-side: Direct backend calls don't need withCredentials
+      config.withCredentials = false;
+
+      // Debug logging in development
+      if (
+        process.env.NODE_ENV === 'development' &&
+        typeof window !== 'undefined'
+      ) {
+        // Debug URL construction (commented out to avoid unused variable)
+        // const url = config.baseURL && config.url
+        //   ? `${config.baseURL}${config.url.startsWith('/') ? '' : '/'}${config.url}`
+        //   : config.url;
+      }
 
       // Reject data: URLs proactively to avoid Node adapter decoding large payloads
       try {
-        const base = config.baseURL || API_BASE_URL;
+        const base = config.baseURL || getApiBaseUrl();
         const rawUrl = config.url || '';
         // If absolute URL provided, use as-is; else resolve against base
         const fullUrl = /^https?:|^data:|^\/\//.test(rawUrl)
@@ -170,7 +197,8 @@ const convertRequestConfig = (config?: RequestConfig): AxiosRequestConfig => {
   const axiosConfig = {
     headers: mergedHeaders,
     timeout: config?.timeout,
-    withCredentials: true, // Always include credentials for Better Auth cookie-based auth
+    // Credentials are handled by Next.js proxy automatically
+    withCredentials: false,
   } as AxiosRequestConfig;
   return axiosConfig;
 };

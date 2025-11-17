@@ -38,14 +38,15 @@ export default function LocationFields({
   onStateChange,
 }: LocationFieldsProps) {
   return (
-    <div className='space-y-4'>
+    <div className='grid gap-4 md:grid-cols-3'>
+      {/* Country */}
       <FormField
         control={control}
         name='country'
         render={({ field }) => (
-          <FormItem className='gap-3'>
-            <FormLabel className='text-sm text-gray-500'>
-              Country or Region
+          <FormItem>
+            <FormLabel className='text-sm font-medium text-zinc-400'>
+              Country
             </FormLabel>
             <FormControl>
               <Select
@@ -55,15 +56,15 @@ export default function LocationFields({
                   onCountryChange(value);
                 }}
               >
-                <SelectTrigger className='bg-background-card !h-12 w-full rounded-[12px] border border-gray-900 p-4 focus-visible:ring-0 focus-visible:ring-offset-0'>
+                <SelectTrigger className='h-11 border-zinc-800 bg-zinc-900/50 text-white'>
                   <SelectValue placeholder='Select country' />
                 </SelectTrigger>
-                <SelectContent className='bg-background-card max-h-60 rounded-[12px] border-gray-900'>
+                <SelectContent className='max-h-60 border-zinc-800 bg-zinc-950'>
                   {countries.map(country => (
                     <SelectItem
                       key={country.iso2}
                       value={country.iso2}
-                      className='text-white hover:!bg-gray-800'
+                      className='text-white focus:bg-zinc-800 focus:text-white'
                     >
                       {country.name}
                     </SelectItem>
@@ -71,17 +72,18 @@ export default function LocationFields({
                 </SelectContent>
               </Select>
             </FormControl>
-            <FormMessage className='text-error-400 text-xs' />
+            <FormMessage className='text-xs text-red-500' />
           </FormItem>
         )}
       />
 
+      {/* State */}
       <FormField
         control={control}
         name='state'
         render={({ field }) => (
-          <FormItem className='gap-3'>
-            <FormLabel className='text-sm text-gray-500'>
+          <FormItem>
+            <FormLabel className='text-sm font-medium text-zinc-400'>
               State/Province
             </FormLabel>
             <FormControl>
@@ -93,52 +95,56 @@ export default function LocationFields({
                 }}
                 disabled={!selectedCountry}
               >
-                <SelectTrigger className='bg-background-card !h-12 w-full rounded-[12px] border border-gray-900 p-4 focus-visible:ring-0 focus-visible:ring-offset-0'>
+                <SelectTrigger className='h-11 border-zinc-800 bg-zinc-900/50 text-white disabled:cursor-not-allowed disabled:opacity-50'>
                   <SelectValue
                     placeholder={
                       selectedCountry ? 'Select state' : 'Select country first'
                     }
                   />
                 </SelectTrigger>
-                <SelectContent className='bg-background-card max-h-60 rounded-[12px] border-gray-900'>
-                  {states.map((state, index) => (
-                    <SelectItem
-                      key={index}
-                      value={state.state_code}
-                      className='text-white hover:!bg-gray-800'
-                    >
-                      {state.name}
-                    </SelectItem>
-                  ))}
-                  {states.length === 0 && selectedCountry && (
-                    <SelectItem
-                      value='other'
-                      className='text-white hover:!bg-gray-800'
-                    >
-                      Other
-                    </SelectItem>
-                  )}
+                <SelectContent className='max-h-60 border-zinc-800 bg-zinc-950'>
+                  {states.length > 0
+                    ? states.map((state, index) => (
+                        <SelectItem
+                          key={index}
+                          value={state.state_code}
+                          className='text-white focus:bg-zinc-800 focus:text-white'
+                        >
+                          {state.name}
+                        </SelectItem>
+                      ))
+                    : selectedCountry && (
+                        <SelectItem
+                          value='other'
+                          className='text-white focus:bg-zinc-800 focus:text-white'
+                        >
+                          Other
+                        </SelectItem>
+                      )}
                 </SelectContent>
               </Select>
             </FormControl>
-            <FormMessage className='text-error-400 text-xs' />
+            <FormMessage className='text-xs text-red-500' />
           </FormItem>
         )}
       />
 
+      {/* City */}
       <FormField
         control={control}
         name='city'
         render={({ field }) => (
-          <FormItem className='gap-3'>
-            <FormLabel className='text-sm text-gray-500'>City</FormLabel>
+          <FormItem>
+            <FormLabel className='text-sm font-medium text-zinc-400'>
+              City
+            </FormLabel>
             <FormControl>
               <Select
                 value={field.value}
                 onValueChange={field.onChange}
                 disabled={!selectedCountry || !selectedState}
               >
-                <SelectTrigger className='bg-background-card !h-12 w-full rounded-[12px] border border-gray-900 p-4 focus-visible:ring-0 focus-visible:ring-offset-0'>
+                <SelectTrigger className='h-11 border-zinc-800 bg-zinc-900/50 text-white disabled:cursor-not-allowed disabled:opacity-50'>
                   <SelectValue
                     placeholder={
                       !selectedCountry
@@ -149,28 +155,30 @@ export default function LocationFields({
                     }
                   />
                 </SelectTrigger>
-                <SelectContent className='bg-background-card max-h-60 rounded-[12px] border-gray-900'>
-                  {cities.map((city, index) => (
-                    <SelectItem
-                      key={index}
-                      value={city.name}
-                      className='text-white hover:!bg-gray-800'
-                    >
-                      {city.name}
-                    </SelectItem>
-                  ))}
-                  {cities.length === 0 && selectedCountry && selectedState && (
-                    <SelectItem
-                      value='other'
-                      className='text-white hover:!bg-gray-800'
-                    >
-                      Other
-                    </SelectItem>
-                  )}
+                <SelectContent className='max-h-60 border-zinc-800 bg-zinc-950'>
+                  {cities.length > 0
+                    ? cities.map((city, index) => (
+                        <SelectItem
+                          key={index}
+                          value={city.name}
+                          className='text-white focus:bg-zinc-800 focus:text-white'
+                        >
+                          {city.name}
+                        </SelectItem>
+                      ))
+                    : selectedCountry &&
+                      selectedState && (
+                        <SelectItem
+                          value='other'
+                          className='text-white focus:bg-zinc-800 focus:text-white'
+                        >
+                          Other
+                        </SelectItem>
+                      )}
                 </SelectContent>
               </Select>
             </FormControl>
-            <FormMessage className='text-error-400 text-xs' />
+            <FormMessage className='text-xs text-red-500' />
           </FormItem>
         )}
       />

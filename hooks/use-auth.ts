@@ -45,7 +45,7 @@ export function useAuth(requireAuth = true) {
         });
       }
     }
-  }, [session?.user, syncWithSession, user, isAuthenticated]);
+  }, [session, syncWithSession, user, isAuthenticated]);
 
   // Memoize auth data to prevent unnecessary re-renders
   const shouldUseStore = useMemo(
@@ -83,13 +83,13 @@ export function useAuth(requireAuth = true) {
         };
   }, [
     shouldUseStore,
+    session,
     user,
     isAuthenticated,
     storeLoading,
     error,
     refreshUser,
     clearAuth,
-    session?.user,
     sessionPending,
     sessionError,
   ]);
@@ -183,7 +183,7 @@ export function useAuthStatus() {
         // Silently handle sync failure
       });
     }
-  }, [session?.user, user, isAuthenticated, syncWithSession]);
+  }, [session, user, isAuthenticated, syncWithSession]);
 
   // Return Zustand store state (which should be synced with Better Auth)
   return {

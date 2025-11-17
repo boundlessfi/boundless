@@ -38,6 +38,8 @@ interface ReviewTabProps {
   isLoading?: boolean;
   isSavingDraft?: boolean;
   hackathonUrl?: string;
+  organizationId?: string;
+  draftId?: string | null;
 }
 
 export default function ReviewTab({
@@ -48,6 +50,8 @@ export default function ReviewTab({
   isLoading = false,
   isSavingDraft = false,
   hackathonUrl,
+  organizationId,
+  draftId,
 }: ReviewTabProps) {
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [showPublishedModal, setShowPublishedModal] = useState(false);
@@ -134,6 +138,8 @@ export default function ReviewTab({
         isSavingDraft={isSavingDraft}
         onPublish={handlePublish}
         onSaveDraft={onSaveDraft ? handleSaveDraft : undefined}
+        organizationId={organizationId}
+        draftId={draftId}
       />
 
       {/* Success Modals */}

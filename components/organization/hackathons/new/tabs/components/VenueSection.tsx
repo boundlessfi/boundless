@@ -8,13 +8,11 @@ import {
 import { Control } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { Country, State, City } from '@/lib/country-utils';
 import LocationFields from './LocationFields';
 import MapPreview from './MapPreview';
+import { MapPin, Globe, Info } from 'lucide-react';
 
 interface VenueSectionProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,70 +46,106 @@ export default function VenueSection({
   const state = watch('state');
 
   return (
-    <div className='space-y-6'>
-      <h3 className='text-sm text-white'>
-        Venue <span className='text-error-400'>*</span>
-      </h3>
+    <div className='space-y-4'>
+      <div>
+        <h3 className='text-sm font-medium text-white'>
+          Venue <span className='text-red-500'>*</span>
+        </h3>
+        <p className='mt-1 text-sm text-zinc-500'>
+          Choose how participants will attend your hackathon
+        </p>
+      </div>
 
-      <div className='bg-background-card space-y-4 rounded-[12px] border border-gray-900 py-5'>
+      <div className='space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-6'>
+        {/* Venue Type Selection */}
         <FormField
           control={control}
           name='venueType'
           render={({ field }) => (
-            <FormItem className='gap-3 px-5'>
-              <FormLabel className='text-sm text-gray-500'>
-                Select Venue Type
+            <FormItem>
+              <FormLabel className='text-sm font-medium text-white'>
+                Venue Type
               </FormLabel>
               <FormControl>
-                <RadioGroup
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  className='flex flex-wrap gap-3'
-                >
+                <div className='grid grid-cols-2 gap-3'>
                   {[
-                    { value: 'virtual', label: 'Virtual' },
-                    { value: 'physical', label: 'Physical' },
-                  ].map(option => (
-                    <div
-                      key={option.value}
-                      className={cn(
-                        'flex w-fit items-center space-x-3 rounded-[6px] border border-[#2B2B2B] bg-[#2B2B2B3D] p-3',
-                        field.value === option.value && 'bg-[#A7F9501F]'
-                      )}
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        id={option.value}
+                    { value: 'virtual', label: 'Virtual', icon: Globe },
+                    { value: 'physical', label: 'Physical', icon: MapPin },
+                  ].map(option => {
+                    const Icon = option.icon;
+                    const isSelected = field.value === option.value;
+
+                    return (
+                      <button
+                        key={option.value}
+                        type='button'
+                        onClick={() => field.onChange(option.value)}
                         className={cn(
-                          'text-primary border-[#B5B5B5] bg-transparent',
-                          field.value === option.value && 'border-primary'
-                        )}
-                      />
-                      <Label
-                        htmlFor={option.value}
-                        className={cn(
-                          'cursor-pointer text-sm font-normal',
-                          field.value === option.value
-                            ? 'text-primary'
-                            : 'text-[#B5B5B5]'
+                          'flex items-center gap-3 rounded-lg border p-4 text-left transition-all',
+                          isSelected
+                            ? 'border-primary/50 bg-primary/10 shadow-primary/10 shadow-sm'
+                            : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900'
                         )}
                       >
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
+                        <div
+                          className={cn(
+                            'flex h-10 w-10 items-center justify-center rounded-lg transition-all',
+                            isSelected
+                              ? 'bg-primary/20 text-primary'
+                              : 'bg-zinc-800 text-zinc-500'
+                          )}
+                        >
+                          <Icon className='h-5 w-5' />
+                        </div>
+                        <div className='flex-1'>
+                          <p
+                            className={cn(
+                              'text-sm font-medium',
+                              isSelected ? 'text-primary' : 'text-white'
+                            )}
+                          >
+                            {option.label}
+                          </p>
+                          <p className='text-xs text-zinc-500'>
+                            {option.value === 'virtual'
+                              ? 'Online event'
+                              : 'In-person event'}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </FormControl>
-              <FormMessage className='text-error-400 text-xs' />
+              <FormMessage className='text-xs text-red-500' />
             </FormItem>
           )}
         />
 
-        <Separator className='bg-gray-900' />
+        {/* Virtual Event Info */}
+        {venueType === 'virtual' && (
+          <div className='flex gap-3 rounded-lg border border-blue-900/50 bg-blue-500/5 p-4'>
+            <div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/10'>
+              <Info className='h-4 w-4 text-blue-400' />
+            </div>
+            <div className='flex-1'>
+              <p className='text-sm font-medium text-white'>Virtual Event</p>
+              <p className='mt-1 text-xs text-zinc-400'>
+                This hackathon will be conducted online. Add platform details
+                (Zoom, Discord, etc.) in the timeline section.
+              </p>
+            </div>
+          </div>
+        )}
 
+        {/* Physical Event Fields */}
         {venueType === 'physical' && (
-          <>
-            <div className='px-5'>
+          <div className='space-y-6'>
+            <div className='h-px bg-zinc-800' />
+
+            {/* Location Fields */}
+            <div>
+              <h4 className='mb-3 text-sm font-medium text-white'>Location</h4>
               <LocationFields
                 control={control}
                 countries={countries}
@@ -124,26 +158,29 @@ export default function VenueSection({
               />
             </div>
 
-            <Separator className='bg-gray-900' />
+            <div className='h-px bg-zinc-800' />
 
-            <div className='space-y-4 px-5'>
+            {/* Venue Details */}
+            <div className='space-y-4'>
+              <h4 className='text-sm font-medium text-white'>Venue Details</h4>
+
               <FormField
                 control={control}
                 name='venueName'
                 render={({ field }) => (
-                  <FormItem className='gap-3'>
-                    <FormLabel className='text-sm text-gray-500'>
+                  <FormItem>
+                    <FormLabel className='text-sm font-medium text-zinc-400'>
                       Venue Name
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type='text'
-                        placeholder='Enter venue name (e.g., Eko Hotel and Suites)'
-                        className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'
+                        placeholder='e.g., Eko Hotel and Suites'
+                        className='h-11 border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
                       />
                     </FormControl>
-                    <FormMessage className='text-error-400 text-xs' />
+                    <FormMessage className='text-xs text-red-500' />
                   </FormItem>
                 )}
               />
@@ -152,22 +189,23 @@ export default function VenueSection({
                 control={control}
                 name='venueAddress'
                 render={({ field }) => (
-                  <FormItem className='gap-3'>
-                    <FormLabel className='text-sm text-gray-500'>
+                  <FormItem>
+                    <FormLabel className='text-sm font-medium text-zinc-400'>
                       Venue Address
                     </FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
-                        placeholder='Enter full venue address (e.g., 1415 Adetokunbo Ademola Street, Victoria Island, Lagos 106104, Lagos)'
-                        className='bg-background-card min-h-[80px] w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'
+                        placeholder='e.g., 1415 Adetokunbo Ademola Street, Victoria Island'
+                        className='min-h-20 resize-y border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
                       />
                     </FormControl>
-                    <FormMessage className='text-error-400 text-xs' />
+                    <FormMessage className='text-xs text-red-500' />
                   </FormItem>
                 )}
               />
 
+              {/* Map Preview */}
               <MapPreview
                 mapLocation={mapLocation}
                 hasAddress={!!venueAddress}
@@ -175,16 +213,6 @@ export default function VenueSection({
                 state={state as string}
               />
             </div>
-          </>
-        )}
-
-        {venueType === 'virtual' && (
-          <div className='mx-5 rounded-lg border border-blue-500/30 bg-blue-900/20 p-4'>
-            <p className='text-sm text-blue-300'>
-              <strong>Virtual Event:</strong> This hackathon will be conducted
-              online. You can specify the platform (Zoom, Discord, etc.) and
-              meeting details in the timeline section.
-            </p>
           </div>
         )}
       </div>

@@ -8,9 +8,11 @@ import {
   Edit,
   Archive,
   Trash2,
+  Loader2,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { normalizeCloudinaryImageUrl } from '@/lib/utils/cloudinary-url';
 import {
   Tooltip,
   TooltipContent,
@@ -40,6 +42,7 @@ interface OrganizationCardProps {
   onEdit?: (id: string) => void;
   onArchive?: (id: string) => void;
   onDelete?: (id: string) => void;
+  isDeleting?: boolean;
 }
 
 export default function OrganizationCard({
@@ -52,6 +55,7 @@ export default function OrganizationCard({
   onEdit,
   onArchive,
   onDelete,
+  isDeleting = false,
 }: OrganizationCardProps) {
   const router = useRouter();
 
@@ -79,7 +83,6 @@ export default function OrganizationCard({
       onArchive(id);
     } else {
       if (confirm('Are you sure you want to archive this organization?')) {
-        console.log('Archive organization:', id);
         // TODO: Implement archive functionality
       }
     }
@@ -91,7 +94,6 @@ export default function OrganizationCard({
       onDelete(id);
     } else {
       if (confirm('Are you sure you want to delete this organization?')) {
-        console.log('Delete organization:', id);
         // TODO: Implement delete functionality
       }
     }
@@ -100,7 +102,7 @@ export default function OrganizationCard({
   return (
     <TooltipProvider>
       <div
-        onClick={() => router.push(`/organizations/${id}/settings`)}
+        onClick={() => router.push(`/organizations/${id}`)}
         className='group hover:shadow-primary/10 relative cursor-pointer overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-black transition-all duration-300 hover:border-zinc-700 hover:shadow-2xl'
       >
         {/* Animated gradient overlay on hover */}
@@ -115,9 +117,11 @@ export default function OrganizationCard({
               {/* Logo with glow effect */}
               <div className='relative'>
                 <div className='bg-primary/20 absolute inset-0 rounded-xl opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100'></div>
-                <div className='relative h-16 w-16 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 p-2 transition-all duration-300 group-hover:scale-105 group-hover:border-zinc-700'>
+                <div className='relative h-16 w-16 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition-all duration-300 group-hover:scale-105 group-hover:border-zinc-700'>
                   <Image
-                    src={logo || '/placeholder.svg'}
+                    src={
+                      normalizeCloudinaryImageUrl(logo) || '/placeholder.svg'
+                    }
                     alt={`${name} logo`}
                     width={48}
                     height={48}
@@ -170,10 +174,15 @@ export default function OrganizationCard({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleDelete}
-                  className='cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-300'
+                  disabled={isDeleting}
+                  className='cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-300 disabled:cursor-not-allowed disabled:opacity-50'
                 >
-                  <Trash2 className='mr-2 h-4 w-4' />
-                  Delete
+                  {isDeleting ? (
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  ) : (
+                    <Trash2 className='mr-2 h-4 w-4' />
+                  )}
+                  {isDeleting ? 'Deleting...' : 'Delete'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

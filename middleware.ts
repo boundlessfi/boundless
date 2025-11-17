@@ -11,23 +11,10 @@ export async function middleware(req: NextRequest) {
   // Get cookies from request for Better Auth session check
   const cookieHeader = req.headers.get('cookie') || '';
 
-  // Debug: Log if better-auth.session_token cookie is present
-  if (process.env.NODE_ENV === 'development') {
-    const hasSessionToken = cookieHeader.includes('better-auth.session_token');
-    console.log(
-      `[Middleware] ${pathname} - Has session token: ${hasSessionToken}`
-    );
-  }
-
   // Check authentication using Better Auth session
   // In middleware, we need to pass cookies directly
   const betterAuthSession = await getBetterAuthSession(cookieHeader);
   const isAuthenticated = !!betterAuthSession?.user;
-
-  // Debug: Log authentication status
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[Middleware] ${pathname} - Authenticated: ${isAuthenticated}`);
-  }
 
   const isProtectedRoute = protectedRoutes.some(route =>
     pathname.startsWith(route)

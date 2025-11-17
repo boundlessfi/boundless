@@ -9,20 +9,19 @@ export const criterionSchema = z.object({
 
 export const judgingSchema = z
   .object({
-    criteria: z
-      .array(criterionSchema)
-      .min(1, 'At least one judging criterion is required'),
+    criteria: z.array(criterionSchema).default([]),
   })
   .superRefine((data, ctx) => {
-    // Ensure weights sum to 100%
-    const totalWeight = data.criteria.reduce((sum, criterion) => {
-      return sum + criterion.weight;
-    }, 0);
+    // Only validate weight sum if there are criteria
+    if (data.criteria.length > 0) {
+      // Ensure weights sum to 100%
+      const totalWeight = data.criteria.reduce((sum, criterion) => {
+        return sum + criterion.weight;
+      }, 0);
 
-    if (Math.abs(totalWeight - 100) > 0.01) {
-      // Find the first criterion to attach the error to
-      const firstCriterionIndex = data.criteria.length > 0 ? 0 : -1;
-      if (firstCriterionIndex >= 0) {
+      if (Math.abs(totalWeight - 100) > 0.01) {
+        // Find the first criterion to attach the error to
+        const firstCriterionIndex = 0;
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `Total weight must equal 100% (currently ${totalWeight.toFixed(1)}%)`,

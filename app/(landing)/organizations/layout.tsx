@@ -92,7 +92,7 @@ function OrganizationsLayoutContent({
           )}
           {/* {showNewGrantSidebar && <NewGrantSidebar />} */}
 
-          <main className='md:ml-[350px]'>{children}</main>
+          <main className='md:ml-[280px]'>{children}</main>
         </div>
       ) : (
         <main>{children}</main>

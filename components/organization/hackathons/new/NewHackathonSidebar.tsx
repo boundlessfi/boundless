@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, FileText, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
@@ -96,45 +96,63 @@ export default function NewHackathonSidebar({
   const headerHeight = 64;
   const availableHeight = height ? height - headerHeight : 'calc(100vh - 4rem)';
 
+  const getStatusIcon = (status: string) => {
+    if (status === 'draft') return FileText;
+    return Trophy;
+  };
+
+  const getStatusDescription = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return 'Continue editing';
+      case 'ongoing':
+        return 'Active event';
+      case 'completed':
+        return 'Finished';
+      default:
+        return 'View details';
+    }
+  };
+
   return (
     <aside
-      className='bg-background-main-bg fixed top-4 left-0 hidden w-[350px] border-r border-zinc-800 md:block'
+      className='fixed top-4 left-0 hidden w-[280px] border-r border-zinc-800/50 bg-black/40 backdrop-blur-xl md:block'
       style={{ height: availableHeight, top: '90px' }}
     >
-      <nav className='flex h-full flex-col gap-1 overflow-y-auto py-4'>
-        <div className='px-11 py-2.5'>
-          <div className='flex flex-col items-start gap-px'>
-            <span className='text-primary text-sm font-medium'>
-              New Hackathon
-            </span>
-            <span className='text-xs text-gray-500 capitalize'>Draft</span>
+      <nav className='flex h-full flex-col overflow-y-auto px-4 py-6'>
+        {/* Header Section */}
+        <div className='mb-8'>
+          <div className='mb-4 px-3'>
+            <h2 className='text-lg font-semibold text-white'>New Hackathon</h2>
+            <p className='text-xs text-zinc-500'>Create and manage events</p>
           </div>
         </div>
 
-        <div className='mt-6'>
-          <div className='px-11 py-2'>
-            <h3 className='text-xs font-semibold tracking-wider text-white uppercase'>
-              Continue Editing
-            </h3>
-          </div>
+        {/* Continue Editing Section */}
+        <div className='mb-8 space-y-1'>
+          <h3 className='mb-4 px-3 text-[11px] font-semibold tracking-wider text-zinc-500 uppercase'>
+            Continue Editing
+          </h3>
 
           {isLoading ? (
-            <div className='px-11 py-4'>
-              <div className='flex items-center gap-2'>
-                <div className='border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent' />
-                <span className='text-xs text-gray-500'>
-                  Loading hackathons...
-                </span>
+            <div className='px-3 py-4'>
+              <div className='flex items-center gap-3'>
+                <div className='h-9 w-9 animate-pulse rounded-lg bg-zinc-900/50' />
+                <div className='flex flex-col gap-1'>
+                  <div className='h-4 w-32 animate-pulse rounded bg-zinc-900/50' />
+                  <div className='h-3 w-24 animate-pulse rounded bg-zinc-900/50' />
+                </div>
               </div>
             </div>
           ) : hackathonData.length === 0 ? (
-            <div className='px-11 py-4'>
-              <span className='text-xs text-gray-500'>
+            <div className='px-3 py-4'>
+              <p className='text-sm text-zinc-500'>
                 No hackathons found. Create a new one to get started.
-              </span>
+              </p>
             </div>
           ) : (
             hackathonData.map(hackathon => {
+              const Icon = getStatusIcon(hackathon.status);
               const isValidHref = hackathon.href !== '#';
               const isActive =
                 isValidHref &&
@@ -146,33 +164,85 @@ export default function NewHackathonSidebar({
                   key={hackathon.id}
                   href={hackathon.href}
                   className={cn(
-                    'flex flex-col items-start gap-px px-11 py-2.5 text-sm font-medium transition-colors',
+                    'group relative flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all',
                     isActive
-                      ? 'border-r-primary text-primary border-r-4 bg-zinc-900'
-                      : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                      ? 'from-primary/10 text-primary shadow-primary/5 bg-gradient-to-r to-transparent shadow-lg'
+                      : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-white'
                   )}
                 >
-                  {hackathon.title}
-                  <span className='text-xs text-gray-500 capitalize'>
-                    {hackathon.status}
-                  </span>
+                  {/* Active indicator */}
+                  {isActive && (
+                    <div className='bg-primary absolute top-1/2 left-0 h-8 w-1 -translate-y-1/2 rounded-r-full'></div>
+                  )}
+
+                  <div
+                    className={cn(
+                      'flex h-9 w-9 items-center justify-center rounded-lg transition-all',
+                      isActive
+                        ? 'bg-primary/20 shadow-primary/20 shadow-lg'
+                        : 'bg-zinc-900/50 group-hover:bg-zinc-800'
+                    )}
+                  >
+                    <Icon className='h-4 w-4' />
+                  </div>
+
+                  <div className='flex flex-col'>
+                    <span className='text-sm font-medium'>
+                      {hackathon.title}
+                    </span>
+                    <span
+                      className={cn(
+                        'text-xs transition-colors',
+                        isActive
+                          ? 'text-primary/60'
+                          : 'text-zinc-600 group-hover:text-zinc-500'
+                      )}
+                    >
+                      {getStatusDescription(hackathon.status)}
+                    </span>
+                  </div>
+
+                  {/* Hover indicator */}
+                  {!isActive && (
+                    <div className='absolute inset-0 rounded-xl border border-transparent transition-colors group-hover:border-zinc-700/50'></div>
+                  )}
                 </Link>
               );
             })
           )}
         </div>
 
-        <div className='mt-6 px-8'>
+        {/* Quick Actions Section */}
+        <div className='mt-auto space-y-3'>
+          <h3 className='mb-4 px-3 text-[11px] font-semibold tracking-wider text-zinc-500 uppercase'>
+            Quick Actions
+          </h3>
+
           <Link
             href={`/organizations/${derivedOrgId}/hackathons/new`}
-            className='hover:text-primary flex items-center gap-3 text-white transition-colors'
+            className='group hover:border-primary/50 hover:shadow-primary/10 relative block overflow-hidden rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900/50 to-zinc-900/20 p-4 transition-all hover:shadow-lg'
           >
-            <div className='bg-primary grid h-6 w-6 place-content-center rounded-full'>
-              <Plus className='h-4 w-4 text-black' />
+            {/* Animated gradient overlay */}
+            <div className='pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100'>
+              <div className='from-primary/5 absolute inset-0 bg-gradient-to-r via-transparent to-transparent'></div>
             </div>
-            <span className='text-sm font-medium'>Host Hackathon</span>
+
+            <div className='relative flex items-center gap-3'>
+              <div className='from-primary/20 to-primary/5 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br transition-all group-hover:scale-110'>
+                <Plus className='text-primary h-5 w-5' />
+              </div>
+              <span className='group-hover:text-primary font-medium text-white transition-colors'>
+                Host Hackathon
+              </span>
+            </div>
+
+            {/* Bottom accent line */}
+            <div className='via-primary absolute right-0 bottom-0 left-0 h-0.5 bg-gradient-to-r from-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100'></div>
           </Link>
         </div>
+
+        {/* Decorative bottom gradient */}
+        <div className='pointer-events-none absolute right-0 bottom-0 left-0 h-24 bg-gradient-to-t from-black via-black/50 to-transparent'></div>
       </nav>
     </aside>
   );

@@ -55,7 +55,6 @@ const OtpForm = ({
       | undefined
   ) => {
     // Log error for debugging
-    console.error('OTP verification error:', error);
 
     const errorMessage =
       error?.message ||
@@ -115,7 +114,6 @@ const OtpForm = ({
           onError: (ctx: {
             error?: { message?: string; status?: number; code?: string };
           }) => {
-            console.error('Better Auth OTP onError:', ctx);
             // Handle error from Better Auth callback
             const errorObj = ctx.error
               ? ctx.error
@@ -127,11 +125,9 @@ const OtpForm = ({
 
       // Handle error from return value
       if (error) {
-        console.error('Better Auth OTP error return:', error);
         handleOtpError(error);
       }
     } catch (error) {
-      console.error('OTP verification catch error:', error);
       // Handle unexpected errors
       const errorObj =
         error instanceof Error
@@ -153,7 +149,6 @@ const OtpForm = ({
           onError: (ctx: {
             error?: { message?: string; status?: number; code?: string };
           }) => {
-            console.error('Resend OTP error:', ctx);
             const errorMessage = ctx.error?.message || 'Failed to resend OTP';
             toast.error(errorMessage);
           },
@@ -164,11 +159,9 @@ const OtpForm = ({
         onResendOtp();
         toast.success('OTP resent successfully!');
       } else if (error) {
-        console.error('Resend OTP error return:', error);
         toast.error(error.message || 'Failed to resend OTP');
       }
     } catch (error) {
-      console.error('Resend OTP catch error:', error);
       const errorMessage =
         error instanceof Error
           ? error.message

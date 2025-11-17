@@ -1,10 +1,15 @@
+'use client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { socialLinks } from '@/lib/config';
+import { usePathname } from 'next/navigation';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
-
+  const pathname = usePathname();
+  if (pathname.startsWith('/organizations')) {
+    return null;
+  }
   return (
     <footer
       className='z-30 border-t border-[#2B2B2B] bg-black'

@@ -38,16 +38,6 @@ export async function getBetterAuthSession(
       }
     }
 
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[getBetterAuthSession] Has cookies: ${!!cookiesToSend}`);
-      if (cookiesToSend) {
-        console.log(
-          `[getBetterAuthSession] Cookie header includes better-auth.session_token: ${cookiesToSend.includes('better-auth.session_token')}`
-        );
-      }
-    }
-
     // Use Better Auth client's getSession() method with headers
     const { data: session, error } = await authClient.getSession({
       fetchOptions: {
@@ -60,19 +50,6 @@ export async function getBetterAuthSession(
         cache: 'no-store',
       },
     });
-
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      if (error) {
-        console.error(`[getBetterAuthSession] Error:`, error);
-      }
-      if (session) {
-        console.log(
-          `[getBetterAuthSession] Session response:`,
-          JSON.stringify(session, null, 2)
-        );
-      }
-    }
 
     if (error) {
       return null;
@@ -101,8 +78,7 @@ export async function getBetterAuthSession(
     }
 
     return null;
-  } catch (error) {
-    console.error('Error fetching Better Auth session:', error);
+  } catch {
     return null;
   }
 }

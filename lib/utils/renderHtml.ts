@@ -43,8 +43,7 @@ export function sanitizeHtml(html: string | undefined | null) {
       ],
     });
     return { __html: clean };
-  } catch (err) {
-    console.error(err);
+  } catch {
     return { __html: dirty };
   }
 }

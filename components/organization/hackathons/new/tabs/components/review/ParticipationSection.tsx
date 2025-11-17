@@ -1,11 +1,31 @@
 import React from 'react';
-import { ParticipantFormData } from '../../schemas/participantSchema';
+import {
+  participantSchema,
+  ParticipantFormData,
+} from '../../schemas/participantSchema';
 import { Separator } from '@/components/ui/separator';
+import type { z } from 'zod';
+
+type ParticipantFormDataInferred = z.infer<typeof participantSchema>;
 
 interface ParticipationSectionProps {
-  data: ParticipantFormData;
+  data: ParticipantFormData | ParticipantFormDataInferred;
   onEdit?: () => void;
 }
+
+// Type guard to check if participantType is team-related
+// function isTeamParticipantType(
+//   type: unknown
+// ): type is 'team' | 'team_or_individual' {
+//   return type === 'team' || type === 'team_or_individual';
+// }
+
+// Helper to safely check participant type
+// function checkTeamType(data: ParticipantFormData): boolean {
+//   const type = data.participantType;
+//   if (typeof type !== 'string') return false;
+//   return type === 'team' || type === 'team_or_individual';
+// }
 
 const tabVisibilityLabels: Record<string, string> = {
   details_tab: 'Details Tab',
@@ -17,6 +37,48 @@ const tabVisibilityLabels: Record<string, string> = {
   join_a_team_tab: 'Join a Team Tab',
   projects_tab: 'Projects Tab',
   participants_tab: 'Participants Tab',
+};
+
+const TeamSizeSection: React.FC<{
+  data: ParticipantFormData | ParticipantFormDataInferred;
+}> = ({ data }) => {
+  const type = data.participantType;
+  if (type !== 'team' && type !== 'team_or_individual') return null;
+
+  return (
+    <>
+      <Separator className='bg-gray-900' />
+      <div className='space-y-1'>
+        <p className='mb-2 text-xs font-medium text-gray-500'>Team Size:</p>
+        <div className='overflow-hidden rounded-lg border border-gray-800 bg-gray-900/50'>
+          <table className='w-full'>
+            <thead>
+              <tr className='border-b border-gray-800'>
+                <th className='p-3 text-left text-xs font-medium text-gray-500'>
+                  Minimum
+                </th>
+                <th className='p-3 text-left text-xs font-medium text-gray-500'>
+                  Maximum
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className='p-3 text-sm text-white'>
+                  {data.teamMin ?? 'N/A'}{' '}
+                  {data.teamMin === 1 ? 'Member' : 'Members'}
+                </td>
+                <td className='p-3 text-sm text-white'>
+                  {data.teamMax ?? 'N/A'}{' '}
+                  {data.teamMax === 1 ? 'Member' : 'Members'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
 };
 
 export default function ParticipationSection({
@@ -38,43 +100,10 @@ export default function ParticipationSection({
         <p className='text-sm font-medium text-white'>{participantTypeLabel}</p>
       </div>
 
-      {/* Team Size */}
-      {(data.participantType === 'team' ||
-        data.participantType === 'team_or_individual') && (
-        <>
-          <Separator className='bg-gray-900' />
-          <div className='space-y-1'>
-            <p className='mb-2 text-xs font-medium text-gray-500'>Team Size:</p>
-            <div className='overflow-hidden rounded-lg border border-gray-800 bg-gray-900/50'>
-              <table className='w-full'>
-                <thead>
-                  <tr className='border-b border-gray-800'>
-                    <th className='p-3 text-left text-xs font-medium text-gray-500'>
-                      Minimum
-                    </th>
-                    <th className='p-3 text-left text-xs font-medium text-gray-500'>
-                      Maximum
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className='p-3 text-sm text-white'>
-                      {data.teamMin} {data.teamMin === 1 ? 'Member' : 'Members'}
-                    </td>
-                    <td className='p-3 text-sm text-white'>
-                      {data.teamMax} {data.teamMax === 1 ? 'Member' : 'Members'}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
+      <TeamSizeSection data={data as ParticipantFormData} />
 
       {/* Rules / About */}
-      {data.about && (
+      {'about' in data && typeof data.about === 'string' && data.about && (
         <>
           <Separator className='bg-gray-900' />
           <div className='space-y-1'>
@@ -83,7 +112,7 @@ export default function ParticipationSection({
             </p>
             <div
               className='prose prose-invert max-w-none text-sm text-gray-300'
-              dangerouslySetInnerHTML={{ __html: data.about }}
+              dangerouslySetInnerHTML={{ __html: String(data.about) }}
             />
           </div>
         </>

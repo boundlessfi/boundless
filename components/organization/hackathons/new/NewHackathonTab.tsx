@@ -261,6 +261,8 @@ export default function NewHackathonTab({
               onSaveDraft={saveDraft}
               isLoading={isPublishing}
               isSavingDraft={isSavingDraft}
+              organizationId={derivedOrgId}
+              draftId={draftId}
             />
           </TabsContent>
         </div>
