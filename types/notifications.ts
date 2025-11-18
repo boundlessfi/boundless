@@ -12,6 +12,8 @@ export enum NotificationType {
   ORGANIZATION_MEMBER_ADDED = 'ORGANIZATION_MEMBER_ADDED',
   ORGANIZATION_MEMBER_REMOVED = 'ORGANIZATION_MEMBER_REMOVED',
   ORGANIZATION_ROLE_CHANGED = 'ORGANIZATION_ROLE_CHANGED',
+  ORGANIZATION_ARCHIVED = 'ORGANIZATION_ARCHIVED',
+  ORGANIZATION_UNARCHIVED = 'ORGANIZATION_UNARCHIVED',
 
   // Hackathon Notifications
   HACKATHON_CREATED = 'HACKATHON_CREATED',
@@ -119,6 +121,7 @@ export interface Notification {
     milestoneId?: string;
     amount?: number;
     transactionHash?: string;
+    archivedBy?: string;
     [key: string]: unknown;
   };
   read: boolean;

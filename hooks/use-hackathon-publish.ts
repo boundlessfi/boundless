@@ -132,6 +132,10 @@ export const useHackathonPublish = ({
         address: walletAddress,
       });
 
+      if (!signedEscrowXdr || signedEscrowXdr.trim() === '') {
+        throw new Error('Transaction signing was cancelled');
+      }
+
       const escrowSendResponse = await sendTransaction(signedEscrowXdr);
 
       if (
@@ -181,6 +185,10 @@ export const useHackathonPublish = ({
         address: walletAddress,
       });
 
+      if (!signedFundXdr || signedFundXdr.trim() === '') {
+        throw new Error('Transaction signing was cancelled');
+      }
+
       const fundSendResponse = await sendTransaction(signedFundXdr);
 
       if (
@@ -219,10 +227,28 @@ export const useHackathonPublish = ({
           );
         }, 1500);
       }
-    } catch {
-      toast.error('Failed to publish hackathon');
+    } catch (error) {
+      let errorMessage = 'Failed to publish hackathon';
 
-      throw new Error('Failed to publish hackathon');
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        if (
+          errorMsg.includes('user rejected') ||
+          errorMsg.includes('cancelled') ||
+          errorMsg.includes('rejected') ||
+          errorMsg.includes('transaction signing was cancelled')
+        ) {
+          errorMessage = 'Transaction signing was cancelled. Please try again.';
+        } else if (errorMsg.includes('sign')) {
+          errorMessage = 'Failed to sign transaction. Please try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      toast.error(errorMessage);
+
+      throw error;
     } finally {
       setIsPublishing(false);
     }

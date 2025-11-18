@@ -21,6 +21,8 @@ import {
   XCircle,
   Ban,
   KeyRound,
+  Archive,
+  ArchiveRestore,
   LucideIcon,
 } from 'lucide-react';
 import { NotificationType } from '@/types/notifications';
@@ -45,6 +47,10 @@ export const getNotificationIcon = (type: NotificationType): LucideIcon => {
       return Users;
     case NotificationType.ORGANIZATION_ROLE_CHANGED:
       return KeyRound;
+    case NotificationType.ORGANIZATION_ARCHIVED:
+      return Archive;
+    case NotificationType.ORGANIZATION_UNARCHIVED:
+      return ArchiveRestore;
 
     // Hackathon Notifications
     case NotificationType.HACKATHON_CREATED:
@@ -165,6 +171,7 @@ export const getNotificationColor = (type: NotificationType): string => {
     type === NotificationType.ACCOUNT_VERIFIED ||
     type === NotificationType.ORGANIZATION_INVITE_ACCEPTED ||
     type === NotificationType.ORGANIZATION_MEMBER_ADDED ||
+    type === NotificationType.ORGANIZATION_UNARCHIVED ||
     type === NotificationType.HACKATHON_COMPLETED ||
     type === NotificationType.HACKATHON_SUBMISSION_SHORTLISTED ||
     type === NotificationType.HACKATHON_WINNERS_ANNOUNCED ||
@@ -178,7 +185,8 @@ export const getNotificationColor = (type: NotificationType): string => {
     type === NotificationType.FUNDING_DEADLINE_APPROACHING ||
     type === NotificationType.MILESTONE_DEADLINE_APPROACHING ||
     type === NotificationType.HACKATHON_DEADLINE_APPROACHING ||
-    type === NotificationType.TEAM_INVITATION_EXPIRED
+    type === NotificationType.TEAM_INVITATION_EXPIRED ||
+    type === NotificationType.ORGANIZATION_ARCHIVED
   ) {
     return 'border-yellow-200 bg-yellow-50 text-yellow-900';
   }

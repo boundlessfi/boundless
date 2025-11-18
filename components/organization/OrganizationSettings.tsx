@@ -28,22 +28,6 @@ export default function OrganizationSettings({
 }: OrganizationSettingsProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
-  const handleProfileSave = () => {
-    // TODO: Implement profile save logic
-  };
-
-  const handleLinksSave = () => {
-    // TODO: Implement links save logic
-  };
-
-  const handleMembersSave = () => {
-    // TODO: Implement members save logic
-  };
-
-  const handleTransferOwnership = () => {
-    // TODO: Implement ownership transfer logic
-  };
-
   return (
     <div
       className='flex-1 overflow-hidden bg-black text-white'
@@ -108,7 +92,6 @@ export default function OrganizationSettings({
             <ProfileTab
               organizationId={organizationId}
               initialData={initialData}
-              onSave={handleProfileSave}
               isCreating={isCreating}
             />
           </TabsContent>
@@ -116,15 +99,15 @@ export default function OrganizationSettings({
           {!isCreating && (
             <>
               <TabsContent value='links' className='mt-0'>
-                <LinksTab onSave={handleLinksSave} />
+                <LinksTab />
               </TabsContent>
 
               <TabsContent value='members' className='mt-0'>
-                <MembersTab onSave={handleMembersSave} />
+                <MembersTab />
               </TabsContent>
 
               <TabsContent value='transfer' className='mt-0'>
-                <TransferOwnershipTab onTransfer={handleTransferOwnership} />
+                <TransferOwnershipTab />
               </TabsContent>
             </>
           )}
