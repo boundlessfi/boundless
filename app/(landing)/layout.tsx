@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { ReactNode } from 'react';
 import { Footer, Navbar } from '@/components/landing-page';
 import { generatePageMetadata } from '@/lib/metadata';
+import { GoogleOneTap } from '@/components/auth/GoogleOneTap';
 
 // Generate metadata for the landing layout (home page)
 export const metadata: Metadata = generatePageMetadata('home');
@@ -16,6 +17,7 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
       <Navbar />
       <main className='flex-1'>{children}</main>
       <Footer />
+      <GoogleOneTap />
     </div>
   );
 }

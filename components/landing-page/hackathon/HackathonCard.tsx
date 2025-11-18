@@ -32,6 +32,7 @@ type HackathonCardProps = {
   };
   isFullWidth?: boolean;
   isListView?: boolean;
+  className?: string;
 };
 
 const formatFullNumber = (num: number): string =>
@@ -55,6 +56,7 @@ function HackathonCard({
   prizePool,
   tagline,
   isFullWidth = false,
+  className,
 }: HackathonCardProps) {
   const router = useRouter();
 
@@ -189,7 +191,9 @@ function HackathonCard({
     }, [categoriesList]);
 
     return (
-      <div className='relative flex items-center overflow-hidden'>
+      <div
+        className={`relative flex items-center overflow-hidden ${className}`}
+      >
         <div ref={ref} className='scrollbar-hide flex gap-1.5 overflow-x-auto'>
           {categoriesList.map((cat, i) => (
             <span

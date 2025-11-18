@@ -30,6 +30,8 @@ import {
   updateOrganizationHackathons,
   updateOrganizationGrants,
   deleteOrganization,
+  archiveOrganization,
+  unarchiveOrganization,
   assignOrganizationRole,
   transferOrganizationOwnership,
   getOrganizationPermissions as fetchOrganizationPermissions,
@@ -863,6 +865,56 @@ export function OrganizationProvider({
     }
   }, []);
 
+  const archiveOrg = useCallback(
+    async (orgId: string) => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true } });
+        const response = await archiveOrganization(orgId);
+        const updatedOrg = response.data;
+
+        dispatch({ type: 'UPDATE_ORGANIZATION', payload: updatedOrg });
+        await refreshOrganizations();
+
+        return updatedOrg;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to archive organization';
+        dispatch({ type: 'SET_ERROR', payload: { error: errorMessage } });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
+      }
+    },
+    [refreshOrganizations]
+  );
+
+  const unarchiveOrg = useCallback(
+    async (orgId: string) => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true } });
+        const response = await unarchiveOrganization(orgId);
+        const updatedOrg = response.data;
+
+        dispatch({ type: 'UPDATE_ORGANIZATION', payload: updatedOrg });
+        await refreshOrganizations();
+
+        return updatedOrg;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to unarchive organization';
+        dispatch({ type: 'SET_ERROR', payload: { error: errorMessage } });
+        throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
+      }
+    },
+    [refreshOrganizations]
+  );
+
   const inviteMembers = useCallback(
     async (orgId: string, emails: string[]) => {
       try {
@@ -1180,6 +1232,8 @@ export function OrganizationProvider({
     updateOrganizationLinks: updateOrgLinks,
     updateOrganizationMembers: updateOrgMembers,
     deleteOrganization: deleteOrg,
+    archiveOrganization: archiveOrg,
+    unarchiveOrganization: unarchiveOrg,
     inviteMember: inviteMembers,
     removeMember,
     addHackathon,

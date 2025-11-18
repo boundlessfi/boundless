@@ -1,7 +1,7 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LockIcon, MailIcon, User } from 'lucide-react';
-// import Image from 'next/image';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import z from 'zod';
 import { BoundlessButton } from '../buttons';
+import { Badge } from '../ui/badge';
 import {
   Form,
   FormControl,
@@ -39,12 +40,20 @@ const formSchema = z.object({
 interface SignupFormProps {
   onLoadingChange?: (isLoading: boolean) => void;
   invitation?: string | null;
+  onGoogleSignIn?: () => void;
+  lastMethod?: string | null;
 }
 
-const SignupForm = ({ onLoadingChange, invitation }: SignupFormProps) => {
+const SignupForm = ({
+  onLoadingChange,
+  invitation,
+  onGoogleSignIn,
+  lastMethod,
+}: SignupFormProps) => {
   const router = useRouter();
   const [step, setStep] = useState<'signup' | 'otp'>('signup');
   const [userData, setUserData] = useState<{ email: string } | null>(null);
+  const isGoogleLastUsed = lastMethod === 'google';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -166,26 +175,46 @@ const SignupForm = ({ onLoadingChange, invitation }: SignupFormProps) => {
         </p>
       </div>
       <div className='mt-6 space-y-6'>
-        {/* <BoundlessButton
-          fullWidth
-          className='bg-background border !border-[#484848] !text-white'
-        >
-          <Image
-            src='/auth/google.svg'
-            alt='google'
-            width={24}
-            height={24}
-            className='object-cover'
-            unoptimized
-          />
-          Continue with Google
-        </BoundlessButton> */}
-        {/* 
+        <div className='relative'>
+          <BoundlessButton
+            fullWidth
+            centerContent={true}
+            className={`group bg-background !text-white transition-all duration-200 ${
+              isGoogleLastUsed
+                ? 'border-2 !border-[#a7f950] shadow-sm shadow-[#a7f950]/20'
+                : 'border !border-[#484848]'
+            }`}
+            onClick={onGoogleSignIn}
+            disabled={form.formState.isSubmitting}
+          >
+            <div className='flex w-full items-center justify-between'>
+              <div className='flex items-center gap-2'>
+                <Image
+                  src='/auth/google.svg'
+                  alt='google'
+                  width={24}
+                  height={24}
+                  className='object-cover'
+                  unoptimized
+                />
+                <span>Continue with Google</span>
+              </div>
+              {isGoogleLastUsed && (
+                <Badge
+                  variant='secondary'
+                  className='group-hover:bg-background-card ml-2 border-[#a7f950]/30 bg-[#a7f950]/20 text-[#a7f950]'
+                >
+                  Last used
+                </Badge>
+              )}
+            </div>
+          </BoundlessButton>
+        </div>
         <div className='flex items-center justify-center gap-2.5'>
           <div className='h-[1px] w-full bg-[#2B2B2B]'></div>
           <p className='text-center text-sm text-[#B5B5B5]'>Or</p>
           <div className='h-[1px] w-full bg-[#2B2B2B]'></div>
-        </div> */}
+        </div>
 
         <Form {...form}>
           <form
@@ -307,8 +336,13 @@ const SignupForm = ({ onLoadingChange, invitation }: SignupFormProps) => {
 
         <p className='text-center text-xs text-[#D9D9D9] lg:text-sm'>
           By continuing, you agree to our{' '}
-          <span className='text-white'>Terms of Service</span> and{' '}
-          <span className='text-white'>Privacy Policy</span>
+          <Link href='/terms' className='text-primary/80'>
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link href='/privacy' className='text-primary/80'>
+            Privacy Policy
+          </Link>
         </p>
 
         <p className='text-center text-xs text-[#D9D9D9] lg:text-sm'>

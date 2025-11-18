@@ -44,7 +44,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const { isLoading, user } = useAuthStatus();
   const { logout } = useAuthActions();
 
-  // Safely get organizations from context if available
   const orgContext = useContext(OrganizationContext);
   const organizations = orgContext?.organizations || [];
 
@@ -80,7 +79,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         align='end'
         forceMount
       >
-        {/* User Info */}
         <div className='border-b border-zinc-800/50 p-4'>
           <div className='flex items-center gap-3'>
             <Avatar className='h-10 w-10 border border-zinc-800'>
@@ -113,13 +111,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           )}
         </div>
 
-        {/* Menu Items */}
         <div className='p-2'>
           <DropdownMenuItem
             className='rounded-lg px-3 py-2 text-sm text-white transition-colors hover:bg-zinc-900/50 focus:bg-zinc-900/50'
             asChild
           >
-            <Link href='/me' className='flex items-center gap-3'>
+            <Link
+              href='/me'
+              className='flex items-center gap-3 hover:!text-white'
+            >
               <User className='h-4 w-4 text-zinc-400' />
               Your Profile
             </Link>
@@ -130,7 +130,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               className='rounded-lg px-3 py-2 text-sm text-white transition-colors hover:bg-zinc-900/50 hover:text-white focus:bg-zinc-900/50'
               asChild
             >
-              <Link href='/organizations' className='flex items-center gap-3'>
+              <Link
+                href='/organizations'
+                className='flex items-center gap-3 hover:!text-white'
+              >
                 <Building2 className='h-4 w-4 text-zinc-400' />
                 Organizations
               </Link>
@@ -141,7 +144,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             className='rounded-lg px-3 py-2 text-sm text-white transition-colors hover:bg-zinc-900/50 hover:text-white focus:bg-zinc-900/50'
             asChild
           >
-            <Link href='/me/settings' className='flex items-center gap-3'>
+            <Link
+              href='/me/settings'
+              className='flex items-center gap-3 hover:!text-white'
+            >
               <Settings className='h-4 w-4 text-zinc-400' />
               Settings
             </Link>
@@ -155,7 +161,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           <DropdownMenuItem
             onClick={() => !isLoading && logout()}
             disabled={isLoading}
-            className='rounded-lg px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-400 focus:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50'
+            className='rounded-lg px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:!text-red-400 focus:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <LogOut className='mr-3 h-4 w-4' />
             {isLoading ? 'Signing out...' : 'Sign out'}

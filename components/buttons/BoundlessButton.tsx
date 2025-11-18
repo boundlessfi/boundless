@@ -66,6 +66,7 @@ export interface BoundlessButtonProps
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
   fullWidth?: boolean;
+  centerContent?: boolean;
 }
 
 const BoundlessButton = React.forwardRef<
@@ -84,6 +85,7 @@ const BoundlessButton = React.forwardRef<
       children,
       disabled,
       fullWidth,
+      centerContent = false,
       ...props
     },
     ref
@@ -106,6 +108,14 @@ const BoundlessButton = React.forwardRef<
       </>
     );
 
+    const contentWrapper = centerContent ? (
+      <span className='flex items-center justify-center gap-2'>
+        {buttonContent}
+      </span>
+    ) : (
+      buttonContent
+    );
+
     return (
       <motion.div
         whileHover='hover'
@@ -122,12 +132,13 @@ const BoundlessButton = React.forwardRef<
               state: loading ? 'loading' : state,
             }),
             className,
-            fullWidth && 'w-full'
+            fullWidth && 'w-full',
+            centerContent && 'justify-center'
           )}
           disabled={isDisabled}
           {...props}
         >
-          {buttonContent}
+          {contentWrapper}
         </Button>
       </motion.div>
     );

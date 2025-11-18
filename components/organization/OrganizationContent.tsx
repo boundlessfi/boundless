@@ -34,6 +34,8 @@ export default function OrganizationContent() {
     isLoading,
     isLoadingOrganizations,
     deleteOrganization,
+    archiveOrganization,
+    unarchiveOrganization,
     activeOrg,
   } = useOrganization();
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,6 +46,7 @@ export default function OrganizationContent() {
     id: string;
     name: string;
   } | null>(null);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
 
   const loading = isLoading || isLoadingOrganizations;
 
@@ -138,11 +141,18 @@ export default function OrganizationContent() {
       return;
     }
 
+    setArchivingId(orgId);
+
     try {
-      // TODO: Implement archive functionality
-      toast.info('Archive functionality coming soon', {
-        description: 'This feature will be available in a future update.',
+      await archiveOrganization(orgId);
+      toast.success('Organization archived successfully', {
+        description: `"${orgName}" has been archived.`,
       });
+
+      // If the archived org was the active org, redirect to organizations page
+      if (activeOrg?._id === orgId) {
+        router.push('/organizations');
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -151,6 +161,40 @@ export default function OrganizationContent() {
       toast.error('Failed to archive organization', {
         description: errorMessage,
       });
+    } finally {
+      setArchivingId(null);
+    }
+  };
+
+  const handleUnarchive = async (orgId: string) => {
+    const orgToUnarchive = organizations.find(org => org._id === orgId);
+    const orgName = orgToUnarchive?.name || 'this organization';
+
+    if (
+      !confirm(
+        `Are you sure you want to unarchive "${orgName}"? This will restore the organization to your active list.`
+      )
+    ) {
+      return;
+    }
+
+    setArchivingId(orgId);
+
+    try {
+      await unarchiveOrganization(orgId);
+      toast.success('Organization unarchived successfully', {
+        description: `"${orgName}" has been restored.`,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to unarchive organization. Please try again.';
+      toast.error('Failed to unarchive organization', {
+        description: errorMessage,
+      });
+    } finally {
+      setArchivingId(null);
     }
   };
 
@@ -307,8 +351,11 @@ export default function OrganizationContent() {
                     }}
                     onEdit={handleEdit}
                     onArchive={handleArchive}
+                    onUnarchive={handleUnarchive}
                     onDelete={handleDeleteClick}
                     isDeleting={deletingId === org._id}
+                    isArchiving={archivingId === org._id}
+                    isArchived={org.isArchived ?? false}
                   />
                 ))}
               </div>

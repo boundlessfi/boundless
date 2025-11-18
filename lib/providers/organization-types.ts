@@ -11,6 +11,7 @@ export interface OrganizationSummary {
   memberCount: number;
   hackathonCount: number;
   grantCount: number;
+  isArchived?: boolean;
   createdAt: string;
 }
 
@@ -171,6 +172,8 @@ export interface OrganizationContextActions {
     members: string[]
   ) => Promise<Organization>;
   deleteOrganization: (orgId: string) => Promise<void>;
+  archiveOrganization: (orgId: string) => Promise<Organization>;
+  unarchiveOrganization: (orgId: string) => Promise<Organization>;
   removeMember: (orgId: string, email: string) => Promise<void>;
   inviteMember: (orgId: string, emails: string[]) => Promise<void>;
   addHackathon: (orgId: string, hackathonId: string) => Promise<void>;

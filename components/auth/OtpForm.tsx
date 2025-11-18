@@ -172,15 +172,15 @@ const OtpForm = ({
 
   return (
     <>
-      <div className='space-y-6'>
-        <div>
-          <h2 className='mb-3 text-2xl font-medium text-white lg:text-[40px]'>
+      <div className='space-y-4 sm:space-y-6'>
+        <div className='space-y-2 sm:space-y-3'>
+          <h2 className='text-xl font-medium text-white sm:text-2xl lg:text-[40px]'>
             Enter OTP
           </h2>
-          <p className='text-sm leading-relaxed text-[#D9D9D9] lg:text-base'>
+          <p className='text-xs leading-relaxed text-[#D9D9D9] sm:text-sm lg:text-base'>
             Enter the OTP that was sent to {maskEmail(email)}
           </p>
-          <p className='text-sm leading-relaxed text-[#D9D9D9] lg:text-base'>
+          <p className='text-xs leading-relaxed text-[#D9D9D9] sm:text-sm lg:text-base'>
             Please keep this code private.
           </p>
         </div>
@@ -188,7 +188,7 @@ const OtpForm = ({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className='w-full space-y-6'
+            className='w-full space-y-4 sm:space-y-6'
           >
             <FormField
               control={form.control}
@@ -196,37 +196,39 @@ const OtpForm = ({
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <InputOTP
-                      {...field}
-                      maxLength={6}
-                      className='flex items-center justify-between'
-                      containerClassName='justify-between'
-                    >
-                      <InputOTPSlot
-                        index={0}
-                        className='h-[73px] w-[73px] !rounded-2xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-white'
-                      />
-                      <InputOTPSlot
-                        index={1}
-                        className='h-[73px] w-[73px] rounded-2xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-white'
-                      />
-                      <InputOTPSlot
-                        index={2}
-                        className='h-[73px] w-[73px] rounded-2xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-white'
-                      />
-                      <InputOTPSlot
-                        index={3}
-                        className='h-[73px] w-[73px] rounded-2xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-white'
-                      />
-                      <InputOTPSlot
-                        index={4}
-                        className='h-[73px] w-[73px] rounded-2xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-white'
-                      />
-                      <InputOTPSlot
-                        index={5}
-                        className='h-[73px] w-[73px] rounded-2xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-white'
-                      />
-                    </InputOTP>
+                    <div className='flex w-full justify-center'>
+                      <InputOTP
+                        {...field}
+                        maxLength={6}
+                        className='flex w-full flex-wrap items-center justify-center gap-2 sm:gap-3 md:gap-4'
+                        containerClassName='justify-center w-full'
+                      >
+                        <InputOTPSlot
+                          index={0}
+                          className='h-14 w-14 rounded-xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-xl text-white sm:h-16 sm:w-16 sm:rounded-2xl sm:text-2xl md:h-[73px] md:w-[73px]'
+                        />
+                        <InputOTPSlot
+                          index={1}
+                          className='h-14 w-14 rounded-xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-xl text-white sm:h-16 sm:w-16 sm:rounded-2xl sm:text-2xl md:h-[73px] md:w-[73px]'
+                        />
+                        <InputOTPSlot
+                          index={2}
+                          className='h-14 w-14 rounded-xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-xl text-white sm:h-16 sm:w-16 sm:rounded-2xl sm:text-2xl md:h-[73px] md:w-[73px]'
+                        />
+                        <InputOTPSlot
+                          index={3}
+                          className='h-14 w-14 rounded-xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-xl text-white sm:h-16 sm:w-16 sm:rounded-2xl sm:text-2xl md:h-[73px] md:w-[73px]'
+                        />
+                        <InputOTPSlot
+                          index={4}
+                          className='h-14 w-14 rounded-xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-xl text-white sm:h-16 sm:w-16 sm:rounded-2xl sm:text-2xl md:h-[73px] md:w-[73px]'
+                        />
+                        <InputOTPSlot
+                          index={5}
+                          className='h-14 w-14 rounded-xl border border-[#2B2B2B] bg-[#1C1C1C] text-center text-xl text-white sm:h-16 sm:w-16 sm:rounded-2xl sm:text-2xl md:h-[73px] md:w-[73px]'
+                        />
+                      </InputOTP>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -251,7 +253,7 @@ const OtpForm = ({
           <button
             type='button'
             onClick={handleResendOtp}
-            className='hover:text-primary text-sm text-white underline transition-colors'
+            className='hover:text-primary text-xs text-white underline transition-colors sm:text-sm'
           >
             Send code again
           </button>
