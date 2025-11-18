@@ -119,6 +119,7 @@
     "react-notification-core": "^1.0.5",
     "react-resizable-panels": "^3.0.3",
     "recharts": "^2.15.4",
+    "remark-gfm": "^4.0.1",
     "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1",
     "three": "^0.180.0",

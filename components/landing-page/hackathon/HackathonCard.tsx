@@ -14,7 +14,8 @@ type HackathonCardProps = {
   organizerLogo: string;
   hackathonImage: string;
   hackathonTitle: string;
-  hackathonDescription: string;
+  tagline: string;
+  hackathonDescription?: string;
   status: 'Published' | 'Ongoing' | 'Completed' | 'Cancelled';
   deadlineInDays: number;
   categories: string[];
@@ -44,7 +45,7 @@ function HackathonCard({
   organizerLogo,
   hackathonImage,
   hackathonTitle,
-  hackathonDescription,
+  // hackathonDescription,
   status,
   deadlineInDays,
   categories,
@@ -52,6 +53,7 @@ function HackathonCard({
   venueType,
   participants,
   prizePool,
+  tagline,
   isFullWidth = false,
 }: HackathonCardProps) {
   const router = useRouter();
@@ -251,9 +253,7 @@ function HackathonCard({
           <h2 className='line-clamp-2 text-base leading-tight font-semibold text-white sm:text-lg'>
             {hackathonTitle}
           </h2>
-          <p className='mt-1 line-clamp-2 text-sm text-gray-400'>
-            {hackathonDescription}
-          </p>
+          <p className='mt-1 line-clamp-2 text-sm text-gray-400'>{tagline}</p>
         </div>
 
         <div className='flex flex-wrap items-center justify-between border-t border-neutral-800 px-4 pt-3 text-sm text-gray-400 sm:px-5'>

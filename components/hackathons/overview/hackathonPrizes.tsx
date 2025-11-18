@@ -1,13 +1,5 @@
 'use client';
 
-// interface Prize {
-//   title: string
-//   rank: string
-//   prize: string
-//   details: string[]
-//   icon?: string
-// }
-
 interface HackathonPrizesProps {
   title?: string;
   totalPrizes?: string;
