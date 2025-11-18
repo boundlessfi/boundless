@@ -306,18 +306,8 @@ function AuthenticatedNav() {
 // In development, show a lightweight CTA that opens CreateProjectModal
 // even for unauthenticated users, so designers/QA can test the flow.
 function UnauthenticatedNav() {
-  const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
   const { width } = useWindowSize();
-
-  const {
-    executeProtectedAction,
-    showWalletModal,
-    closeWalletModal,
-    handleWalletConnected,
-  } = useProtectedAction({
-    actionName: 'create project',
-    onSuccess: () => setCreateProjectModalOpen(true),
-  });
+  const router = useRouter();
 
   const showDevAddProject =
     process.env.NODE_ENV !== 'production' &&
@@ -335,9 +325,7 @@ function UnauthenticatedNav() {
     <div className='flex items-center space-x-2 lg:space-x-3'>
       <BoundlessButton
         variant='outline'
-        onClick={async () => {
-          await executeProtectedAction(() => setCreateProjectModalOpen(true));
-        }}
+        onClick={() => router.push('/auth?mode=signin')}
         className='border-white/20 text-white hover:bg-white/10'
         size={width && width < 1024 ? 'sm' : 'default'}
       >
@@ -348,18 +336,6 @@ function UnauthenticatedNav() {
       <BoundlessButton size={width && width < 1024 ? 'sm' : 'default'}>
         <Link href='/auth?mode=signin'>Sign in</Link>
       </BoundlessButton>
-      <CreateProjectModal
-        open={createProjectModalOpen}
-        setOpen={setCreateProjectModalOpen}
-      />
-
-      {/* Wallet Required Modal */}
-      <WalletRequiredModal
-        open={showWalletModal}
-        onOpenChange={closeWalletModal}
-        actionName='create project'
-        onWalletConnected={handleWalletConnected}
-      />
     </div>
   );
 }

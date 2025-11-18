@@ -183,7 +183,7 @@ export default function NewHackathonTab({
 
   return (
     <div
-      className='bg-background-main-bg flex-1 overflow-hidden text-white'
+      className='bg-background-main-bg mx-auto max-w-6xl flex-1 overflow-hidden px-6 py-8 text-white'
       id={organizationId}
     >
       <Tabs

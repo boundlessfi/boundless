@@ -60,7 +60,7 @@ interface HackathonDataContextType {
   discussions: Discussion[];
   participants: Participant[];
   submissions: SubmissionCardProps[];
-  content: string;
+  // content: string;
   timelineEvents: TimelineEvent[];
   prizes: Prize[];
   resources: ResourceItem[];
@@ -344,14 +344,14 @@ export function HackathonDataProvider({
     },
   ];
 
-  const mockContent = `# ${
-    currentHackathon?.title || 'Hackathon'
-  }\n\n## 🌐 Hackathon Theme\n${
-    currentHackathon?.subtitle || 'Build innovative solutions'
-  }\n\n## Challenge Description\n${
-    currentHackathon?.description ||
-    'Create an innovative project that solves real-world problems.'
-  }`;
+  // const mockContent = `# ${
+  //   currentHackathon?.title || 'Hackathon'
+  // }\n\n## 🌐 Hackathon Theme\n${
+  //   currentHackathon?.tagline || 'Build innovative solutions'
+  // }\n\n## Challenge Description\n${
+  //   currentHackathon?.description ||
+  //   'Create an innovative project that solves real-world problems.'
+  // }`;
 
   const mockTimelineEvents: TimelineEvent[] = currentHackathon
     ? [
@@ -458,7 +458,7 @@ export function HackathonDataProvider({
     discussions: mockDiscussions,
     participants,
     submissions,
-    content: mockContent,
+    // content: mockContent,
     timelineEvents: mockTimelineEvents,
     prizes: mockPrizes,
     resources: mockResources,

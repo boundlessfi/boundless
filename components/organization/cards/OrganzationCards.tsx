@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { FutureFeature } from '@/components/FeatureFuture';
 
 interface OrganizationCardProps {
   id: string;
@@ -165,13 +166,16 @@ export default function OrganizationCard({
                   <Edit className='mr-2 h-4 w-4' />
                   Edit Organization
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleArchive}
-                  className='cursor-pointer text-zinc-300 focus:bg-zinc-800 focus:text-white'
-                >
-                  <Archive className='mr-2 h-4 w-4' />
-                  Archive
-                </DropdownMenuItem>
+
+                <FutureFeature badgeClassName='-right-20 -top-0'>
+                  <DropdownMenuItem
+                    onClick={handleArchive}
+                    className='cursor-pointer text-zinc-300 focus:bg-zinc-800 focus:text-white'
+                  >
+                    <Archive className='mr-2 h-4 w-4' />
+                    Archive
+                  </DropdownMenuItem>
+                </FutureFeature>
                 <DropdownMenuItem
                   onClick={handleDelete}
                   disabled={isDeleting}
