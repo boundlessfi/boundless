@@ -7,10 +7,12 @@ import { UserProfile, UserStats as UserStatsType } from '@/types/profile';
 import { GetMeResponse } from '@/lib/api/types';
 import { TeamMember } from '@/components/ui/TeamList';
 import { BoundlessButton } from '@/components/buttons';
-import { BellPlus, Settings } from 'lucide-react';
+import { BellPlus, Settings, View } from 'lucide-react';
 import { ProfileSocialLinks } from '@/lib/config';
 import UserStats from './UserStats';
 import FollowersModal from './FollowersModal';
+import { usePathname } from 'next/navigation';
+import { FutureFeature } from '../FeatureFuture';
 
 interface ProfileHeaderProps {
   profile: UserProfile;
@@ -25,6 +27,9 @@ export default function ProfileHeader({
 }: ProfileHeaderProps) {
   const [followersModalOpen, setFollowersModalOpen] = useState(false);
   const [followingModalOpen, setFollowingModalOpen] = useState(false);
+  const pathname = usePathname();
+
+  // const isOwnProfile = pathname === '/me';
 
   // Convert API user data to TeamMember format
   const convertToTeamMembers = (
@@ -111,9 +116,19 @@ export default function ProfileHeader({
             Edit Profile
           </BoundlessButton>
         </Link>
-        <BoundlessButton icon={<BellPlus />} iconPosition='right'>
-          Follow
-        </BoundlessButton>
+        {pathname ? (
+          <FutureFeature badgeClassName='-top-5'>
+            <BoundlessButton icon={<View />} iconPosition='right'>
+              Preview
+            </BoundlessButton>
+          </FutureFeature>
+        ) : (
+          <FutureFeature badgeClassName='-top-5'>
+            <BoundlessButton icon={<BellPlus />} iconPosition='right'>
+              Follow
+            </BoundlessButton>
+          </FutureFeature>
+        )}
         <BoundlessButton variant='outline'>
           Share
           <Image src='/share.svg' alt='Share icon' width={16} height={16} />

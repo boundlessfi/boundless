@@ -42,6 +42,10 @@ export const infoSchema = z
     venueType: z.enum(['virtual', 'physical'], {
       message: 'Venue type is required',
     }),
+    tagline: z
+      .string()
+      .min(1, 'Tagline is required')
+      .max(200, 'Tagline must not exceed 200 characters'),
 
     country: z.string().optional(),
     state: z.string().optional(),

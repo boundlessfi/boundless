@@ -20,9 +20,11 @@ export function FutureFeature({
   badgeClassName,
 }: FutureFeatureProps) {
   return (
-    <div className={cn('relative inline-flex items-center', className)}>
-      <div className={disabledClass}>{children}</div>
-
+    <div className={cn('relative w-full', className)}>
+      {' '}
+      {/* Changed from inline-flex to w-full */}
+      <div className={cn('w-full', disabledClass)}>{children}</div>{' '}
+      {/* Added w-full */}
       <Badge
         variant='secondary'
         className={cn(

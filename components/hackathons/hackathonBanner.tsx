@@ -4,12 +4,12 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import { sanitizeHtml } from '@/lib/utils/renderHtml';
+// import { sanitizeHtml } from '@/lib/utils/renderHtml';
 
 interface HackathonBannerProps {
   title: string;
-  subtitle?: string | React.ReactNode;
   imageUrl?: string;
+  tagline?: string;
   deadline?: string;
   startDate?: string;
   endDate?: string;
@@ -61,7 +61,7 @@ function formatCountdown(time: TimeRemaining): string {
 
 export function HackathonBanner({
   title,
-  subtitle,
+  tagline,
   imageUrl,
   deadline,
   startDate,
@@ -245,18 +245,17 @@ export function HackathonBanner({
             <h1 className='text-left text-3xl leading-tight font-bold text-white drop-shadow-lg md:text-4xl lg:text-5xl'>
               {title}
             </h1>
-            {subtitle && typeof subtitle === 'string' ? (
-              <div
-                className='max-w-2xl text-left text-base text-gray-200 drop-shadow-md md:text-lg'
-                dangerouslySetInnerHTML={sanitizeHtml(subtitle)}
-              />
+            {tagline && typeof tagline === 'string' ? (
+              <span className='max-w-2xl text-left text-base text-gray-200 drop-shadow-md md:text-lg'>
+                {tagline}
+              </span>
             ) : (
               <div className='max-w-2xl text-left text-base text-gray-200 drop-shadow-md md:text-lg'>
-                {subtitle}
+                {tagline}
               </div>
             )}
 
-            {subtitle && (
+            {tagline && (
               <div className='h-1 w-20 rounded-full bg-[#a7f950] md:w-24' />
             )}
           </div>

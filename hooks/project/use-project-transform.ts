@@ -63,7 +63,8 @@ export function useProjectTransform() {
 
       return {
         projectId: project._id,
-        creatorName: `${project.creator.profile.firstName} ${project.creator.profile.lastName}`,
+        creatorName:
+          `${project.creator?.profile?.firstName ?? ''} ${project.creator?.profile?.lastName ?? ''}`.trim(),
         creatorLogo: '/avatar.png',
         projectImage:
           project.media?.logo ||

@@ -40,6 +40,7 @@ export const transformToApiFormat = (stepData: {
       title: info?.name || '',
       banner: info?.banner || '',
       description: info?.description || '',
+      tagline: info?.tagline || '',
       slug: info?.slug || '',
       // Send categories array (new format, recommended)
       categories:
@@ -147,6 +148,7 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
       name: info?.title || '',
       banner: info?.banner || '',
       description: info?.description || '',
+      tagline: info.tagline || '',
       categories: categoriesArray,
       venueType: info?.venue?.type || 'physical',
       country: info?.venue?.country || '',

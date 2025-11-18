@@ -118,6 +118,7 @@ export default function Hero2() {
         <div className='relative mx-auto hidden h-[500px] max-w-5xl md:block'>
           <div className='absolute top-12 left-0 z-10 w-72 -rotate-3 transform cursor-pointer shadow-xl transition-transform duration-300 hover:rotate-0'>
             <HackathonCard
+              tagline='Build the future of boundless'
               organizationName='Boundless'
               deadlineInDays={10}
               categories={['Web3', 'DeFi', 'Blockchain']}
@@ -167,6 +168,7 @@ export default function Hero2() {
 
           <div className='absolute bottom-0 left-1/2 z-20 w-96 -translate-x-1/2 transform cursor-pointer rounded-2xl shadow-xl transition-transform duration-300 hover:scale-105'>
             <HackathonCard
+              tagline='Build the future of boundless'
               organizationName='Boundless'
               deadlineInDays={5}
               categories={['AI', 'Machine Learning', 'Open Source']}

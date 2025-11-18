@@ -17,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
+import ActivityHeatmap from './ActivityHeatMap';
+import { FutureFeature } from '../FeatureFuture';
 
 interface ProfileDataClientProps {
   user: GetMeResponse;
@@ -55,13 +57,13 @@ export default function ProfileDataClient({
             <TabsList className='h-auto w-full justify-start gap-6 bg-transparent p-0'>
               <TabsTrigger
                 value='activity'
-                className='data-[state=active]:border-primary rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white'
+                className='data-[state=active]:border-b-primary/45 rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white'
               >
                 Activity
               </TabsTrigger>
               <TabsTrigger
                 value='projects'
-                className='data-[state=active]:border-primary rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white'
+                className='data-[state=active]:border-b-primary/45 rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white'
               >
                 Projects
               </TabsTrigger>
@@ -109,6 +111,9 @@ export default function ProfileDataClient({
               </DropdownMenu>
 
               <ActivityFeed filter={selectedFilter} user={user} />
+              <FutureFeature className='w-full'>
+                <ActivityHeatmap />
+              </FutureFeature>
             </TabsContent>
 
             <TabsContent value='projects' className='mt-0'>
