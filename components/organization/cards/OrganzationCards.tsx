@@ -13,6 +13,7 @@ import {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { normalizeCloudinaryImageUrl } from '@/lib/utils/cloudinary-url';
+import { useOrganization } from '@/lib/providers/OrganizationProvider';
 import {
   Tooltip,
   TooltipContent,
@@ -58,6 +59,10 @@ export default function OrganizationCard({
   isDeleting = false,
 }: OrganizationCardProps) {
   const router = useRouter();
+  const { setActiveOrg, isLoadingActiveOrg, activeOrgId } = useOrganization();
+
+  // Check if this specific organization is being loaded
+  const isThisOrgLoading = isLoadingActiveOrg && activeOrgId === id;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -99,11 +104,24 @@ export default function OrganizationCard({
     }
   };
 
+  const handleCardClick = () => {
+    // Prevent clicks if this organization is currently being loaded
+    if (isThisOrgLoading) {
+      return;
+    }
+
+    // Set the active organization before navigating to ensure proper state sync
+    setActiveOrg(id);
+    router.push(`/organizations/${id}`);
+  };
+
   return (
     <TooltipProvider>
       <div
-        onClick={() => router.push(`/organizations/${id}`)}
-        className='group hover:shadow-primary/10 relative cursor-pointer overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-black transition-all duration-300 hover:border-zinc-700 hover:shadow-2xl'
+        onClick={handleCardClick}
+        className={`group hover:shadow-primary/10 relative cursor-pointer overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-black transition-all duration-300 hover:border-zinc-700 hover:shadow-2xl ${
+          isThisOrgLoading ? 'pointer-events-none opacity-75' : ''
+        }`}
       >
         {/* Animated gradient overlay on hover */}
         <div className='pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100'>

@@ -32,8 +32,7 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastMethod, setLastMethod] = useState<string | null>(null);
 
-  const callbackUrl =
-    searchParams.get('callbackUrl') || 'http://localhost:3000/';
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
 
   useEffect(() => {
     const method = authClient.getLastUsedLoginMethod();
