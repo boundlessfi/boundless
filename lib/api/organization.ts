@@ -22,6 +22,9 @@ export interface Organization {
   grants: string[];
   isProfileComplete: boolean;
   pendingInvites: string[];
+  isArchived?: boolean;
+  archivedBy?: string;
+  archivedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -314,6 +317,26 @@ export const deleteOrganization = async (
   organizationId: string
 ): Promise<DeleteOrganizationResponse> => {
   const res = await api.delete(`/organizations/${organizationId}`);
+  return res.data;
+};
+
+/**
+ * Archive an organization
+ */
+export const archiveOrganization = async (
+  organizationId: string
+): Promise<UpdateOrganizationResponse> => {
+  const res = await api.post(`/organizations/${organizationId}/archive`);
+  return res.data;
+};
+
+/**
+ * Unarchive an organization
+ */
+export const unarchiveOrganization = async (
+  organizationId: string
+): Promise<UpdateOrganizationResponse> => {
+  const res = await api.post(`/organizations/${organizationId}/unarchive`);
   return res.data;
 };
 

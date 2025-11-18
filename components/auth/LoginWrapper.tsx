@@ -40,6 +40,11 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
     setLastMethod(method);
   }, []);
 
+  useEffect(() => {
+    const method = authClient.getLastUsedLoginMethod();
+    setLastMethod(method);
+  }, []);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {

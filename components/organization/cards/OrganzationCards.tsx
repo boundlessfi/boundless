@@ -7,12 +7,14 @@ import {
   Calendar,
   Edit,
   Archive,
+  ArchiveRestore,
   Trash2,
   Loader2,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { normalizeCloudinaryImageUrl } from '@/lib/utils/cloudinary-url';
+import { useOrganization } from '@/lib/providers/OrganizationProvider';
 import {
   Tooltip,
   TooltipContent,
@@ -41,8 +43,11 @@ interface OrganizationCardProps {
   };
   onEdit?: (id: string) => void;
   onArchive?: (id: string) => void;
+  onUnarchive?: (id: string) => void;
   onDelete?: (id: string) => void;
   isDeleting?: boolean;
+  isArchiving?: boolean;
+  isArchived?: boolean;
 }
 
 export default function OrganizationCard({
@@ -54,10 +59,17 @@ export default function OrganizationCard({
   grants,
   onEdit,
   onArchive,
+  onUnarchive,
   onDelete,
   isDeleting = false,
+  isArchiving = false,
+  isArchived = false,
 }: OrganizationCardProps) {
   const router = useRouter();
+  const { setActiveOrg, isLoadingActiveOrg, activeOrgId } = useOrganization();
+
+  // Check if this specific organization is being loaded
+  const isThisOrgLoading = isLoadingActiveOrg && activeOrgId === id;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -81,10 +93,13 @@ export default function OrganizationCard({
     e.stopPropagation();
     if (onArchive) {
       onArchive(id);
-    } else {
-      if (confirm('Are you sure you want to archive this organization?')) {
-        // TODO: Implement archive functionality
-      }
+    }
+  };
+
+  const handleUnarchive = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onUnarchive) {
+      onUnarchive(id);
     }
   };
 
@@ -99,11 +114,26 @@ export default function OrganizationCard({
     }
   };
 
+  const handleCardClick = () => {
+    // Prevent clicks if this organization is currently being loaded
+    if (isThisOrgLoading) {
+      return;
+    }
+
+    // Set the active organization before navigating to ensure proper state sync
+    setActiveOrg(id);
+    router.push(`/organizations/${id}`);
+  };
+
   return (
     <TooltipProvider>
       <div
-        onClick={() => router.push(`/organizations/${id}`)}
-        className='group hover:shadow-primary/10 relative cursor-pointer overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-black transition-all duration-300 hover:border-zinc-700 hover:shadow-2xl'
+        onClick={handleCardClick}
+        className={`group hover:shadow-primary/10 relative cursor-pointer overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-2xl ${
+          isArchived
+            ? 'border-zinc-700/50 bg-gradient-to-br from-zinc-950 to-black opacity-60'
+            : 'border-zinc-800 bg-gradient-to-br from-zinc-900 to-black hover:border-zinc-700'
+        } ${isThisOrgLoading ? 'pointer-events-none opacity-75' : ''}`}
       >
         {/* Animated gradient overlay on hover */}
         <div className='pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100'>
@@ -132,9 +162,16 @@ export default function OrganizationCard({
 
               {/* Organization Info */}
               <div className='flex flex-col gap-1'>
-                <h3 className='group-hover:text-primary text-xl font-bold text-white transition-colors'>
-                  {name}
-                </h3>
+                <div className='flex items-center gap-2'>
+                  <h3 className='group-hover:text-primary text-xl font-bold text-white transition-colors'>
+                    {name}
+                  </h3>
+                  {isArchived && (
+                    <span className='rounded-full bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-400'>
+                      Archived
+                    </span>
+                  )}
+                </div>
                 <div className='flex items-center gap-2 text-sm text-zinc-500'>
                   <Calendar className='h-3.5 w-3.5' />
                   <span>Created {formatDate(createdAt)}</span>
@@ -158,20 +195,42 @@ export default function OrganizationCard({
                 className='w-48 border-zinc-800 bg-zinc-950'
                 onClick={e => e.stopPropagation()}
               >
-                <DropdownMenuItem
-                  onClick={handleEdit}
-                  className='focus:bg-primary cursor-pointer text-zinc-300 focus:text-black'
-                >
-                  <Edit className='mr-2 h-4 w-4' />
-                  Edit Organization
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleArchive}
-                  className='cursor-pointer text-zinc-300 focus:bg-zinc-800 focus:text-white'
-                >
-                  <Archive className='mr-2 h-4 w-4' />
-                  Archive
-                </DropdownMenuItem>
+                {!isArchived && (
+                  <DropdownMenuItem
+                    onClick={handleEdit}
+                    className='focus:bg-primary cursor-pointer text-zinc-300 focus:text-black'
+                  >
+                    <Edit className='mr-2 h-4 w-4' />
+                    Edit Organization
+                  </DropdownMenuItem>
+                )}
+                {isArchived ? (
+                  <DropdownMenuItem
+                    onClick={handleUnarchive}
+                    disabled={isArchiving}
+                    className='cursor-pointer text-zinc-300 focus:bg-zinc-800 focus:text-white disabled:cursor-not-allowed disabled:opacity-50'
+                  >
+                    {isArchiving ? (
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    ) : (
+                      <ArchiveRestore className='mr-2 h-4 w-4' />
+                    )}
+                    {isArchiving ? 'Unarchiving...' : 'Unarchive'}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={handleArchive}
+                    disabled={isArchiving}
+                    className='cursor-pointer text-zinc-300 focus:bg-zinc-800 focus:text-white disabled:cursor-not-allowed disabled:opacity-50'
+                  >
+                    {isArchiving ? (
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    ) : (
+                      <Archive className='mr-2 h-4 w-4' />
+                    )}
+                    {isArchiving ? 'Archiving...' : 'Archive'}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={handleDelete}
                   disabled={isDeleting}

@@ -2,7 +2,6 @@
 import {
   ChevronDown,
   Search,
-  Bell,
   Plus,
   ChevronRight,
   Zap,
@@ -31,11 +30,14 @@ import { useWalletContext } from '@/components/providers/wallet-provider';
 import { formatAddress } from '@/lib/wallet-utils';
 import { toast } from 'sonner';
 import { UserMenu } from '@/components/user/UserMenu';
+import { Skeleton } from '../ui/skeleton';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 export default function OrganizationHeader() {
   const pathname = usePathname();
   const isOnOrganizationsPage = pathname === '/organizations';
-  const { organizations, activeOrg, setActiveOrg } = useOrganization();
+  const { organizations, activeOrg, setActiveOrg, isLoadingActiveOrg } =
+    useOrganization();
   const { handleConnect, handleDisconnect } = useWallet();
   const { walletAddress, walletName } = useWalletContext();
   const [copied, setCopied] = useState(false);
@@ -58,10 +60,17 @@ export default function OrganizationHeader() {
       crumbs.push({ label: 'Organizations', href: '/organizations' });
 
       if (parts[1] && parts[1] !== 'new') {
+        // Show organization name in breadcrumb if available, or placeholder during loading
         if (activeOrg) {
           crumbs.push({
             label: activeOrg.name,
             href: `/organizations/${activeOrg._id}`,
+          });
+        } else if (isLoadingActiveOrg && parts[1]) {
+          // Show placeholder during loading
+          crumbs.push({
+            label: '',
+            href: `/organizations/${parts[1]}`,
           });
         }
 
@@ -78,7 +87,7 @@ export default function OrganizationHeader() {
     }
 
     return crumbs;
-  }, [pathname, activeOrg]);
+  }, [pathname, activeOrg, isLoadingActiveOrg]);
 
   // Quick actions based on context
   const quickActions = useMemo(() => {
@@ -161,9 +170,13 @@ export default function OrganizationHeader() {
             <div key={index} className='flex items-center gap-1.5'>
               <ChevronRight className='h-3.5 w-3.5 flex-shrink-0 text-zinc-700' />
               {index === breadcrumbs.slice(1).length - 1 ? (
-                <span className='truncate font-medium text-white'>
-                  {crumb.label}
-                </span>
+                isLoadingActiveOrg || !crumb.label ? (
+                  <Skeleton className='h-4 w-24' />
+                ) : (
+                  <span className='truncate font-medium text-white'>
+                    {crumb.label}
+                  </span>
+                )
               ) : (
                 <Link
                   href={crumb.href}
@@ -199,6 +212,7 @@ export default function OrganizationHeader() {
                       }
                     : undefined
                 }
+                isLoading={isLoadingActiveOrg}
                 onOrganizationChange={orgId => setActiveOrg(orgId)}
               />
             </div>
@@ -268,46 +282,7 @@ export default function OrganizationHeader() {
         )}
 
         {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className='relative flex items-center justify-center rounded-lg border border-zinc-800/50 bg-zinc-900/30 p-2 text-zinc-400 transition-all hover:border-zinc-700 hover:bg-zinc-900/50 hover:text-white'>
-              <Bell className='h-4 w-4' />
-              <span className='bg-primary absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-black'>
-                2
-              </span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className='w-80 rounded-xl border border-zinc-800/50 bg-zinc-950/95 p-0 backdrop-blur-xl'
-            align='end'
-          >
-            <div className='border-b border-zinc-800/50 p-4'>
-              <div className='flex items-center justify-between'>
-                <h3 className='font-semibold text-white'>Notifications</h3>
-                <span className='bg-primary/20 text-primary rounded-full px-2 py-0.5 text-xs font-semibold'>
-                  2 new
-                </span>
-              </div>
-            </div>
-            <div className='max-h-96 overflow-y-auto p-2'>
-              <div className='rounded-lg p-3 transition-colors hover:bg-zinc-900/50'>
-                <p className='text-sm text-white'>New submission received</p>
-                <p className='mt-1 text-xs text-zinc-500'>2 minutes ago</p>
-              </div>
-              <div className='rounded-lg p-3 transition-colors hover:bg-zinc-900/50'>
-                <p className='text-sm text-white'>
-                  Hackathon deadline approaching
-                </p>
-                <p className='mt-1 text-xs text-zinc-500'>1 hour ago</p>
-              </div>
-            </div>
-            <div className='border-t border-zinc-800/50 p-2'>
-              <button className='text-primary w-full rounded-lg py-2 text-center text-sm font-medium transition-colors hover:bg-zinc-900/50'>
-                View all notifications
-              </button>
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <NotificationBell limit={10} />
 
         {/* Wallet Connection */}
         {walletAddress ? (
