@@ -19,6 +19,7 @@ interface TransformedHackathon {
   organizerLogo: string;
   hackathonImage: string;
   hackathonTitle: string;
+  tagline: string;
   hackathonDescription: string;
   status: 'Published' | 'Ongoing' | 'Completed' | 'Cancelled';
   deadlineInDays: number;
@@ -153,6 +154,7 @@ export function useHackathonTransform() {
         organizationName: orgName,
         hackathonSlug: hackathon.information.slug,
         organizerName: orgName,
+        tagline: hackathon.information.tagline,
         organizerLogo: '/avatar.png', // This should come from organization data
         hackathonImage:
           hackathon.information?.banner ||

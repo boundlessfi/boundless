@@ -21,7 +21,7 @@ export default function HackathonPage() {
 
   const {
     currentHackathon,
-    content,
+    // content,
     timelineEvents,
     participants,
     submissions,
@@ -88,7 +88,6 @@ export default function HackathonPage() {
   if (loading) {
     return <LoadingScreen />;
   }
-
   if (!currentHackathon) {
     return (
       <div className='flex min-h-screen items-center justify-center'>
@@ -109,7 +108,7 @@ export default function HackathonPage() {
       {/* Banner */}
       <HackathonBanner
         title={currentHackathon.title}
-        subtitle={currentHackathon.subtitle}
+        tagline={currentHackathon.tagline}
         deadline={currentHackathon.deadline}
         categories={currentHackathon.categories}
         status={currentHackathon.status}
@@ -130,7 +129,7 @@ export default function HackathonPage() {
       <div className='mx-auto max-w-7xl px-6 py-12 text-white'>
         {activeTab === 'overview' && (
           <HackathonOverview
-            content={content}
+            content={currentHackathon.description}
             timelineEvents={timelineEvents}
             prizes={prizes}
             hackathonSlugOrId={hackathonId}

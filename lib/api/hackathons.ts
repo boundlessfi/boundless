@@ -42,6 +42,7 @@ export interface HackathonVenue {
 export interface HackathonInformation {
   title: string;
   banner: string;
+  tagline: string;
   description: string;
   categories: HackathonCategory[]; // New format (array of categories)
   slug: string;
@@ -735,6 +736,7 @@ export interface PublicHackathon {
   slug: string;
   title: string;
   subtitle: string;
+  tagline: string;
   description: string;
   imageUrl: string;
   status: 'upcoming' | 'ongoing' | 'ended';
@@ -800,6 +802,7 @@ interface FlatHackathonData {
   escrowDetails?: object;
   // Flat fields that map to nested structure
   banner?: string;
+  tagline?: string;
   description?: string;
   categories?: HackathonCategory[]; // New format
   venue?: HackathonVenue;
@@ -873,6 +876,7 @@ const transformHackathonResponse = (
       title: flat.title || '',
       banner: flat.banner || '',
       description: flat.description || '',
+      tagline: flat.tagline || '',
       slug: flat.slug || '',
       // Support both new format (categories) and legacy format (category)
       categories: Array.isArray(flat.categories)
@@ -1719,6 +1723,7 @@ export const transformPublicHackathonToHackathon = (
       description: publicHackathon.description,
       categories: categories,
       slug: publicHackathon.slug,
+      tagline: publicHackathon.tagline,
       venue,
     },
     timeline: {

@@ -60,6 +60,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             <AvatarImage
               src={user?.image || user?.profile?.avatar || ''}
               alt={user?.name || user?.profile?.firstName || ''}
+              className='object-cover'
             />
             <AvatarFallback className='from-primary/20 to-primary/5 text-primary bg-gradient-to-br text-xs font-semibold'>
               {(user?.name || user?.profile?.firstName || 'U')
@@ -82,6 +83,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           <div className='flex items-center gap-3'>
             <Avatar className='h-10 w-10 border border-zinc-800'>
               <AvatarImage
+                className='object-cover'
                 src={user?.image || user?.profile?.avatar || ''}
                 alt={user?.name || user?.profile?.firstName || ''}
               />
@@ -119,7 +121,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               className='flex items-center gap-3 hover:!text-white'
             >
               <User className='h-4 w-4 text-zinc-400' />
-              Profile
+              Your Profile
             </Link>
           </DropdownMenuItem>
 

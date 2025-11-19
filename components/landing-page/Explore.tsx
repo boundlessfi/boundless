@@ -117,6 +117,7 @@ const tabs = [
   { name: 'Featured Projects', value: 'featured-projects' },
   { name: 'Ongoing Hackathons', value: 'ongoing-hackathons' },
   { name: 'Open Grants', value: 'open-grants' },
+  { name: 'Bounties', value: 'live-grants' },
 ];
 
 export default function Explore() {

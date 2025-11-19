@@ -51,6 +51,7 @@ export default function InfoTab({
     defaultValues: {
       name: initialData?.name || '',
       banner: initialData?.banner || '',
+      tagline: initialData?.tagline || '',
       description: initialData?.description || '',
       categories: Array.isArray(initialData?.categories)
         ? initialData.categories
@@ -124,7 +125,27 @@ export default function InfoTab({
           name='banner'
           setValue={form.setValue}
         />
-
+        {/* Tagline */}
+        <FormField
+          control={form.control}
+          name='tagline'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className='text-sm font-medium text-white'>
+                Tagline <span className='text-red-500'>*</span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type='text'
+                  placeholder='Build the Future. Ship the Impossible. (Max of 200 char)'
+                  className='h-11 border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
+                />
+              </FormControl>
+              <FormMessage className='text-xs text-red-500' />
+            </FormItem>
+          )}
+        />
         {/* Description */}
         <FormField
           control={form.control}

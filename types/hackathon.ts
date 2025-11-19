@@ -115,7 +115,7 @@ export interface HackathonParticipationSettings {
 export interface Hackathon {
   id: string;
   title: string;
-  subtitle: string;
+  tagline: string;
   description: string;
   slug?: string;
   imageUrl: string;

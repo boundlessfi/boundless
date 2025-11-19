@@ -106,7 +106,7 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
           const hackathon: Hackathon = {
             id: transformed._id,
             title: transformed.information.title,
-            subtitle: transformed.participation?.about || '',
+            tagline: transformed.participation?.about || '',
             description: transformed.information.description,
             slug: transformed.information.slug || '',
             imageUrl: transformed.information.banner,
@@ -378,7 +378,7 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
       {/* Banner */}
       <HackathonBanner
         title={previewHackathon.title}
-        subtitle={previewHackathon.subtitle}
+        tagline={previewHackathon.tagline}
         deadline={previewHackathon.deadline}
         categories={previewHackathon.categories}
         status={previewHackathon.status}

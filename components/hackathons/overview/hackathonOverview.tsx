@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { HackathonTimeline } from './hackathonTimeline';
 import { HackathonPrizes } from './hackathonPrizes';
 import { JoinHackathonBanner } from './joinHackathon';
@@ -178,19 +179,8 @@ export function HackathonOverview({
 
       <article className='prose prose-sm sm:prose lg:prose-lg dark:prose-invert max-w-none text-left'>
         <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
           components={{
-            h1: ({ ...props }) => (
-              <h1 className='mb-6 text-4xl font-bold' {...props} />
-            ),
-            h2: ({ ...props }) => (
-              <h2 className='mt-8 mb-4 text-3xl font-bold' {...props} />
-            ),
-            h3: ({ ...props }) => (
-              <h3 className='mt-6 mb-3 text-2xl font-semibold' {...props} />
-            ),
-            p: ({ ...props }) => (
-              <p className='mb-4 text-base leading-7' {...props} />
-            ),
             ul: ({ ...props }) => (
               <ul
                 className='marker:text-primary mb-4 ml-4 list-inside list-disc space-y-2'
@@ -203,37 +193,34 @@ export function HackathonOverview({
                 {...props}
               />
             ),
-            li: ({ ...props }) => <li className='mb-1 text-base' {...props} />,
-            blockquote: ({ ...props }) => (
-              <blockquote
-                className='border-primary my-4 border-l-4 pl-4 text-gray-600 italic dark:text-gray-400'
-                {...props}
-              />
-            ),
-            code: ({ ...props }) => (
-              <code
-                className='rounded bg-gray-100 px-2 py-1 font-mono text-sm dark:bg-gray-800'
-                {...props}
-              />
-            ),
-            pre: ({ ...props }) => (
-              <pre
-                className='mb-4 overflow-auto rounded bg-gray-100 p-4 dark:bg-gray-800'
-                {...props}
-              />
-            ),
+
             table: ({ ...props }) => (
-              <table className='mb-4 w-full border-collapse' {...props} />
+              <table
+                className='w-full border border-gray-400 text-sm text-white'
+                {...props}
+              />
+            ),
+            thead: ({ ...props }) => (
+              <thead
+                className='border-b border-gray-400 text-white'
+                {...props}
+              />
+            ),
+            tbody: ({ ...props }) => (
+              <tbody className='text-white' {...props} />
+            ),
+            tr: ({ ...props }) => (
+              <tr className='border-b border-gray-400' {...props} />
             ),
             th: ({ ...props }) => (
               <th
-                className='border border-gray-300 bg-gray-100 px-4 py-2 dark:border-gray-700 dark:bg-gray-800'
+                className='border border-gray-400 px-3 py-2 text-left font-semibold text-white'
                 {...props}
               />
             ),
             td: ({ ...props }) => (
               <td
-                className='border border-gray-300 px-4 py-2 dark:border-gray-700'
+                className='border border-gray-400 px-3 py-2 text-white'
                 {...props}
               />
             ),
