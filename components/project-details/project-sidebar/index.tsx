@@ -39,13 +39,21 @@ export function ProjectSidebar({
     <div className='w-full space-y-6'>
       <ProjectSidebarHeader project={project} projectStatus={projectStatus} />
 
-      <p className='text-sm leading-relaxed text-white'>{project.vision}</p>
+      {project.vision && (
+        <div className='rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 backdrop-blur-sm'>
+          <p className='text-sm leading-relaxed text-gray-300'>
+            {project.vision}
+          </p>
+        </div>
+      )}
 
-      <ProjectSidebarProgress
-        project={project}
-        crowdfund={crowdfund}
-        projectStatus={projectStatus}
-      />
+      <div className='rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 backdrop-blur-sm'>
+        <ProjectSidebarProgress
+          project={project}
+          crowdfund={crowdfund}
+          projectStatus={projectStatus}
+        />
+      </div>
 
       <ProjectSidebarActions
         project={project}
@@ -57,10 +65,10 @@ export function ProjectSidebar({
       />
 
       {!isMobile && (
-        <>
+        <div className='space-y-6 border-t border-gray-800/50 pt-6'>
           <ProjectSidebarCreator project={project} />
           <ProjectSidebarLinks project={project} />
-        </>
+        </div>
       )}
     </div>
   );

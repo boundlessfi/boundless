@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-// import { ProjectSidebar } from './project-sidebar';
 import { ProjectDetails } from './project-details';
 import { ProjectAbout } from './project-about';
 import { ProjectTeam } from './project-team';
@@ -14,7 +13,7 @@ import ProjectMilestone from './project-milestone';
 import ProjectVoters from './project-voters';
 import ProjectBackers from './project-backers';
 import { ProjectSidebar } from './project-sidebar';
-// import FundProject from '@/components/modals/fund-project';
+import { cn } from '@/lib/utils';
 
 interface ProjectLayoutProps {
   project: CrowdfundingProject & {
@@ -115,9 +114,10 @@ export function ProjectLayout({ project, crowdfund }: ProjectLayoutProps) {
 
   if (isMobile) {
     return (
-      <div className='min-h-screen overflow-x-hidden bg-[#030303]'>
+      <div className='min-h-screen overflow-x-hidden bg-gradient-to-b from-[#030303] via-[#0a0a0a] to-[#030303]'>
         <div className='w-full'>
-          <div className='px-4 py-6'>
+          {/* Mobile Header with Sidebar */}
+          <div className='border-b border-gray-800/50 bg-gradient-to-b from-[#030303] to-[#0a0a0a] px-4 py-6 backdrop-blur-sm'>
             <ProjectSidebar
               project={project}
               crowdfund={crowdfund}
@@ -125,7 +125,8 @@ export function ProjectLayout({ project, crowdfund }: ProjectLayoutProps) {
             />
           </div>
 
-          <div className='w-full border-b border-gray-800'>
+          {/* Enhanced Tab Navigation */}
+          <div className='sticky top-0 z-40 w-full border-b border-gray-800/50 bg-[#030303]/80 backdrop-blur-md'>
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
@@ -133,66 +134,52 @@ export function ProjectLayout({ project, crowdfund }: ProjectLayoutProps) {
             >
               <TabsList className='relative h-auto w-full justify-start rounded-none bg-transparent p-0'>
                 <div
-                  className='scrollbar-hide flex w-full gap-4 overflow-x-auto px-4'
+                  className='scrollbar-hide flex w-full gap-2 overflow-x-auto px-4 py-3'
                   ref={tabsListRef}
                 >
                   {isLeftScrollable && (
                     <ChevronLeftCircle
-                      className='absolute top-1/2 left-0 z-10 -translate-y-1/2 cursor-pointer text-gray-400 transition-colors hover:text-white'
+                      className='absolute top-1/2 left-0 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-gray-900/80 text-gray-400 backdrop-blur-sm transition-all hover:bg-gray-800 hover:text-white'
                       onClick={scrollLeft}
-                      size={20}
+                      size={24}
                     />
                   )}
 
                   {isRightScrollable && (
                     <ChevronRightCircle
-                      className='absolute top-1/2 right-0 z-10 -translate-y-1/2 cursor-pointer text-gray-400 transition-colors hover:text-white'
+                      className='absolute top-1/2 right-0 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-gray-900/80 text-gray-400 backdrop-blur-sm transition-all hover:bg-gray-800 hover:text-white'
                       onClick={scrollRight}
-                      size={20}
+                      size={24}
                     />
                   )}
 
-                  <TabsTrigger
-                    value='about'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    About
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='details'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Details
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='team'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Team
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='milestones'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Milestones
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='voters'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Voters
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='comments'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Comments
-                  </TabsTrigger>
+                  {[
+                    { value: 'about', label: 'About' },
+                    { value: 'details', label: 'Details' },
+                    { value: 'team', label: 'Team' },
+                    { value: 'milestones', label: 'Milestones' },
+                    { value: 'voters', label: 'Voters' },
+                    { value: 'comments', label: 'Comments' },
+                  ].map(tab => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className={cn(
+                        'relative rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
+                        'text-gray-400 hover:text-gray-300',
+                        'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
+                        'data-[state=active]:border data-[state=active]:border-[#a7f950]/30'
+                      )}
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
                 </div>
               </TabsList>
             </Tabs>
           </div>
 
+          {/* Content Area */}
           <div className='px-4 py-6'>
             <Tabs
               value={activeTab}
@@ -210,55 +197,9 @@ export function ProjectLayout({ project, crowdfund }: ProjectLayoutProps) {
               </TabsContent>
               <TabsContent value='milestones' className='mt-0'>
                 <ProjectMilestone projectId={project._id} project={project} />
-
-                <div className='hidden space-y-6 text-white'>
-                  <h2 className='text-2xl font-bold text-white'>Milestones</h2>
-                  {project.milestones && project.milestones.length > 0 ? (
-                    <div className='space-y-4'>
-                      {project.milestones.map((milestone, index) => (
-                        <div
-                          key={index}
-                          className='rounded-lg border border-gray-800 bg-[#1A1A1A] p-6'
-                        >
-                          <div className='flex items-start justify-between'>
-                            <div className='flex-1'>
-                              <h3 className='text-lg font-semibold text-white'>
-                                {milestone.title}
-                              </h3>
-                              <p className='mt-2 text-gray-300'>
-                                {milestone.description}
-                              </p>
-                              <div className='mt-4 flex flex-wrap gap-4 text-sm text-gray-400'>
-                                <span>
-                                  Start:{' '}
-                                  {new Date(
-                                    milestone.dueDate
-                                  ).toLocaleDateString()}
-                                </span>
-                                <span>
-                                  End:{' '}
-                                  {new Date(
-                                    milestone.dueDate
-                                  ).toLocaleDateString()}
-                                </span>
-                                <span className='text-[#DBF936]'>
-                                  ${milestone.amount.toLocaleString()}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className='text-gray-400'>No milestones available.</p>
-                  )}
-                </div>
               </TabsContent>
               <TabsContent value='voters' className='mt-0'>
-                <div className='text-white'>
-                  Voters content coming soon.rgngogogo5gmomo..
-                </div>
+                <ProjectVoters project={project} />
               </TabsContent>
               <TabsContent value='comments' className='mt-0'>
                 <ProjectComments projectId={project._id} />
@@ -271,65 +212,57 @@ export function ProjectLayout({ project, crowdfund }: ProjectLayoutProps) {
   }
 
   return (
-    <div className='min-h-screen bg-[#030303]'>
-      <div className=''>
-        <div className='flex gap-12'>
-          <div className='w-full max-w-[400px]'>
-            <ProjectSidebar
-              project={project}
-              crowdfund={crowdfund}
-              isMobile={false}
-            />
+    <div className='min-h-screen bg-gradient-to-b from-[#030303] via-[#0a0a0a] to-[#030303]'>
+      <div className='mx-auto max-w-7xl'>
+        <div className='flex gap-8 lg:gap-12'>
+          {/* Sidebar - Sticky */}
+          <div className='sticky top-8 h-fit w-full max-w-[420px] shrink-0'>
+            <div className='rounded-2xl border border-gray-800/50 bg-gradient-to-b from-gray-900/50 to-gray-950/50 p-6 shadow-xl backdrop-blur-sm'>
+              <ProjectSidebar
+                project={project}
+                crowdfund={crowdfund}
+                isMobile={false}
+              />
+            </div>
           </div>
 
-          <div className='min-h-0 w-full max-w-[calc(100%-400px)]'>
+          {/* Main Content Area */}
+          <div className='min-h-0 flex-1'>
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
               className='w-full'
             >
-              <div className='border-b border-gray-800 py-0'>
-                <TabsList className='mb-0 h-auto w-fit justify-start gap-6 rounded-none bg-transparent p-0'>
-                  <TabsTrigger
-                    value='details'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Details
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='team'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Team
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='milestones'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Milestones
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='voters'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Voters
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='backers'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Backers
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value='comments'
-                    className='data-[state=active]:border-primary rounded-none border-x-0 border-t-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-gray-300 focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-x-0 data-[state=active]:border-t-0 data-[state=active]:border-b-2 data-[state=active]:text-white'
-                  >
-                    Comments
-                  </TabsTrigger>
+              {/* Enhanced Tab Navigation */}
+              <div className='sticky top-0 z-30 mb-8 border-b border-gray-800/50 bg-[#030303]/80 py-4 backdrop-blur-md'>
+                <TabsList className='h-auto w-fit justify-start gap-2 rounded-none bg-transparent p-0'>
+                  {[
+                    { value: 'details', label: 'Details' },
+                    { value: 'team', label: 'Team' },
+                    { value: 'milestones', label: 'Milestones' },
+                    { value: 'voters', label: 'Voters' },
+                    { value: 'backers', label: 'Backers' },
+                    { value: 'comments', label: 'Comments' },
+                  ].map(tab => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className={cn(
+                        'relative rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200',
+                        'text-gray-400 hover:bg-gray-800/30 hover:text-gray-300',
+                        'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
+                        'data-[state=active]:border data-[state=active]:border-[#a7f950]/30',
+                        'focus-visible:ring-2 focus-visible:ring-[#a7f950]/20'
+                      )}
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
                 </TabsList>
               </div>
 
-              <div>
+              {/* Tab Content */}
+              <div className='space-y-8'>
                 <TabsContent value='details' className='mt-0'>
                   <ProjectDetails project={project} />
                 </TabsContent>
@@ -353,7 +286,6 @@ export function ProjectLayout({ project, crowdfund }: ProjectLayoutProps) {
           </div>
         </div>
       </div>
-      {/* <FundProject open={false} setOpen={() => {}} /> */}
     </div>
   );
 }

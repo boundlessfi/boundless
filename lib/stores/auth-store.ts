@@ -282,7 +282,8 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      clearAuth: async () => {
+      clearAuth: () => {
+        // Clear state first
         set({
           user: null,
           accessToken: null,
@@ -292,11 +293,17 @@ export const useAuthStore = create<AuthState>()(
           error: null,
         });
 
-        // Clear cookies only on client side
+        // Clear cookies on client side
         if (typeof window !== 'undefined') {
           Cookies.remove('accessToken');
           Cookies.remove('refreshToken');
-          // Better Auth uses its own cookie names, but we'll let it handle cleanup
+
+          // Clear persisted storage after state update
+          // Use setTimeout to ensure persist middleware has processed the state change
+          setTimeout(() => {
+            const storage = getStorage();
+            storage.removeItem('auth-storage');
+          }, 0);
         }
       },
 

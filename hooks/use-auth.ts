@@ -202,21 +202,35 @@ export function useAuthActions() {
       // Clear Better Auth session
       await authClient.signOut({
         fetchOptions: {
-          onSuccess: () => {
+          onSuccess: async () => {
             // Clear Zustand store after Better Auth sign out
-            logout().catch(() => {
+            try {
+              await logout();
+            } catch {
               clearAuth();
-            });
+            }
+            // Clear persisted storage using zustand's persist API
+            if (typeof window !== 'undefined') {
+              useAuthStore.persist.clearStorage();
+            }
           },
           onError: () => {
             // Force clear local state even if API calls fail
             clearAuth();
+            // Clear persisted storage using zustand's persist API
+            if (typeof window !== 'undefined') {
+              useAuthStore.persist.clearStorage();
+            }
           },
         },
       });
     } catch {
       // Force clear local state even if API calls fail
       clearAuth();
+      // Clear persisted storage using zustand's persist API
+      if (typeof window !== 'undefined') {
+        useAuthStore.persist.clearStorage();
+      }
     }
   }, [logout, clearAuth]);
 
