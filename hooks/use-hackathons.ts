@@ -9,6 +9,7 @@ import {
   publishHackathon,
   updateHackathon,
   getHackathon,
+  deleteHackathon,
   getHackathons,
   getParticipants,
   type Hackathon,
@@ -87,6 +88,7 @@ export interface UseHackathonsReturn {
     hackathonId: string,
     data: UpdateHackathonRequest
   ) => Promise<Hackathon>;
+  deleteHackathonAction: (hackathonId: string) => Promise<void>;
   fetchHackathon: (hackathonId: string) => Promise<void>;
   fetchHackathons: (
     page?: number,
@@ -473,6 +475,36 @@ export function useHackathons(
     [organizationId, currentHackathon]
   );
 
+  // Delete Hackathon
+  const deleteHackathonAction = useCallback(
+    async (hackathonId: string): Promise<void> => {
+      if (!organizationId) {
+        throw new Error('Organization ID is required');
+      }
+
+      setHackathonsLoading(true);
+      setHackathonsError(null);
+
+      try {
+        await deleteHackathon(organizationId, hackathonId);
+        // Remove hackathon from list
+        setHackathons(prev => prev.filter(h => h._id !== hackathonId));
+        // Clear current hackathon if it was deleted
+        if (currentHackathon?._id === hackathonId) {
+          setCurrentHackathon(null);
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to delete hackathon';
+        setHackathonsError(errorMessage);
+        throw error;
+      } finally {
+        setHackathonsLoading(false);
+      }
+    },
+    [organizationId, currentHackathon]
+  );
+
   // Fetch Participants
   const fetchParticipants = useCallback(
     async (
@@ -563,6 +595,7 @@ export function useHackathons(
     // Actions - Published
     publishHackathonAction,
     updateHackathonAction,
+    deleteHackathonAction,
     fetchHackathon,
     fetchHackathons,
 

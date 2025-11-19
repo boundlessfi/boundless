@@ -61,6 +61,7 @@ export interface Discussion {
 }
 
 export interface SubmissionCardProps {
+  _id?: string;
   title: string;
   description: string;
   submitterName: string;
@@ -81,6 +82,36 @@ export interface SubmissionCardProps {
   hasUserUpvoted?: boolean;
 }
 
+export type ParticipantType = 'team' | 'individual' | 'team_or_individual';
+
+export interface HackathonSubmissionRequirements {
+  requireGithub?: boolean;
+  requireDemoVideo?: boolean;
+  requireOtherLinks?: boolean;
+}
+
+export interface HackathonTabVisibility {
+  detailsTab?: boolean;
+  participantsTab?: boolean;
+  resourcesTab?: boolean;
+  submissionTab?: boolean;
+  announcementsTab?: boolean;
+  discussionTab?: boolean;
+  winnersTab?: boolean;
+  sponsorsTab?: boolean;
+  joinATeamTab?: boolean;
+  rulesTab?: boolean;
+}
+
+export interface HackathonParticipationSettings {
+  participantType?: ParticipantType;
+  teamMin?: number;
+  teamMax?: number;
+  about?: string;
+  submissionRequirements?: HackathonSubmissionRequirements;
+  tabVisibility?: HackathonTabVisibility;
+}
+
 export interface Hackathon {
   id: string;
   title: string;
@@ -98,4 +129,7 @@ export interface Hackathon {
   organizer: string;
   featured?: boolean;
   resources?: string[];
+  participantType?: ParticipantType;
+  tabVisibility?: Pick<HackathonTabVisibility, 'joinATeamTab'>;
+  participation?: HackathonParticipationSettings;
 }

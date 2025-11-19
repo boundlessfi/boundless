@@ -22,6 +22,7 @@ interface SubmissionCardProps {
   daysLeft?: number;
   score?: number;
   image?: string;
+  submissionId?: string;
   onViewClick?: () => void;
   onUpvoteClick?: () => void;
   onCommentClick?: () => void;

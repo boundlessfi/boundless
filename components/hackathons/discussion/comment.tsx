@@ -1,313 +1,97 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { CommentsSortDropdown } from '@/components/project-details/comment-section/comments-sort-dropdown';
 import { CommentItem } from '@/components/project-details/comment-section/comment-item';
 import { CommentInput } from '@/components/project-details/comment-section/comment-input';
 import { CommentsEmptyState } from '@/components/project-details/comment-section/comments-empty-state';
-
-interface CommentUser {
-  _id: string;
-  profile: {
-    firstName: string;
-    lastName: string;
-    username: string;
-    avatar?: string;
-  };
-}
-
-interface CommentReactionCounts {
-  LIKE: number;
-  DISLIKE: number;
-  HELPFUL: number;
-}
-
-interface CommentEditHistory {
-  content: string;
-  editedAt: string;
-}
-
-interface CommentReport {
-  userId: string;
-  reason: 'spam' | 'inappropriate' | 'harassment' | 'misinformation' | 'other';
-  description?: string;
-  createdAt: string;
-}
-
-interface Discussion {
-  _id: string;
-  userId: CommentUser;
-  projectId: string;
-  content: string;
-  parentCommentId?: string;
-  status: 'active' | 'deleted' | 'flagged' | 'hidden';
-  editHistory: CommentEditHistory[];
-  reactionCounts: CommentReactionCounts;
-  totalReactions: number;
-  replyCount: number;
-  replies: Discussion[];
-  createdAt: string;
-  updatedAt: string;
-  isSpam: boolean;
-  reports: CommentReport[];
-}
+import { useDiscussions } from '@/hooks/hackathon/use-discussions-api';
+import { Loader2 } from 'lucide-react';
 
 interface HackathonDiscussionsProps {
   hackathonId: string;
+  organizationId?: string;
 }
-
-// Mock data
-const mockDiscussions: Discussion[] = [
-  {
-    _id: '1',
-    userId: {
-      _id: 'user1',
-      profile: {
-        firstName: 'Sarah',
-        lastName: 'Chen',
-        username: 'sarahc',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-      },
-    },
-    projectId: '',
-    content:
-      'Excited to participate in this hackathon! Are there any team formation channels?',
-    status: 'active',
-    createdAt: '2025-01-10T10:30:00Z',
-    updatedAt: '2025-01-10T10:30:00Z',
-    totalReactions: 12,
-    reactionCounts: { LIKE: 12, DISLIKE: 0, HELPFUL: 0 },
-    editHistory: [],
-    replyCount: 1,
-    isSpam: false,
-    reports: [],
-    replies: [
-      {
-        _id: '1-1',
-        userId: {
-          _id: 'user2',
-          profile: {
-            firstName: 'Alex',
-            lastName: 'Rodriguez',
-            username: 'alexr',
-            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-          },
-        },
-        projectId: '',
-        content:
-          "Yes! Check out the Discord server, there's a #team-formation channel.",
-        status: 'active',
-        createdAt: '2025-01-10T11:00:00Z',
-        updatedAt: '2025-01-10T11:00:00Z',
-        totalReactions: 5,
-        reactionCounts: { LIKE: 5, DISLIKE: 0, HELPFUL: 0 },
-        editHistory: [],
-        replyCount: 0,
-        isSpam: false,
-        reports: [],
-        replies: [],
-        parentCommentId: '1',
-      },
-    ],
-  },
-  {
-    _id: '2',
-    userId: {
-      _id: 'user3',
-      profile: {
-        firstName: 'Michael',
-        lastName: 'Chen',
-        username: 'michaelc',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael',
-      },
-    },
-    projectId: '',
-    content:
-      'What technologies are allowed for this hackathon? Can we use any framework?',
-    status: 'active',
-    createdAt: '2025-01-11T14:20:00Z',
-    updatedAt: '2025-01-11T14:20:00Z',
-    totalReactions: 8,
-    reactionCounts: { LIKE: 8, DISLIKE: 0, HELPFUL: 0 },
-    editHistory: [],
-    replyCount: 0,
-    isSpam: false,
-    reports: [],
-    replies: [],
-  },
-  {
-    _id: '3',
-    userId: {
-      _id: 'user4',
-      profile: {
-        firstName: 'Emily',
-        lastName: 'Zhang',
-        username: 'emilyz',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily',
-      },
-    },
-    projectId: '',
-    content:
-      "Looking forward to the workshops! Will they be recorded for those who can't attend live?",
-    status: 'active',
-    createdAt: '2025-01-12T09:15:00Z',
-    updatedAt: '2025-01-12T09:15:00Z',
-    totalReactions: 15,
-    reactionCounts: { LIKE: 15, DISLIKE: 0, HELPFUL: 0 },
-    editHistory: [],
-    replyCount: 0,
-    isSpam: false,
-    reports: [],
-    replies: [],
-  },
-];
-
 export function HackathonDiscussions({
   hackathonId,
+  organizationId,
 }: HackathonDiscussionsProps) {
   const [sortBy, setSortBy] = useState<
     'createdAt' | 'updatedAt' | 'totalReactions'
   >('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [discussions, setDiscussions] = useState<Discussion[]>(mockDiscussions);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Sort discussions
-  const sortedDiscussions = [...discussions].sort((a, b) => {
-    let comparison = 0;
-    if (sortBy === 'createdAt')
-      comparison =
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    else if (sortBy === 'updatedAt')
-      comparison =
-        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-    else comparison = a.totalReactions - b.totalReactions;
-    return sortOrder === 'desc' ? -comparison : comparison;
+  const {
+    discussions,
+    isLoading,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    error,
+    addDiscussion,
+    addReply,
+    updateDiscussion,
+    deleteDiscussion,
+    reportDiscussion,
+    fetchDiscussions,
+  } = useDiscussions({
+    hackathonSlugOrId: hackathonId,
+    organizationId,
+    autoFetch: true,
+    sortBy,
+    sortOrder,
   });
+
+  // Sort discussions client-side (API may also sort, but we do it here for consistency)
+  const sortedDiscussions = useMemo(() => {
+    return [...discussions].sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'createdAt') {
+        comparison =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortBy === 'updatedAt') {
+        comparison =
+          new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+      } else {
+        comparison = a.totalReactions - b.totalReactions;
+      }
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+  }, [discussions, sortBy, sortOrder]);
 
   const handleAddDiscussion = async (content: string) => {
     try {
-      setLoading(true);
-      const newDiscussion: Discussion = {
-        _id: Date.now().toString(),
-        userId: {
-          _id: 'current-user',
-          profile: {
-            firstName: 'Current',
-            lastName: 'User',
-            username: 'currentuser',
-            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Current',
-          },
-        },
-        projectId: hackathonId,
-        content,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        totalReactions: 0,
-        reactionCounts: { LIKE: 0, DISLIKE: 0, HELPFUL: 0 },
-        editHistory: [],
-        replyCount: 0,
-        isSpam: false,
-        reports: [],
-        replies: [],
-      };
-      setDiscussions([newDiscussion, ...discussions]);
+      await addDiscussion(content);
+      // Discussions will be automatically updated by the hook
     } catch {
-      setError('Failed to post discussion');
-    } finally {
-      setLoading(false);
+      // Error is already handled in the hook
     }
   };
 
   const handleAddReply = async (parentCommentId: string, content: string) => {
     try {
-      setLoading(true);
-      const newReply: Discussion = {
-        _id: `${Date.now()}`,
-        userId: {
-          _id: 'current-user',
-          profile: {
-            firstName: 'Current',
-            lastName: 'User',
-            username: 'currentuser',
-            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Current',
-          },
-        },
-        projectId: hackathonId,
-        content,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        totalReactions: 0,
-        reactionCounts: { LIKE: 0, DISLIKE: 0, HELPFUL: 0 },
-        editHistory: [],
-        replyCount: 0,
-        isSpam: false,
-        reports: [],
-        replies: [],
-        parentCommentId,
-      };
-
-      const updateReplies = (items: Discussion[]): Discussion[] =>
-        items.map(item =>
-          item._id === parentCommentId
-            ? {
-                ...item,
-                replies: [...item.replies, newReply],
-                replyCount: item.replyCount + 1,
-              }
-            : { ...item, replies: updateReplies(item.replies) }
-        );
-
-      setDiscussions(updateReplies(discussions));
+      await addReply(parentCommentId, content);
+      // Discussions will be automatically updated by the hook
     } catch {
-      setError('Failed to post reply');
-    } finally {
-      setLoading(false);
+      // Error is already handled in the hook
     }
   };
 
   const handleUpdateDiscussion = async (commentId: string, content: string) => {
     try {
-      setLoading(true);
-      const updateContent = (items: Discussion[]): Discussion[] =>
-        items.map(item =>
-          item._id === commentId
-            ? {
-                ...item,
-                content,
-                updatedAt: new Date().toISOString(),
-                editHistory: [
-                  ...item.editHistory,
-                  { content: item.content, editedAt: new Date().toISOString() },
-                ],
-              }
-            : { ...item, replies: updateContent(item.replies) }
-        );
-
-      setDiscussions(updateContent(discussions));
+      await updateDiscussion(commentId, content);
+      // Discussions will be automatically updated by the hook
     } catch {
-      setError('Failed to update discussion');
-    } finally {
-      setLoading(false);
+      // Error is already handled in the hook
     }
   };
 
   const handleDeleteDiscussion = async (commentId: string) => {
     try {
-      setLoading(true);
-      const deleteItem = (items: Discussion[]): Discussion[] =>
-        items
-          .filter(item => item._id !== commentId)
-          .map(item => ({ ...item, replies: deleteItem(item.replies) }));
-
-      setDiscussions(deleteItem(discussions));
+      await deleteDiscussion(commentId);
+      // Discussions will be automatically updated by the hook
     } catch {
-      setError('Failed to delete discussion');
-    } finally {
-      setLoading(false);
+      // Error is already handled in the hook
     }
   };
 
@@ -317,30 +101,30 @@ export function HackathonDiscussions({
     description?: string
   ) => {
     try {
-      setLoading(true);
-      // Example: replace this console.log with actual API call
-      void { commentId, reason, description }; // ✅ avoids eslint 'no-unused-vars'
+      await reportDiscussion(commentId, reason, description);
+      // Report is handled, no need to update discussions
     } catch {
-      setError('Failed to report discussion');
-    } finally {
-      setLoading(false);
+      // Error is already handled in the hook
     }
   };
 
-  if (loading && discussions.length === 0)
+  const loading = isLoading && discussions.length === 0;
+
+  if (loading)
     return (
-      <div className='flex w-full items-center justify-center py-8 text-gray-500'>
-        Loading discussions...
+      <div className='flex w-full items-center justify-center py-8'>
+        <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
+        <span className='ml-3 text-gray-400'>Loading discussions...</span>
       </div>
     );
 
   if (error && discussions.length === 0)
     return (
-      <div className='w-full py-4 text-center text-red-600'>
-        Error loading discussions: {error}
+      <div className='w-full py-4 text-center'>
+        <p className='mb-4 text-red-400'>Error loading discussions: {error}</p>
         <button
-          onClick={() => setError(null)}
-          className='mx-auto mt-2 block rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700'
+          onClick={() => fetchDiscussions()}
+          className='rounded-md bg-[#a7f950] px-4 py-2 text-black hover:bg-[#8fd93f]'
         >
           Retry
         </button>
@@ -380,9 +164,20 @@ export function HackathonDiscussions({
         <CommentInput onSubmit={handleAddDiscussion} />
       </div>
 
-      {error && (
-        <div className='mx-4 mt-4 rounded-md border border-red-200 bg-red-50 p-3 md:mx-0'>
-          <p className='text-sm text-red-600'>{error}</p>
+      {error && discussions.length > 0 && (
+        <div className='mx-4 mt-4 rounded-md border border-red-500/50 bg-red-500/10 p-3 md:mx-0'>
+          <p className='text-sm text-red-400'>{error}</p>
+        </div>
+      )}
+
+      {(isCreating || isUpdating || isDeleting) && (
+        <div className='mx-4 mt-4 flex items-center gap-2 text-sm text-gray-400 md:mx-0'>
+          <Loader2 className='h-4 w-4 animate-spin' />
+          <span>
+            {isCreating && 'Posting...'}
+            {isUpdating && 'Updating...'}
+            {isDeleting && 'Deleting...'}
+          </span>
         </div>
       )}
     </div>

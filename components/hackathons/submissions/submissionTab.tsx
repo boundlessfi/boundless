@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { Search, ChevronDown, Plus, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,9 +11,33 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import SubmissionCard from './submissionCard';
+import { CreateSubmissionModal } from './CreateSubmissionModal';
+import { SubmissionDetailModal } from './SubmissionDetailModal';
 import { useSubmissions } from '@/hooks/hackathon/use-submissions';
+import { useSubmission } from '@/hooks/hackathon/use-submission';
+import { useHackathonData } from '@/lib/providers/hackathonProvider';
+import { useAuthStatus } from '@/hooks/use-auth';
+import { useParams } from 'next/navigation';
 
-const SubmissionTab: React.FC = () => {
+interface SubmissionTabProps {
+  hackathonSlugOrId?: string;
+  organizationId?: string;
+}
+
+const SubmissionTab: React.FC<SubmissionTabProps> = ({
+  hackathonSlugOrId,
+  organizationId,
+}) => {
+  const params = useParams();
+  const { isAuthenticated } = useAuthStatus();
+  const { currentHackathon } = useHackathonData();
+  const hackathonId =
+    hackathonSlugOrId ||
+    (params.slug as string) ||
+    currentHackathon?.slug ||
+    '';
+  const orgId = organizationId || undefined;
+
   const {
     submissions,
     searchTerm,
@@ -25,17 +50,136 @@ const SubmissionTab: React.FC = () => {
     setSelectedCategory,
   } = useSubmissions();
 
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<
+    string | null
+  >(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const {
+    submission: mySubmission,
+    isFetching: isLoadingMySubmission,
+    fetchMySubmission,
+  } = useSubmission({
+    hackathonSlugOrId: hackathonId,
+    organizationId: orgId,
+    autoFetch: isAuthenticated && !!hackathonId,
+  });
+
+  const handleViewSubmission = (submissionId?: string) => {
+    if (submissionId) {
+      setSelectedSubmissionId(submissionId);
+      setShowDetailModal(true);
+    }
+  };
+
+  const handleUpvoteSubmission = (submissionId?: string) => {
+    if (submissionId) {
+      setSelectedSubmissionId(submissionId);
+      setShowDetailModal(true);
+    }
+  };
+
+  const handleCommentSubmission = (submissionId?: string) => {
+    if (submissionId) {
+      setSelectedSubmissionId(submissionId);
+      setShowDetailModal(true);
+    }
+  };
+
   return (
     <div className='w-full'>
       {/* Stats Section */}
-      <div className='mb-6 flex items-center gap-4 text-left text-sm'>
+      <div className='mb-6 flex items-center justify-between text-left text-sm'>
         <span className='text-gray-400'>
           <span className='font-semibold text-[#a7f950]'>
             {submissions.filter(p => p.status === 'Approved').length}
           </span>{' '}
           total approved submissions
         </span>
+        {isAuthenticated && hackathonId && (
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
+          >
+            {mySubmission ? (
+              <>
+                <Edit className='mr-2 h-4 w-4' />
+                Edit Submission
+              </>
+            ) : (
+              <>
+                <Plus className='mr-2 h-4 w-4' />
+                Create Submission
+              </>
+            )}
+          </Button>
+        )}
       </div>
+
+      {/* My Submission Section */}
+      {isAuthenticated && hackathonId && (
+        <div className='mb-6'>
+          {isLoadingMySubmission ? (
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center'>
+              <p className='text-gray-400'>Loading your submission...</p>
+            </div>
+          ) : mySubmission ? (
+            <div className='mb-6 rounded-lg border border-[#a7f950]/30 bg-gray-800/50 p-4'>
+              <div className='mb-2 flex items-center justify-between'>
+                <h3 className='text-lg font-semibold text-white'>
+                  Your Submission
+                </h3>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => setShowCreateModal(true)}
+                  className='border-gray-700 text-white hover:bg-gray-800'
+                >
+                  <Edit className='mr-2 h-4 w-4' />
+                  Edit
+                </Button>
+              </div>
+              <SubmissionCard
+                title={mySubmission.projectName}
+                description={mySubmission.description}
+                submitterName='You'
+                category={mySubmission.category}
+                status={
+                  mySubmission.status === 'submitted' ? 'Pending' : 'Approved'
+                }
+                upvotes={
+                  typeof mySubmission.votes === 'number'
+                    ? mySubmission.votes
+                    : 0
+                }
+                comments={
+                  typeof mySubmission.comments === 'number'
+                    ? mySubmission.comments
+                    : 0
+                }
+                submittedDate={mySubmission.submissionDate}
+                image={mySubmission.logo || '/placeholder.svg'}
+                onViewClick={() => setShowCreateModal(true)}
+                onUpvoteClick={() => {}}
+                onCommentClick={() => {}}
+              />
+            </div>
+          ) : (
+            <div className='mb-6 rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center'>
+              <p className='mb-4 text-gray-400'>
+                You haven't submitted a project yet.
+              </p>
+              <Button
+                onClick={() => setShowCreateModal(true)}
+                className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
+              >
+                <Plus className='mr-2 h-4 w-4' />
+                Create Your Submission
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div className='mb-8 flex flex-col items-start gap-4 md:flex-row md:items-center'>
@@ -111,28 +255,86 @@ const SubmissionTab: React.FC = () => {
       {/* Submissions Grid */}
       {submissions.length > 0 ? (
         <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-          {submissions.map(
-            (submission, index) =>
-              submission.status === 'Approved' && (
-                <SubmissionCard
-                  key={index}
-                  {...submission}
-                  onViewClick={() => {}}
-                  onUpvoteClick={() => {}}
-                  onCommentClick={() => {}}
-                />
-              )
-          )}
+          {submissions
+            .filter(submission => submission.status === 'Approved')
+            .map((submission, index) => (
+              <SubmissionCard
+                key={submission._id || index}
+                {...submission}
+                submissionId={(submission as { _id?: string })?._id}
+                onViewClick={() =>
+                  handleViewSubmission((submission as { _id?: string })?._id)
+                }
+                onUpvoteClick={() => {
+                  if (!isAuthenticated) {
+                    // Authentication check is handled in the hook, but we can show a message
+                    return;
+                  }
+                  handleUpvoteSubmission((submission as { _id?: string })?._id);
+                }}
+                onCommentClick={() => {
+                  if (!isAuthenticated) {
+                    // Authentication check is handled in the hook, but we can show a message
+                    return;
+                  }
+                  handleCommentSubmission(
+                    (submission as { _id?: string })?._id
+                  );
+                }}
+              />
+            ))}
         </div>
       ) : (
         <div className='flex min-h-[400px] items-center justify-center'>
           <div className='text-center'>
             <p className='text-xl text-gray-400'>No submissions found</p>
             <p className='mt-2 text-sm text-gray-500'>
-              Try adjusting your filters or search term
+              {searchTerm || selectedCategory !== 'All Categories'
+                ? 'Try adjusting your filters or search term'
+                : 'Be the first to submit a project!'}
             </p>
           </div>
         </div>
+      )}
+
+      {hackathonId && (
+        <>
+          <CreateSubmissionModal
+            open={showCreateModal}
+            onOpenChange={setShowCreateModal}
+            hackathonSlugOrId={hackathonId}
+            organizationId={orgId}
+            initialData={
+              mySubmission
+                ? {
+                    projectName: mySubmission.projectName,
+                    category: mySubmission.category,
+                    description: mySubmission.description,
+                    logo: mySubmission.logo,
+                    videoUrl: mySubmission.videoUrl,
+                    introduction: mySubmission.introduction,
+                    links: mySubmission.links,
+                  }
+                : undefined
+            }
+            submissionId={mySubmission?._id}
+            onSuccess={() => {
+              fetchMySubmission();
+            }}
+          />
+          {selectedSubmissionId && (
+            <SubmissionDetailModal
+              open={showDetailModal}
+              onOpenChange={setShowDetailModal}
+              hackathonSlugOrId={hackathonId}
+              submissionId={selectedSubmissionId}
+              organizationId={orgId}
+              onVoteChange={() => {
+                // Refresh submissions list if needed
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );
