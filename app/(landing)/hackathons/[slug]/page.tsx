@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
+import { useRegisterHackathon } from '@/hooks/hackathon/use-register-hackathon';
+import { RegisterHackathonModal } from '@/components/hackathons/overview/RegisterHackathonModal';
 
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
@@ -64,6 +66,47 @@ export default function HackathonPage() {
 
   const hackathonId = params.slug as string;
   const [activeTab, setActiveTab] = useState('overview');
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+
+  // Registration logic
+  const { isRegistered, hasSubmitted, checkStatus } = useRegisterHackathon({
+    hackathonSlugOrId: hackathonId,
+    organizationId: undefined, // organizationId not available in currentHackathon type
+    autoCheck: !!hackathonId,
+  });
+
+  const isEnded = currentHackathon?.status === 'ended';
+
+  // Check if team formation is available
+  const isTeamHackathon =
+    currentHackathon?.participation?.participantType === 'team' ||
+    currentHackathon?.participation?.participantType === 'team_or_individual';
+
+  const isTeamFormationEnabled =
+    isTeamHackathon &&
+    currentHackathon?.participation?.tabVisibility?.joinATeamTab !== false;
+
+  // Button handlers
+  const handleJoinClick = () => {
+    setShowRegisterModal(true);
+  };
+
+  const handleRegisterSuccess = () => {
+    checkStatus();
+    router.push('?tab=submission');
+  };
+
+  const handleSubmitClick = () => {
+    router.push('?tab=submission');
+  };
+
+  const handleViewSubmissionClick = () => {
+    router.push('?tab=submission');
+  };
+
+  const handleFindTeamClick = () => {
+    router.push('?tab=team-formation');
+  };
 
   useEffect(() => {
     if (hackathonId) {
@@ -115,8 +158,28 @@ export default function HackathonPage() {
         participants={currentHackathon.participants}
         totalPrizePool={currentHackathon.totalPrizePool}
         imageUrl={currentHackathon.imageUrl}
-        startDate={currentHackathon.startDate} // if upcoming
+        startDate={currentHackathon.startDate}
+        endDate={currentHackathon.endDate}
+        isRegistered={isRegistered}
+        hasSubmitted={hasSubmitted}
+        isEnded={isEnded}
+        isTeamFormationEnabled={isTeamFormationEnabled}
+        onJoinClick={handleJoinClick}
+        onSubmitClick={handleSubmitClick}
+        onViewSubmissionClick={handleViewSubmissionClick}
+        onFindTeamClick={handleFindTeamClick}
       />
+
+      {/* Registration Modal */}
+      {hackathonId && (
+        <RegisterHackathonModal
+          open={showRegisterModal}
+          onOpenChange={setShowRegisterModal}
+          hackathonSlugOrId={hackathonId}
+          organizationId={undefined}
+          onSuccess={handleRegisterSuccess}
+        />
+      )}
 
       {/* Tabs */}
       <HackathonNavTabs

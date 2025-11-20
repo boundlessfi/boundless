@@ -16,6 +16,7 @@ import JudgingTab from './tabs/JudgingTab';
 import CollaborationTab from './tabs/CollaborationTab';
 import ReviewTab from './tabs/ReviewTab';
 import type { StepKey } from './constants';
+import { isStepDataValid } from '@/lib/utils/hackathon-step-validation';
 
 interface NewHackathonTabProps {
   organizationId?: string;
@@ -67,40 +68,59 @@ export default function NewHackathonTab({
     onDraftLoaded: (formData, firstIncompleteStep) => {
       setStepData(formData);
       setActiveTab(firstIncompleteStep);
+
+      // Use the validation helper to determine completion status
+      // This checks if the step data has meaningful values, not just empty objects
       const newSteps: Record<StepKey, (typeof steps)[StepKey]> = {
         information: {
-          status: formData.information ? 'completed' : 'active',
-          isCompleted: !!formData.information,
+          status: isStepDataValid('information', formData)
+            ? 'completed'
+            : 'active',
+          isCompleted: isStepDataValid('information', formData),
         },
         timeline: {
-          status: formData.timeline ? 'completed' : 'pending',
-          isCompleted: !!formData.timeline,
+          status: isStepDataValid('timeline', formData)
+            ? 'completed'
+            : 'pending',
+          isCompleted: isStepDataValid('timeline', formData),
         },
         participation: {
-          status: formData.participation ? 'completed' : 'pending',
-          isCompleted: !!formData.participation,
+          status: isStepDataValid('participation', formData)
+            ? 'completed'
+            : 'pending',
+          isCompleted: isStepDataValid('participation', formData),
         },
         rewards: {
-          status: formData.rewards ? 'completed' : 'pending',
-          isCompleted: !!formData.rewards,
+          status: isStepDataValid('rewards', formData)
+            ? 'completed'
+            : 'pending',
+          isCompleted: isStepDataValid('rewards', formData),
         },
         judging: {
-          status: formData.judging ? 'completed' : 'pending',
-          isCompleted: !!formData.judging,
+          status: isStepDataValid('judging', formData)
+            ? 'completed'
+            : 'pending',
+          isCompleted: isStepDataValid('judging', formData),
         },
         collaboration: {
-          status: formData.collaboration ? 'completed' : 'pending',
-          isCompleted: !!formData.collaboration,
+          status: isStepDataValid('collaboration', formData)
+            ? 'completed'
+            : 'pending',
+          isCompleted: isStepDataValid('collaboration', formData),
         },
         review: {
           status: 'pending',
           isCompleted: false,
         },
       };
+
+      // Set the first incomplete step as active
       newSteps[firstIncompleteStep] = {
         ...newSteps[firstIncompleteStep],
         status: 'active',
       };
+
+      // Update all step completions
       Object.keys(newSteps).forEach(key => {
         updateStepCompletion(
           key as StepKey,
