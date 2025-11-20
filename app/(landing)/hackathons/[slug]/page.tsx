@@ -20,7 +20,6 @@ export default function HackathonPage() {
 
   const {
     currentHackathon,
-    // content,
     timelineEvents,
     participants,
     submissions,
