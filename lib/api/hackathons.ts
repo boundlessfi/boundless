@@ -1,5 +1,6 @@
 import api, { type RequestConfig } from './api';
 import { ApiResponse, ErrorResponse, PaginatedResponse } from './types';
+import { Discussion } from '@/types/hackathon';
 
 // Enums matching backend models
 export enum HackathonCategory {
@@ -243,6 +244,12 @@ export interface GetHackathonResponse extends ApiResponse<Hackathon> {
   message: string;
 }
 
+export interface DeleteHackathonResponse extends ApiResponse<null> {
+  success: true;
+  data: null;
+  message: string;
+}
+
 export interface GetHackathonsResponse extends PaginatedResponse<Hackathon> {
   success: true;
   data: Hackathon[];
@@ -412,6 +419,84 @@ export interface GetParticipantsResponse
     hasNext: boolean;
     hasPrev: boolean;
   };
+}
+
+export interface RegisterForHackathonRequest {
+  participationType: 'individual' | 'team';
+  teamName?: string;
+  teamMembers?: string[];
+}
+
+export interface RegisterForHackathonResponse extends ApiResponse<Participant> {
+  success: true;
+  data: Participant;
+  message: string;
+}
+
+export interface CheckRegistrationStatusResponse
+  extends ApiResponse<Participant | null> {
+  success: true;
+  data: Participant | null;
+  message: string;
+}
+
+export interface CreateSubmissionRequest {
+  projectName: string;
+  category: string;
+  description: string;
+  logo?: string;
+  videoUrl?: string;
+  introduction?: string;
+  links?: Array<{ type: string; url: string }>;
+}
+
+export interface UpdateSubmissionRequest extends CreateSubmissionRequest {
+  submissionId: string;
+}
+
+export interface CreateSubmissionResponse
+  extends ApiResponse<ParticipantSubmission> {
+  success: true;
+  data: ParticipantSubmission;
+  message: string;
+}
+
+export interface UpdateSubmissionResponse
+  extends ApiResponse<ParticipantSubmission> {
+  success: true;
+  data: ParticipantSubmission;
+  message: string;
+}
+
+export interface GetMySubmissionResponse
+  extends ApiResponse<ParticipantSubmission | null> {
+  success: true;
+  data: ParticipantSubmission | null;
+  message: string;
+}
+
+export interface GetSubmissionDetailsResponse
+  extends ApiResponse<ParticipantSubmission> {
+  success: true;
+  data: ParticipantSubmission;
+  message: string;
+}
+
+export interface VoteSubmissionRequest {
+  value: 1 | -1; // 1 for upvote, -1 for downvote
+}
+
+export interface VoteSubmissionResponse
+  extends ApiResponse<{ votes: number; hasVoted: boolean }> {
+  success: true;
+  data: { votes: number; hasVoted: boolean };
+  message: string;
+}
+
+export interface RemoveVoteResponse extends ApiResponse<{ votes: number }> {
+  success: true;
+  data: { votes: number };
+  message: string;
 }
 
 // Judging API Types
@@ -1015,6 +1100,19 @@ export const getHackathon = async (
 };
 
 /**
+ * Delete a hackathon
+ */
+export const deleteHackathon = async (
+  organizationId: string,
+  hackathonId: string
+): Promise<DeleteHackathonResponse> => {
+  const res = await api.delete(
+    `/organizations/${organizationId}/hackathons/${hackathonId}`
+  );
+  return res.data;
+};
+
+/**
  * Get all hackathons for an organization
  */
 export const getHackathons = async (
@@ -1326,6 +1424,187 @@ export const getParticipants = async (
 };
 
 /**
+ * Register for a hackathon
+ * Supports both slug-based (public) and organization/hackathon ID (authenticated) endpoints
+ */
+export const registerForHackathon = async (
+  hackathonSlugOrId: string,
+  data: RegisterForHackathonRequest,
+  organizationId?: string
+): Promise<RegisterForHackathonResponse> => {
+  let url: string;
+
+  // If organizationId is provided, use authenticated endpoint
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/register`;
+  } else {
+    // Otherwise, use public slug-based endpoint
+    url = `/hackathons/${hackathonSlugOrId}/register`;
+  }
+
+  const res = await api.post(url, data);
+  return res.data;
+};
+
+/**
+ * Check registration status for a hackathon
+ * Returns participant data if registered, null otherwise
+ */
+export const checkRegistrationStatus = async (
+  hackathonSlugOrId: string,
+  organizationId?: string
+): Promise<CheckRegistrationStatusResponse> => {
+  let url: string;
+
+  // If organizationId is provided, use authenticated endpoint
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/register/status`;
+  } else {
+    // Otherwise, use public slug-based endpoint
+    url = `/hackathons/${hackathonSlugOrId}/register/status`;
+  }
+
+  const res = await api.get(url);
+  return res.data;
+};
+
+/**
+ * Create a submission for a hackathon
+ * Supports both slug-based (public) and organization/hackathon ID (authenticated) endpoints
+ */
+export const createSubmission = async (
+  hackathonSlugOrId: string,
+  data: CreateSubmissionRequest,
+  organizationId?: string
+): Promise<CreateSubmissionResponse> => {
+  let url: string;
+
+  // If organizationId is provided, use authenticated endpoint
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/submissions`;
+  } else {
+    // Otherwise, use public slug-based endpoint
+    url = `/hackathons/${hackathonSlugOrId}/submissions`;
+  }
+
+  const res = await api.post(url, data);
+  return res.data;
+};
+
+/**
+ * Update a submission for a hackathon
+ */
+export const updateSubmission = async (
+  hackathonSlugOrId: string,
+  submissionId: string,
+  data: Omit<CreateSubmissionRequest, 'projectName'>,
+  organizationId?: string
+): Promise<UpdateSubmissionResponse> => {
+  let url: string;
+
+  // If organizationId is provided, use authenticated endpoint
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/submissions/${submissionId}`;
+  } else {
+    // Otherwise, use public slug-based endpoint
+    url = `/hackathons/${hackathonSlugOrId}/submissions/${submissionId}`;
+  }
+
+  const res = await api.put(url, data);
+  return res.data;
+};
+
+/**
+ * Get current user's submission for a hackathon
+ * Returns submission if exists, null otherwise
+ */
+export const getMySubmission = async (
+  hackathonSlugOrId: string,
+  organizationId?: string
+): Promise<GetMySubmissionResponse> => {
+  let url: string;
+
+  // If organizationId is provided, use authenticated endpoint
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/submissions/me`;
+  } else {
+    // Otherwise, use public slug-based endpoint
+    url = `/hackathons/${hackathonSlugOrId}/submissions/me`;
+  }
+
+  const res = await api.get(url);
+  return res.data;
+};
+
+/**
+ * Get submission details by ID
+ * Returns full submission with votes and comments
+ */
+export const getSubmissionDetails = async (
+  hackathonSlugOrId: string,
+  submissionId: string,
+  organizationId?: string
+): Promise<GetSubmissionDetailsResponse> => {
+  let url: string;
+
+  // If organizationId is provided, use authenticated endpoint
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/submissions/${submissionId}`;
+  } else {
+    // Otherwise, use public slug-based endpoint
+    url = `/hackathons/${hackathonSlugOrId}/submissions/${submissionId}`;
+  }
+
+  const res = await api.get(url);
+  return res.data;
+};
+
+/**
+ * Vote on a submission (upvote or downvote)
+ */
+export const upvoteSubmission = async (
+  hackathonSlugOrId: string,
+  submissionId: string,
+  data: VoteSubmissionRequest,
+  organizationId?: string
+): Promise<VoteSubmissionResponse> => {
+  let url: string;
+
+  // If organizationId is provided, use authenticated endpoint
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/submissions/${submissionId}/vote`;
+  } else {
+    // Otherwise, use public slug-based endpoint
+    url = `/hackathons/${hackathonSlugOrId}/submissions/${submissionId}/vote`;
+  }
+
+  const res = await api.post(url, data);
+  return res.data;
+};
+
+/**
+ * Remove vote from a submission
+ */
+export const removeVote = async (
+  hackathonSlugOrId: string,
+  submissionId: string,
+  organizationId?: string
+): Promise<RemoveVoteResponse> => {
+  let url: string;
+
+  // If organizationId is provided, use authenticated endpoint
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/submissions/${submissionId}/vote`;
+  } else {
+    // Otherwise, use public slug-based endpoint
+    url = `/hackathons/${hackathonSlugOrId}/submissions/${submissionId}/vote`;
+  }
+
+  const res = await api.delete(url);
+  return res.data;
+};
+
+/**
  * Get public list of hackathons (no authentication required)
  * This endpoint provides server-side filtering, sorting, and pagination
  */
@@ -1565,4 +1844,494 @@ export const isPublishHackathonRequest = (
     'judging' in obj &&
     'collaboration' in obj
   );
+};
+
+// ============================================
+// Discussions API Types and Functions
+// ============================================
+
+export interface CreateDiscussionRequest {
+  content: string;
+  parentCommentId?: string;
+}
+
+export interface UpdateDiscussionRequest {
+  content: string;
+}
+
+export interface ReportDiscussionRequest {
+  reason: 'spam' | 'inappropriate' | 'harassment' | 'misinformation' | 'other';
+  description?: string;
+}
+
+export interface GetHackathonDiscussionsResponse
+  extends PaginatedResponse<Discussion> {
+  success: true;
+  data: Discussion[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  message: string;
+}
+
+export interface CreateDiscussionResponse extends ApiResponse<Discussion> {
+  success: true;
+  data: Discussion;
+  message: string;
+}
+
+export interface UpdateDiscussionResponse extends ApiResponse<Discussion> {
+  success: true;
+  data: Discussion;
+  message: string;
+}
+
+export interface DeleteDiscussionResponse extends ApiResponse<null> {
+  success: true;
+  data: null;
+  message: string;
+}
+
+export interface ReplyToDiscussionResponse extends ApiResponse<Discussion> {
+  success: true;
+  data: Discussion;
+  message: string;
+}
+
+export interface ReportDiscussionResponse extends ApiResponse<null> {
+  success: true;
+  data: null;
+  message: string;
+}
+
+/**
+ * Get discussions for a hackathon
+ */
+export const getHackathonDiscussions = async (
+  hackathonSlugOrId: string,
+  options?: {
+    page?: number;
+    limit?: number;
+    sortBy?: 'createdAt' | 'updatedAt' | 'totalReactions';
+    sortOrder?: 'asc' | 'desc';
+    organizationId?: string;
+  }
+): Promise<GetHackathonDiscussionsResponse> => {
+  const params = new URLSearchParams();
+
+  if (options?.page) {
+    params.append('page', options.page.toString());
+  }
+  if (options?.limit) {
+    params.append('limit', options.limit.toString());
+  }
+  if (options?.sortBy) {
+    params.append('sortBy', options.sortBy);
+  }
+  if (options?.sortOrder) {
+    params.append('sortOrder', options.sortOrder);
+  }
+
+  let url: string;
+  if (options?.organizationId) {
+    url = `/organizations/${options.organizationId}/hackathons/${hackathonSlugOrId}/discussions?${params.toString()}`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/discussions?${params.toString()}`;
+  }
+
+  const res = await api.get(url);
+  return res.data;
+};
+
+/**
+ * Create a new discussion/comment
+ */
+export const createDiscussion = async (
+  hackathonSlugOrId: string,
+  data: CreateDiscussionRequest,
+  organizationId?: string
+): Promise<CreateDiscussionResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/discussions`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/discussions`;
+  }
+
+  const res = await api.post(url, data);
+  return res.data;
+};
+
+/**
+ * Update a discussion/comment
+ */
+export const updateDiscussion = async (
+  hackathonSlugOrId: string,
+  discussionId: string,
+  data: UpdateDiscussionRequest,
+  organizationId?: string
+): Promise<UpdateDiscussionResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/discussions/${discussionId}`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/discussions/${discussionId}`;
+  }
+
+  const res = await api.put(url, data);
+  return res.data;
+};
+
+/**
+ * Delete a discussion/comment
+ */
+export const deleteDiscussion = async (
+  hackathonSlugOrId: string,
+  discussionId: string,
+  organizationId?: string
+): Promise<DeleteDiscussionResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/discussions/${discussionId}`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/discussions/${discussionId}`;
+  }
+
+  const res = await api.delete(url);
+  return res.data;
+};
+
+/**
+ * Reply to a discussion/comment
+ */
+export const replyToDiscussion = async (
+  hackathonSlugOrId: string,
+  parentCommentId: string,
+  data: CreateDiscussionRequest,
+  organizationId?: string
+): Promise<ReplyToDiscussionResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/discussions/${parentCommentId}/replies`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/discussions/${parentCommentId}/replies`;
+  }
+
+  const res = await api.post(url, data);
+  return res.data;
+};
+
+/**
+ * Report a discussion/comment
+ */
+export const reportDiscussion = async (
+  hackathonSlugOrId: string,
+  discussionId: string,
+  data: ReportDiscussionRequest,
+  organizationId?: string
+): Promise<ReportDiscussionResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/discussions/${discussionId}/report`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/discussions/${discussionId}/report`;
+  }
+
+  const res = await api.post(url, data);
+  return res.data;
+};
+
+// ============================================
+// Resources API Types and Functions
+// ============================================
+
+export interface HackathonResource {
+  _id: string;
+  title: string;
+  type: 'pdf' | 'doc' | 'sheet' | 'slide' | 'link' | 'video';
+  url: string;
+  size?: string;
+  description?: string;
+  uploadDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GetHackathonResourcesResponse
+  extends ApiResponse<HackathonResource[]> {
+  success: true;
+  data: HackathonResource[];
+  message: string;
+}
+
+/**
+ * Get resources for a hackathon
+ */
+export const getHackathonResources = async (
+  hackathonSlugOrId: string,
+  organizationId?: string
+): Promise<GetHackathonResourcesResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/resources`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/resources`;
+  }
+
+  const res = await api.get(url);
+  return res.data;
+};
+
+// ============================================
+// Team Formation API Types and Functions
+// ============================================
+
+export interface TeamRecruitmentPost {
+  _id: string;
+  hackathonId: string;
+  organizationId: string;
+  createdBy: {
+    userId: string;
+    name: string;
+    avatar?: string;
+    username: string;
+  };
+  projectName: string;
+  projectDescription: string;
+  lookingFor: Array<{
+    role: string;
+    skills?: string[];
+  }>;
+  currentTeamSize: number;
+  maxTeamSize: number;
+  contactMethod: 'email' | 'telegram' | 'discord' | 'github' | 'other';
+  contactInfo: string;
+  status: 'active' | 'filled' | 'closed';
+  createdAt: string;
+  updatedAt: string;
+  views?: number;
+  contactCount?: number;
+}
+
+export interface CreateTeamPostRequest {
+  projectName: string;
+  projectDescription: string;
+  lookingFor: Array<{
+    role: string;
+    skills?: string[];
+  }>;
+  currentTeamSize: number;
+  maxTeamSize: number;
+  contactMethod: 'email' | 'telegram' | 'discord' | 'github' | 'other';
+  contactInfo: string;
+}
+
+export interface UpdateTeamPostRequest extends Partial<CreateTeamPostRequest> {
+  status?: 'active' | 'filled' | 'closed';
+}
+
+export interface GetTeamPostsOptions {
+  page?: number;
+  limit?: number;
+  role?: string;
+  skill?: string;
+  status?: 'active' | 'filled' | 'closed' | 'all';
+  search?: string;
+  sortBy?: 'createdAt' | 'updatedAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface GetTeamPostsResponse
+  extends PaginatedResponse<TeamRecruitmentPost> {
+  success: true;
+  data: TeamRecruitmentPost[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  message: string;
+}
+
+export interface GetTeamPostDetailsResponse
+  extends ApiResponse<TeamRecruitmentPost> {
+  success: true;
+  data: TeamRecruitmentPost;
+  message: string;
+}
+
+export interface CreateTeamPostResponse
+  extends ApiResponse<TeamRecruitmentPost> {
+  success: true;
+  data: TeamRecruitmentPost;
+  message: string;
+}
+
+export interface UpdateTeamPostResponse
+  extends ApiResponse<TeamRecruitmentPost> {
+  success: true;
+  data: TeamRecruitmentPost;
+  message: string;
+}
+
+export interface DeleteTeamPostResponse extends ApiResponse<null> {
+  success: true;
+  data: null;
+  message: string;
+}
+
+export interface TrackContactClickResponse extends ApiResponse<null> {
+  success: true;
+  data: null;
+  message: string;
+}
+
+/**
+ * Create a team recruitment post
+ */
+export const createTeamPost = async (
+  hackathonSlugOrId: string,
+  data: CreateTeamPostRequest,
+  organizationId?: string
+): Promise<CreateTeamPostResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/team-posts`;
+  }
+
+  const res = await api.post(url, data);
+  return res.data;
+};
+
+/**
+ * Get team recruitment posts with filters
+ */
+export const getTeamPosts = async (
+  hackathonSlugOrId: string,
+  options?: GetTeamPostsOptions,
+  organizationId?: string
+): Promise<GetTeamPostsResponse> => {
+  const params = new URLSearchParams();
+
+  if (options?.page) {
+    params.append('page', options.page.toString());
+  }
+  if (options?.limit) {
+    params.append('limit', options.limit.toString());
+  }
+  if (options?.role) {
+    params.append('role', options.role);
+  }
+  if (options?.skill) {
+    params.append('skill', options.skill);
+  }
+  if (options?.status && options.status !== 'all') {
+    params.append('status', options.status);
+  }
+  if (options?.search) {
+    params.append('search', options.search);
+  }
+  if (options?.sortBy) {
+    params.append('sortBy', options.sortBy);
+  }
+  if (options?.sortOrder) {
+    params.append('sortOrder', options.sortOrder);
+  }
+
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts?${params.toString()}`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/team-posts?${params.toString()}`;
+  }
+
+  const res = await api.get(url);
+  return res.data;
+};
+
+/**
+ * Get team recruitment post details
+ */
+export const getTeamPostDetails = async (
+  hackathonSlugOrId: string,
+  postId: string,
+  organizationId?: string
+): Promise<GetTeamPostDetailsResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+  }
+
+  const res = await api.get(url);
+  return res.data;
+};
+
+/**
+ * Update a team recruitment post
+ */
+export const updateTeamPost = async (
+  hackathonSlugOrId: string,
+  postId: string,
+  data: UpdateTeamPostRequest,
+  organizationId?: string
+): Promise<UpdateTeamPostResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+  }
+
+  const res = await api.put(url, data);
+  return res.data;
+};
+
+/**
+ * Delete/close a team recruitment post
+ */
+export const deleteTeamPost = async (
+  hackathonSlugOrId: string,
+  postId: string,
+  organizationId?: string
+): Promise<DeleteTeamPostResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+  }
+
+  const res = await api.delete(url);
+  return res.data;
+};
+
+/**
+ * Track contact click (optional analytics)
+ */
+export const trackContactClick = async (
+  hackathonSlugOrId: string,
+  postId: string,
+  organizationId?: string
+): Promise<TrackContactClickResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts/${postId}/contact`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/team-posts/${postId}/contact`;
+  }
+
+  const res = await api.post(url);
+  return res.data;
 };

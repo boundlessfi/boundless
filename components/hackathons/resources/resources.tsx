@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import {
   BarChart3,
   FileEdit,
@@ -7,67 +8,84 @@ import {
   Link2,
   Presentation,
   VideoIcon,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
+import {
+  getHackathonResources,
+  type HackathonResource,
+} from '@/lib/api/hackathons';
+import { toast } from 'sonner';
 
-interface ResourceItem {
-  id: number;
-  title: string;
-  type: 'pdf' | 'doc' | 'sheet' | 'slide' | 'link';
-  size?: string;
-  url: string;
-  uploadDate: string;
-  description?: string;
+interface HackathonResourcesProps {
+  hackathonSlugOrId?: string;
+  organizationId?: string;
 }
 
-export function HackathonResources() {
-  const resources: ResourceItem[] = [
-    // Documents
+export function HackathonResources({
+  hackathonSlugOrId,
+  organizationId,
+}: HackathonResourcesProps) {
+  const [resources, setResources] = useState<HackathonResource[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (hackathonSlugOrId) {
+      fetchResources();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hackathonSlugOrId, organizationId]);
+
+  const fetchResources = async () => {
+    if (!hackathonSlugOrId) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await getHackathonResources(
+        hackathonSlugOrId,
+        organizationId
+      );
+      if (response.success && response.data) {
+        setResources(response.data);
+      } else {
+        throw new Error(response.message || 'Failed to fetch resources');
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to load resources';
+      setError(errorMessage);
+      toast.error('Error', { description: errorMessage });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Separate resources by type
+  const videoResources = resources.filter(r => r.type === 'video');
+  const documentResources = resources.filter(r => r.type !== 'video');
+
+  // Mock resources for fallback (if API returns empty)
+  const mockResources: HackathonResource[] = [
     {
-      id: 1,
+      _id: '1',
       title: 'Hackathon Rulebook',
       type: 'pdf',
       size: '2.4 MB',
       url: '#',
       uploadDate: 'Oct 15, 2024',
       description: 'Complete rules and guidelines for participation',
-    },
-    {
-      id: 2,
-      title: 'Submission Template',
-      type: 'doc',
-      size: '1.1 MB',
-      url: '#',
-      uploadDate: 'Oct 15, 2024',
-      description: 'Template for project submission documentation',
-    },
-    {
-      id: 3,
-      title: 'Judging Criteria',
-      type: 'sheet',
-      size: '0.8 MB',
-      url: '#',
-      uploadDate: 'Oct 14, 2024',
-      description: 'Detailed breakdown of judging criteria and scoring',
-    },
-    {
-      id: 5,
-      title: 'Design Resources',
-      type: 'slide',
-      size: '5.7 MB',
-      url: '#',
-      uploadDate: 'Oct 12, 2024',
-      description: 'Design assets and presentation templates',
-    },
-    {
-      id: 7,
-      title: 'GitHub Repository',
-      type: 'link',
-      url: 'https://github.com/techvision/hackathon-2024',
-      uploadDate: 'Oct 14, 2024',
-      description: 'Starter code and project templates',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     },
   ];
+
+  const displayResources = resources.length > 0 ? resources : mockResources;
+  const displayVideoResources = videoResources.length > 0 ? videoResources : [];
+  const displayDocumentResources =
+    documentResources.length > 0 ? documentResources : displayResources;
 
   const getFileIcon = (type: string) => {
     const iconClass = 'w-5 h-5';
@@ -105,6 +123,29 @@ export function HackathonResources() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className='flex min-h-[400px] items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
+        <span className='ml-3 text-gray-400'>Loading resources...</span>
+      </div>
+    );
+  }
+
+  if (error && resources.length === 0) {
+    return (
+      <div className='flex min-h-[400px] flex-col items-center justify-center'>
+        <p className='mb-4 text-red-400'>{error}</p>
+        <button
+          onClick={fetchResources}
+          className='rounded-md bg-[#a7f950] px-4 py-2 text-black hover:bg-[#8fd93f]'
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className='space-y-8'>
       {/* Header */}
@@ -115,29 +156,36 @@ export function HackathonResources() {
       </div>
 
       {/* Video Guides Section */}
-      <section className=''>
-        <h3 className='mb-4 flex items-center gap-2 text-xl font-semibold text-white'>
-          <div className='bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full'>
-            <VideoIcon className='text-primary h-5 w-5' />
-          </div>
-          Video Guides
-        </h3>
+      {displayVideoResources.length > 0 && (
+        <section className=''>
+          <h3 className='mb-4 flex items-center gap-2 text-xl font-semibold text-white'>
+            <div className='bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full'>
+              <VideoIcon className='text-primary h-5 w-5' />
+            </div>
+            Video Guides
+          </h3>
 
-        <div className='mb-6'>
-          <div className='aspect-video overflow-hidden bg-black'>
-            <iframe
-              src={`https://www.youtube.com/embed/IbSTKM8ib98`}
-              className='h-full w-full'
-              allowFullScreen
-              title='Hackathon Guide Video'
-              allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-            />
+          <div className='mb-6 space-y-4'>
+            {displayVideoResources.map(resource => (
+              <div
+                key={resource._id}
+                className='aspect-video overflow-hidden rounded-lg bg-black'
+              >
+                <iframe
+                  src={resource.url}
+                  className='h-full w-full'
+                  allowFullScreen
+                  title={resource.title}
+                  allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                />
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Documents & Resources Section */}
-      <section className='pt-6'>
+      <section className={displayVideoResources.length > 0 ? 'pt-6' : ''}>
         <h3 className='mb-4 flex items-center gap-2 text-xl font-semibold text-white'>
           <div className='bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full'>
             <Library className='text-primary h-5 w-5' />
@@ -145,48 +193,69 @@ export function HackathonResources() {
           Documents & Resources
         </h3>
 
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-          {resources.map(resource => (
-            <Link
-              key={resource.id}
-              href={resource.url}
-              target={resource.type === 'link' ? '_blank' : '_self'}
-              rel={resource.type === 'link' ? 'noopener noreferrer' : ''}
-              className='border-primary/45 hover:border-primary/80 hover:bg-primary/5 group rounded-md border p-4 text-left transition-all'
-            >
-              <div className='flex items-start gap-3'>
-                <div className='relative flex-shrink-0'>
-                  <div className='flex h-16 w-20 items-center justify-center bg-gray-800 transition-colors group-hover:bg-gray-700'>
-                    {getFileIcon(resource.type)}
+        {displayDocumentResources.length === 0 ? (
+          <div className='flex min-h-[200px] items-center justify-center rounded-lg border border-gray-700 bg-gray-800/50'>
+            <p className='text-gray-400'>No resources available yet.</p>
+          </div>
+        ) : (
+          <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+            {displayDocumentResources.map(resource => (
+              <Link
+                key={resource._id}
+                href={resource.url}
+                target={resource.type === 'link' ? '_blank' : '_self'}
+                rel={resource.type === 'link' ? 'noopener noreferrer' : ''}
+                className='border-primary/45 hover:border-primary/80 hover:bg-primary/5 group rounded-md border p-4 text-left transition-all'
+              >
+                <div className='flex items-start gap-3'>
+                  <div className='relative flex-shrink-0'>
+                    <div className='flex h-16 w-20 items-center justify-center bg-gray-800 transition-colors group-hover:bg-gray-700'>
+                      {getFileIcon(resource.type)}
+                    </div>
+                    <span className='absolute right-1 bottom-1 rounded bg-black/80 px-1 text-xs text-white'>
+                      {getTypeLabel(resource.type)}
+                    </span>
                   </div>
-                  <span className='absolute right-1 bottom-1 rounded bg-black/80 px-1 text-xs text-white'>
-                    {getTypeLabel(resource.type)}
-                  </span>
-                </div>
-                <div className='min-w-0 flex-1'>
-                  <h5 className='group-hover:text-primary truncate text-sm font-medium text-white transition-colors'>
-                    {resource.title}
-                  </h5>
-                  {resource.description && (
-                    <p className='mt-1 line-clamp-2 text-xs text-gray-400'>
-                      {resource.description}
-                    </p>
-                  )}
-                  <div className='mt-1 flex items-center gap-2 text-xs text-gray-400'>
-                    {resource.size && (
-                      <>
-                        <span>{resource.size}</span>
-                        <span>•</span>
-                      </>
+                  <div className='min-w-0 flex-1'>
+                    <h5 className='group-hover:text-primary truncate text-sm font-medium text-white transition-colors'>
+                      {resource.title}
+                    </h5>
+                    {resource.description && (
+                      <p className='mt-1 line-clamp-2 text-xs text-gray-400'>
+                        {resource.description}
+                      </p>
                     )}
-                    <span>{resource.uploadDate}</span>
+                    <div className='mt-1 flex items-center gap-2 text-xs text-gray-400'>
+                      {resource.size && (
+                        <>
+                          <span>{resource.size}</span>
+                          <span>•</span>
+                        </>
+                      )}
+                      <span>
+                        {new Date(resource.uploadDate).toLocaleDateString(
+                          'en-US',
+                          {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          }
+                        )}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
+
+      {error && resources.length > 0 && (
+        <div className='rounded-md border border-red-500/50 bg-red-500/10 p-3'>
+          <p className='text-sm text-red-400'>{error}</p>
+        </div>
+      )}
     </div>
   );
 }

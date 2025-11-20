@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Form,
   FormControl,
@@ -29,7 +30,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
-import { api } from '@/lib/api/api';
+import { deleteHackathon } from '@/lib/api/hackathons';
 import { toast } from 'sonner';
 
 const advancedSettingsSchema = z.object({
@@ -59,7 +60,9 @@ export default function AdvancedSettingsTab({
   onSave,
   isLoading = false,
 }: AdvancedSettingsTabProps) {
+  const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const form = useForm<AdvancedSettingsFormData>({
     resolver: zodResolver(advancedSettingsSchema),
@@ -83,16 +86,37 @@ export default function AdvancedSettingsTab({
   };
 
   const handleDelete = async () => {
+    setIsDeleting(true);
     try {
-      await api.delete(
-        `/organizations/${organizationId}/hackathons/${hackathonId}`
-      );
-      toast.success('Hackathon deleted successfully');
+      await deleteHackathon(organizationId, hackathonId);
+      toast.success('Hackathon deleted successfully', {
+        description: 'All associated data has been permanently removed.',
+      });
       setShowDeleteDialog(false);
       // Redirect to hackathons list
-      window.location.href = `/organizations/${organizationId}/hackathons`;
-    } catch {
-      toast.error('Failed to delete hackathon');
+      router.push(`/organizations/${organizationId}/hackathons`);
+    } catch (error) {
+      let errorMessage = 'Failed to delete hackathon. Please try again.';
+
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        if (errorMsg.includes('forbidden') || errorMsg.includes('permission')) {
+          errorMessage = 'You do not have permission to delete this hackathon.';
+        } else if (errorMsg.includes('not found')) {
+          errorMessage =
+            'Hackathon not found. It may have already been deleted.';
+        } else if (errorMsg.includes('server') || errorMsg.includes('500')) {
+          errorMessage = 'Server error. Please try again later.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      toast.error('Failed to delete hackathon', {
+        description: errorMessage,
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -387,9 +411,10 @@ export default function AdvancedSettingsTab({
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
-                className='bg-red-600 text-white hover:bg-red-700'
+                disabled={isDeleting}
+                className='bg-red-600 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50'
               >
-                Delete
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

@@ -11,6 +11,7 @@ import { HackathonParticipants } from '@/components/hackathons/participants/hack
 import { HackathonResources } from '@/components/hackathons/resources/resources';
 import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
 import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
+import { TeamFormationTab } from '@/components/hackathons/team-formation/TeamFormationTab';
 import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/LoadingScreen';
 
 export default function HackathonPage() {
@@ -28,8 +29,8 @@ export default function HackathonPage() {
     setCurrentHackathon,
   } = useHackathonData();
 
-  const hackathonTabs = useMemo(
-    () => [
+  const hackathonTabs = useMemo(() => {
+    const tabs = [
       { id: 'overview', label: 'Overview' },
       { id: 'participants', label: 'Participants', badge: participants.length },
       { id: 'resources', label: 'Resources' },
@@ -39,9 +40,26 @@ export default function HackathonPage() {
         badge: submissions.filter(p => p.status === 'Approved').length,
       },
       { id: 'discussions', label: 'Discussions' },
-    ],
-    [participants.length, submissions]
-  );
+    ];
+
+    const participantType = currentHackathon?.participation?.participantType;
+    const isTeamHackathon =
+      participantType === 'team' || participantType === 'team_or_individual';
+
+    const isTabEnabled =
+      currentHackathon?.participation?.tabVisibility?.joinATeamTab !== false;
+
+    if (isTeamHackathon && isTabEnabled) {
+      tabs.push({ id: 'team-formation', label: 'Find Team' });
+    }
+
+    return tabs;
+  }, [
+    participants.length,
+    submissions,
+    currentHackathon?.participation?.participantType,
+    currentHackathon?.participation?.tabVisibility?.joinATeamTab,
+  ]);
 
   const hackathonId = params.slug as string;
   const [activeTab, setActiveTab] = useState('overview');
@@ -113,17 +131,26 @@ export default function HackathonPage() {
             content={currentHackathon.description}
             timelineEvents={timelineEvents}
             prizes={prizes}
+            hackathonSlugOrId={hackathonId}
           />
         )}
 
         {activeTab === 'participants' && <HackathonParticipants />}
 
-        {activeTab === 'resources' && <HackathonResources />}
+        {activeTab === 'resources' && (
+          <HackathonResources hackathonSlugOrId={hackathonId} />
+        )}
 
-        {activeTab === 'submission' && <SubmissionTab />}
+        {activeTab === 'submission' && (
+          <SubmissionTab hackathonSlugOrId={hackathonId} />
+        )}
 
         {activeTab === 'discussions' && (
           <HackathonDiscussions hackathonId={hackathonId} />
+        )}
+
+        {activeTab === 'team-formation' && (
+          <TeamFormationTab hackathonSlugOrId={hackathonId} />
         )}
       </div>
     </div>

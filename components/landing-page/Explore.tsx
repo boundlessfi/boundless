@@ -3,115 +3,134 @@
 import { cn } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import ProjectCard from './project/ProjectCard';
+import HackathonCard from './hackathon/HackathonCard';
 import Link from 'next/link';
+import { getProjects } from '@/lib/api/project';
+import {
+  getPublicHackathonsList,
+  transformPublicHackathonToHackathon,
+} from '@/lib/api/hackathons';
+import { useHackathonTransform } from '@/hooks/hackathon/use-hackathon-transform';
+import type { Hackathon } from '@/lib/api/hackathons';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface ExploreProject {
-  id: string;
-  daysToDeadline?: number;
-  status: 'Validation' | 'Funding' | 'Funded' | 'Completed';
-  projectImg: string;
-  currentAmount?: number;
-  targetAmount?: number;
-  currentVotes?: number;
-  targetVotes?: number;
-  milestonesCompleted?: number;
-  totalMilestones?: number;
-  milestonesRejected?: number;
-  creatorName: string;
-  creatorLogo: string;
-  projectImage: string;
-  projectTitle: string;
-  projectDescription: string;
+interface ProjectApi {
+  _id: string;
+  title: string;
+  description: string;
+  whitepaperUrl?: string;
+  tags?: string[];
+  category?: string;
+  type?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  owner?: {
+    type?: {
+      _id?: string;
+      profile?: {
+        firstName?: string;
+        lastName?: string;
+        username?: string;
+        avatar?: string;
+      } | null;
+    } | null;
+  } | null;
 }
 
-const projects: ExploreProject[] = [
-  {
-    id: '1',
-    status: 'Validation',
-    currentVotes: 28,
-    targetVotes: 100,
-    daysToDeadline: 43,
-    projectImg: '/landing/explore/project-placeholder-1.png',
-    creatorName: 'Alice Johnson',
-    creatorLogo: '/landing/explore/creator-1.png',
-    projectImage: '/landing/explore/project-placeholder-1.png',
-    projectTitle: 'DeFi Protocol Innovation',
-    projectDescription:
-      'Building the next generation of decentralized finance protocols with enhanced security and efficiency.',
-  },
-  {
-    id: '2',
-    status: 'Funding',
-    currentAmount: 120000,
-    targetAmount: 300000,
-    daysToDeadline: 15,
-    projectImg: '/landing/explore/project-placeholder-2.png',
-    creatorName: 'Bob Smith',
-    creatorLogo: '/landing/explore/creator-2.png',
-    projectImage: '/landing/explore/project-placeholder-2.png',
-    projectTitle: 'NFT Marketplace Platform',
-    projectDescription:
-      'Creating a comprehensive NFT marketplace with advanced trading features and community tools.',
-  },
-  {
-    id: '3',
-    status: 'Completed',
-    milestonesCompleted: 6,
-    totalMilestones: 6,
-    milestonesRejected: 1,
-    projectImg: '/landing/explore/project-placeholder-3.png',
-    creatorName: 'Carol Davis',
-    creatorLogo: '/landing/explore/creator-3.png',
-    projectImage: '/landing/explore/project-placeholder-3.png',
-    projectTitle: 'Blockchain Education Platform',
-    projectDescription:
-      'Educational platform for blockchain technology with interactive courses and certifications.',
-  },
-  {
-    id: '4',
-    status: 'Funded',
-    milestonesCompleted: 3,
-    totalMilestones: 6,
-    daysToDeadline: 3,
-    projectImg: '/landing/explore/project-placeholder-4.png',
-    creatorName: 'David Wilson',
-    creatorLogo: '/landing/explore/creator-4.png',
-    projectImage: '/landing/explore/project-placeholder-4.png',
-    projectTitle: 'DAO Governance Tool',
-    projectDescription:
-      'Advanced governance tools for decentralized autonomous organizations with voting mechanisms.',
-  },
-  {
-    id: '5',
-    status: 'Funding',
-    currentAmount: 120000,
-    targetAmount: 300000,
-    daysToDeadline: 15,
-    projectImg: '/landing/explore/project-placeholder-2.png',
-    creatorName: 'Eva Brown',
-    creatorLogo: '/landing/explore/creator-5.png',
-    projectImage: '/landing/explore/project-placeholder-2.png',
-    projectTitle: 'Web3 Social Network',
-    projectDescription:
-      'Decentralized social networking platform with user-owned data and content monetization.',
-  },
-  {
-    id: '6',
-    status: 'Validation',
-    currentVotes: 28,
-    targetVotes: 100,
-    daysToDeadline: 43,
-    projectImg: '/landing/explore/project-placeholder-1.png',
-    creatorName: 'Frank Miller',
-    creatorLogo: '/landing/explore/creator-6.png',
-    projectImage: '/landing/explore/project-placeholder-1.png',
-    projectTitle: 'Cross-Chain Bridge Protocol',
-    projectDescription:
-      'Secure and efficient cross-chain bridge for seamless asset transfers between blockchains.',
-  },
-];
+// Map project status to ProjectCard status format
+const mapProjectStatus = (
+  status: string
+): 'Validation' | 'Funding' | 'Funded' | 'Completed' => {
+  switch (status) {
+    case 'under_review':
+      return 'Validation';
+    case 'funding':
+      return 'Funding';
+    case 'funded':
+      return 'Funded';
+    case 'completed':
+      return 'Completed';
+    case 'in_progress':
+      return 'Funding';
+    default:
+      return 'Validation';
+  }
+};
+
+// Calculate days to deadline from project dates
+const calculateDaysToDeadline = (): number => {
+  // For now, return a default value since we don't have deadline info in the basic project API
+  // This would need to be enhanced when we have access to crowdfunding project details
+  return 30; // Default placeholder
+};
+
+// Project Card Skeleton
+const ProjectCardSkeleton = () => (
+  <div className='font-inter flex w-full max-w-full flex-col gap-4 rounded-[8px] border border-gray-900 bg-[#030303] p-4 sm:p-5'>
+    <div className='flex items-center justify-between'>
+      <div className='flex items-center gap-2'>
+        <Skeleton className='size-6 rounded-full' />
+        <Skeleton className='h-4 w-24' />
+      </div>
+      <div className='flex items-center gap-3'>
+        <Skeleton className='h-6 w-16 rounded-[4px]' />
+        <Skeleton className='h-6 w-20 rounded-[4px]' />
+      </div>
+    </div>
+    <div className='flex items-start gap-3 sm:gap-5'>
+      <Skeleton className='h-[70px] w-[60px] flex-shrink-0 rounded-[8px] sm:h-[90px] sm:w-[79.41px]' />
+      <div className='flex min-w-0 flex-1 flex-col gap-2'>
+        <Skeleton className='h-5 w-3/4' />
+        <Skeleton className='h-4 w-full' />
+        <Skeleton className='h-4 w-2/3' />
+      </div>
+    </div>
+    <div className='flex flex-col gap-2'>
+      <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+        <Skeleton className='h-4 w-32' />
+        <Skeleton className='h-4 w-28' />
+      </div>
+      <Skeleton className='h-2 w-full rounded-full' />
+    </div>
+  </div>
+);
+
+// Hackathon Card Skeleton
+const HackathonCardSkeleton = () => (
+  <div className='group flex w-full flex-col overflow-hidden rounded-xl border border-neutral-800 bg-[#0c0c0c]'>
+    {/* Image */}
+    <div className='relative h-44 overflow-hidden sm:h-52'>
+      <Skeleton className='h-full w-full' />
+      <div className='absolute top-3 right-3 left-3 flex items-center justify-between'>
+        <Skeleton className='h-6 w-20 rounded-md' />
+        <Skeleton className='h-6 w-16 rounded-md' />
+      </div>
+      <div className='absolute bottom-3 left-3 flex items-center gap-2'>
+        <Skeleton className='size-7 rounded-full' />
+        <Skeleton className='h-4 w-24' />
+      </div>
+    </div>
+    {/* Body */}
+    <div className='flex flex-col gap-3 pt-3'>
+      <div className='px-4 sm:px-5'>
+        <Skeleton className='mb-2 h-6 w-3/4' />
+        <Skeleton className='h-4 w-full' />
+        <Skeleton className='mt-1 h-4 w-2/3' />
+      </div>
+      <div className='flex flex-wrap items-center justify-between border-t border-neutral-800 px-4 pt-3 sm:px-5'>
+        <Skeleton className='h-5 w-24' />
+        <Skeleton className='h-4 w-32' />
+      </div>
+      <div className='flex items-center justify-between border-t border-neutral-800 px-4 py-3 sm:px-5'>
+        <Skeleton className='h-4 w-28' />
+        <Skeleton className='h-1.5 w-24 rounded-full sm:w-32' />
+      </div>
+    </div>
+  </div>
+);
 
 const tabs = [
   { name: 'Featured Projects', value: 'featured-projects' },
@@ -124,6 +143,90 @@ export default function Explore() {
   const [activeTab, setActiveTab] = useState(tabs[0].value);
   const [underlineStyle, setUnderlineStyle] = useState({});
   const tabRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
+
+  // State for projects
+  const [projects, setProjects] = useState<ProjectApi[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
+
+  // State for hackathons
+  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
+  const [hackathonsLoading, setHackathonsLoading] = useState(false);
+  const [hackathonsError, setHackathonsError] = useState<string | null>(null);
+
+  const { transformHackathonForCard } = useHackathonTransform();
+
+  // Fetch projects
+  const fetchProjects = useCallback(async () => {
+    try {
+      setProjectsLoading(true);
+      setProjectsError(null);
+      const response = await getProjects(1, 6);
+      const apiProjects = (response.projects ?? []) as unknown as ProjectApi[];
+      setProjects(apiProjects);
+    } catch {
+      setProjectsError('Failed to fetch projects');
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, []);
+
+  // Fetch hackathons
+  const fetchHackathons = useCallback(async () => {
+    try {
+      setHackathonsLoading(true);
+      setHackathonsError(null);
+      const response = await getPublicHackathonsList({
+        status: 'ongoing',
+        limit: 6,
+        page: 1,
+      });
+
+      // Transform public hackathons to Hackathon type
+      const hackathonsList = response.data.hackathons || [];
+      const transformedHackathons = hackathonsList.map(hackathon =>
+        transformPublicHackathonToHackathon(hackathon)
+      );
+
+      setHackathons(transformedHackathons);
+    } catch {
+      setHackathonsError('Failed to fetch hackathons');
+    } finally {
+      setHackathonsLoading(false);
+    }
+  }, []);
+
+  // Fetch data when tab changes
+  useEffect(() => {
+    if (
+      activeTab === 'featured-projects' &&
+      projects.length === 0 &&
+      !projectsLoading
+    ) {
+      fetchProjects();
+    } else if (
+      activeTab === 'ongoing-hackathons' &&
+      hackathons.length === 0 &&
+      !hackathonsLoading
+    ) {
+      fetchHackathons();
+    }
+  }, [
+    activeTab,
+    fetchProjects,
+    fetchHackathons,
+    projects.length,
+    hackathons.length,
+    projectsLoading,
+    hackathonsLoading,
+  ]);
+
+  // Fetch projects on mount if default tab
+  useEffect(() => {
+    if (activeTab === 'featured-projects') {
+      fetchProjects();
+    }
+  }, [activeTab, fetchProjects]);
 
   useEffect(() => {
     const currentTab = tabRefs.current[activeTab];
@@ -170,44 +273,103 @@ export default function Explore() {
       </div>
 
       <div className='mt-10 grid w-fit grid-cols-1 gap-6 px-4 md:grid-cols-2 md:px-6 lg:grid-cols-3 xl:px-0'>
-        {projects.map(project => (
-          <ProjectCard
-            isFullWidth={true}
-            key={project.id}
-            deadlineInDays={project.daysToDeadline || 0}
-            votes={
-              project.currentVotes && project.targetVotes
-                ? {
-                    current: project.currentVotes,
-                    goal: project.targetVotes,
-                  }
-                : undefined
-            }
-            funding={
-              project.currentAmount && project.targetAmount
-                ? {
-                    current: project.currentAmount,
-                    goal: project.targetAmount,
-                    currency: 'USDC',
-                  }
-                : undefined
-            }
-            milestones={
-              project.milestonesCompleted && project.totalMilestones
-                ? {
-                    current: project.milestonesCompleted,
-                    goal: project.totalMilestones,
-                  }
-                : undefined
-            }
-            status={project.status}
-            creatorName={project.creatorName}
-            creatorLogo={project.creatorLogo}
-            projectImage={project.projectImage}
-            projectTitle={project.projectTitle}
-            projectDescription={project.projectDescription}
-          />
-        ))}
+        {activeTab === 'featured-projects' && (
+          <>
+            {projectsLoading ? (
+              <>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <ProjectCardSkeleton key={index} />
+                ))}
+              </>
+            ) : projectsError ? (
+              <div className='col-span-full py-12 text-center text-red-400'>
+                {projectsError}
+              </div>
+            ) : projects.length === 0 ? (
+              <div className='col-span-full py-12 text-center text-gray-400'>
+                No projects available at the moment.
+              </div>
+            ) : (
+              projects.map(project => {
+                const ownerName = project.owner?.type?.profile
+                  ? `${project.owner.type.profile.firstName || ''} ${project.owner.type.profile.lastName || ''}`.trim() ||
+                    'Anonymous'
+                  : 'Anonymous';
+                const ownerAvatar =
+                  project.owner?.type?.profile?.avatar || '/avatar.png';
+                const projectImage = project.whitepaperUrl || '/banner.png';
+
+                return (
+                  <ProjectCard
+                    isFullWidth={true}
+                    key={project._id}
+                    projectId={project._id}
+                    deadlineInDays={calculateDaysToDeadline()}
+                    status={mapProjectStatus(project.status)}
+                    creatorName={ownerName}
+                    creatorLogo={ownerAvatar}
+                    projectImage={projectImage}
+                    projectTitle={project.title}
+                    projectDescription={project.description}
+                  />
+                );
+              })
+            )}
+          </>
+        )}
+
+        {activeTab === 'ongoing-hackathons' && (
+          <>
+            {hackathonsLoading ? (
+              <>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <HackathonCardSkeleton key={index} />
+                ))}
+              </>
+            ) : hackathonsError ? (
+              <div className='col-span-full py-12 text-center text-red-400'>
+                {hackathonsError}
+              </div>
+            ) : hackathons.length === 0 ? (
+              <div className='col-span-full py-12 text-center text-gray-400'>
+                No ongoing hackathons at the moment.
+              </div>
+            ) : (
+              hackathons.map(hackathon => {
+                const orgName =
+                  '_organizationName' in hackathon
+                    ? (hackathon as Hackathon & { _organizationName?: string })
+                        ._organizationName
+                    : undefined;
+                const transformed = transformHackathonForCard(
+                  hackathon,
+                  orgName
+                );
+                return (
+                  <HackathonCard
+                    key={hackathon._id}
+                    isFullWidth={true}
+                    {...transformed}
+                  />
+                );
+              })
+            )}
+          </>
+        )}
+
+        {activeTab === 'open-grants' && (
+          <div className='col-span-full py-12 text-center text-gray-400'>
+            <p className='mb-2 text-lg font-medium text-white'>Coming Soon</p>
+            <p>Open Grants feature will be available soon.</p>
+          </div>
+        )}
+
+        {activeTab === 'live-grants' && (
+          <div className='col-span-full py-12 text-center text-gray-400'>
+            <p className='mb-2 text-lg font-medium text-white'>Coming Soon</p>
+            <p>Bounties feature will be available soon.</p>
+          </div>
+        )}
       </div>
 
       <div className='mt-20 flex cursor-pointer items-center gap-1'>
