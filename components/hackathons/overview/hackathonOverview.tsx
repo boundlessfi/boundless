@@ -179,6 +179,7 @@ export function HackathonOverview({
 
       <article className='prose prose-sm sm:prose lg:prose-lg dark:prose-invert max-w-none text-left'>
         <ReactMarkdown
+          className={'text-[1.1rem]'}
           remarkPlugins={[remarkGfm]}
           components={{
             ul: ({ ...props }) => (
