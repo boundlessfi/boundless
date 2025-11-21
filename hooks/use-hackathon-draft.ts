@@ -13,6 +13,7 @@ import type { JudgingFormData } from '@/components/organization/hackathons/new/t
 import type { CollaborationFormData } from '@/components/organization/hackathons/new/tabs/schemas/collaborationSchema';
 import type { StepKey } from '@/components/organization/hackathons/new/constants';
 import { STEP_ORDER } from '@/components/organization/hackathons/new/constants';
+import { isStepSavedInDraft } from '@/lib/utils/hackathon-step-validation';
 
 interface StepData {
   information?: InfoFormData;
@@ -82,11 +83,13 @@ export const useHackathonDraft = ({
         const formData = transformFromApiFormat(currentDraft);
         setStepData(formData);
 
+        // Find the first incomplete step by checking the original draft object
+        // This is more reliable than checking transformed data since transformFromApiFormat
+        // always returns objects with default values
         const firstIncompleteStep =
           STEP_ORDER.find(step => {
-            const stepDataKey =
-              step === 'participation' ? 'participation' : step;
-            return !formData[stepDataKey as keyof typeof formData];
+            if (step === 'review') return false; // Review is not a data step
+            return !isStepSavedInDraft(step, currentDraft);
           }) || ('information' as StepKey);
 
         draftInitializedRef.current = currentDraft._id;
