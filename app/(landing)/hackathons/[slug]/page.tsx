@@ -15,6 +15,7 @@ import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
 import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
 import { TeamFormationTab } from '@/components/hackathons/team-formation/TeamFormationTab';
 import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/LoadingScreen';
+import { useTimelineEvents } from '@/hooks/hackathon/use-timeline-events';
 
 export default function HackathonPage() {
   const router = useRouter();
@@ -23,14 +24,16 @@ export default function HackathonPage() {
 
   const {
     currentHackathon,
-    // content,
-    timelineEvents,
     participants,
     submissions,
-    prizes,
     loading,
     setCurrentHackathon,
   } = useHackathonData();
+  console.log(currentHackathon);
+  const timeline_Events = useTimelineEvents(currentHackathon, {
+    includeEndDate: false,
+    dateFormat: { month: 'short', day: 'numeric', year: 'numeric' },
+  });
 
   const hackathonTabs = useMemo(() => {
     const tabs = [
@@ -193,8 +196,9 @@ export default function HackathonPage() {
         {activeTab === 'overview' && (
           <HackathonOverview
             content={currentHackathon.description}
-            timelineEvents={timelineEvents}
-            prizes={prizes}
+            timelineEvents={timeline_Events}
+            prizes={currentHackathon.prizeTiers}
+            totalPrizePool={currentHackathon.totalPrizePool}
             hackathonSlugOrId={hackathonId}
           />
         )}

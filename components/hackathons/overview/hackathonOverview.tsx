@@ -2,24 +2,17 @@
 import { useMarkdown } from '@/hooks/use-markdown';
 import { HackathonTimeline } from './hackathonTimeline';
 import { HackathonPrizes } from './hackathonPrizes';
+import { PrizeTier } from '@/lib/api/hackathons';
 
-interface TimelineEvent {
+interface Timeline {
   event: string;
   date: string;
 }
-
-interface Prize {
-  title: string;
-  rank: string;
-  prize: string;
-  details: string[];
-  icon?: string;
-}
-
 interface HackathonOverviewProps {
   content: string;
-  timelineEvents?: TimelineEvent[];
-  prizes?: Prize[];
+  timelineEvents?: Timeline[];
+  prizes?: PrizeTier[];
+  totalPrizePool: string;
   className?: string;
   hackathonSlugOrId?: string;
   organizationId?: string;
@@ -30,6 +23,7 @@ export function HackathonOverview({
   timelineEvents,
   prizes,
   className = '',
+  totalPrizePool,
 }: HackathonOverviewProps) {
   // Use the markdown hook to parse and style the content
   const { styledContent, loading, error } = useMarkdown(content, {
@@ -50,7 +44,9 @@ export function HackathonOverview({
       </article>
 
       {timelineEvents && <HackathonTimeline events={timelineEvents} />}
-      {prizes && <HackathonPrizes prizes={prizes} />}
+      {prizes && (
+        <HackathonPrizes totalPrizePool={totalPrizePool} prizes={prizes} />
+      )}
     </div>
   );
 }
