@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
 import { useEffect, useState, useRef } from 'react';
 import { FileText, Users, ArrowRight } from 'lucide-react';
+import { useAuthStatus } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 // import { sanitizeHtml } from '@/lib/utils/renderHtml';
 
 interface HackathonBannerProps {
@@ -139,6 +141,9 @@ export function HackathonBanner({
     total: 0,
   });
 
+  const { isAuthenticated } = useAuthStatus();
+  const router = useRouter();
+
   const getStatusColor = () => {
     switch (status) {
       case 'Ongoing':
@@ -155,6 +160,10 @@ export function HackathonBanner({
       default:
         return 'text-gray-400 bg-gray-800/20';
     }
+  };
+
+  const handleRedirectToAuthScreen = () => {
+    router.push('/auth?mode=signin');
   };
 
   const getDeadlineInfo = () => {
@@ -333,30 +342,59 @@ export function HackathonBanner({
             )}
 
             {/* Action Buttons */}
-            {!isEnded && (
-              <div className='mt-2 flex flex-wrap items-center gap-3'>
-                {!isRegistered && onJoinClick && (
-                  <Button
-                    onClick={onJoinClick}
-                    className='bg-[#a7f950] font-semibold text-black hover:bg-[#8fd93f]'
-                  >
-                    Join Hackathon
-                    <ArrowRight className='ml-2 h-4 w-4' />
-                  </Button>
-                )}
+            {/* Action Buttons */}
+            <div className='mt-2 flex flex-wrap items-center gap-3'>
+              {/* Hackathon Ended → Disabled button */}
+              {isEnded && (
+                <Button
+                  disabled
+                  className='cursor-not-allowed bg-gray-600/50 text-gray-300 opacity-60'
+                >
+                  Ended
+                </Button>
+              )}
 
-                {isRegistered && !hasSubmitted && onSubmitClick && (
-                  <Button
-                    onClick={onSubmitClick}
-                    className='bg-[#a7f950] font-semibold text-black hover:bg-[#8fd93f]'
-                  >
-                    <FileText className='mr-2 h-4 w-4' />
-                    Submit Project
-                    <ArrowRight className='ml-2 h-4 w-4' />
-                  </Button>
-                )}
+              {/* Hackathon Ongoing → Not registered → Join */}
+              {!isEnded && !isRegistered && onJoinClick && (
+                <Button
+                  onClick={
+                    !isAuthenticated ? handleRedirectToAuthScreen : onJoinClick
+                  }
+                  className='bg-[#a7f950] font-semibold text-black hover:bg-[#8fd93f]'
+                >
+                  Join Hackathon
+                  <ArrowRight className='ml-2 h-4 w-4' />
+                </Button>
+              )}
 
-                {isRegistered && hasSubmitted && onViewSubmissionClick && (
+              {/* Hackathon Ongoing → Registered → Leave */}
+              {!isEnded && isRegistered && (
+                <Button
+                  onClick={onJoinClick}
+                  variant='outline'
+                  className='border-red-500/50 text-red-400 hover:bg-red-500/20'
+                >
+                  Leave Hackathon
+                </Button>
+              )}
+
+              {/* Submit Project */}
+              {!isEnded && isRegistered && !hasSubmitted && onSubmitClick && (
+                <Button
+                  onClick={onSubmitClick}
+                  className='bg-[#a7f950] font-semibold text-black hover:bg-[#8fd93f]'
+                >
+                  <FileText className='mr-2 h-4 w-4' />
+                  Submit Project
+                  <ArrowRight className='ml-2 h-4 w-4' />
+                </Button>
+              )}
+
+              {/* View Submission */}
+              {!isEnded &&
+                isRegistered &&
+                hasSubmitted &&
+                onViewSubmissionClick && (
                   <Button
                     onClick={onViewSubmissionClick}
                     className='bg-[#a7f950] font-semibold text-black hover:bg-[#8fd93f]'
@@ -366,7 +404,11 @@ export function HackathonBanner({
                   </Button>
                 )}
 
-                {isRegistered && isTeamFormationEnabled && onFindTeamClick && (
+              {/* Find Team */}
+              {!isEnded &&
+                isRegistered &&
+                isTeamFormationEnabled &&
+                onFindTeamClick && (
                   <Button
                     onClick={onFindTeamClick}
                     variant='outline'
@@ -376,8 +418,7 @@ export function HackathonBanner({
                     Find Team
                   </Button>
                 )}
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

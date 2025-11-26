@@ -18,6 +18,8 @@ type HackathonCardProps = {
   hackathonDescription?: string;
   status: 'Published' | 'Ongoing' | 'Completed' | 'Cancelled';
   deadlineInDays: number;
+  startDate?: string;
+  submissionDeadline?: string;
   categories: string[];
   location?: string;
   venueType?: 'virtual' | 'physical';
@@ -38,17 +40,57 @@ type HackathonCardProps = {
 const formatFullNumber = (num: number): string =>
   new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(num);
 
+interface TimeRemaining {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  total: number;
+}
+
+function calculateTimeRemaining(targetDate: string): TimeRemaining {
+  const now = new Date().getTime();
+  const target = new Date(targetDate).getTime();
+  const difference = target - now;
+
+  if (difference <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 };
+  }
+
+  return {
+    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+    hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+    minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+    seconds: Math.floor((difference % (1000 * 60)) / 1000),
+    total: difference,
+  };
+}
+
+// function formatCountdown(time: TimeRemaining): string {
+//   if (time.total <= 0) return 'Ended';
+
+//   if (time.days > 0) {
+//     return `${time.days} day${time.days !== 1 ? 's' : ''} left`;
+//   } else if (time.hours > 0) {
+//     return `${time.hours} hour${time.hours !== 1 ? 's' : ''} left`;
+//   } else if (time.minutes > 0) {
+//     return `${time.minutes} minute${time.minutes !== 1 ? 's' : ''} left`;
+//   } else {
+//     return `${time.seconds} second${time.seconds !== 1 ? 's' : ''} left`;
+//   }
+// }
+
 function HackathonCard({
   hackathonId,
-  // organizationName,
   hackathonSlug,
   organizerName,
   organizerLogo,
   hackathonImage,
   hackathonTitle,
-  // hackathonDescription,
   status,
-  deadlineInDays,
+  // deadlineInDays,
+  startDate,
+  submissionDeadline,
   categories,
   location,
   venueType,
@@ -59,111 +101,169 @@ function HackathonCard({
   className,
 }: HackathonCardProps) {
   const router = useRouter();
+  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    total: 0,
+  });
 
   const handleClick = () => {
     const slug = hackathonSlug || hackathonId || '';
     router.push(`/hackathons/${slug}`);
   };
 
-  const getStatusColor = () => {
-    switch (status) {
+  // Determine top badge status using raw dates
+  const getTopBadgeStatus = () => {
+    if (status === 'Cancelled') {
+      return 'Cancelled';
+    }
+
+    const now = new Date().getTime();
+    const start = startDate ? new Date(startDate).getTime() : null;
+    const deadline = submissionDeadline
+      ? new Date(submissionDeadline).getTime()
+      : null;
+
+    // Check if ended (submission deadline passed)
+    if (deadline && now > deadline) {
+      return 'Ended';
+    }
+
+    // Check if ongoing (started but submission deadline not passed)
+    if (start && now >= start) {
+      return 'Ongoing';
+    }
+
+    // Otherwise it's upcoming
+    return 'Upcoming';
+  };
+
+  const getTopBadgeColor = () => {
+    const badgeStatus = getTopBadgeStatus();
+    switch (badgeStatus) {
       case 'Ongoing':
-        return 'text-blue-400 bg-blue-400/10';
-      case 'Published':
-        return 'text-primary bg-primary/10';
-      case 'Completed':
         return 'text-green-400 bg-green-400/10';
+      case 'Upcoming':
+        return 'text-blue-400 bg-blue-400/10';
+      case 'Ended':
+        return 'text-gray-400 bg-gray-800/20';
       case 'Cancelled':
-        return 'text-gray-500 bg-gray-700/20';
+        return 'text-red-400 bg-red-400/10';
       default:
         return 'text-gray-400 bg-gray-800/20';
     }
   };
 
-  const getDeadlineInfo = () => {
-    // Handle completed or cancelled status
-    if (status === 'Completed') {
+  // Determine bottom status text using real-time countdown
+  const getBottomStatusInfo = () => {
+    if (status === 'Cancelled') {
+      return { text: 'Cancelled', className: 'text-red-400' };
+    }
+
+    const badgeStatus = getTopBadgeStatus();
+
+    if (badgeStatus === 'Ended') {
       return { text: 'Ended', className: 'text-gray-500' };
     }
-    if (status === 'Cancelled') {
-      return { text: 'Cancelled', className: 'text-gray-500' };
-    }
 
-    // Handle cases where deadline has passed
-    if (deadlineInDays <= 0) {
-      if (status === 'Ongoing') {
-        return { text: 'Ending soon', className: 'text-red-400' };
+    if (badgeStatus === 'Ongoing' && submissionDeadline) {
+      // Ongoing hackathon - show time until submission deadline
+      if (timeRemaining.total <= 0) {
+        return { text: 'Ended', className: 'text-gray-500' };
       }
-      return { text: 'Started', className: 'text-gray-500' };
-    }
-
-    // Handle different statuses with contextual messages
-    if (status === 'Published') {
-      // Upcoming hackathons - show "starting in X days"
-      if (deadlineInDays <= 3) {
+      if (timeRemaining.days === 0) {
+        return { text: 'Ending today', className: 'text-red-400' };
+      }
+      if (timeRemaining.days === 1) {
+        return { text: 'Ending tomorrow', className: 'text-red-400' };
+      }
+      if (timeRemaining.days <= 3) {
         return {
-          text: `starting in ${deadlineInDays} day${deadlineInDays !== 1 ? 's' : ''}`,
+          text: `Ending in ${timeRemaining.days} days`,
           className: 'text-red-400',
         };
       }
-      if (deadlineInDays <= 15) {
+      if (timeRemaining.days <= 7) {
         return {
-          text: `starting in ${deadlineInDays} days`,
+          text: `Ending in ${timeRemaining.days} days`,
           className: 'text-yellow-400',
         };
       }
       return {
-        text: `starting in ${deadlineInDays} days`,
+        text: `Ending in ${timeRemaining.days} days`,
         className: 'text-green-400',
       };
     }
 
-    if (status === 'Ongoing') {
-      // Ongoing hackathons - show "ending in X days"
-      if (deadlineInDays <= 3) {
+    if (badgeStatus === 'Upcoming' && startDate) {
+      // Upcoming hackathon - show time until start
+      if (timeRemaining.total <= 0) {
+        return { text: 'Starting soon', className: 'text-gray-400' };
+      }
+      if (timeRemaining.days === 0) {
+        return { text: 'Starting today', className: 'text-red-400' };
+      }
+      if (timeRemaining.days === 1) {
+        return { text: 'Starting tomorrow', className: 'text-red-400' };
+      }
+      if (timeRemaining.days <= 3) {
         return {
-          text: `ending in ${deadlineInDays} day${deadlineInDays !== 1 ? 's' : ''}`,
+          text: `Starting in ${timeRemaining.days} days`,
           className: 'text-red-400',
         };
       }
-      if (deadlineInDays <= 15) {
+      if (timeRemaining.days <= 7) {
         return {
-          text: `ending in ${deadlineInDays} days`,
+          text: `Starting in ${timeRemaining.days} days`,
           className: 'text-yellow-400',
         };
       }
       return {
-        text: `ending in ${deadlineInDays} days`,
-        className: 'text-green-400',
+        text: `Starting in ${timeRemaining.days} days`,
+        className: 'text-blue-400',
       };
     }
 
-    // Fallback for any other status
-    if (deadlineInDays <= 3) {
-      return {
-        text: `${deadlineInDays} day${deadlineInDays !== 1 ? 's' : ''} left`,
-        className: 'text-red-400',
-      };
-    }
-    if (deadlineInDays <= 15) {
-      return {
-        text: `${deadlineInDays} days left`,
-        className: 'text-yellow-400',
-      };
-    }
-    return {
-      text: `${deadlineInDays} days left`,
-      className: 'text-green-400',
-    };
+    return { text: 'Starting soon', className: 'text-gray-400' };
   };
 
-  const deadlineInfo = getDeadlineInfo();
+  // Update time remaining based on current status
+  useEffect(() => {
+    let targetDate: string | null = null;
+    const badgeStatus = getTopBadgeStatus();
+
+    if (badgeStatus === 'Ongoing' && submissionDeadline) {
+      targetDate = submissionDeadline;
+    } else if (badgeStatus === 'Upcoming' && startDate) {
+      targetDate = startDate;
+    } else if (badgeStatus === 'Ended' && submissionDeadline) {
+      targetDate = submissionDeadline;
+    }
+
+    if (!targetDate) return;
+
+    setTimeRemaining(calculateTimeRemaining(targetDate));
+
+    // Update every second for ongoing/upcoming hackathons
+    if (badgeStatus === 'Ongoing' || badgeStatus === 'Upcoming') {
+      const interval = setInterval(() => {
+        setTimeRemaining(calculateTimeRemaining(targetDate!));
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [status, startDate, submissionDeadline]);
+
+  const bottomStatusInfo = getBottomStatusInfo();
+  const topBadgeStatus = getTopBadgeStatus();
+  const topBadgeColor = getTopBadgeColor();
+
   const locationText = (() => {
-    // If location is provided (from transform hook), use it
     if (location) {
       return location;
     }
-    // Otherwise, fall back to venueType
     if (venueType === 'virtual') {
       return 'Virtual';
     }
@@ -234,9 +334,9 @@ function HackathonCard({
         <div className='absolute top-3 right-3 left-3 flex items-center justify-between'>
           <CategoriesDisplay categoriesList={categories} />
           <span
-            className={`rounded-md px-2 py-0.5 text-xs font-semibold backdrop-blur-sm ${getStatusColor()}`}
+            className={`rounded-md px-2 py-0.5 text-xs font-semibold backdrop-blur-sm ${topBadgeColor}`}
           >
-            {status}
+            {topBadgeStatus}
           </span>
         </div>
 
@@ -288,9 +388,9 @@ function HackathonCard({
 
         <div className='flex items-center justify-between border-t border-neutral-800 px-4 py-3 sm:px-5'>
           <span
-            className={`text-xs font-medium capitalize ${deadlineInfo.className}`}
+            className={`text-xs font-medium capitalize ${bottomStatusInfo.className}`}
           >
-            {deadlineInfo.text}
+            {bottomStatusInfo.text}
           </span>
           {participants?.goal && (
             <Progress

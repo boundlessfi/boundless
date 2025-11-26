@@ -41,7 +41,7 @@ export default function HackathonsPageHero() {
   };
 
   const handleCreateHackathon = () => {
-    router.push('/hackathons/create');
+    router.push('/organizations');
   };
 
   return (

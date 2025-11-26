@@ -817,7 +817,10 @@ export function CreateSubmissionModal({
       size='large'
     >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className='flex gap-8'>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className='flex gap-8 px-10'
+        >
           <Stepper steps={steps} />
           <div className='flex-1 space-y-6'>
             {renderStepContent()}

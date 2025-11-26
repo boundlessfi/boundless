@@ -66,11 +66,11 @@ export default function HackathonPage() {
           <h1 className='text-3xl font-light tracking-tight text-white sm:text-4xl'>
             {currentHackathon?.title || 'Hackathon Dashboard'}
           </h1>
-          {currentHackathon?.information?.description && (
+          {/* {currentHackathon?.information?.description && (
             <p className='mt-3 max-w-2xl text-sm text-gray-400'>
               {currentHackathon.information.description}
             </p>
-          )}
+          )} */}
         </div>
       </div>
 

@@ -24,10 +24,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Users, User } from 'lucide-react';
+import { Users, User, Loader2 } from 'lucide-react';
 import { useRegisterHackathon } from '@/hooks/hackathon/use-register-hackathon';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
 
 const registerSchema = z
   .object({
@@ -55,6 +54,7 @@ interface RegisterHackathonModalProps {
   onOpenChange: (open: boolean) => void;
   hackathonSlugOrId: string;
   organizationId?: string;
+  participantType: 'individual' | 'team' | 'team_or_individual';
   onSuccess?: () => void;
 }
 
@@ -63,6 +63,7 @@ export function RegisterHackathonModal({
   onOpenChange,
   hackathonSlugOrId,
   organizationId,
+  participantType,
   onSuccess,
 }: RegisterHackathonModalProps) {
   const [teamMemberEmail, setTeamMemberEmail] = useState('');
@@ -78,21 +79,22 @@ export function RegisterHackathonModal({
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      participationType: 'individual',
+      participationType: participantType === 'team' ? 'team' : 'individual',
       teamName: '',
       teamMembers: [],
     },
   });
 
-  const participationType = form.watch('participationType');
+  const selectedType = form.watch('participationType');
 
   const handleAddTeamMember = () => {
     if (
       teamMemberEmail.trim() &&
       !teamMembers.includes(teamMemberEmail.trim())
     ) {
-      setTeamMembers([...teamMembers, teamMemberEmail.trim()]);
-      form.setValue('teamMembers', [...teamMembers, teamMemberEmail.trim()]);
+      const updated = [...teamMembers, teamMemberEmail.trim()];
+      setTeamMembers(updated);
+      form.setValue('teamMembers', updated);
       setTeamMemberEmail('');
     }
   };
@@ -119,7 +121,7 @@ export function RegisterHackathonModal({
       setTeamMemberEmail('');
       onSuccess?.();
     } catch {
-      // Error is already handled in the hook
+      // Error handled in hook
     }
   };
 
@@ -130,65 +132,79 @@ export function RegisterHackathonModal({
           <DialogTitle className='text-white'>
             Register for Hackathon
           </DialogTitle>
-          <DialogDescription className='text-gray-400'>
-            Choose how you want to participate in this hackathon
-          </DialogDescription>
+          {participantType === 'team_or_individual' && (
+            <DialogDescription className='text-gray-400'>
+              Choose how you want to participate in this hackathon
+            </DialogDescription>
+          )}
+          {participantType === 'individual' && (
+            <DialogDescription className='text-gray-400'>
+              Register to participate in this hackathon
+            </DialogDescription>
+          )}
+          {participantType === 'team' && (
+            <DialogDescription className='text-gray-400'>
+              Register your team for this hackathon
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-            <FormField
-              control={form.control}
-              name='participationType'
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className='flex flex-col space-y-3'
-                    >
-                      <div className='flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-colors hover:bg-gray-800'>
-                        <RadioGroupItem value='individual' id='individual' />
-                        <Label
-                          htmlFor='individual'
-                          className='flex flex-1 cursor-pointer items-center gap-3'
-                        >
-                          <User className='h-5 w-5 text-gray-400' />
-                          <div>
-                            <div className='font-medium text-white'>
-                              Individual
+            {participantType === 'team_or_individual' && (
+              <FormField
+                control={form.control}
+                name='participationType'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        className='flex flex-col space-y-3'
+                      >
+                        <div className='flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-colors hover:bg-gray-800'>
+                          <RadioGroupItem value='individual' id='individual' />
+                          <Label
+                            htmlFor='individual'
+                            className='flex flex-1 cursor-pointer items-center gap-3'
+                          >
+                            <User className='h-5 w-5 text-gray-400' />
+                            <div>
+                              <div className='font-medium text-white'>
+                                Individual
+                              </div>
+                              <div className='text-sm text-gray-400'>
+                                Participate on your own
+                              </div>
                             </div>
-                            <div className='text-sm text-gray-400'>
-                              Participate on your own
-                            </div>
-                          </div>
-                        </Label>
-                      </div>
+                          </Label>
+                        </div>
 
-                      <div className='flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-colors hover:bg-gray-800'>
-                        <RadioGroupItem value='team' id='team' />
-                        <Label
-                          htmlFor='team'
-                          className='flex flex-1 cursor-pointer items-center gap-3'
-                        >
-                          <Users className='h-5 w-5 text-gray-400' />
-                          <div>
-                            <div className='font-medium text-white'>Team</div>
-                            <div className='text-sm text-gray-400'>
-                              Collaborate with others
+                        <div className='flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-colors hover:bg-gray-800'>
+                          <RadioGroupItem value='team' id='team' />
+                          <Label
+                            htmlFor='team'
+                            className='flex flex-1 cursor-pointer items-center gap-3'
+                          >
+                            <Users className='h-5 w-5 text-gray-400' />
+                            <div>
+                              <div className='font-medium text-white'>Team</div>
+                              <div className='text-sm text-gray-400'>
+                                Collaborate with others
+                              </div>
                             </div>
-                          </div>
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-            {participationType === 'team' && (
+            {selectedType === 'team' && (
               <div className='space-y-4'>
                 <FormField
                   control={form.control}
@@ -214,8 +230,7 @@ export function RegisterHackathonModal({
                 <div className='space-y-2'>
                   <Label className='text-white'>Team Members</Label>
                   <FormDescription className='text-gray-400'>
-                    Add team members by email (optional - you can add them
-                    later)
+                    Add team members by email (optional)
                   </FormDescription>
                   <div className='flex gap-2'>
                     <Input

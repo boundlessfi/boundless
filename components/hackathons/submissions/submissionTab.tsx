@@ -22,11 +22,13 @@ import { useParams } from 'next/navigation';
 interface SubmissionTabProps {
   hackathonSlugOrId?: string;
   organizationId?: string;
+  isRegistered: boolean;
 }
 
 const SubmissionTab: React.FC<SubmissionTabProps> = ({
   hackathonSlugOrId,
   organizationId,
+  isRegistered,
 }) => {
   const params = useParams();
   const { isAuthenticated } = useAuthStatus();
@@ -96,7 +98,7 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
           </span>{' '}
           total approved submissions
         </span>
-        {isAuthenticated && hackathonId && (
+        {/* {isAuthenticated && hackathonId && (
           <Button
             onClick={() => setShowCreateModal(true)}
             className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
@@ -113,11 +115,11 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
               </>
             )}
           </Button>
-        )}
+        )} */}
       </div>
 
       {/* My Submission Section */}
-      {isAuthenticated && hackathonId && (
+      {isAuthenticated && hackathonId && isRegistered && (
         <div className='mb-6'>
           {isLoadingMySubmission ? (
             <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center'>

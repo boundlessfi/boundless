@@ -10,9 +10,9 @@ import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
 import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
-import { HackathonResources } from '@/components/hackathons/resources/resources';
+// import { HackathonResources } from '@/components/hackathons/resources/resources';
 import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
-import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
+// import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
 import { TeamFormationTab } from '@/components/hackathons/team-formation/TeamFormationTab';
 import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/LoadingScreen';
 import { useTimelineEvents } from '@/hooks/hackathon/use-timeline-events';
@@ -34,18 +34,29 @@ export default function HackathonPage() {
     includeEndDate: false,
     dateFormat: { month: 'short', day: 'numeric', year: 'numeric' },
   });
-
   const hackathonTabs = useMemo(() => {
+    const hasParticipants = participants.length > 0;
+    // const hasSubmissions = submissions.filter(p => p.status === 'Approved').length > 0;
+
     const tabs = [
       { id: 'overview', label: 'Overview' },
-      { id: 'participants', label: 'Participants', badge: participants.length },
-      { id: 'resources', label: 'Resources' },
+      ...(hasParticipants
+        ? [
+            {
+              id: 'participants',
+              label: 'Participants',
+              badge: participants.length,
+            },
+          ]
+        : []),
+      // { id: 'resources', label: 'Resources' },
+
       {
         id: 'submission',
         label: 'Submissions',
         badge: submissions.filter(p => p.status === 'Approved').length,
       },
-      { id: 'discussions', label: 'Discussions' },
+      // { id: 'discussions', label: 'Discussions' },
     ];
 
     const participantType = currentHackathon?.participation?.participantType;
@@ -78,7 +89,14 @@ export default function HackathonPage() {
     autoCheck: !!hackathonId,
   });
 
-  const isEnded = currentHackathon?.status === 'ended';
+  const isEnded = useMemo(() => {
+    if (!currentHackathon?.deadline) return false;
+
+    const deadline = new Date(currentHackathon.deadline);
+    const now = new Date();
+
+    return now > deadline;
+  }, [currentHackathon?.deadline]);
 
   // Check if team formation is available
   const isTeamHackathon =
@@ -181,6 +199,12 @@ export default function HackathonPage() {
           hackathonSlugOrId={hackathonId}
           organizationId={undefined}
           onSuccess={handleRegisterSuccess}
+          participantType={
+            (currentHackathon?.participantType as
+              | 'team'
+              | 'individual'
+              | 'team_or_individual') ?? 'individual'
+          }
         />
       )}
 
@@ -203,19 +227,23 @@ export default function HackathonPage() {
           />
         )}
 
-        {activeTab === 'participants' && <HackathonParticipants />}
-
-        {activeTab === 'resources' && (
-          <HackathonResources hackathonSlugOrId={hackathonId} />
+        {activeTab === 'participants' && participants.length > 0 && (
+          <HackathonParticipants />
         )}
+        {/* {activeTab === 'resources' && (
+          <HackathonResources hackathonSlugOrId={hackathonId} />
+        )} */}
 
         {activeTab === 'submission' && (
-          <SubmissionTab hackathonSlugOrId={hackathonId} />
+          <SubmissionTab
+            hackathonSlugOrId={hackathonId}
+            isRegistered={isRegistered}
+          />
         )}
 
-        {activeTab === 'discussions' && (
+        {/* {activeTab === 'discussions' && (
           <HackathonDiscussions hackathonId={hackathonId} />
-        )}
+        )} */}
 
         {activeTab === 'team-formation' && (
           <TeamFormationTab hackathonSlugOrId={hackathonId} />

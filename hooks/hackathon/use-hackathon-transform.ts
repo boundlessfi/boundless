@@ -23,6 +23,9 @@ interface TransformedHackathon {
   hackathonDescription: string;
   status: 'Published' | 'Ongoing' | 'Completed' | 'Cancelled';
   deadlineInDays: number;
+  // Add only these two date fields
+  startDate?: string;
+  submissionDeadline?: string;
   categories: string[];
   location?: string;
   venueType?: 'virtual' | 'physical';
@@ -79,7 +82,6 @@ export function useHackathonTransform() {
       let locationText: string | undefined;
       if (venue) {
         if (venue.type === 'physical') {
-          // For physical venues, prioritize city + country, then country, then state, then venue name
           if (venue.city && venue.country) {
             locationText = `${venue.city}, ${venue.country}`;
           } else if (venue.country) {
@@ -91,7 +93,6 @@ export function useHackathonTransform() {
           } else if (venue.venueAddress) {
             locationText = venue.venueAddress;
           }
-          // If still no location, we'll rely on venueType in the card component
         } else if (venue.type === 'virtual') {
           locationText = 'Virtual';
         }
@@ -111,15 +112,7 @@ export function useHackathonTransform() {
         prizeCurrency = hackathon.rewards.prizeTiers[0]?.currency || 'USDC';
       }
 
-      // Generate slug from title (simple version)
-      // const title =
-      //   hackathon.information?.title || hackathon.title || 'untitled';
-      // const slug = title
-      //   .toLowerCase()
-      //   .replace(/[^a-z0-9]+/g, '-')
-      //   .replace(/(^-|-$)/g, '');
-
-      // Get organization name - check if it's in the hackathon object or use provided
+      // Get organization name
       const extendedHackathon = hackathon as ExtendedHackathon;
       const orgName =
         organizationName ||
@@ -129,19 +122,16 @@ export function useHackathonTransform() {
       // Extract categories
       const categories: string[] = [];
       if (hackathon.information?.categories) {
-        // If categories is an array, use it
         if (Array.isArray(hackathon.information.categories)) {
           categories.push(...hackathon.information.categories);
         }
       }
-      // Add additional categories if they exist in the hackathon object
       if (
         extendedHackathon.categories &&
         Array.isArray(extendedHackathon.categories)
       ) {
         categories.push(...extendedHackathon.categories);
       }
-      // Ensure at least one category
       if (categories.length === 0) {
         categories.push('Other');
       }
@@ -155,7 +145,7 @@ export function useHackathonTransform() {
         hackathonSlug: hackathon.information.slug,
         organizerName: orgName,
         tagline: hackathon.information.tagline,
-        organizerLogo: '/avatar.png', // This should come from organization data
+        organizerLogo: '/avatar.png',
         hackathonImage:
           hackathon.information?.banner ||
           '/landing/explore/project-placeholder-1.png',
@@ -166,6 +156,9 @@ export function useHackathonTransform() {
         hackathonDescription: hackathon.information?.description || '',
         status: cardStatus,
         deadlineInDays: Math.max(0, deadlineInDays),
+        // Add only the two dates needed
+        startDate: hackathon.timeline?.startDate,
+        submissionDeadline: hackathon.timeline?.submissionDeadline,
         categories: categories,
         location: locationText,
         venueType: venue?.type
@@ -177,8 +170,7 @@ export function useHackathonTransform() {
           ? (participantType as 'individual' | 'team' | 'team_or_individual')
           : undefined,
         participants: {
-          current: extendedHackathon.participants || 0, // Use participants from public API if available
-          // goal could be calculated from participation settings
+          current: extendedHackathon.participants || 0,
         },
         prizePool:
           prizePoolTotal > 0
@@ -187,7 +179,7 @@ export function useHackathonTransform() {
                 currency: prizeCurrency,
               }
             : undefined,
-        featured: extendedHackathon.featured === true, // Check for featured flag
+        featured: extendedHackathon.featured === true,
       };
     },
     []
