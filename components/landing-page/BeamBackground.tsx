@@ -201,7 +201,7 @@ export default function BeamBackground() {
     <div className='fixed inset-0 z-0 grid max-h-full grid-cols-[5%_90%_5%] overflow-hidden'>
       {/* Left Beam Placeholder */}
       <div className='flex items-center justify-center'>
-        <div id='left-beam' className='hidden h-screen w-full md:block'>
+        {/* <div id='left-beam' className='hidden h-screen w-full md:block'>
           <svg
             width='72'
             height='900'
@@ -300,7 +300,7 @@ export default function BeamBackground() {
               </clipPath>
             </defs>
           </svg>
-        </div>
+        </div> */}
       </div>
 
       {/* Pattern Placeholder */}
@@ -10750,7 +10750,7 @@ export default function BeamBackground() {
       </div>
 
       {/* Right Beam Placeholder */}
-      <div className='hidden items-center justify-center md:flex'>
+      {/* <div className='hidden items-center justify-center md:flex'>
         <div id='right-beam' className='h-screen w-full'>
           <svg
             width='72'
@@ -10857,7 +10857,7 @@ export default function BeamBackground() {
             </defs>
           </svg>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -15,7 +15,7 @@ export function Footer() {
       className='z-30 border-t border-[#2B2B2B] bg-black'
       role='contentinfo'
     >
-      <div className='mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'>
+      <div className='mx-auto max-w-[1440px] px-5 py-8 md:px-[50px] lg:px-[100px]'>
         <div className='hidden items-start justify-between md:flex'>
           <div className='flex flex-col space-y-4'>
             <Link href='/' aria-label='Boundless homepage'>

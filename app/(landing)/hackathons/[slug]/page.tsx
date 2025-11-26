@@ -29,7 +29,6 @@ export default function HackathonPage() {
     loading,
     setCurrentHackathon,
   } = useHackathonData();
-  console.log(currentHackathon);
   const timeline_Events = useTimelineEvents(currentHackathon, {
     includeEndDate: false,
     dateFormat: { month: 'short', day: 'numeric', year: 'numeric' },
