@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import { slideInFromBottomLeft } from '@/lib/motion';
 import { CookiePreferences } from '@/hooks/use-cookie-consent';
+import Image from 'next/image';
 
 const COOKIE_CONSENT_KEY = 'cookie-consent';
 const COOKIE_PREFERENCES_KEY = 'cookie-preferences';
@@ -154,71 +155,85 @@ const CookieConsent: React.FC = () => {
             animate='visible'
             exit='hidden'
             variants={slideInFromBottomLeft}
-            className='fixed right-4 bottom-4 left-4 z-50 mx-auto w-full max-w-md sm:right-auto sm:left-4 sm:max-w-lg'
+            className='fixed right-0 bottom-0 left-0 z-50 mx-auto w-full max-w-md px-3 pb-3 sm:right-auto sm:bottom-4 sm:left-4 sm:max-w-lg sm:px-0 sm:pb-0'
             role='dialog'
             aria-labelledby='cookie-consent-title'
             aria-describedby='cookie-consent-description'
           >
-            <div className='rounded-2xl border border-zinc-800 bg-zinc-900 p-4 shadow-2xl sm:p-6'>
-              <div className='mb-4 flex items-start gap-3'>
-                <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800'>
-                  <Cookie className='h-5 w-5 text-white' />
-                </div>
-                <div className='flex-1'>
-                  <h3
-                    id='cookie-consent-title'
-                    className='mb-2 text-lg font-semibold text-white'
-                  >
-                    We use cookies to enhance your experience
-                  </h3>
-                  <p
-                    id='cookie-consent-description'
-                    className='mb-4 text-sm text-zinc-400'
-                  >
-                    We use cookies to analyze site usage and personalize
-                    content. By continuing, you agree to our use of cookies.
-                  </p>
-                </div>
+            <div className='relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 p-4 shadow-2xl sm:rounded-2xl sm:p-6'>
+              {/* Background Wave Image */}
+              <div className='absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-2xl opacity-5'>
+                <Image
+                  src='/wave.svg'
+                  alt=''
+                  fill
+                  className='object-cover object-bottom-right'
+                  priority={false}
+                />
               </div>
 
-              <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-                <div className='flex flex-wrap items-center gap-2'>
-                  <Link
-                    href='/privacy'
-                    className='text-primary focus:ring-primary rounded text-sm hover:underline focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:outline-none'
-                  >
-                    Learn More
-                  </Link>
+              {/* Content Layer */}
+              <div className='relative z-10'>
+                <div className='mb-4 flex items-start gap-3'>
+                  <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800 sm:h-10 sm:w-10'>
+                    <Cookie className='h-5 w-5 text-white' />
+                  </div>
+                  <div className='min-w-0 flex-1'>
+                    <h3
+                      id='cookie-consent-title'
+                      className='mb-2 text-base leading-tight font-semibold text-white sm:text-lg'
+                    >
+                      We use cookies to enhance your experience
+                    </h3>
+                    <p
+                      id='cookie-consent-description'
+                      className='mb-4 text-xs leading-relaxed text-zinc-400 sm:text-sm'
+                    >
+                      We use cookies to analyze site usage and personalize
+                      content. By continuing, you agree to our use of cookies.
+                    </p>
+                  </div>
                 </div>
 
-                <div className='flex flex-col gap-2 sm:flex-row'>
-                  <BoundlessButton
-                    variant='outline'
-                    size='sm'
-                    onClick={handleReject}
-                    className='border-zinc-800 bg-zinc-900/50 text-white hover:bg-zinc-800 hover:text-white'
-                    aria-label='Reject all cookies'
-                  >
-                    Reject
-                  </BoundlessButton>
-                  <BoundlessButton
-                    variant='outline'
-                    size='sm'
-                    onClick={() => setShowCustomize(true)}
-                    className='border-zinc-800 bg-zinc-900/50 text-white hover:bg-zinc-800 hover:text-white'
-                    aria-label='Customize cookie preferences'
-                  >
-                    Customize
-                  </BoundlessButton>
-                  <BoundlessButton
-                    variant='default'
-                    size='sm'
-                    onClick={handleAcceptAll}
-                    className='bg-primary text-primary-foreground'
-                    aria-label='Accept all cookies'
-                  >
-                    Accept All
-                  </BoundlessButton>
+                <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <Link
+                      href='/privacy'
+                      className='text-primary focus:ring-primary rounded text-xs hover:underline focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:outline-none sm:text-sm'
+                    >
+                      Learn More
+                    </Link>
+                  </div>
+
+                  <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row'>
+                    <BoundlessButton
+                      variant='outline'
+                      size='sm'
+                      onClick={handleReject}
+                      className='w-full border-zinc-800 bg-zinc-900/50 text-white hover:bg-zinc-800 hover:text-white sm:w-auto'
+                      aria-label='Reject all cookies'
+                    >
+                      Reject
+                    </BoundlessButton>
+                    <BoundlessButton
+                      variant='outline'
+                      size='sm'
+                      onClick={() => setShowCustomize(true)}
+                      className='w-full border-zinc-800 bg-zinc-900/50 text-white hover:bg-zinc-800 hover:text-white sm:w-auto'
+                      aria-label='Customize cookie preferences'
+                    >
+                      Customize
+                    </BoundlessButton>
+                    <BoundlessButton
+                      variant='default'
+                      size='sm'
+                      onClick={handleAcceptAll}
+                      className='bg-primary text-primary-foreground w-full sm:w-auto'
+                      aria-label='Accept all cookies'
+                    >
+                      Accept All
+                    </BoundlessButton>
+                  </div>
                 </div>
               </div>
             </div>
@@ -227,30 +242,30 @@ const CookieConsent: React.FC = () => {
       </AnimatePresence>
 
       <Dialog open={showCustomize} onOpenChange={setShowCustomize}>
-        <DialogContent className='max-w-2xl border-zinc-800 bg-zinc-900 text-white'>
+        <DialogContent className='max-w-2xl border-zinc-800 bg-zinc-900 text-white sm:max-w-2xl'>
           <DialogHeader>
-            <DialogTitle className='text-xl text-white'>
+            <DialogTitle className='text-lg text-white sm:text-xl'>
               Cookie Preferences
             </DialogTitle>
-            <DialogDescription className='text-zinc-400'>
+            <DialogDescription className='text-xs text-zinc-400 sm:text-sm'>
               Manage your cookie preferences. You can enable or disable
               different types of cookies below.
             </DialogDescription>
           </DialogHeader>
 
-          <div className='space-y-6 py-4'>
+          <div className='space-y-4 py-4 sm:space-y-6'>
             {/* Essential Cookies */}
-            <div className='flex items-start justify-between gap-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4'>
-              <div className='flex-1'>
-                <div className='mb-1 flex items-center gap-2'>
-                  <h4 className='font-semibold text-white'>
+            <div className='flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:p-4'>
+              <div className='min-w-0 flex-1'>
+                <div className='mb-1 flex flex-wrap items-center gap-2'>
+                  <h4 className='text-sm font-semibold text-white sm:text-base'>
                     Essential Cookies
                   </h4>
                   <span className='rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400'>
                     Always Active
                   </span>
                 </div>
-                <p className='text-sm text-zinc-400'>
+                <p className='text-xs leading-relaxed text-zinc-400 sm:text-sm'>
                   These cookies are necessary for the website to function and
                   cannot be switched off. They are usually only set in response
                   to actions made by you.
@@ -259,18 +274,18 @@ const CookieConsent: React.FC = () => {
               <Switch
                 checked={true}
                 disabled
-                className='mt-1'
+                className='shrink-0 sm:mt-1'
                 aria-label='Essential cookies (always enabled)'
               />
             </div>
 
             {/* Analytics Cookies */}
-            <div className='flex items-start justify-between gap-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4'>
-              <div className='flex-1'>
-                <h4 className='mb-1 font-semibold text-white'>
+            <div className='flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:p-4'>
+              <div className='min-w-0 flex-1'>
+                <h4 className='mb-1 text-sm font-semibold text-white sm:text-base'>
                   Analytics Cookies
                 </h4>
-                <p className='text-sm text-zinc-400'>
+                <p className='text-xs leading-relaxed text-zinc-400 sm:text-sm'>
                   These cookies help us understand how visitors interact with
                   our website by collecting and reporting information
                   anonymously.
@@ -284,18 +299,18 @@ const CookieConsent: React.FC = () => {
                     analytics: checked,
                   }))
                 }
-                className='mt-1'
+                className='shrink-0 sm:mt-1'
                 aria-label='Enable analytics cookies'
               />
             </div>
 
             {/* Marketing Cookies */}
-            <div className='flex items-start justify-between gap-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4'>
-              <div className='flex-1'>
-                <h4 className='mb-1 font-semibold text-white'>
+            <div className='flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:p-4'>
+              <div className='min-w-0 flex-1'>
+                <h4 className='mb-1 text-sm font-semibold text-white sm:text-base'>
                   Marketing Cookies
                 </h4>
-                <p className='text-sm text-zinc-400'>
+                <p className='text-xs leading-relaxed text-zinc-400 sm:text-sm'>
                   These cookies may be set through our site by our advertising
                   partners to build a profile of your interests.
                 </p>
@@ -308,7 +323,7 @@ const CookieConsent: React.FC = () => {
                     marketing: checked,
                   }))
                 }
-                className='mt-1'
+                className='shrink-0 sm:mt-1'
                 aria-label='Enable marketing cookies'
               />
             </div>
@@ -318,14 +333,14 @@ const CookieConsent: React.FC = () => {
             <BoundlessButton
               variant='outline'
               onClick={handleCustomizeAcceptAll}
-              className='border-zinc-800 bg-zinc-900/50 text-white hover:bg-zinc-800 hover:text-white'
+              className='w-full border-zinc-800 bg-zinc-900/50 text-white hover:bg-zinc-800 hover:text-white sm:w-auto'
             >
               Accept All
             </BoundlessButton>
             <BoundlessButton
               variant='default'
               onClick={handleSaveCustomPreferences}
-              className='bg-primary text-primary-foreground'
+              className='bg-primary text-primary-foreground w-full sm:w-auto'
             >
               Save Preferences
             </BoundlessButton>

@@ -147,7 +147,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
                     {post.title}
                   </h1>
 
-                  <p className='mb-6 text-base leading-relaxed text-white sm:mb-8 sm:text-lg'>
+                  <p className='mb-6 hidden text-base leading-relaxed text-white sm:mb-8 sm:text-lg'>
                     {post.excerpt}
                   </p>
                 </div>

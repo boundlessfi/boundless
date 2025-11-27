@@ -20,7 +20,6 @@ interface HackathonBannerProps {
   status?: string;
   participants?: number;
   totalPrizePool?: string;
-  // Action buttons
   isRegistered?: boolean;
   hasSubmitted?: boolean;
   isEnded?: boolean;
@@ -59,16 +58,13 @@ function calculateTimeRemaining(targetDate: string): TimeRemaining {
 
 function formatCountdown(time: TimeRemaining): string {
   if (time.total <= 0) return 'Ended';
-
-  if (time.days > 0) {
+  if (time.days > 0)
     return `${time.days} day${time.days !== 1 ? 's' : ''} left`;
-  } else if (time.hours > 0) {
+  if (time.hours > 0)
     return `${time.hours} hour${time.hours !== 1 ? 's' : ''} left`;
-  } else if (time.minutes > 0) {
+  if (time.minutes > 0)
     return `${time.minutes} minute${time.minutes !== 1 ? 's' : ''} left`;
-  } else {
-    return `${time.seconds} second${time.seconds !== 1 ? 's' : ''} left`;
-  }
+  return `${time.seconds} second${time.seconds !== 1 ? 's' : ''} left`;
 }
 
 const CategoriesDisplay = ({
@@ -82,17 +78,14 @@ const CategoriesDisplay = ({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-
     const check = () => setShowEllipsis(el.scrollWidth > el.clientWidth);
-
     check();
-
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, [categoriesList]);
 
   return (
-    <div className={`relative flex items-center overflow-hidden`}>
+    <div className='relative flex items-center overflow-hidden'>
       <div ref={ref} className='scrollbar-hide flex gap-1.5 overflow-x-auto'>
         {categoriesList.map((cat, i) => (
           <span
@@ -103,6 +96,7 @@ const CategoriesDisplay = ({
           </span>
         ))}
       </div>
+
       {showEllipsis && (
         <div className='pointer-events-none absolute top-0 right-0 bottom-0 flex w-6 items-center justify-end bg-gradient-to-l from-[#030303] via-[#030303]/80 to-transparent pr-1'>
           <span className='text-xs font-medium text-gray-500'>...</span>
@@ -118,14 +112,11 @@ export function HackathonBanner({
   imageUrl,
   deadline,
   startDate,
-  // endDate,
   categories,
-  // status,
   participants,
   totalPrizePool,
   isRegistered = false,
   hasSubmitted = false,
-  // isEnded = false,
   isTeamFormationEnabled = false,
   onJoinClick,
   onSubmitClick,
@@ -143,9 +134,9 @@ export function HackathonBanner({
   const { isAuthenticated } = useAuthStatus();
   const router = useRouter();
 
-  // Determine hackathon status based on dates
   const hackathonStatus = useRef<'upcoming' | 'ongoing' | 'ended'>('upcoming');
 
+  // Determine status based on dates
   useEffect(() => {
     const now = new Date().getTime();
     const start = startDate ? new Date(startDate).getTime() : null;
@@ -160,10 +151,12 @@ export function HackathonBanner({
     }
   }, [startDate, deadline]);
 
-  const getStatusColor = () => {
-    const currentStatus = hackathonStatus.current;
+  const handleRedirectToAuthScreen = () => {
+    router.push('/auth?mode=signin');
+  };
 
-    switch (currentStatus) {
+  const getStatusColor = () => {
+    switch (hackathonStatus.current) {
       case 'ongoing':
         return 'text-green-400 bg-green-400/10';
       case 'upcoming':
@@ -171,14 +164,12 @@ export function HackathonBanner({
       case 'ended':
         return 'text-gray-400 bg-gray-800/20';
       default:
-        return 'text-gray-400 bg-gray-800/20';
+        return '';
     }
   };
 
   const getStatusText = () => {
-    const currentStatus = hackathonStatus.current;
-
-    switch (currentStatus) {
+    switch (hackathonStatus.current) {
       case 'ongoing':
         return 'Live';
       case 'upcoming':
@@ -190,25 +181,22 @@ export function HackathonBanner({
     }
   };
 
-  const handleRedirectToAuthScreen = () => {
-    router.push('/auth?mode=signin');
-  };
-
   const getCountdownInfo = () => {
-    const days = timeRemaining.days;
-
     if (timeRemaining.total <= 0)
       return { text: 'Ended', className: 'text-gray-500' };
-    if (days <= 3)
+
+    if (timeRemaining.days <= 3)
       return {
         text: formatCountdown(timeRemaining),
         className: 'text-red-400',
       };
-    if (days <= 15)
+
+    if (timeRemaining.days <= 15)
       return {
         text: formatCountdown(timeRemaining),
         className: 'text-yellow-400',
       };
+
     return {
       text: formatCountdown(timeRemaining),
       className: 'text-green-400',
@@ -217,35 +205,28 @@ export function HackathonBanner({
 
   useEffect(() => {
     let targetDate: string | null = null;
-    const currentStatus = hackathonStatus.current;
 
-    if (currentStatus === 'ongoing' && deadline) {
-      targetDate = deadline; // Show time until submission deadline
-    } else if (currentStatus === 'upcoming' && startDate) {
-      targetDate = startDate; // Show time until start
-    } else if (currentStatus === 'ended' && deadline) {
-      targetDate = deadline; // Show when it ended
+    if (hackathonStatus.current === 'ongoing' && deadline) {
+      targetDate = deadline;
+    } else if (hackathonStatus.current === 'upcoming' && startDate) {
+      targetDate = startDate;
     }
 
     if (!targetDate) return;
 
     setTimeRemaining(calculateTimeRemaining(targetDate));
 
-    // Update every second for ongoing/upcoming hackathons
-    if (currentStatus === 'ongoing' || currentStatus === 'upcoming') {
-      const interval = setInterval(() => {
-        setTimeRemaining(calculateTimeRemaining(targetDate!));
-      }, 1000);
+    const interval = setInterval(() => {
+      setTimeRemaining(calculateTimeRemaining(targetDate!));
+    }, 1000);
 
-      return () => clearInterval(interval);
-    }
-  }, [hackathonStatus.current, deadline, startDate]);
+    return () => clearInterval(interval);
+  }, [deadline, startDate]);
 
   const renderDateSection = () => {
-    const currentStatus = hackathonStatus.current;
     const countdownInfo = getCountdownInfo();
 
-    if (currentStatus === 'ongoing' && deadline) {
+    if (hackathonStatus.current === 'ongoing' && deadline) {
       return (
         <div className='flex flex-wrap items-center gap-2'>
           <span className='text-sm font-semibold text-red-400'>Deadline:</span>
@@ -259,7 +240,9 @@ export function HackathonBanner({
           )}
         </div>
       );
-    } else if (currentStatus === 'upcoming' && startDate) {
+    }
+
+    if (hackathonStatus.current === 'upcoming' && startDate) {
       return (
         <div className='flex flex-wrap items-center gap-2'>
           <span className='text-sm font-semibold text-blue-400'>Starts:</span>
@@ -273,7 +256,9 @@ export function HackathonBanner({
           )}
         </div>
       );
-    } else if (currentStatus === 'ended' && deadline) {
+    }
+
+    if (hackathonStatus.current === 'ended' && deadline) {
       return (
         <div className='flex flex-wrap items-center gap-2'>
           <span className='text-sm font-semibold text-gray-500'>Ended:</span>
@@ -287,40 +272,33 @@ export function HackathonBanner({
     return null;
   };
 
-  const getJoinButtonText = () => {
-    const currentStatus = hackathonStatus.current;
-
-    if (currentStatus === 'upcoming') {
-      return 'Register Interest';
-    }
-    return 'Join Hackathon';
-  };
-
   return (
     <Card className='relative w-full overflow-hidden rounded-none border-0 bg-transparent p-0 shadow-none'>
       <div
         className='relative h-64 rounded-4xl md:h-80 lg:h-96'
         style={{
-          backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
+          backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
       >
         <div className='absolute inset-0 bg-black/50' />
 
-        {/* Text content */}
         <div className='absolute inset-0 mx-auto flex w-full max-w-7xl flex-col justify-between px-6 py-6 md:px-12 md:py-8'>
+          {/* Top section */}
           <div className='flex flex-wrap items-start justify-between gap-4'>
             <div className='flex flex-wrap items-center gap-3'>
               <Badge className={`${getStatusColor()} capitalize`}>
                 {getStatusText()}
               </Badge>
+
               {participants !== undefined && (
                 <span className='text-sm text-gray-200'>
                   {participants.toLocaleString()} participants
                 </span>
               )}
             </div>
+
             {totalPrizePool && (
               <div className='flex items-center gap-2 rounded-lg border border-[#a7f950]/50 bg-gradient-to-r from-[#a7f950]/20 to-[#a7f950]/10 px-4 py-2'>
                 <span className='text-xs font-semibold tracking-widest text-[#a7f950] uppercase'>
@@ -333,18 +311,16 @@ export function HackathonBanner({
             )}
           </div>
 
+          {/* Title & tagline */}
           <div className='flex flex-col gap-2 md:gap-3'>
             <h1 className='text-left text-3xl leading-tight font-bold text-white drop-shadow-lg md:text-4xl lg:text-5xl'>
               {title}
             </h1>
-            {tagline && typeof tagline === 'string' ? (
+
+            {tagline && (
               <span className='max-w-2xl text-left text-base text-gray-200 drop-shadow-md md:text-lg'>
                 {tagline}
               </span>
-            ) : (
-              <div className='max-w-2xl text-left text-base text-gray-200 drop-shadow-md md:text-lg'>
-                {tagline}
-              </div>
             )}
 
             {tagline && (
@@ -352,9 +328,10 @@ export function HackathonBanner({
             )}
           </div>
 
-          {/* Bottom section: Deadline/Start/Ended, categories, and action buttons */}
+          {/* Bottom section */}
           <div className='flex flex-col gap-2 md:gap-3'>
             {renderDateSection()}
+
             {categories && categories.length > 0 && (
               <div className='flex flex-wrap items-center gap-2'>
                 <span className='text-sm font-semibold text-[#a7f950]'>
@@ -366,7 +343,7 @@ export function HackathonBanner({
 
             {/* Action Buttons */}
             <div className='mt-2 flex flex-wrap items-center gap-3'>
-              {/* Hackathon Ended → Disabled button */}
+              {/* Ended */}
               {hackathonStatus.current === 'ended' && (
                 <Button
                   disabled
@@ -377,7 +354,7 @@ export function HackathonBanner({
                 </Button>
               )}
 
-              {/* Hackathon Not Started → Register Interest */}
+              {/* Upcoming → Register Interest */}
               {hackathonStatus.current === 'upcoming' &&
                 !isRegistered &&
                 onJoinClick && (
@@ -390,12 +367,12 @@ export function HackathonBanner({
                     className='bg-blue-500 font-semibold text-white hover:bg-blue-600'
                   >
                     <Calendar className='mr-2 h-4 w-4' />
-                    {getJoinButtonText()}
+                    Register Interest
                     <ArrowRight className='ml-2 h-4 w-4' />
                   </Button>
                 )}
 
-              {/* Hackathon Ongoing → Not registered → Join */}
+              {/* Ongoing → Join */}
               {hackathonStatus.current === 'ongoing' &&
                 !isRegistered &&
                 onJoinClick && (
@@ -412,7 +389,7 @@ export function HackathonBanner({
                   </Button>
                 )}
 
-              {/* Registered → Leave Hackathon */}
+              {/* Registered → Leave */}
               {hackathonStatus.current !== 'ended' && isRegistered && (
                 <Button
                   onClick={onJoinClick}
@@ -423,7 +400,7 @@ export function HackathonBanner({
                 </Button>
               )}
 
-              {/* Submit Project */}
+              {/* Submit */}
               {hackathonStatus.current === 'ongoing' &&
                 isRegistered &&
                 !hasSubmitted &&

@@ -4,10 +4,13 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const backendUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+    // Normalize API URL: remove trailing slash and /api if present
+    // The env var should be base URL without /api (e.g., https://api.boundlessfi.xyz)
+    let backendUrl =
+      process.env.NEXT_PUBLIC_API_URL || 'https://staging-api.boundlessfi.xyz';
+    backendUrl = backendUrl.replace(/\/$/, '').replace(/\/api$/i, '');
 
-    const response = await fetch(`${backendUrl}/waitlist/subscribe`, {
+    const response = await fetch(`${backendUrl}/api/waitlist/subscribe`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

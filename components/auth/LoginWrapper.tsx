@@ -32,7 +32,18 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastMethod, setLastMethod] = useState<string | null>(null);
 
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const callbackUrl =
+    searchParams.get('callbackUrl') || process.env.NEXT_PUBLIC_APP_URL || '/';
+
+  useEffect(() => {
+    const method = authClient.getLastUsedLoginMethod();
+    setLastMethod(method);
+  }, []);
+
+  useEffect(() => {
+    const method = authClient.getLastUsedLoginMethod();
+    setLastMethod(method);
+  }, []);
 
   useEffect(() => {
     const method = authClient.getLastUsedLoginMethod();
@@ -118,7 +129,7 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
       await authClient.signIn.social(
         {
           provider: 'google',
-          callbackURL: 'http://localhost:3000/',
+          callbackURL: process.env.NEXT_PUBLIC_APP_URL || '/',
         },
         {
           onRequest: () => {
@@ -163,7 +174,7 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
             email: values.email,
             password: values.password,
             rememberMe: true,
-            callbackURL: callbackUrl,
+            callbackURL: process.env.NEXT_PUBLIC_APP_URL || '/',
           },
           {
             onRequest: () => {

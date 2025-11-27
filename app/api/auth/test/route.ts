@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+  // Normalize API URL: remove trailing slash and /api if present
+  // The env var should be base URL without /api (e.g., https://api.boundlessfi.xyz)
+  let apiUrl =
+    process.env.NEXT_PUBLIC_API_URL || 'https://staging-api.boundlessfi.xyz';
+  apiUrl = apiUrl.replace(/\/$/, '').replace(/\/api$/i, '');
+  const fullApiUrl = `${apiUrl}/api`;
 
   try {
-    const response = await fetch(`${apiUrl}/auth/me`, {
+    const response = await fetch(`${fullApiUrl}/auth/me`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -13,7 +18,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      apiUrl,
+      apiUrl: fullApiUrl,
       backendStatus: response.status,
       backendOk: response.ok,
       message: 'Backend connectivity test completed',
@@ -22,7 +27,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        apiUrl,
+        apiUrl: fullApiUrl,
         error: error instanceof Error ? error.message : 'Unknown error',
         message: 'Backend connectivity test failed',
       },
@@ -36,10 +41,14 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { email, password } = body;
 
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+    // Normalize API URL: remove trailing slash and /api if present
+    // The env var should be base URL without /api (e.g., https://api.boundlessfi.xyz)
+    let apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || 'https://staging-api.boundlessfi.xyz';
+    apiUrl = apiUrl.replace(/\/$/, '').replace(/\/api$/i, '');
+    const fullApiUrl = `${apiUrl}/api`;
 
-    const response = await fetch(`${apiUrl}/auth/login`, {
+    const response = await fetch(`${fullApiUrl}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -53,7 +62,7 @@ export async function POST(req: Request) {
       success: response.ok,
       status: response.status,
       data,
-      apiUrl,
+      apiUrl: fullApiUrl,
     });
   } catch (error) {
     return NextResponse.json(

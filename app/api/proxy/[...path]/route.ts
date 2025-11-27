@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const getBackendUrl = () => {
+  // Normalize API URL: remove trailing slash and /api if present
+  // The env var should be base URL without /api (e.g., https://api.boundlessfi.xyz)
+  // This ensures consistent handling regardless of how it's set
   let apiUrl =
     process.env.NEXT_PUBLIC_API_URL || 'https://staging-api.boundlessfi.xyz';
 
-  apiUrl = apiUrl.replace(/\/$/, '');
-  apiUrl = apiUrl.replace(/\/api$/i, '');
+  apiUrl = apiUrl.replace(/\/$/, '').replace(/\/api$/i, '');
 
   return apiUrl;
 };

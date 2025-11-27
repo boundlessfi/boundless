@@ -5,14 +5,15 @@ import { useAuthStore } from '@/lib/stores/auth-store';
 // The proxy route is at /api/proxy/[...path]
 const getApiBaseUrl = () => {
   // In browser, ALWAYS use the proxy route (same origin, no CORS)
-  if (typeof window !== 'undefined') {
-    // Client-side: use relative proxy path (axios handles this correctly)
-    return '/api/proxy';
-  }
+  // if (typeof window !== 'undefined') {
+  //   // Client-side: use relative proxy path (axios handles this correctly)
+  //   return '/api/proxy';
+  // }
   // Server-side: use direct backend URL
+  // Normalize: remove trailing slash and /api if present, then add /api
+  // The env var should be base URL without /api (e.g., https://api.boundlessfi.xyz)
   let backendUrl =
     process.env.NEXT_PUBLIC_API_URL || 'https://staging-api.boundlessfi.xyz';
-  // Remove trailing slash and /api if present
   backendUrl = backendUrl.replace(/\/$/, '').replace(/\/api$/i, '');
   return `${backendUrl}/api`;
 };
@@ -47,26 +48,17 @@ const createClientApi = (): AxiosInstance => {
     },
     // When using proxy (client-side), cookies are automatically included
     // When making direct requests (server-side), we don't need withCredentials
-    withCredentials: false,
+    withCredentials: typeof window !== 'undefined',
   });
 
   // Request interceptor
   instance.interceptors.request.use(
     config => {
-      // Credentials are handled automatically:
-      // - Client-side: Next.js proxy forwards cookies automatically
-      // - Server-side: Direct backend calls don't need withCredentials
-      config.withCredentials = false;
-
-      // Debug logging in development
-      if (
-        process.env.NODE_ENV === 'development' &&
-        typeof window !== 'undefined'
-      ) {
-        // Debug URL construction (commented out to avoid unused variable)
-        // const url = config.baseURL && config.url
-        //   ? `${config.baseURL}${config.url.startsWith('/') ? '' : '/'}${config.url}`
-        //   : config.url;
+      if (typeof window !== 'undefined') {
+        config.withCredentials = true;
+      } else {
+        // Server-side: credentials handled via headers
+        config.withCredentials = false;
       }
 
       // Reject data: URLs proactively to avoid Node adapter decoding large payloads

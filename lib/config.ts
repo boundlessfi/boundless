@@ -1,7 +1,14 @@
+// Normalize API URL: remove trailing slash and /api if present
+// The env var should be the base URL without /api (e.g., https://api.boundlessfi.xyz)
+// This function ensures consistent handling regardless of how it's set
+const normalizeApiUrl = (url: string): string => {
+  return url.replace(/\/$/, '').replace(/\/api$/i, '');
+};
+
 export const config = {
-  apiUrl:
-    process.env.NEXT_PUBLIC_API_URL ||
-    'https://staging-api.boundlessfi.xyz/api',
+  apiUrl: normalizeApiUrl(
+    process.env.NEXT_PUBLIC_API_URL || 'https://staging-api.boundlessfi.xyz'
+  ),
 };
 
 export const socialLinks = {

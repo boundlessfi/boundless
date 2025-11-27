@@ -144,35 +144,40 @@ export default function Explore() {
   const [underlineStyle, setUnderlineStyle] = useState({});
   const tabRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
 
-  // State for projects
   const [projects, setProjects] = useState<ProjectApi[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [projectsFetched, setProjectsFetched] = useState(false);
 
-  // State for hackathons
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [hackathonsLoading, setHackathonsLoading] = useState(false);
   const [hackathonsError, setHackathonsError] = useState<string | null>(null);
+  const [hackathonsFetched, setHackathonsFetched] = useState(false);
 
   const { transformHackathonForCard } = useHackathonTransform();
 
-  // Fetch projects
   const fetchProjects = useCallback(async () => {
+    if (projectsFetched) return; // Prevent refetching if already fetched
+
     try {
       setProjectsLoading(true);
       setProjectsError(null);
       const response = await getProjects(1, 6);
       const apiProjects = (response.projects ?? []) as unknown as ProjectApi[];
       setProjects(apiProjects);
+      setProjectsFetched(true); // Mark as fetched even if empty
     } catch {
       setProjectsError('Failed to fetch projects');
+      setProjectsFetched(true); // Mark as fetched even on error to prevent retries
     } finally {
       setProjectsLoading(false);
     }
-  }, []);
+  }, [projectsFetched]);
 
   // Fetch hackathons
   const fetchHackathons = useCallback(async () => {
+    if (hackathonsFetched) return; // Prevent refetching if already fetched
+
     try {
       setHackathonsLoading(true);
       setHackathonsError(null);
@@ -189,24 +194,35 @@ export default function Explore() {
       );
 
       setHackathons(transformedHackathons);
+      setHackathonsFetched(true); // Mark as fetched even if empty
     } catch {
       setHackathonsError('Failed to fetch hackathons');
+      setHackathonsFetched(true); // Mark as fetched even on error to prevent retries
     } finally {
       setHackathonsLoading(false);
     }
-  }, []);
+  }, [hackathonsFetched]);
 
-  // Fetch data when tab changes
+  // Reset fetched flags when switching to a tab (allows fresh fetch)
+  useEffect(() => {
+    if (activeTab === 'featured-projects') {
+      setProjectsFetched(false);
+    } else if (activeTab === 'ongoing-hackathons') {
+      setHackathonsFetched(false);
+    }
+  }, [activeTab]);
+
+  // Fetch data when tab changes and hasn't been fetched yet
   useEffect(() => {
     if (
       activeTab === 'featured-projects' &&
-      projects.length === 0 &&
+      !projectsFetched &&
       !projectsLoading
     ) {
       fetchProjects();
     } else if (
       activeTab === 'ongoing-hackathons' &&
-      hackathons.length === 0 &&
+      !hackathonsFetched &&
       !hackathonsLoading
     ) {
       fetchHackathons();
@@ -215,18 +231,11 @@ export default function Explore() {
     activeTab,
     fetchProjects,
     fetchHackathons,
-    projects.length,
-    hackathons.length,
+    projectsFetched,
+    hackathonsFetched,
     projectsLoading,
     hackathonsLoading,
   ]);
-
-  // Fetch projects on mount if default tab
-  useEffect(() => {
-    if (activeTab === 'featured-projects') {
-      fetchProjects();
-    }
-  }, [activeTab, fetchProjects]);
 
   useEffect(() => {
     const currentTab = tabRefs.current[activeTab];
