@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { FileText, Users, ArrowRight, Calendar } from 'lucide-react';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
@@ -24,6 +24,11 @@ interface HackathonBannerProps {
   hasSubmitted?: boolean;
   isEnded?: boolean;
   isTeamFormationEnabled?: boolean;
+  registrationDeadlinePolicy?:
+    | 'before_start'
+    | 'before_submission_deadline'
+    | 'custom';
+  registrationDeadline?: string;
   onJoinClick?: () => void;
   onSubmitClick?: () => void;
   onViewSubmissionClick?: () => void;
@@ -118,6 +123,8 @@ export function HackathonBanner({
   isRegistered = false,
   hasSubmitted = false,
   isTeamFormationEnabled = false,
+  registrationDeadlinePolicy,
+  registrationDeadline,
   onJoinClick,
   onSubmitClick,
   onViewSubmissionClick,
@@ -150,6 +157,131 @@ export function HackathonBanner({
       hackathonStatus.current = 'upcoming';
     }
   }, [startDate, deadline]);
+
+  // Check if registration is allowed based on registrationDeadlinePolicy
+  const canRegister = useMemo(() => {
+    const now = new Date();
+
+    // If no policy is specified, default to 'before_submission_deadline'
+    const policy = registrationDeadlinePolicy || 'before_submission_deadline';
+
+    console.log('🔍 Registration Check:', {
+      policy,
+      now: now.toISOString(),
+      startDate,
+      deadline,
+      registrationDeadline,
+    });
+
+    switch (policy) {
+      case 'before_start':
+        // Can register only before hackathon starts
+        if (startDate) {
+          const startDateObj = new Date(startDate);
+          const canReg = now < startDateObj;
+          console.log('before_start check:', {
+            canReg,
+            startDateObj: startDateObj.toISOString(),
+          });
+          return canReg;
+        }
+        return false;
+
+      case 'before_submission_deadline':
+        // Can register before submission deadline
+        if (deadline) {
+          const deadlineObj = new Date(deadline);
+          const canReg = now < deadlineObj;
+          console.log('before_submission_deadline check:', {
+            canReg,
+            deadlineObj: deadlineObj.toISOString(),
+          });
+          return canReg;
+        }
+        return false;
+
+      case 'custom':
+        // Can register before custom registration deadline
+        if (registrationDeadline) {
+          const registrationDeadlineObj = new Date(registrationDeadline);
+          const canReg = now < registrationDeadlineObj;
+          console.log('custom check:', {
+            canReg,
+            registrationDeadlineObj: registrationDeadlineObj.toISOString(),
+          });
+          return canReg;
+        }
+        return false;
+
+      default:
+        return false;
+    }
+  }, [registrationDeadlinePolicy, startDate, deadline, registrationDeadline]);
+
+  // Determine button text based on registration policy and hackathon status
+  const getRegisterButtonText = useMemo(() => {
+    if (!canRegister) return null;
+
+    const now = new Date();
+    const isBeforeStart = startDate && now < new Date(startDate);
+
+    switch (registrationDeadlinePolicy || 'before_submission_deadline') {
+      case 'before_start':
+        return 'Register Before Start';
+
+      case 'before_submission_deadline':
+        if (isBeforeStart) {
+          return 'Early Register';
+        } else {
+          return 'Join Hackathon';
+        }
+
+      case 'custom':
+        if (registrationDeadline) {
+          const customDeadline = new Date(registrationDeadline);
+          const isBeforeCustomDeadline = now < customDeadline;
+
+          if (isBeforeStart && isBeforeCustomDeadline) {
+            return 'Register Interest';
+          } else if (!isBeforeStart && isBeforeCustomDeadline) {
+            return 'Late Register';
+          }
+        }
+        return 'Register Now';
+
+      default:
+        return 'Join Hackathon';
+    }
+  }, [
+    registrationDeadlinePolicy,
+    canRegister,
+    startDate,
+    registrationDeadline,
+  ]);
+
+  // Debug useEffect to track registration logic
+  useEffect(() => {
+    console.log('🔍 Debug Registration Logic:', {
+      hackathonStatus: hackathonStatus.current,
+      registrationDeadlinePolicy:
+        registrationDeadlinePolicy || 'before_submission_deadline (default)',
+      startDate,
+      deadline,
+      registrationDeadline,
+      canRegister,
+      isBeforeStart: startDate && new Date() < new Date(startDate),
+      buttonText: getRegisterButtonText,
+      isRegistered,
+    });
+  }, [
+    registrationDeadlinePolicy,
+    startDate,
+    deadline,
+    registrationDeadline,
+    canRegister,
+    getRegisterButtonText,
+    isRegistered,
+  ]);
 
   const handleRedirectToAuthScreen = () => {
     router.push('/auth?mode=signin');
@@ -272,6 +404,62 @@ export function HackathonBanner({
     return null;
   };
 
+  // Render registration button based on policy and status
+  const renderRegistrationButton = () => {
+    // If hackathon has ended, don't show registration button
+    if (hackathonStatus.current === 'ended') {
+      return (
+        <Button
+          disabled
+          className='cursor-not-allowed bg-gray-600/50 text-gray-300 opacity-60'
+        >
+          <Calendar className='mr-2 h-4 w-4' />
+          Ended
+        </Button>
+      );
+    }
+
+    // If user is already registered, show leave button
+    if (isRegistered) {
+      return (
+        <Button
+          onClick={onJoinClick}
+          variant='outline'
+          className='border-red-500/50 text-red-400 hover:bg-red-500/20'
+        >
+          Leave Hackathon
+        </Button>
+      );
+    }
+
+    // If registration is not allowed, show disabled button
+    if (!canRegister) {
+      return (
+        <Button
+          disabled
+          className='cursor-not-allowed bg-gray-600/50 text-gray-300 opacity-60'
+        >
+          <Calendar className='mr-2 h-4 w-4' />
+          Registration Closed
+        </Button>
+      );
+    }
+
+    // Show active registration button with appropriate text
+    const buttonText = getRegisterButtonText || 'Join Hackathon';
+
+    return (
+      <Button
+        onClick={!isAuthenticated ? handleRedirectToAuthScreen : onJoinClick}
+        className='bg-[#a7f950] font-semibold text-black hover:bg-[#8fd93f]'
+      >
+        <Calendar className='mr-2 h-4 w-4' />
+        {buttonText}
+        <ArrowRight className='ml-2 h-4 w-4' />
+      </Button>
+    );
+  };
+
   return (
     <Card className='relative w-full overflow-hidden rounded-none border-0 bg-transparent p-0 shadow-none'>
       <div
@@ -343,62 +531,8 @@ export function HackathonBanner({
 
             {/* Action Buttons */}
             <div className='mt-2 flex flex-wrap items-center gap-3'>
-              {/* Ended */}
-              {hackathonStatus.current === 'ended' && (
-                <Button
-                  disabled
-                  className='cursor-not-allowed bg-gray-600/50 text-gray-300 opacity-60'
-                >
-                  <Calendar className='mr-2 h-4 w-4' />
-                  Ended
-                </Button>
-              )}
-
-              {/* Upcoming → Register Interest */}
-              {hackathonStatus.current === 'upcoming' &&
-                !isRegistered &&
-                onJoinClick && (
-                  <Button
-                    onClick={
-                      !isAuthenticated
-                        ? handleRedirectToAuthScreen
-                        : onJoinClick
-                    }
-                    className='bg-blue-500 font-semibold text-white hover:bg-blue-600'
-                  >
-                    <Calendar className='mr-2 h-4 w-4' />
-                    Register Interest
-                    <ArrowRight className='ml-2 h-4 w-4' />
-                  </Button>
-                )}
-
-              {/* Ongoing → Join */}
-              {hackathonStatus.current === 'ongoing' &&
-                !isRegistered &&
-                onJoinClick && (
-                  <Button
-                    onClick={
-                      !isAuthenticated
-                        ? handleRedirectToAuthScreen
-                        : onJoinClick
-                    }
-                    className='bg-[#a7f950] font-semibold text-black hover:bg-[#8fd93f]'
-                  >
-                    Join Hackathon
-                    <ArrowRight className='ml-2 h-4 w-4' />
-                  </Button>
-                )}
-
-              {/* Registered → Leave */}
-              {hackathonStatus.current !== 'ended' && isRegistered && (
-                <Button
-                  onClick={onJoinClick}
-                  variant='outline'
-                  className='border-red-500/50 text-red-400 hover:bg-red-500/20'
-                >
-                  Leave Hackathon
-                </Button>
-              )}
+              {/* Registration Button */}
+              {renderRegistrationButton()}
 
               {/* Submit */}
               {hackathonStatus.current === 'ongoing' &&

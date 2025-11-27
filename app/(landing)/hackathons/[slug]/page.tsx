@@ -57,6 +57,10 @@ export default function HackathonPage() {
       },
       // { id: 'discussions', label: 'Discussions' },
     ];
+    console.log(
+      currentHackathon?.registrationDeadlinePolicy,
+      currentHackathon?.registrationDeadline
+    );
 
     const participantType = currentHackathon?.participation?.participantType;
     const isTeamHackathon =
@@ -183,6 +187,8 @@ export default function HackathonPage() {
         isRegistered={isRegistered}
         hasSubmitted={hasSubmitted}
         isEnded={isEnded}
+        registrationDeadlinePolicy={currentHackathon.registrationDeadlinePolicy}
+        registrationDeadline={currentHackathon.registrationDeadline}
         isTeamFormationEnabled={isTeamFormationEnabled}
         onJoinClick={handleJoinClick}
         onSubmitClick={handleSubmitClick}
