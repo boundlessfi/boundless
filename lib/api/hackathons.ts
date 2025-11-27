@@ -2,6 +2,11 @@ import api, { type RequestConfig } from './api';
 import { ApiResponse, ErrorResponse, PaginatedResponse } from './types';
 import { Discussion } from '@/types/hackathon';
 
+export type RegistrationDeadlinePolicy =
+  | 'custom'
+  | 'before_start'
+  | 'before_submission_deadline';
+
 // Enums matching backend models
 export enum HackathonCategory {
   DEFI = 'DeFi',
@@ -91,6 +96,8 @@ export interface HackathonParticipation {
   teamMin?: number;
   teamMax?: number;
   about?: string;
+  registrationDeadlinePolicy?: RegistrationDeadlinePolicy;
+  registrationDeadline?: string;
   submissionRequirements?: SubmissionRequirements;
   tabVisibility?: TabVisibility;
 }

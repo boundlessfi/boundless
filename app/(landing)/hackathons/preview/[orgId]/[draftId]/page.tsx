@@ -117,6 +117,11 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
                   ? 'ended'
                   : 'upcoming',
             participants: 0, // Always 0 for drafts
+            registrationDeadlinePolicy:
+              transformed.participation.registrationDeadlinePolicy ||
+              'before_submission_deadline',
+            registrationDeadline:
+              transformed.participation.registrationDeadline,
             totalPrizePool: response.data.totalPrizePool,
             deadline: transformed.timeline.submissionDeadline,
             categories: transformed.information.categories.map(cat =>

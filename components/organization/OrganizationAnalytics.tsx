@@ -123,7 +123,7 @@ const OrganizationAnalytics = () => {
 
   return (
     <div className='min-h-screen bg-black'>
-      <div className=' '>
+      <div className='p-10'>
         {/* Header */}
         <div className='mb-8'>
           <h1 className='mb-1 text-2xl font-medium text-white'>Analytics</h1>

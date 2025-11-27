@@ -76,6 +76,8 @@ export const transformToApiFormat = (stepData: {
         ParticipantType.INDIVIDUAL,
       teamMin: participation?.teamMin,
       teamMax: participation?.teamMax,
+      registrationDeadlinePolicy: participation?.registrationDeadlinePolicy,
+      registrationDeadline: participation?.registrationDeadline,
       submissionRequirements: {
         requireGithub: participation?.require_github,
         requireDemoVideo: participation?.require_demo_video,
@@ -181,6 +183,10 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
       participantType: participation?.participantType || 'individual',
       teamMin: participation?.teamMin,
       teamMax: participation?.teamMax,
+      registrationDeadlinePolicy:
+        participation?.registrationDeadlinePolicy ||
+        'before_submission_deadline',
+      registrationDeadline: participation?.registrationDeadline,
       require_github:
         participation?.submissionRequirements?.requireGithub || false,
       require_demo_video:

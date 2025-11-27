@@ -1,6 +1,7 @@
 import {
   HackathonPhase,
   PrizeTier,
+  RegistrationDeadlinePolicy,
   SponsorPartner,
 } from '@/lib/api/hackathons';
 
@@ -128,6 +129,8 @@ export interface HackathonParticipationSettings {
   teamMin?: number;
   teamMax?: number;
   about?: string;
+  registrationDeadlinePolicy?: RegistrationDeadlinePolicy;
+  registrationDeadline?: string;
   submissionRequirements?: HackathonSubmissionRequirements;
   tabVisibility?: HackathonTabVisibility;
 }
@@ -178,6 +181,8 @@ export interface Hackathon {
   prizeTiers?: PrizeTier[];
   teamMin?: number;
   teamMax?: number;
+  registrationDeadlinePolicy: RegistrationDeadlinePolicy;
+  registrationDeadline: string | undefined;
   venue?: Venue;
   sponsors?: SponsorPartner[];
   socialLinks?: string[];

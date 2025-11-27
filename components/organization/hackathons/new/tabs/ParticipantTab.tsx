@@ -18,12 +18,21 @@ import {
   UserCheck,
   UsersRound,
   Loader2,
+  CalendarIcon,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import {
   participantSchema,
   ParticipantFormData,
 } from './schemas/participantSchema';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 
 interface ParticipantTabProps {
   onContinue?: () => void;
@@ -60,6 +69,25 @@ const submissionRequirements = [
   },
 ];
 
+// Add this array after the submissionRequirements array
+const registrationPolicies = [
+  {
+    value: 'before_start' as const,
+    label: 'Before Hackathon Starts',
+    description: 'Registration closes when the hackathon begins',
+  },
+  {
+    value: 'before_submission_deadline' as const,
+    label: 'Before Submission Deadline',
+    description: 'Registration stays open until submission deadline',
+  },
+  {
+    value: 'custom' as const,
+    label: 'Custom Deadline',
+    description: 'Set your own registration deadline',
+  },
+];
+
 const tabVisibility = [
   { name: 'detailsTab' as const, label: 'Details' },
   { name: 'participantsTab' as const, label: 'Participants' },
@@ -84,6 +112,8 @@ export default function ParticipantTab({
       participantType: 'individual',
       teamMin: 2,
       teamMax: 5,
+      registrationDeadlinePolicy: 'before_submission_deadline',
+      registrationDeadline: undefined,
       require_github: true,
       require_demo_video: true,
       require_other_links: true,
@@ -209,6 +239,122 @@ export default function ParticipantTab({
               </FormItem>
             )}
           />
+
+          {/* Registration Deadline Policy */}
+          <div className='space-y-4'>
+            <div>
+              <h3 className='text-sm font-medium text-white'>
+                Registration Deadline <span className='text-red-500'>*</span>
+              </h3>
+              <p className='mt-1 text-sm text-zinc-500'>
+                Choose when registration should close
+              </p>
+            </div>
+
+            <FormField
+              control={form.control}
+              name='registrationDeadlinePolicy'
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className='space-y-3'>
+                      {registrationPolicies.map(
+                        ({ value, label, description }) => {
+                          const isSelected = field.value === value;
+                          return (
+                            <button
+                              key={value}
+                              type='button'
+                              onClick={() => field.onChange(value)}
+                              className={cn(
+                                'flex w-full items-start gap-3 rounded-lg border p-4 text-left transition-all',
+                                isSelected
+                                  ? 'border-primary/50 bg-primary/10'
+                                  : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50'
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  'mt-0.5 h-4 w-4 rounded-full border-2 transition-all',
+                                  isSelected
+                                    ? 'border-primary bg-primary'
+                                    : 'border-zinc-600'
+                                )}
+                              >
+                                {isSelected && (
+                                  <div className='h-full w-full scale-50 rounded-full bg-white' />
+                                )}
+                              </div>
+                              <div className='flex-1'>
+                                <p className='text-sm font-medium text-white'>
+                                  {label}
+                                </p>
+                                <p className='mt-0.5 text-xs text-zinc-500'>
+                                  {description}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage className='text-xs text-red-500' />
+                </FormItem>
+              )}
+            />
+
+            {/* Custom Deadline Calendar */}
+            {form.watch('registrationDeadlinePolicy') === 'custom' && (
+              <FormField
+                control={form.control}
+                name='registrationDeadline'
+                render={({ field }) => (
+                  <FormItem className='gap-3'>
+                    <FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant='outline'
+                            className={cn(
+                              'h-12 w-full rounded-lg border border-zinc-800 bg-zinc-900/30 p-4 text-left font-normal hover:bg-zinc-900/50',
+                              !field.value && 'text-zinc-500'
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), 'PPP')
+                            ) : (
+                              <span>Select custom registration deadline</span>
+                            )}
+                            <CalendarIcon className='ml-auto h-4 w-4 text-zinc-400' />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className='w-auto border-zinc-800 bg-zinc-900 p-0 text-white'
+                          align='start'
+                        >
+                          <Calendar
+                            mode='single'
+                            selected={
+                              field.value ? new Date(field.value) : undefined
+                            }
+                            onSelect={date => {
+                              if (date) {
+                                field.onChange(date.toISOString());
+                              }
+                            }}
+                            disabled={date => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </FormControl>
+                    <FormMessage className='text-xs text-red-500' />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
 
           {/* Team Size Settings */}
           {participantType === 'team' && (
