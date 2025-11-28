@@ -17,6 +17,7 @@ import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/
 import { useTimelineEvents } from '@/hooks/hackathon/use-timeline-events';
 import { toast } from 'sonner';
 import { Participant } from '@/lib/api/hackathons';
+// import { HackathonResources } from '@/components/hackathons/resources/resources';
 
 export default function HackathonPage() {
   const router = useRouter();
