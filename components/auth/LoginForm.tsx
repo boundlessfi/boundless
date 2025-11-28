@@ -18,14 +18,20 @@ import {
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
-const formSchema = z.object({
-  email: z.string().email({
-    message: 'Invalid email address',
-  }),
-  password: z.string().min(8, {
-    message: 'Password must be at least 8 characters',
-  }),
-});
+const formSchema = z
+  .object({
+    email: z.string().email({
+      message: 'Invalid email address',
+    }),
+    password: z.string().min(8, {
+      message: 'Password must be at least 8 characters',
+    }),
+    rememberMe: z.boolean().optional(),
+  })
+  .refine(data => data.rememberMe === true, {
+    message: 'Remember me is required',
+    path: ['rememberMe'],
+  });
 
 interface LoginFormProps {
   form: UseFormReturn<z.infer<typeof formSchema>>;
@@ -181,6 +187,10 @@ const LoginForm = ({
                 <Checkbox
                   id='remember'
                   className='h-6.5 w-6.5 border-[#6D6D6D]'
+                  checked={form.watch('rememberMe')}
+                  onCheckedChange={(checked: boolean) =>
+                    form.setValue('rememberMe', checked)
+                  }
                 />
                 <Label htmlFor='remember' className='text-sm text-white'>
                   Remember me for 30 days

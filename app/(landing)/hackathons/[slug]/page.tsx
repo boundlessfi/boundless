@@ -11,7 +11,9 @@ import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
 import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
+import { HackathonResources } from '@/components/hackathons/resources/resources';
 import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
+import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
 import { TeamFormationTab } from '@/components/hackathons/team-formation/TeamFormationTab';
 import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/LoadingScreen';
 import { useTimelineEvents } from '@/hooks/hackathon/use-timeline-events';
@@ -52,11 +54,14 @@ export default function HackathonPage() {
             },
           ]
         : []),
+      { id: 'resources', label: 'Resources' },
+
       {
         id: 'submission',
         label: 'Submissions',
         badge: submissions.filter(p => p.status === 'Approved').length,
       },
+      { id: 'discussions', label: 'Discussions' },
     ];
 
     const participantType = currentHackathon?.participation?.participantType;
@@ -272,6 +277,7 @@ export default function HackathonPage() {
             prizes={currentHackathon.prizeTiers}
             totalPrizePool={currentHackathon.totalPrizePool}
             hackathonSlugOrId={hackathonId}
+            venue={currentHackathon.venue}
           />
         )}
 
@@ -286,8 +292,15 @@ export default function HackathonPage() {
           />
         )}
 
+        {activeTab === 'discussions' && (
+          <HackathonDiscussions hackathonId={hackathonId} />
+        )}
+
         {activeTab === 'team-formation' && (
           <TeamFormationTab hackathonSlugOrId={hackathonId} />
+        )}
+        {activeTab === 'resources' && (
+          <HackathonResources hackathonSlugOrId={hackathonId} />
         )}
       </div>
     </div>

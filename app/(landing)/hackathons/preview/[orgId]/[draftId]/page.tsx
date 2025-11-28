@@ -131,7 +131,7 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
             endDate: transformed.timeline.winnerAnnouncementDate,
             organizer: response.data.organizer,
             featured: transformed.featured || false,
-            resources: transformed.collaboration.socialLinks || [],
+            resources: transformed.resources || { resources: [] },
           };
 
           setPreviewHackathon(hackathon);

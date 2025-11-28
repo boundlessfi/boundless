@@ -17,6 +17,7 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: 'Password must be at least 8 characters',
   }),
+  rememberMe: z.boolean().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -32,8 +33,9 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastMethod, setLastMethod] = useState<string | null>(null);
 
-  const callbackUrl =
-    searchParams.get('callbackUrl') || process.env.NEXT_PUBLIC_APP_URL || '/';
+  const callbackUrl = searchParams.get('callbackUrl')
+    ? decodeURIComponent(searchParams.get('callbackUrl')!)
+    : process.env.NEXT_PUBLIC_APP_URL || '/';
 
   useEffect(() => {
     const method = authClient.getLastUsedLoginMethod();
@@ -55,6 +57,7 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
     defaultValues: {
       email: '',
       password: '',
+      rememberMe: false,
     },
   });
 
@@ -129,7 +132,7 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
       await authClient.signIn.social(
         {
           provider: 'google',
-          callbackURL: process.env.NEXT_PUBLIC_APP_URL || '/',
+          callbackURL: callbackUrl,
         },
         {
           onRequest: () => {
@@ -161,7 +164,7 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
 
       toast.error(errorMessage);
     }
-  }, [setLoadingState]);
+  }, [setLoadingState, callbackUrl]);
 
   const onSubmit = useCallback(
     async (values: FormData) => {
@@ -173,8 +176,8 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
           {
             email: values.email,
             password: values.password,
-            rememberMe: true,
-            callbackURL: process.env.NEXT_PUBLIC_APP_URL || '/',
+            rememberMe: values.rememberMe,
+            callbackURL: callbackUrl,
           },
           {
             onRequest: () => {

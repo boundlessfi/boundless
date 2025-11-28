@@ -4,6 +4,7 @@ import type { InfoFormData } from '@/components/organization/hackathons/new/tabs
 import type { TimelineFormData } from '@/components/organization/hackathons/new/tabs/schemas/timelineSchema';
 import type { ParticipantFormData } from '@/components/organization/hackathons/new/tabs/schemas/participantSchema';
 import type { RewardsFormData } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
+import type { ResourcesFormData } from '@/components/organization/hackathons/new/tabs/schemas/resourcesSchema';
 import type { JudgingFormData } from '@/components/organization/hackathons/new/tabs/schemas/judgingSchema';
 import type { CollaborationFormData } from '@/components/organization/hackathons/new/tabs/schemas/collaborationSchema';
 
@@ -12,6 +13,7 @@ interface StepData {
   timeline?: TimelineFormData;
   participation?: ParticipantFormData;
   rewards?: RewardsFormData;
+  resources?: ResourcesFormData;
   judging?: JudgingFormData;
   collaboration?: CollaborationFormData;
 }
@@ -47,6 +49,9 @@ export const isStepSavedInDraft = (
         draft.rewards.prizeTiers &&
         draft.rewards.prizeTiers.length > 0
       );
+    case 'resources':
+      // Resources are optional, so return true if the field exists (even if empty)
+      return draft.resources !== undefined;
     case 'judging':
       return !!(
         draft.judging &&
@@ -121,6 +126,12 @@ export const isStepDataValid = (
           tier => tier.place?.trim() && tier.prizeAmount?.trim()
         )
       );
+    }
+    case 'resources': {
+      const resources = stepData as ResourcesFormData;
+      // Resources are optional, so return true if resources array exists
+      // (even if empty, since it's optional)
+      return resources.resources !== undefined;
     }
     case 'judging': {
       const judging = stepData as JudgingFormData;

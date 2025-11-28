@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/utils';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { FileText, Users, ArrowRight, Calendar } from 'lucide-react';
 import { useAuthStatus } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface HackathonBannerProps {
   title: string;
@@ -144,6 +144,7 @@ export function HackathonBanner({
 
   const { isAuthenticated } = useAuthStatus();
   const router = useRouter();
+  const pathname = usePathname();
 
   const hackathonStatus = useRef<'upcoming' | 'ongoing' | 'ended'>('upcoming');
 
@@ -175,10 +176,6 @@ export function HackathonBanner({
         if (startDate) {
           const startDateObj = new Date(startDate);
           const canReg = now < startDateObj;
-          console.log('before_start check:', {
-            canReg,
-            startDateObj: startDateObj.toISOString(),
-          });
           return canReg;
         }
         return false;
@@ -188,10 +185,6 @@ export function HackathonBanner({
         if (deadline) {
           const deadlineObj = new Date(deadline);
           const canReg = now < deadlineObj;
-          console.log('before_submission_deadline check:', {
-            canReg,
-            deadlineObj: deadlineObj.toISOString(),
-          });
           return canReg;
         }
         return false;
@@ -201,10 +194,6 @@ export function HackathonBanner({
         if (registrationDeadline) {
           const registrationDeadlineObj = new Date(registrationDeadline);
           const canReg = now < registrationDeadlineObj;
-          console.log('custom check:', {
-            canReg,
-            registrationDeadlineObj: registrationDeadlineObj.toISOString(),
-          });
           return canReg;
         }
         return false;
@@ -255,32 +244,9 @@ export function HackathonBanner({
     registrationDeadline,
   ]);
 
-  // Debug useEffect to track registration logic
-  useEffect(() => {
-    console.log('🔍 Debug Registration Logic:', {
-      hackathonStatus: hackathonStatus.current,
-      registrationDeadlinePolicy:
-        registrationDeadlinePolicy || 'before_submission_deadline (default)',
-      startDate,
-      deadline,
-      registrationDeadline,
-      canRegister,
-      isBeforeStart: startDate && new Date() < new Date(startDate),
-      buttonText: getRegisterButtonText,
-      isRegistered,
-    });
-  }, [
-    registrationDeadlinePolicy,
-    startDate,
-    deadline,
-    registrationDeadline,
-    canRegister,
-    getRegisterButtonText,
-    isRegistered,
-  ]);
-
   const handleRedirectToAuthScreen = () => {
-    router.push('/auth?mode=signin');
+    const callbackUrl = encodeURIComponent(pathname);
+    router.push(`/auth?mode=signin&callbackUrl=${callbackUrl}`);
   };
 
   const getStatusColor = () => {

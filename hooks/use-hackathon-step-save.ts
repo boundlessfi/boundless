@@ -5,6 +5,7 @@ import type { InfoFormData } from '@/components/organization/hackathons/new/tabs
 import type { TimelineFormData } from '@/components/organization/hackathons/new/tabs/schemas/timelineSchema';
 import type { ParticipantFormData } from '@/components/organization/hackathons/new/tabs/schemas/participantSchema';
 import type { RewardsFormData } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
+import type { ResourcesFormData } from '@/components/organization/hackathons/new/tabs/schemas/resourcesSchema';
 import type { JudgingFormData } from '@/components/organization/hackathons/new/tabs/schemas/judgingSchema';
 import type { CollaborationFormData } from '@/components/organization/hackathons/new/tabs/schemas/collaborationSchema';
 
@@ -13,6 +14,7 @@ type StepFormData =
   | TimelineFormData
   | ParticipantFormData
   | RewardsFormData
+  | ResourcesFormData
   | JudgingFormData
   | CollaborationFormData;
 
@@ -38,6 +40,7 @@ export const useHackathonStepSave = ({
     timeline: false,
     participation: false,
     rewards: false,
+    resources: false,
     judging: false,
     collaboration: false,
     review: false,
@@ -76,7 +79,8 @@ export const useHackathonStepSave = ({
     saveInformationStep: createSaveHandler('information', 'timeline'),
     saveTimelineStep: createSaveHandler('timeline', 'participation', true),
     saveParticipationStep: createSaveHandler('participation', 'rewards', true),
-    saveRewardsStep: createSaveHandler('rewards', 'judging', true),
+    saveRewardsStep: createSaveHandler('rewards', 'resources', true),
+    saveResourcesStep: createSaveHandler('resources', 'judging', true),
     saveJudgingStep: createSaveHandler('judging', 'collaboration', true),
     saveCollaborationStep: createSaveHandler('collaboration', 'review', true),
   };

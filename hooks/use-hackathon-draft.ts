@@ -9,6 +9,7 @@ import type { InfoFormData } from '@/components/organization/hackathons/new/tabs
 import type { TimelineFormData } from '@/components/organization/hackathons/new/tabs/schemas/timelineSchema';
 import type { ParticipantFormData } from '@/components/organization/hackathons/new/tabs/schemas/participantSchema';
 import type { RewardsFormData } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
+import type { ResourcesFormData } from '@/components/organization/hackathons/new/tabs/schemas/resourcesSchema';
 import type { JudgingFormData } from '@/components/organization/hackathons/new/tabs/schemas/judgingSchema';
 import type { CollaborationFormData } from '@/components/organization/hackathons/new/tabs/schemas/collaborationSchema';
 import type { StepKey } from '@/components/organization/hackathons/new/constants';
@@ -20,6 +21,7 @@ interface StepData {
   timeline?: TimelineFormData;
   participation?: ParticipantFormData;
   rewards?: RewardsFormData;
+  resources?: ResourcesFormData;
   judging?: JudgingFormData;
   collaboration?: CollaborationFormData;
 }
@@ -136,6 +138,7 @@ export const useHackathonDraft = ({
       | TimelineFormData
       | ParticipantFormData
       | RewardsFormData
+      | ResourcesFormData
       | JudgingFormData
       | CollaborationFormData
   ) => {

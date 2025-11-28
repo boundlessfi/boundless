@@ -5,11 +5,13 @@ import {
   type CreateDraftRequest,
   type PublishHackathonRequest,
   type HackathonDraft,
+  type HackathonResources,
 } from '@/lib/api/hackathons';
 import { InfoFormData } from '@/components/organization/hackathons/new/tabs/schemas/infoSchema';
 import { TimelineFormData } from '@/components/organization/hackathons/new/tabs/schemas/timelineSchema';
 import { ParticipantFormData } from '@/components/organization/hackathons/new/tabs/schemas/participantSchema';
 import { RewardsFormData } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
+import { ResourcesFormData } from '@/components/organization/hackathons/new/tabs/schemas/resourcesSchema';
 import { JudgingFormData } from '@/components/organization/hackathons/new/tabs/schemas/judgingSchema';
 import { CollaborationFormData } from '@/components/organization/hackathons/new/tabs/schemas/collaborationSchema';
 
@@ -18,6 +20,7 @@ export const transformToApiFormat = (stepData: {
   timeline?: TimelineFormData;
   participation?: ParticipantFormData;
   rewards?: RewardsFormData;
+  resources?: ResourcesFormData;
   judging?: JudgingFormData;
   collaboration?: CollaborationFormData;
 }): CreateDraftRequest | PublishHackathonRequest => {
@@ -25,6 +28,7 @@ export const transformToApiFormat = (stepData: {
   const timeline = stepData.timeline;
   const participation = stepData.participation;
   const rewards = stepData.rewards;
+  const resources = stepData.resources;
   const judging = stepData.judging;
   const collaboration = stepData.collaboration;
 
@@ -106,6 +110,15 @@ export const transformToApiFormat = (stepData: {
           passMark: tier.passMark,
         })) || [],
     },
+    resources: {
+      resources:
+        resources?.resources?.map(resource => ({
+          link: resource.link || undefined,
+          description: resource.description,
+          fileUrl: resource.file?.url || undefined,
+          fileName: resource.file?.name || undefined,
+        })) || [],
+    } as HackathonResources,
     judging: {
       criteria:
         judging?.criteria?.map(criterion => ({
@@ -139,6 +152,7 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
   const timeline = draft.timeline;
   const participation = draft.participation;
   const rewards = draft.rewards;
+  const resources = draft.resources;
   const judging = draft.judging;
   const collaboration = draft.collaboration;
 
@@ -215,6 +229,20 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
           passMark: tier.passMark,
         })) || [],
     } as RewardsFormData,
+    resources: {
+      resources:
+        resources?.resources?.map((resource, index) => ({
+          id: `resource-${index}`,
+          link: resource.link || '',
+          description: resource.description || '',
+          file: resource.fileUrl
+            ? {
+                url: resource.fileUrl,
+                name: resource.fileName || 'Uploaded file',
+              }
+            : undefined,
+        })) || [],
+    } as ResourcesFormData,
     judging: {
       criteria:
         judging?.criteria?.map((criterion, index) => ({

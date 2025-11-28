@@ -4,7 +4,6 @@ import { Footer, Navbar } from '@/components/landing-page';
 import { generatePageMetadata } from '@/lib/metadata';
 import { GoogleOneTap } from '@/components/auth/GoogleOneTap';
 
-// Generate metadata for the landing layout (home page)
 export const metadata: Metadata = generatePageMetadata('home');
 
 interface LandingLayoutProps {

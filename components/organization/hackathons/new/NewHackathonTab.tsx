@@ -12,6 +12,7 @@ import InfoTab from './tabs/InfoTab';
 import TimelineTab from './tabs/TimelineTab';
 import ParticipantTab from './tabs/ParticipantTab';
 import RewardsTab from './tabs/RewardsTab';
+import ResourcesTab from './tabs/ResourcesTab';
 import JudgingTab from './tabs/JudgingTab';
 import CollaborationTab from './tabs/CollaborationTab';
 import ReviewTab from './tabs/ReviewTab';
@@ -96,6 +97,12 @@ export default function NewHackathonTab({
             : 'pending',
           isCompleted: isStepDataValid('rewards', formData),
         },
+        resources: {
+          status: isStepDataValid('resources', formData)
+            ? 'completed'
+            : 'pending',
+          isCompleted: isStepDataValid('resources', formData),
+        },
         judging: {
           status: isStepDataValid('judging', formData)
             ? 'completed'
@@ -143,6 +150,7 @@ export default function NewHackathonTab({
     saveTimelineStep,
     saveParticipationStep,
     saveRewardsStep,
+    saveResourcesStep,
     saveJudgingStep,
     saveCollaborationStep,
   } = useHackathonStepSave({
@@ -162,6 +170,7 @@ export default function NewHackathonTab({
       timeline: 'timeline',
       participation: 'participation',
       rewards: 'rewards',
+      resources: 'resources',
       judging: 'judging',
       collaboration: 'collaboration',
     };
@@ -248,10 +257,19 @@ export default function NewHackathonTab({
 
           <TabsContent value='rewards' className='mt-0'>
             <RewardsTab
-              onContinue={() => navigateToStep('judging')}
+              onContinue={() => navigateToStep('resources')}
               onSave={saveRewardsStep}
               initialData={stepData.rewards}
               isLoading={loadingStates.rewards}
+            />
+          </TabsContent>
+
+          <TabsContent value='resources' className='mt-0'>
+            <ResourcesTab
+              onContinue={() => navigateToStep('judging')}
+              onSave={saveResourcesStep}
+              initialData={stepData.resources}
+              isLoading={loadingStates.resources}
             />
           </TabsContent>
 

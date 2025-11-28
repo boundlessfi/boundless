@@ -9,6 +9,7 @@ interface ExtendedHackathon extends Hackathon {
   categories?: string[];
   participants?: number;
   featured?: boolean;
+  organizerLogo?: string;
 }
 
 interface TransformedHackathon {
@@ -119,6 +120,9 @@ export function useHackathonTransform() {
         extendedHackathon._organizationName ||
         'organization';
 
+      // Get organizer logo, fallback to default if not available
+      const logoUrl = extendedHackathon.organizerLogo || '/avatar.png';
+
       // Extract categories
       const categories: string[] = [];
       if (hackathon.information?.categories) {
@@ -145,7 +149,7 @@ export function useHackathonTransform() {
         hackathonSlug: hackathon.information.slug,
         organizerName: orgName,
         tagline: hackathon.information.tagline,
-        organizerLogo: '/avatar.png',
+        organizerLogo: logoUrl,
         hackathonImage:
           hackathon.information?.banner ||
           '/landing/explore/project-placeholder-1.png',

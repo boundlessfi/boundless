@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import {
   BarChart3,
   FileEdit,
@@ -8,84 +8,124 @@ import {
   Link2,
   Presentation,
   VideoIcon,
-  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useHackathonData } from '@/lib/providers/hackathonProvider';
+import type { HackathonResource } from '@/lib/api/hackathons';
 import {
-  getHackathonResources,
-  type HackathonResource,
-} from '@/lib/api/hackathons';
-import { toast } from 'sonner';
+  VideoPlayer,
+  VideoPlayerContent,
+  VideoPlayerControlBar,
+  VideoPlayerMuteButton,
+  VideoPlayerPlayButton,
+  VideoPlayerSeekBackwardButton,
+  VideoPlayerSeekForwardButton,
+  VideoPlayerTimeDisplay,
+  VideoPlayerTimeRange,
+  VideoPlayerVolumeRange,
+} from '@/components/ui/video-player';
 
 interface HackathonResourcesProps {
   hackathonSlugOrId?: string;
   organizationId?: string;
 }
 
-export function HackathonResources({
-  hackathonSlugOrId,
-  organizationId,
-}: HackathonResourcesProps) {
-  const [resources, setResources] = useState<HackathonResource[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function HackathonResources({}: HackathonResourcesProps) {
+  const { currentHackathon } = useHackathonData();
 
-  useEffect(() => {
-    if (hackathonSlugOrId) {
-      fetchResources();
+  // Transform resources from hackathon data to component format
+  const resources: HackathonResource[] = useMemo(() => {
+    if (!currentHackathon?.resources?.resources) {
+      return [];
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hackathonSlugOrId, organizationId]);
 
-  const fetchResources = async () => {
-    if (!hackathonSlugOrId) return;
+    return currentHackathon.resources.resources.map((resource, index) => {
+      const url = resource.fileUrl || resource.link || '';
+      const fileName = resource.fileName || '';
 
-    setIsLoading(true);
-    setError(null);
+      // Determine resource type based on URL or file extension
+      let type: 'pdf' | 'doc' | 'sheet' | 'slide' | 'link' | 'video' = 'link';
 
-    try {
-      const response = await getHackathonResources(
-        hackathonSlugOrId,
-        organizationId
-      );
-      if (response.success && response.data) {
-        setResources(response.data);
+      if (resource.fileUrl) {
+        const extension = fileName.toLowerCase().split('.').pop();
+        if (extension === 'pdf') type = 'pdf';
+        else if (extension === 'doc' || extension === 'docx') type = 'doc';
+        else if (extension === 'xls' || extension === 'xlsx') type = 'sheet';
+        else if (extension === 'ppt' || extension === 'pptx') type = 'slide';
+        else if (
+          extension === 'mp4' ||
+          extension === 'webm' ||
+          extension === 'ogg' ||
+          extension === 'mov' ||
+          extension === 'avi' ||
+          extension === 'mkv'
+        ) {
+          type = 'video';
+        }
+      } else if (
+        url.includes('youtube.com') ||
+        url.includes('youtu.be') ||
+        url.includes('vimeo.com')
+      ) {
+        type = 'video';
       } else {
-        throw new Error(response.message || 'Failed to fetch resources');
+        // Check URL extension for video files
+        const urlExtension = url.toLowerCase().split('.').pop()?.split('?')[0];
+        if (
+          urlExtension === 'mp4' ||
+          urlExtension === 'webm' ||
+          urlExtension === 'ogg' ||
+          urlExtension === 'mov' ||
+          urlExtension === 'avi' ||
+          urlExtension === 'mkv'
+        ) {
+          type = 'video';
+        }
       }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to load resources';
-      setError(errorMessage);
-      toast.error('Error', { description: errorMessage });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
+      return {
+        _id: `resource-${index}`,
+        title: resource.description || fileName || `Resource ${index + 1}`,
+        type,
+        url,
+        size: undefined, // Size not available in current structure
+        description: resource.description,
+        uploadDate: new Date().toISOString(), // Use current date as fallback
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    });
+  }, [currentHackathon]);
 
   // Separate resources by type
   const videoResources = resources.filter(r => r.type === 'video');
   const documentResources = resources.filter(r => r.type !== 'video');
 
-  // Mock resources for fallback (if API returns empty)
-  const mockResources: HackathonResource[] = [
-    {
-      _id: '1',
-      title: 'Hackathon Rulebook',
-      type: 'pdf',
-      size: '2.4 MB',
-      url: '#',
-      uploadDate: 'Oct 15, 2024',
-      description: 'Complete rules and guidelines for participation',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
+  // Check if URL is YouTube or Vimeo (use iframe) vs direct video file (use VideoPlayer)
+  const isEmbedVideo = (url: string) => {
+    return (
+      url.includes('youtube.com') ||
+      url.includes('youtu.be') ||
+      url.includes('vimeo.com')
+    );
+  };
 
-  const displayResources = resources.length > 0 ? resources : mockResources;
-  const displayVideoResources = videoResources.length > 0 ? videoResources : [];
-  const displayDocumentResources =
-    documentResources.length > 0 ? documentResources : displayResources;
+  // Convert YouTube URL to embed format
+  const getYouTubeEmbedUrl = (url: string) => {
+    const regExp =
+      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    const videoId = match && match[2].length === 11 ? match[2] : null;
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  };
+
+  // Convert Vimeo URL to embed format
+  const getVimeoEmbedUrl = (url: string) => {
+    const regExp = /(?:vimeo\.com\/)(?:.*\/)?(\d+)/;
+    const match = url.match(regExp);
+    const videoId = match ? match[1] : null;
+    return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
+  };
 
   const getFileIcon = (type: string) => {
     const iconClass = 'w-5 h-5';
@@ -123,25 +163,18 @@ export function HackathonResources({
     }
   };
 
-  if (isLoading) {
+  // Show empty state if no resources
+  if (resources.length === 0) {
     return (
-      <div className='flex min-h-[400px] items-center justify-center'>
-        <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
-        <span className='ml-3 text-gray-400'>Loading resources...</span>
-      </div>
-    );
-  }
-
-  if (error && resources.length === 0) {
-    return (
-      <div className='flex min-h-[400px] flex-col items-center justify-center'>
-        <p className='mb-4 text-red-400'>{error}</p>
-        <button
-          onClick={fetchResources}
-          className='rounded-md bg-[#a7f950] px-4 py-2 text-black hover:bg-[#8fd93f]'
-        >
-          Retry
-        </button>
+      <div className='space-y-8'>
+        <div className='text-left'>
+          <h2 className='text-primary mb-2 text-2xl font-bold'>
+            Hackathon Resources
+          </h2>
+        </div>
+        <div className='flex min-h-[400px] items-center justify-center rounded-lg border border-gray-700 bg-gray-800/50'>
+          <p className='text-gray-400'>No resources available yet.</p>
+        </div>
       </div>
     );
   }
@@ -156,7 +189,7 @@ export function HackathonResources({
       </div>
 
       {/* Video Guides Section */}
-      {displayVideoResources.length > 0 && (
+      {videoResources.length > 0 && (
         <section className=''>
           <h3 className='mb-4 flex items-center gap-2 text-xl font-semibold text-white'>
             <div className='bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full'>
@@ -166,26 +199,59 @@ export function HackathonResources({
           </h3>
 
           <div className='mb-6 space-y-4'>
-            {displayVideoResources.map(resource => (
-              <div
-                key={resource._id}
-                className='aspect-video overflow-hidden rounded-lg bg-black'
-              >
-                <iframe
-                  src={resource.url}
-                  className='h-full w-full'
-                  allowFullScreen
-                  title={resource.title}
-                  allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-                />
-              </div>
-            ))}
+            {videoResources.map(resource => {
+              const isEmbed = isEmbedVideo(resource.url);
+              let embedUrl = resource.url;
+
+              if (
+                resource.url.includes('youtube.com') ||
+                resource.url.includes('youtu.be')
+              ) {
+                embedUrl = getYouTubeEmbedUrl(resource.url);
+              } else if (resource.url.includes('vimeo.com')) {
+                embedUrl = getVimeoEmbedUrl(resource.url);
+              }
+
+              return (
+                <div
+                  key={resource._id}
+                  className='aspect-video overflow-hidden rounded-lg bg-black'
+                >
+                  {isEmbed ? (
+                    <iframe
+                      src={embedUrl}
+                      className='h-full w-full'
+                      allowFullScreen
+                      title={resource.title}
+                      allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                    />
+                  ) : (
+                    <VideoPlayer className='h-full w-full'>
+                      <VideoPlayerContent
+                        src={resource.url}
+                        className='h-full w-full object-contain'
+                        controls
+                      />
+                      <VideoPlayerControlBar className='absolute right-0 bottom-0 left-0 bg-gradient-to-t from-black/80 to-transparent p-2'>
+                        <VideoPlayerSeekBackwardButton />
+                        <VideoPlayerPlayButton />
+                        <VideoPlayerSeekForwardButton />
+                        <VideoPlayerTimeRange />
+                        <VideoPlayerTimeDisplay />
+                        <VideoPlayerMuteButton />
+                        <VideoPlayerVolumeRange />
+                      </VideoPlayerControlBar>
+                    </VideoPlayer>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
 
       {/* Documents & Resources Section */}
-      <section className={displayVideoResources.length > 0 ? 'pt-6' : ''}>
+      <section className={videoResources.length > 0 ? 'pt-6' : ''}>
         <h3 className='mb-4 flex items-center gap-2 text-xl font-semibold text-white'>
           <div className='bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full'>
             <Library className='text-primary h-5 w-5' />
@@ -193,13 +259,13 @@ export function HackathonResources({
           Documents & Resources
         </h3>
 
-        {displayDocumentResources.length === 0 ? (
+        {documentResources.length === 0 ? (
           <div className='flex min-h-[200px] items-center justify-center rounded-lg border border-gray-700 bg-gray-800/50'>
             <p className='text-gray-400'>No resources available yet.</p>
           </div>
         ) : (
           <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-            {displayDocumentResources.map(resource => (
+            {documentResources.map(resource => (
               <Link
                 key={resource._id}
                 href={resource.url}
@@ -250,12 +316,6 @@ export function HackathonResources({
           </div>
         )}
       </section>
-
-      {error && resources.length > 0 && (
-        <div className='rounded-md border border-red-500/50 bg-red-500/10 p-3'>
-          <p className='text-sm text-red-400'>{error}</p>
-        </div>
-      )}
     </div>
   );
 }

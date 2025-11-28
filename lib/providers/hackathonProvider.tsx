@@ -42,7 +42,7 @@ interface Prize {
 interface ResourceItem {
   id: number;
   title: string;
-  type: 'link';
+  type: 'link' | 'file';
   size: string;
   url: string;
   uploadDate: string;
@@ -385,15 +385,15 @@ export function HackathonDataProvider({
       ]
     : [];
 
-  const mockResources: ResourceItem[] = currentHackathon?.resources
-    ? currentHackathon.resources.map((resource, index) => ({
+  const mockResources: ResourceItem[] = currentHackathon?.resources?.resources
+    ? currentHackathon.resources.resources.map((resource, index) => ({
         id: index + 1,
-        title: `Resource ${index + 1}`,
-        type: 'link',
+        title: resource.description || `Resource ${index + 1}`,
+        type: resource.fileUrl ? 'file' : 'link',
         size: 'N/A',
-        url: resource,
+        url: resource.fileUrl || resource.link || '',
         uploadDate: new Date().toISOString(),
-        description: 'Additional resource for participants',
+        description: resource.description || '',
       }))
     : [];
 

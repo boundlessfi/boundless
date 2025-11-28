@@ -173,7 +173,14 @@ export interface Hackathon {
   endDate: string;
   organizer: string;
   featured?: boolean;
-  resources?: string[];
+  resources?: {
+    resources: Array<{
+      link?: string;
+      description?: string;
+      fileUrl?: string;
+      fileName?: string;
+    }>;
+  };
   participantType?: ParticipantType;
   tabVisibility?: Pick<HackathonTabVisibility, 'joinATeamTab'>;
   participation?: HackathonParticipationSettings;

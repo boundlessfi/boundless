@@ -28,6 +28,7 @@ export const useHackathonSteps = (
     timeline: { status: 'pending', isCompleted: false },
     participation: { status: 'pending', isCompleted: false },
     rewards: { status: 'pending', isCompleted: false },
+    resources: { status: 'pending', isCompleted: false },
     judging: { status: 'pending', isCompleted: false },
     collaboration: { status: 'pending', isCompleted: false },
     review: { status: 'pending', isCompleted: false },

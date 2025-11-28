@@ -4,6 +4,7 @@ export type StepKey =
   | 'timeline'
   | 'participation'
   | 'rewards'
+  | 'resources'
   | 'judging'
   | 'collaboration'
   | 'review';
@@ -19,6 +20,7 @@ export const STEP_ORDER: StepKey[] = [
   'timeline',
   'participation',
   'rewards',
+  'resources',
   'judging',
   'collaboration',
   'review',

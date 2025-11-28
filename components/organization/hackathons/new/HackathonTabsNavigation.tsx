@@ -37,6 +37,7 @@ export const HackathonTabsNavigation: React.FC<
               {STEP_ORDER.filter(stepKey => stepKey !== 'review').map(
                 stepKey => {
                   const step = steps[stepKey];
+                  if (!step) return null;
                   const isActive = stepKey === activeTab;
                   const isCompleted = step.isCompleted;
                   const canAccess = canAccessStep(stepKey);
