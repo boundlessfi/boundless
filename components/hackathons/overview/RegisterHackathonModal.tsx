@@ -55,7 +55,7 @@ interface RegisterHackathonModalProps {
   hackathonSlugOrId: string;
   organizationId?: string;
   participantType: 'individual' | 'team' | 'team_or_individual';
-  onSuccess?: () => void;
+  onSuccess?: (participantData?: any) => void;
 }
 
 export function RegisterHackathonModal({
@@ -107,7 +107,7 @@ export function RegisterHackathonModal({
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      await registerForHackathon({
+      const participantData = await registerForHackathon({
         participationType: data.participationType,
         teamName: data.participationType === 'team' ? data.teamName : undefined,
         teamMembers:
@@ -119,7 +119,9 @@ export function RegisterHackathonModal({
       form.reset();
       setTeamMembers([]);
       setTeamMemberEmail('');
-      onSuccess?.();
+
+      // Pass the participant data to onSuccess
+      onSuccess?.(participantData);
     } catch {
       // Error handled in hook
     }

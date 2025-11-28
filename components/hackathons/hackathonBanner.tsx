@@ -33,6 +33,8 @@ interface HackathonBannerProps {
   onSubmitClick?: () => void;
   onViewSubmissionClick?: () => void;
   onFindTeamClick?: () => void;
+  onLeaveClick?: () => void;
+  isLeaving?: boolean;
 }
 
 interface TimeRemaining {
@@ -125,10 +127,12 @@ export function HackathonBanner({
   isTeamFormationEnabled = false,
   registrationDeadlinePolicy,
   registrationDeadline,
+  isLeaving,
   onJoinClick,
   onSubmitClick,
   onViewSubmissionClick,
   onFindTeamClick,
+  onLeaveClick,
 }: HackathonBannerProps) {
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>({
     days: 0,
@@ -164,14 +168,6 @@ export function HackathonBanner({
 
     // If no policy is specified, default to 'before_submission_deadline'
     const policy = registrationDeadlinePolicy || 'before_submission_deadline';
-
-    console.log('🔍 Registration Check:', {
-      policy,
-      now: now.toISOString(),
-      startDate,
-      deadline,
-      registrationDeadline,
-    });
 
     switch (policy) {
       case 'before_start':
@@ -423,11 +419,14 @@ export function HackathonBanner({
     if (isRegistered) {
       return (
         <Button
-          onClick={onJoinClick}
-          variant='outline'
-          className='border-red-500/50 text-red-400 hover:bg-red-500/20'
+          onClick={onLeaveClick}
+          disabled={isLeaving}
+          className='border border-red-500/40 bg-red-500 font-semibold text-white hover:bg-red-500/50 hover:text-white'
+          variant='ghost'
         >
-          Leave Hackathon
+          <Calendar className='mr-2 h-4 w-4 text-white' />
+          {isLeaving ? 'Leaving...' : 'Leave Hackathon'}
+          <ArrowRight className='ml-2 h-4 w-4 text-red-400' />
         </Button>
       );
     }

@@ -27,11 +27,13 @@ export function useRegisterHackathon({
   const [isRegistering, setIsRegistering] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasCheckedInitially, setHasCheckedInitially] = useState(false);
 
   const checkStatus = useCallback(async () => {
     if (!isAuthenticated || !hackathonSlugOrId) {
       setIsRegistered(false);
       setParticipant(null);
+      setHasCheckedInitially(true);
       return;
     }
 
@@ -51,6 +53,7 @@ export function useRegisterHackathon({
         setIsRegistered(false);
         setParticipant(null);
       }
+      setHasCheckedInitially(true);
     } catch (err) {
       const errorMessage =
         err instanceof Error
@@ -59,6 +62,7 @@ export function useRegisterHackathon({
       setError(errorMessage);
       setIsRegistered(false);
       setParticipant(null);
+      setHasCheckedInitially(true);
     } finally {
       setIsChecking(false);
     }
@@ -87,6 +91,7 @@ export function useRegisterHackathon({
         );
 
         if (response.success && response.data) {
+          // IMMEDIATELY update state - don't wait for checkStatus
           setIsRegistered(true);
           setParticipant(response.data);
           toast.success('Successfully registered for hackathon!');
@@ -116,6 +121,7 @@ export function useRegisterHackathon({
     } else if (!isAuthenticated) {
       setIsRegistered(false);
       setParticipant(null);
+      setHasCheckedInitially(true);
     }
   }, [autoCheck, isAuthenticated, hackathonSlugOrId, checkStatus]);
 
@@ -127,6 +133,10 @@ export function useRegisterHackathon({
     error,
     register,
     checkStatus,
+    hasCheckedInitially,
+    // Expose setters for immediate updates
+    setIsRegistered,
+    setParticipant,
     hasSubmitted: participant?.submission?.status === 'submitted',
   };
 }

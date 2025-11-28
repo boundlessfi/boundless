@@ -660,6 +660,19 @@ export interface GetJudgingSubmissionsResponse
   message: string;
 }
 
+export interface LeaveHackathonResponse
+  extends ApiResponse<{
+    teamCleanedUp: boolean;
+    teamId?: string;
+  }> {
+  success: true;
+  data: {
+    teamCleanedUp: boolean;
+    teamId?: string;
+  };
+  message: string;
+}
+
 export interface GetSubmissionScoresResponse
   extends ApiResponse<SubmissionScoresResponse> {
   success: true;
@@ -1450,6 +1463,28 @@ export const registerForHackathon = async (
   }
 
   const res = await api.post(url, data);
+  return res.data;
+};
+
+/**
+ * Leave a hackathon
+ * Supports both slug-based (public) and organization/hackathon ID (authenticated) endpoints
+ */
+export const leaveHackathon = async (
+  hackathonSlugOrId: string,
+  organizationId?: string
+): Promise<LeaveHackathonResponse> => {
+  let url: string;
+
+  // If organizationId is provided, use authenticated endpoint
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/leave`;
+  } else {
+    // Otherwise, use public slug-based endpoint
+    url = `/hackathons/${hackathonSlugOrId}/leave`;
+  }
+
+  const res = await api.delete(url);
   return res.data;
 };
 

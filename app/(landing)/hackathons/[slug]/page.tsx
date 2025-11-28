@@ -1,21 +1,22 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useRegisterHackathon } from '@/hooks/hackathon/use-register-hackathon';
+import { useLeaveHackathon } from '@/hooks/hackathon/use-leave-hackathon';
 import { RegisterHackathonModal } from '@/components/hackathons/overview/RegisterHackathonModal';
 
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
 import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
-// import { HackathonResources } from '@/components/hackathons/resources/resources';
 import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
-// import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
 import { TeamFormationTab } from '@/components/hackathons/team-formation/TeamFormationTab';
 import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/LoadingScreen';
 import { useTimelineEvents } from '@/hooks/hackathon/use-timeline-events';
+import { toast } from 'sonner';
+import { Participant } from '@/lib/api/hackathons';
 
 export default function HackathonPage() {
   const router = useRouter();
@@ -28,14 +29,16 @@ export default function HackathonPage() {
     submissions,
     loading,
     setCurrentHackathon,
+    refreshCurrentHackathon,
   } = useHackathonData();
+
   const timeline_Events = useTimelineEvents(currentHackathon, {
     includeEndDate: false,
     dateFormat: { month: 'short', day: 'numeric', year: 'numeric' },
   });
+
   const hackathonTabs = useMemo(() => {
     const hasParticipants = participants.length > 0;
-    // const hasSubmissions = submissions.filter(p => p.status === 'Approved').length > 0;
 
     const tabs = [
       { id: 'overview', label: 'Overview' },
@@ -48,19 +51,12 @@ export default function HackathonPage() {
             },
           ]
         : []),
-      // { id: 'resources', label: 'Resources' },
-
       {
         id: 'submission',
         label: 'Submissions',
         badge: submissions.filter(p => p.status === 'Approved').length,
       },
-      // { id: 'discussions', label: 'Discussions' },
     ];
-    console.log(
-      currentHackathon?.registrationDeadlinePolicy,
-      currentHackathon?.registrationDeadline
-    );
 
     const participantType = currentHackathon?.participation?.participantType;
     const isTeamHackathon =
@@ -85,19 +81,37 @@ export default function HackathonPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
-  // Registration logic
-  const { isRegistered, hasSubmitted, checkStatus } = useRegisterHackathon({
+  // Function to refresh all hackathon data
+  const refreshHackathonData = useCallback(async () => {
+    if (hackathonId && refreshCurrentHackathon) {
+      await refreshCurrentHackathon();
+    }
+  }, [hackathonId, refreshCurrentHackathon]);
+
+  // Registration logic - use the updated hook with setters
+  const {
+    isRegistered,
+    hasSubmitted,
+    checkStatus,
+    // isChecking,
+    setIsRegistered,
+    setParticipant,
+  } = useRegisterHackathon({
     hackathonSlugOrId: hackathonId,
-    organizationId: undefined, // organizationId not available in currentHackathon type
+    organizationId: undefined,
     autoCheck: !!hackathonId,
+  });
+
+  // Leave hackathon logic
+  const { isLeaving, leave: leaveHackathon } = useLeaveHackathon({
+    hackathonSlugOrId: hackathonId,
+    organizationId: undefined,
   });
 
   const isEnded = useMemo(() => {
     if (!currentHackathon?.deadline) return false;
-
     const deadline = new Date(currentHackathon.deadline);
     const now = new Date();
-
     return now > deadline;
   }, [currentHackathon?.deadline]);
 
@@ -115,8 +129,33 @@ export default function HackathonPage() {
     setShowRegisterModal(true);
   };
 
-  const handleRegisterSuccess = () => {
-    checkStatus();
+  const handleLeaveClick = async () => {
+    try {
+      setIsRegistered(false);
+      setParticipant(null);
+
+      await leaveHackathon();
+
+      refreshHackathonData();
+
+      router.push('?tab=overview');
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to leave hackathon';
+      toast.error(errorMessage);
+      setIsRegistered(true);
+      checkStatus();
+    }
+  };
+
+  const handleRegisterSuccess = async (participantData: Participant) => {
+    // IMMEDIATELY update state with the returned participant data
+    setIsRegistered(true);
+    setParticipant(participantData);
+
+    // Refresh hackathon data in background (participants count)
+    await refreshHackathonData();
+
     router.push('?tab=submission');
   };
 
@@ -155,6 +194,7 @@ export default function HackathonPage() {
   if (loading) {
     return <LoadingScreen />;
   }
+
   if (!currentHackathon) {
     return (
       <div className='flex min-h-screen items-center justify-center'>
@@ -191,6 +231,8 @@ export default function HackathonPage() {
         registrationDeadline={currentHackathon.registrationDeadline}
         isTeamFormationEnabled={isTeamFormationEnabled}
         onJoinClick={handleJoinClick}
+        onLeaveClick={handleLeaveClick}
+        isLeaving={isLeaving}
         onSubmitClick={handleSubmitClick}
         onViewSubmissionClick={handleViewSubmissionClick}
         onFindTeamClick={handleFindTeamClick}
@@ -203,7 +245,7 @@ export default function HackathonPage() {
           onOpenChange={setShowRegisterModal}
           hackathonSlugOrId={hackathonId}
           organizationId={undefined}
-          onSuccess={handleRegisterSuccess}
+          onSuccess={handleRegisterSuccess} // Now passes participant data
           participantType={
             (currentHackathon?.participantType as
               | 'team'
@@ -235,9 +277,6 @@ export default function HackathonPage() {
         {activeTab === 'participants' && participants.length > 0 && (
           <HackathonParticipants />
         )}
-        {/* {activeTab === 'resources' && (
-          <HackathonResources hackathonSlugOrId={hackathonId} />
-        )} */}
 
         {activeTab === 'submission' && (
           <SubmissionTab
@@ -245,10 +284,6 @@ export default function HackathonPage() {
             isRegistered={isRegistered}
           />
         )}
-
-        {/* {activeTab === 'discussions' && (
-          <HackathonDiscussions hackathonId={hackathonId} />
-        )} */}
 
         {activeTab === 'team-formation' && (
           <TeamFormationTab hackathonSlugOrId={hackathonId} />

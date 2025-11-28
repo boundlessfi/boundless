@@ -384,7 +384,7 @@ export default function OrganizationContent() {
           </>
         ) : (
           <div className='flex min-h-[60vh] items-center justify-center'>
-            <div className='w-full max-w-2xl text-center'>
+            <div className='mt-10 w-full max-w-2xl text-center'>
               {/* Decorative background */}
               <div className='relative mx-auto mb-8 h-48 w-48'>
                 <div className='from-primary/20 absolute inset-0 animate-pulse rounded-full bg-gradient-to-br to-purple-500/20 blur-3xl'></div>
