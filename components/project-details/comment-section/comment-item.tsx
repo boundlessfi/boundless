@@ -23,6 +23,7 @@ interface CommentItemProps {
   onDelete?: (commentId: string) => void;
   onReport?: (commentId: string, reason: string, description?: string) => void;
   currentUserId?: string;
+  isRegistered?: boolean;
 }
 
 export function CommentItem({
@@ -33,6 +34,7 @@ export function CommentItem({
   onDelete,
   onReport,
   currentUserId,
+  isRegistered = false,
 }: CommentItemProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
@@ -158,14 +160,16 @@ export function CommentItem({
           <span className='text-xs text-zinc-400 md:text-sm'>
             {new Date(comment.createdAt).toLocaleDateString()}
           </span>
-          <Button
-            variant='ghost'
-            size='sm'
-            onClick={() => setShowReplyInput(!showReplyInput)}
-            className='h-auto p-0 text-xs text-zinc-400 hover:bg-transparent hover:text-white md:text-sm'
-          >
-            Reply
-          </Button>
+          {isRegistered && (
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={() => setShowReplyInput(!showReplyInput)}
+              className='h-auto p-0 text-xs text-zinc-400 hover:bg-transparent hover:text-white md:text-sm'
+            >
+              Reply
+            </Button>
+          )}
           {canEdit && (
             <Button
               variant='ghost'
@@ -304,6 +308,7 @@ export function CommentItem({
                     onDelete={onDelete}
                     onReport={onReport}
                     currentUserId={currentUserId}
+                    isRegistered={isRegistered}
                   />
                 ))}
               </div>

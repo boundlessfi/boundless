@@ -24,8 +24,6 @@ import {
   X,
   Minus,
   GripVertical,
-  Info,
-  LucideArrowUpRight,
   Sparkles,
   ChevronDown,
   ChevronUp,
@@ -46,7 +44,6 @@ import {
 } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import {
   Collapsible,
@@ -465,37 +462,6 @@ export default function JudgingTab({
     }
   };
 
-  const administrators = [
-    {
-      id: '1',
-      name: 'Brooklyn Simmons',
-      email: 'debbie.baker@example.com',
-      role: 'OWNER',
-      avatar: '/api/placeholder/40/40',
-    },
-    {
-      id: '2',
-      name: 'Annette Black',
-      email: '@verydarkman',
-      role: 'ADMIN',
-      avatar: '/api/placeholder/40/40',
-    },
-    {
-      id: '3',
-      name: 'Cameron Williamson',
-      email: 'cameron@example.com',
-      role: 'ADMIN',
-      avatar: '/api/placeholder/40/40',
-    },
-    {
-      id: '4',
-      name: 'Jane Doe',
-      email: 'jane@example.com',
-      role: 'ADMIN',
-      avatar: '/api/placeholder/40/40',
-    },
-  ];
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
@@ -630,54 +596,6 @@ export default function JudgingTab({
               {form.formState.errors.criteria.message}
             </p>
           )}
-        </div>
-
-        <div>
-          <h3 className='text-sm'>
-            Administrators <span className='text-error-400'>*</span>
-          </h3>
-          <p className='mt-1 mb-3 text-sm text-gray-500'>
-            The admins and the owner of your organization have full permissions
-            to manage this hackathon. See below.
-          </p>
-          <div className='bg-background-card mt-3 rounded-[12px] border border-gray-900 p-6'>
-            <div className='space-y-4'>
-              {administrators.map(admin => (
-                <div
-                  key={admin.id}
-                  className='flex items-center justify-between py-3'
-                >
-                  <div className='flex items-center gap-3'>
-                    <div className='flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 font-medium text-white'>
-                      {admin.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className='text-sm font-medium text-white'>
-                        {admin.name}
-                      </p>
-                      <p className='text-xs text-gray-500'>{admin.email}</p>
-                    </div>
-                  </div>
-                  <span className='text-xs font-medium text-gray-400'>
-                    {admin.role}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className='mt-4 flex items-start gap-2 rounded-[12px] bg-[#DBF936]/12 p-4'>
-            <Info className='mt-0.5 h-4 w-4 flex-shrink-0 text-[#DBF936]' />
-            <p className='flex items-center gap-1 text-xs text-white'>
-              To add, remove, or edit admin, visit your{' '}
-              <Link
-                href='/organization/dashboard'
-                className='flex items-center gap-1 text-[#DBF936] underline'
-              >
-                organization dashboard{' '}
-                <LucideArrowUpRight className='h-4 w-4' />
-              </Link>
-            </p>
-          </div>
         </div>
 
         <BoundlessButton type='submit' size='xl' disabled={isLoading}>

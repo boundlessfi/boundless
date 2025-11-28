@@ -32,7 +32,7 @@ export function CommentInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className='flex items-center gap-4 rounded-lg border border-neutral-800 bg-black px-6 py-5'
+      className='flex items-center gap-4 rounded-lg border border-neutral-800 bg-black px-6 py-2'
     >
       <div className='shrink-0'>
         <Smile className='size-10 text-neutral-500' />

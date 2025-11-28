@@ -8,7 +8,7 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -149,6 +149,13 @@ const PrizeTierComponent = ({
                         {...field}
                         type='number'
                         placeholder='0'
+                        value={field.value || '0'}
+                        onChange={e => {
+                          const value = e.target.value;
+                          // Update field value immediately for real-time calculation
+                          field.onChange(value === '' ? '0' : value);
+                        }}
+                        onBlur={field.onBlur}
                         className='h-11 border-zinc-800 bg-zinc-900/50 pr-16 pl-7 text-right font-medium text-white placeholder:text-zinc-600'
                       />
                       <div className='absolute top-1/2 right-3 -translate-y-1/2 text-xs text-zinc-500'>
@@ -232,7 +239,7 @@ const PrizeSummary = ({
         </div>
 
         <div className='flex items-center justify-between text-xs'>
-          <span className='text-zinc-500'>Platform Fee (2%)</span>
+          <span className='text-zinc-500'>Platform Fee (4%)</span>
           <span className='text-zinc-400'>${formatCurrency(platformFee)}</span>
         </div>
 
@@ -308,7 +315,7 @@ export default function RewardsTab({
         {
           id: `tier-${Date.now()}-1`,
           place: '1st Place',
-          prizeAmount: '10000',
+          prizeAmount: '0',
           description: '',
           currency: 'USDC',
           passMark: 80,
@@ -316,7 +323,7 @@ export default function RewardsTab({
         {
           id: `tier-${Date.now()}-2`,
           place: '2nd Place',
-          prizeAmount: '5000',
+          prizeAmount: '0',
           description: '',
           currency: 'USDC',
           passMark: 70,
@@ -324,7 +331,7 @@ export default function RewardsTab({
         {
           id: `tier-${Date.now()}-3`,
           place: '3rd Place',
-          prizeAmount: '2500',
+          prizeAmount: '0',
           description: '',
           currency: 'USDC',
           passMark: 50,
@@ -337,20 +344,26 @@ export default function RewardsTab({
     control: form.control,
     name: 'prizeTiers',
   });
-  const prizeTiers = form.watch('prizeTiers');
 
-  // Calculate totals
+  // Watch prizeTiers in real-time for immediate updates using useWatch hook
+  const prizeTiers = useWatch({
+    control: form.control,
+    name: 'prizeTiers',
+    defaultValue: form.getValues('prizeTiers') || [],
+  });
+
+  // Calculate totals - updates in real-time as user types
   const totalPool = useMemo(() => {
     return prizeTiers.reduce((sum, tier) => {
       const amount = parseFloat(
-        String(tier.prizeAmount).replace(/[^\d.-]/g, '')
+        String(tier.prizeAmount || '0').replace(/[^\d.-]/g, '')
       );
       return sum + (isNaN(amount) || amount < 0 ? 0 : amount);
     }, 0);
   }, [prizeTiers]);
 
   const platformFee = useMemo(
-    () => Math.round(totalPool * 0.02 * 100) / 100,
+    () => Math.round(totalPool * 0.04 * 100) / 100,
     [totalPool]
   );
   const totalFunds = useMemo(
@@ -364,7 +377,7 @@ export default function RewardsTab({
 
   const applyPreset = (presetKey: keyof typeof PRIZE_PRESETS) => {
     const preset = PRIZE_PRESETS[presetKey];
-    const baseAmount = totalPool || 10000;
+    const baseAmount = totalPool || 0;
     const newTiers = preset.tiers.map((percentage, idx) => ({
       id: `tier-${Date.now()}-${idx}`,
       place: `${['1st', '2nd', '3rd', '4th', '5th'][idx]} Place`,

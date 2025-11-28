@@ -11,10 +11,12 @@ import { Loader2 } from 'lucide-react';
 interface HackathonDiscussionsProps {
   hackathonId: string;
   organizationId?: string;
+  isRegistered?: boolean;
 }
 export function HackathonDiscussions({
   hackathonId,
   organizationId,
+  isRegistered = false,
 }: HackathonDiscussionsProps) {
   const [sortBy, setSortBy] = useState<
     'createdAt' | 'updatedAt' | 'totalReactions'
@@ -132,7 +134,12 @@ export function HackathonDiscussions({
     );
 
   if (discussions.length === 0)
-    return <CommentsEmptyState onAddComment={handleAddDiscussion} />;
+    return (
+      <CommentsEmptyState
+        onAddComment={handleAddDiscussion}
+        isRegistered={isRegistered}
+      />
+    );
 
   return (
     <div className='w-full'>
@@ -156,13 +163,24 @@ export function HackathonDiscussions({
             onUpdate={handleUpdateDiscussion}
             onDelete={handleDeleteDiscussion}
             onReport={handleReportDiscussion}
+            isRegistered={isRegistered}
           />
         ))}
       </div>
 
-      <div className='mt-10 px-4 md:px-0'>
-        <CommentInput onSubmit={handleAddDiscussion} />
-      </div>
+      {isRegistered && (
+        <div className='mt-10 px-4 md:px-0'>
+          <CommentInput onSubmit={handleAddDiscussion} />
+        </div>
+      )}
+
+      {!isRegistered && discussions.length > 0 && (
+        <div className='mt-8 rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-6 text-center md:px-6'>
+          <p className='text-sm text-gray-400'>
+            Register for this hackathon to join the discussion
+          </p>
+        </div>
+      )}
 
       {error && discussions.length > 0 && (
         <div className='mx-4 mt-4 rounded-md border border-red-500/50 bg-red-500/10 p-3 md:mx-0'>

@@ -5,9 +5,13 @@ import LottieAnimation from '@/components/LottieAnimation';
 
 interface CommentsEmptyStateProps {
   onAddComment: (content: string) => void;
+  isRegistered?: boolean;
 }
 
-export function CommentsEmptyState({ onAddComment }: CommentsEmptyStateProps) {
+export function CommentsEmptyState({
+  onAddComment,
+  isRegistered = false,
+}: CommentsEmptyStateProps) {
   return (
     <div className='flex w-full flex-col'>
       <div className='flex flex-col items-center justify-center px-4 py-16 md:py-20'>
@@ -18,7 +22,15 @@ export function CommentsEmptyState({ onAddComment }: CommentsEmptyStateProps) {
           Be the first to Leave a Comment
         </h3>
       </div>
-      <CommentInput onSubmit={onAddComment} />
+      {isRegistered ? (
+        <CommentInput onSubmit={onAddComment} />
+      ) : (
+        <div className='rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-6 text-center md:px-6'>
+          <p className='text-sm text-gray-400'>
+            Register for this hackathon to start the discussion
+          </p>
+        </div>
+      )}
     </div>
   );
 }
