@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Settings,
   Eye,
+  Trash2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,7 +25,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BoundlessButton } from '@/components/buttons';
 import { useHackathons } from '@/hooks/use-hackathons';
+import { useDeleteHackathon } from '@/hooks/hackathon/use-delete-hackathon';
 import type { Hackathon, HackathonDraft } from '@/lib/api/hackathons';
+import { toast } from 'sonner';
+import DeleteHackathonDialog from '@/components/organization/DeleteHackathonDialog';
 
 const calculateDraftCompletion = (draft: HackathonDraft): number => {
   const fields = [
@@ -77,12 +81,35 @@ export default function HackathonsPage() {
     'all'
   );
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [hackathonToDelete, setHackathonToDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
-  const { hackathons, hackathonsLoading, drafts, draftsLoading } =
+  const { hackathons, hackathonsLoading, drafts, draftsLoading, refetchAll } =
     useHackathons({
       organizationId,
       autoFetch: true,
     });
+
+  // Use the separate delete hook
+  const { isDeleting, deleteHackathon } = useDeleteHackathon({
+    organizationId,
+    hackathonId: hackathonToDelete?.id || '', // This will be set when we have a hackathon to delete
+    onSuccess: () => {
+      // Refresh the hackathons list after successful deletion
+      refetchAll();
+      toast.success('Hackathon deleted successfully', {
+        description: `"${hackathonToDelete?.title}" has been permanently deleted.`,
+      });
+    },
+    onError: error => {
+      toast.error('Failed to delete hackathon', {
+        description: error,
+      });
+    },
+  });
 
   const allHackathons = useMemo(() => {
     const items: Array<{
@@ -139,6 +166,32 @@ export default function HackathonsPage() {
     const total = hackathons.length + drafts.length;
     return { published, drafts: drafts.length, total };
   }, [hackathons, drafts]);
+
+  const handleDeleteClick = (hackathonId: string) => {
+    const hackathon = allHackathons.find(item => item.data._id === hackathonId);
+    if (hackathon) {
+      const title =
+        hackathon.data.information?.title ||
+        hackathon.data.title ||
+        'Untitled Hackathon';
+      setHackathonToDelete({ id: hackathonId, title });
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!hackathonToDelete) return;
+
+    setDeleteDialogOpen(false);
+
+    try {
+      await deleteHackathon();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setHackathonToDelete(null);
+    }
+  };
 
   return (
     <div className='min-h-screen bg-black'>
@@ -373,6 +426,17 @@ export default function HackathonsPage() {
                         >
                           <Eye className='h-4 w-4' />
                         </button>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleDeleteClick(hackathon._id);
+                          }}
+                          className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 opacity-0 transition-all group-hover:opacity-100 hover:border-red-600 hover:text-red-500'
+                          title='Delete Draft'
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className='h-4 w-4' />
+                        </button>
                         <BoundlessButton
                           size='sm'
                           variant='outline'
@@ -487,6 +551,14 @@ export default function HackathonsPage() {
                         >
                           <Settings className='h-4 w-4' />
                         </button>
+                        <button
+                          onClick={() => handleDeleteClick(hackathon._id)}
+                          className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-red-600 hover:text-red-500'
+                          title='Delete Hackathon'
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className='h-4 w-4' />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -496,6 +568,17 @@ export default function HackathonsPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Hackathon Dialog */}
+      {hackathonToDelete && (
+        <DeleteHackathonDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          hackathonTitle={hackathonToDelete.title}
+          onConfirm={handleDeleteConfirm}
+          isDeleting={isDeleting}
+        />
+      )}
     </div>
   );
 }
