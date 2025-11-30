@@ -75,7 +75,10 @@ export function ProfileCard({ participant }: ProfileCardProps) {
       {participant.role && (
         <div className='mb-4'>
           <Badge className='rounded-full border border-[#a7f950]/50 bg-[#a7f950]/20 px-3 py-1 text-sm font-semibold text-[#a7f950]'>
-            {participant.role}
+            {participant.role === 'leader'
+              ? 'Team Leader'
+              : participant.role.slice(0, 1).toUpperCase() +
+                participant.role.slice(1)}
           </Badge>
         </div>
       )}

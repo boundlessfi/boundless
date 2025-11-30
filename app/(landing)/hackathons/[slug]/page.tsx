@@ -42,6 +42,7 @@ export default function HackathonPage() {
 
   const hackathonTabs = useMemo(() => {
     const hasParticipants = participants.length > 0;
+    const hasResources = currentHackathon?.resources?.resources?.[0];
 
     const tabs = [
       { id: 'overview', label: 'Overview' },
@@ -54,7 +55,15 @@ export default function HackathonPage() {
             },
           ]
         : []),
-      { id: 'resources', label: 'Resources' },
+      ...(hasResources
+        ? [
+            {
+              id: 'resources',
+              label: 'Resources',
+              badge: currentHackathon?.resources?.resources?.length,
+            },
+          ]
+        : []),
 
       {
         id: 'submission',
@@ -302,9 +311,10 @@ export default function HackathonPage() {
         {activeTab === 'team-formation' && (
           <TeamFormationTab hackathonSlugOrId={hackathonId} />
         )}
-        {activeTab === 'resources' && (
-          <HackathonResources hackathonSlugOrId={hackathonId} />
-        )}
+        {activeTab === 'resources' &&
+          currentHackathon?.resources?.resources?.[0] && (
+            <HackathonResources hackathonSlugOrId={hackathonId} />
+          )}
       </div>
     </div>
   );

@@ -961,6 +961,23 @@ const transformHackathonResponse = (
   };
 };
 
+export interface AcceptTeamInvitationRequest {
+  token: string;
+}
+
+export interface AcceptTeamInvitationResponse
+  extends ApiResponse<{
+    message: string;
+    teamName: string;
+  }> {
+  success: true;
+  data: {
+    message: string;
+    teamName: string;
+  };
+  message: string;
+}
+
 /**
  * Transform flat API response to nested HackathonDraft structure
  */
@@ -1100,6 +1117,26 @@ export const publishHackathon = async (
     ...res.data,
     data: transformedData,
   };
+};
+
+// Accpet invitition function
+export const acceptTeamInvitation = async (
+  hackathonSlugOrId: string,
+  data: AcceptTeamInvitationRequest,
+  organizationId?: string
+): Promise<AcceptTeamInvitationResponse> => {
+  let url: string;
+
+  // If organizationId is provided, use authenticated endpoint
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team/accept`;
+  } else {
+    // Otherwise, use public slug-based endpoint
+    url = `hackathons/${hackathonSlugOrId}/team/accept`;
+  }
+
+  const res = await api.post(url, data);
+  return res.data;
 };
 
 /**

@@ -3,6 +3,7 @@
 import { useParticipants } from '@/hooks/hackathon/use-participants';
 import ParticipantsFilter from './participantFilter';
 import { ParticipantAvatar } from './participantAvatar';
+import Link from 'next/link';
 
 export const HackathonParticipants = () => {
   const {
@@ -58,7 +59,13 @@ export const HackathonParticipants = () => {
       {/* Participants Grid */}
       <div className='flex flex-wrap gap-x-6 gap-y-4'>
         {participants.map(participant => (
-          <ParticipantAvatar key={participant.id} participant={participant} />
+          <Link
+            href={`/profile/${participant.username}`}
+            target='_blank'
+            key={participant.id}
+          >
+            <ParticipantAvatar participant={participant} />
+          </Link>
         ))}
       </div>
 

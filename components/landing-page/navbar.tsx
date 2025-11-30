@@ -8,6 +8,8 @@ import {
   User,
   LogOut,
   Settings,
+  Sparkles,
+  Wand2,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useMemo } from 'react';
@@ -28,6 +30,7 @@ import CreateProjectModal from './project/CreateProjectModal';
 import { useProtectedAction } from '@/hooks/use-protected-action';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 import { WalletButton } from '../wallet/WalletButton';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 // Constants
 const BRAND_COLOR = '#a7f950';
@@ -78,7 +81,8 @@ export function Navbar() {
           <DesktopMenu items={MENU_ITEMS} currentPath={pathname} />
 
           {/* Desktop Actions - Updated with better alignment */}
-          <div className='hidden flex-shrink-0 md:flex md:items-center md:gap-3'>
+          {/* <div className='flex items-center gap-2'> */}
+          <div className='hidden flex-shrink-0 min-[990px]:flex md:items-center md:gap-3'>
             {isLoading ? (
               <LoadingSkeleton />
             ) : isAuthenticated ? (
@@ -94,6 +98,7 @@ export function Navbar() {
             isLoading={isLoading}
             user={user}
           />
+          {/* </div> */}
         </div>
       </div>
     </nav>
@@ -134,7 +139,7 @@ function DesktopMenu({
 }) {
   return (
     <nav
-      className='hidden flex-1 md:flex md:items-center md:justify-center'
+      className='hidden flex-1 min-[990px]:flex md:items-center md:justify-center'
       aria-label='Main navigation'
     >
       <div className='flex items-center gap-1'>
@@ -149,7 +154,12 @@ function DesktopMenu({
                 'rounded-lg px-3 py-2 text-sm font-medium transition-all duration-100',
                 isActive
                   ? `bg-[${BRAND_COLOR}]/10 text-[${BRAND_COLOR}] border border-[${BRAND_COLOR}]/20 shadow-sm shadow-[${BRAND_COLOR}]/5`
-                  : 'text-white/60 hover:bg-white/5 hover:text-white/90'
+                  : 'text-white/60 hover:bg-white/5 hover:text-white/90',
+                item.href === '/bounties'
+                  ? 'max-[1200px]:hidden'
+                  : item.href === '/blog'
+                    ? 'max-[1200px]:hidden'
+                    : ''
               )}
               style={
                 isActive
@@ -183,6 +193,8 @@ function LoadingSkeleton() {
 
 function AuthenticatedActions() {
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
   const {
     executeProtectedAction,
     showWalletModal,
@@ -204,26 +216,29 @@ function AuthenticatedActions() {
               variant='outline'
               size='sm'
               aria-label='Create new content'
-              className='border-white/20 transition-all duration-200'
-              style={
-                {
-                  '--hover-bg': `${BRAND_COLOR}1A`,
-                  '--hover-border': `${BRAND_COLOR}66`,
-                  '--hover-color': BRAND_COLOR,
-                } as React.CSSProperties
-              }
+              className='group relative flex items-center gap-2 overflow-hidden rounded-lg border-white/20 bg-gradient-to-r from-transparent via-white/5 to-transparent py-4 text-sm font-medium text-white/90 transition-all duration-300'
               onMouseEnter={e => {
+                setIsHovered(true);
                 e.currentTarget.style.backgroundColor = `${BRAND_COLOR}1A`;
                 e.currentTarget.style.borderColor = `${BRAND_COLOR}66`;
                 e.currentTarget.style.color = BRAND_COLOR;
               }}
               onMouseLeave={e => {
+                setIsHovered(false);
                 e.currentTarget.style.backgroundColor = '';
                 e.currentTarget.style.borderColor = '';
                 e.currentTarget.style.color = '';
               }}
             >
-              <Plus className='h-4 w-4' />
+              {/* Animated sparkle that travels across */}
+              <div className='absolute top-1/2 -right-4 h-8 w-8 -translate-y-1/2 opacity-0 transition-all duration-500 group-hover:right-full group-hover:opacity-100'>
+                <Sparkles className='h-3 w-3 text-[#a7f950]' />
+              </div>
+
+              <Wand2
+                className={`h-4 w-4 transition-all duration-300 ${isHovered ? 'rotate-12' : ''}`}
+              />
+              <span>Create</span>
             </BoundlessButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -271,7 +286,7 @@ function AuthenticatedActions() {
         open={createProjectModalOpen}
         setOpen={setCreateProjectModalOpen}
       />
-
+      <NotificationBell limit={10} />
       <WalletRequiredModal
         open={showWalletModal}
         onOpenChange={closeWalletModal}
@@ -373,7 +388,7 @@ const MobileMenu = ({
   }, [user]);
 
   return (
-    <div className='md:hidden'>
+    <div className='min-[990px]:hidden'>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
           <BoundlessButton
@@ -405,7 +420,7 @@ const MobileMenu = ({
 
         <SheetContent
           side='right'
-          className='flex w-full flex-col border-l border-white/10 bg-[#030303] sm:max-w-md'
+          className='flex w-full flex-col border-l border-white/10 bg-[#030303] px-5 pt-10 sm:max-w-md'
           showCloseButton={true}
         >
           <div className='flex flex-1 flex-col gap-6 overflow-y-auto pb-6'>
@@ -443,7 +458,7 @@ const MobileMenu = ({
                     onClick={() => setIsOpen(false)}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200',
+                      'rounded-lg py-3 text-sm font-medium transition-all duration-200',
                       isActive
                         ? 'border'
                         : 'text-white/70 hover:border hover:border-white/10 hover:bg-white/5 hover:text-white/90'
