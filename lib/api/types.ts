@@ -60,11 +60,16 @@ export interface Organization {
   about: string;
   links: OrganizationLinks;
   members: string[]; // Array of user emails
+  admins?: string[]; // Array of admin emails
   owner: string; // Owner email or userId
   hackathons: string[]; // Array of hackathon IDs
   grants: string[]; // Array of grant IDs
   isProfileComplete: boolean;
   pendingInvites: string[]; // Array of emails invited but not yet accepted
+  betterAuthOrgId?: string; // Better Auth organization ID for organizations using Better Auth integration
+  isArchived?: boolean;
+  archivedBy?: string;
+  archivedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

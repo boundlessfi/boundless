@@ -121,6 +121,7 @@ export default function PermissionsTable() {
   const [isCustom, setIsCustom] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [userIsOwner, setUserIsOwner] = useState(false);
 
   const {
     activeOrgId,
@@ -129,6 +130,17 @@ export default function PermissionsTable() {
     resetOrganizationPermissions,
     isOwner,
   } = useOrganization();
+
+  // Check if user is owner
+  useEffect(() => {
+    const checkOwnership = async () => {
+      if (activeOrgId) {
+        const ownerStatus = await isOwner(activeOrgId);
+        setUserIsOwner(ownerStatus);
+      }
+    };
+    checkOwnership();
+  }, [activeOrgId, isOwner]);
 
   const loadPermissions = useCallback(async () => {
     if (!activeOrgId) return;
@@ -462,7 +474,7 @@ export default function PermissionsTable() {
         </TableBody>
       </Table>
 
-      {!canEdit && isOwner() && (
+      {!canEdit && userIsOwner && (
         <div className='rounded border border-amber-400/20 bg-amber-400/10 p-3 text-xs text-amber-400'>
           <strong>Note:</strong> Only organization owners can modify
           permissions. You are viewing the permissions but cannot make changes.

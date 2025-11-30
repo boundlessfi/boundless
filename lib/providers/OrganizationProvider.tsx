@@ -8,6 +8,7 @@ import React, {
   useCallback,
   useRef,
 } from 'react';
+import { toast } from 'sonner';
 import { Logger } from '@/lib/logger';
 const logger = new Logger();
 logger.setMinLevel('info');
@@ -44,6 +45,7 @@ import type {
   RawOrganizationPermissions,
 } from '../api/organization';
 import { OrganizationPermissions } from '@/types/organization-permission';
+import { authClient } from '../auth-client';
 
 const OrganizationContext = createContext<OrganizationContextValue | undefined>(
   undefined
@@ -918,7 +920,33 @@ export function OrganizationProvider({
   const inviteMembers = useCallback(
     async (orgId: string, emails: string[]) => {
       try {
-        await sendOrganizationInvite(orgId, { emails });
+        const response = await sendOrganizationInvite(orgId, { emails });
+
+        // Show detailed results from Better Auth invitation summary
+        const summary = response.data?.summary;
+        if (summary) {
+          if (summary.invitedCount > 0) {
+            toast.success(
+              `Successfully invited ${summary.invitedCount} member${summary.invitedCount > 1 ? 's' : ''}`
+            );
+          }
+          if (summary.alreadyMembers.length > 0) {
+            toast.info(
+              `${summary.alreadyMembers.length} user${summary.alreadyMembers.length > 1 ? 's are' : ' is'} already member${summary.alreadyMembers.length > 1 ? 's' : ''}`
+            );
+          }
+          if (summary.alreadyInvited.length > 0) {
+            toast.info(
+              `${summary.alreadyInvited.length} user${summary.alreadyInvited.length > 1 ? 's have' : ' has'} already been invited`
+            );
+          }
+          if (summary.failed.length > 0) {
+            toast.error(
+              `Failed to invite ${summary.failed.length} user${summary.failed.length > 1 ? 's' : ''}`
+            );
+          }
+        }
+
         await refreshOrganization();
       } catch (error) {
         const errorMessage =
@@ -1019,12 +1047,40 @@ export function OrganizationProvider({
   );
 
   const isOwner = useCallback(
-    (orgId?: string) => {
+    async (orgId?: string) => {
       const targetOrgId = orgId || state.activeOrgId;
       if (!targetOrgId) return false;
 
-      const org = getOrganizationById(targetOrgId);
-      return org?.role === 'owner';
+      try {
+        // Get current user info from getMe API
+        const userResponse = await getMe();
+        const userId = userResponse._id || userResponse.id;
+        if (!userId) return false;
+
+        // List members from Better Auth
+        const { data, error } = await authClient.organization.listMembers({
+          query: {
+            organizationId: targetOrgId,
+          },
+        });
+
+        if (error || !data) return false;
+
+        // Find current user in members list
+        const currentUserMember = data.members?.find(
+          (member: { userId: string; role: string }) => member.userId === userId
+        );
+        const ff = currentUserMember?.role === 'owner';
+        console.log('currentUserMember', ff);
+
+        // Check if user's role is owner
+        return currentUserMember?.role === 'owner';
+      } catch (error) {
+        console.error('Error checking owner status:', error);
+        // Fallback to local state
+        const org = getOrganizationById(targetOrgId);
+        return org?.role === 'owner';
+      }
     },
     [state.activeOrgId, getOrganizationById]
   );

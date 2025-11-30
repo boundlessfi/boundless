@@ -3,6 +3,7 @@ import {
   emailOTPClient,
   lastLoginMethodClient,
   oneTapClient,
+  organizationClient,
 } from 'better-auth/client/plugins';
 
 const getAuthBaseURL = () => {
@@ -28,5 +29,6 @@ export const authClient = createAuthClient({
         maxAttempts: 5,
       },
     }),
+    organizationClient(),
   ],
 });

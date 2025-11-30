@@ -17,11 +17,13 @@ export interface Organization {
   about: string;
   links: OrganizationLinks;
   members: string[];
+  admins?: string[];
   owner: string;
   hackathons: string[];
   grants: string[];
   isProfileComplete: boolean;
   pendingInvites: string[];
+  betterAuthOrgId?: string;
   isArchived?: boolean;
   archivedBy?: string;
   archivedAt?: string;
@@ -101,9 +103,20 @@ export interface SendInviteRequest {
   emails: string[];
 }
 
+export interface InvitationSummary {
+  invitedCount: number;
+  alreadyMembers: string[];
+  alreadyInvited: string[];
+  sentToRegistered: string[];
+  sentToUnregistered: string[];
+  failed: string[];
+}
+
 export interface SendInviteResponse extends ApiResponse<Organization> {
   success: true;
-  data: Organization;
+  data: Organization & {
+    summary?: InvitationSummary;
+  };
   message: string;
 }
 
@@ -255,6 +268,12 @@ export const updateOrganizationLinks = async (
 
 /**
  * Update organization members
+ *
+ * Note: Backend supports both formats for backward compatibility:
+ * - Current: { members: string[] } - replaces full member list
+ * - Alternative: { action: 'add' | 'remove', email: string } - add/remove individual member
+ *
+ * For individual member operations, use removeOrganizationMember() instead.
  */
 export const updateOrganizationMembers = async (
   organizationId: string,
@@ -663,6 +682,15 @@ export const resetOrganizationPermissions = async (
   return res.data;
 };
 
+/**
+ * Assign role to organization member (promote/demote)
+ *
+ * Note: Backend supports both endpoints for backward compatibility:
+ * - Current: PATCH /organizations/:id/roles
+ * - Better Auth: POST /organizations/:id/role
+ *
+ * Both accept: { action: 'promote' | 'demote', email: string }
+ */
 export const assignOrganizationRole = async (
   organizationId: string,
   data: AssignRoleRequest

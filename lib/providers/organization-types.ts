@@ -181,7 +181,7 @@ export interface OrganizationContextActions {
   addGrant: (orgId: string, grantId: string) => Promise<void>;
   removeGrant: (orgId: string, grantId: string) => Promise<void>;
   getOrganizationById: (orgId: string) => OrganizationSummary | undefined;
-  isOwner: (orgId?: string) => boolean;
+  isOwner: (orgId?: string) => Promise<boolean>;
   isMember: (orgId?: string) => boolean;
   canManage: (orgId?: string) => boolean;
   getProfileCompletionStatus: (orgId?: string) => {
