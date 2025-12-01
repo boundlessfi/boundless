@@ -176,7 +176,9 @@ export const createHackathonEscrow = (params: {
   }
 
   // Create placeholder milestone
-  const placeholderMilestone = createPlaceholderMilestone(organizationAddress);
+  const placeholderMilestone = createPlaceholderMilestone(
+    BOUNDLESS_PLATFORM_ADDRESS
+  );
 
   // Generate engagement ID if not provided
   const finalEngagementId =
