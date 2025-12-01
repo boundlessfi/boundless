@@ -11,7 +11,6 @@ import { BellPlus, Settings } from 'lucide-react';
 import { ProfileSocialLinks } from '@/lib/config';
 import UserStats from './UserStats';
 import FollowersModal from './FollowersModal';
-import { FutureFeature } from '../FeatureFuture';
 import { toast } from 'sonner';
 
 interface ProfileHeaderProps {
@@ -148,11 +147,9 @@ export default function ProfileHeader({
 
         {/* Show Follow button for others' profiles AND authenticated */}
         {!isOwnProfile && isAuthenticated && (
-          <FutureFeature badgeClassName='-top-5'>
-            <BoundlessButton icon={<BellPlus />} iconPosition='right'>
-              Follow
-            </BoundlessButton>
-          </FutureFeature>
+          <BoundlessButton icon={<BellPlus />} iconPosition='right' disabled>
+            Follow
+          </BoundlessButton>
         )}
 
         {/* Show sign in prompt for non-authenticated users */}

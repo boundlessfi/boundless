@@ -1,9 +1,9 @@
 import { api } from './api';
 import {
   Hackathon,
-  Participant,
   SubmissionCardProps,
   Discussion,
+  ParticipantsResponse,
 } from '@/types/hackathon';
 
 export interface HackathonListResponse {
@@ -21,18 +21,6 @@ export interface HackathonListResponse {
 export interface HackathonResponse {
   success: boolean;
   data: Hackathon;
-  message: string;
-}
-
-export interface ParticipantsResponse {
-  success: boolean;
-  data: {
-    participants: Participant[];
-    hasMore: boolean;
-    total: number;
-    currentPage: number;
-    totalPages: number;
-  };
   message: string;
 }
 

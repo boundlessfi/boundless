@@ -204,10 +204,30 @@ export function HackathonDataProvider({
     try {
       const response = await getHackathonParticipants(slug, { limit: 50 });
       if (response.success && response.data) {
-        setParticipants(response.data.participants);
+        const data = response.data;
+
+        let flattenedParticipants: Participant[] = [];
+
+        // Handle both grouped and flat responses
+        if (data.grouping === 'team' && data.groups) {
+          // Flatten the groups
+          flattenedParticipants = data.groups.flatMap(group =>
+            group.members.map(member => ({
+              ...member,
+              teamId: group.teamId,
+              teamName: group.teamName,
+              isIndividual: group.isIndividual,
+            }))
+          );
+        } else if (data.participants) {
+          // Flat response
+          flattenedParticipants = data.participants;
+        }
+
+        setParticipants(flattenedParticipants);
       }
     } catch {
-      /* ignore */
+      setParticipants([]);
     }
   }, []);
 
