@@ -1,6 +1,7 @@
 'use client';
 
 import { PrizeTier } from '@/lib/api/hackathons';
+import { Trophy } from 'lucide-react';
 import Image from 'next/image';
 
 interface HackathonPrizesProps {
@@ -11,7 +12,7 @@ interface HackathonPrizesProps {
 }
 
 export function HackathonPrizes({
-  title = 'PRIZES',
+  title = 'Prize Tiers',
   totalPrizePool,
   otherPrizes,
   prizes,
@@ -22,7 +23,15 @@ export function HackathonPrizes({
   return (
     <div className='space-y-6 py-8'>
       <div>
-        <h2 className='mb-4 text-2xl font-bold text-[#a7f950]'>{title}</h2>
+        <div className='flex justify-start'>
+          <div className='mb-4 inline-flex items-center justify-start gap-2 rounded-full border border-[#a7f950]/20 bg-gradient-to-r from-[#a7f950]/10 to-[#a7f950]/5 px-4 py-2'>
+            <Trophy className='h-4 w-4 text-[#a7f950]' />
+            <span className='text-sm font-medium text-[#a7f950]'>Prizes</span>
+          </div>
+        </div>
+        <h2 className='mb-3 text-left text-3xl font-bold tracking-tight text-white md:text-4xl'>
+          {title}
+        </h2>
         <div className='relative overflow-hidden rounded-lg border border-white/10 bg-white/5 p-4 transition-all duration-300 hover:border-[#a7f950]/30'>
           {/* Wave background */}
           <div className='absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-lg opacity-5'>

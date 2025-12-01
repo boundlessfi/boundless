@@ -151,7 +151,7 @@ export default function ActivityFeed({ filter, user }: ActivityFeedProps) {
         <h3 className='mb-2 text-lg font-medium text-white'>No Activity Yet</h3>
         <p className='text-sm text-zinc-500'>
           {filter === 'All' || filter === 'All Time'
-            ? 'Your activity will appear here once you start engaging'
+            ? 'Activity will appear here once the user start engaging'
             : `No activity found for ${filter.toLowerCase()}`}
         </p>
       </div>

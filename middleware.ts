@@ -40,7 +40,7 @@ export async function middleware(req: NextRequest) {
   //   );
   // }
 
-  const isOtherUserProfile = pathname.startsWith('/profile/');
+  // const isOtherUserProfile = pathname.startsWith('/profile/');
 
   // if (process.env.NODE_ENV === 'development') {
   //   // eslint-disable-next-line no-console
@@ -57,11 +57,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(signinUrl);
   }
 
-  if (isOtherUserProfile && !isAuthenticated) {
-    const signinUrl = new URL('/auth', req.url);
-    signinUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(signinUrl);
-  }
+  // if (isOtherUserProfile && !isAuthenticated) {
+  //   const signinUrl = new URL('/auth', req.url);
+  //   signinUrl.searchParams.set('callbackUrl', pathname);
+  //   return NextResponse.redirect(signinUrl);
+  // }
 
   return NextResponse.next();
 }

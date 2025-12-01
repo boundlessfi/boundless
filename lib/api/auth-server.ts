@@ -41,7 +41,7 @@ export const getUserProfileByUsernameServer = async (
     message?: string;
     timestamp: string;
     path?: string;
-  }>(`/auth/profile/${username}`, {
+  }>(`/users/profile/${username}`, {
     headers: authHeaders,
   });
   return res.data.data;

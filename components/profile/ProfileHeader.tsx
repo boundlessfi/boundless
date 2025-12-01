@@ -7,29 +7,31 @@ import { UserProfile, UserStats as UserStatsType } from '@/types/profile';
 import { GetMeResponse } from '@/lib/api/types';
 import { TeamMember } from '@/components/ui/TeamList';
 import { BoundlessButton } from '@/components/buttons';
-import { BellPlus, Settings, View } from 'lucide-react';
+import { BellPlus, Settings } from 'lucide-react';
 import { ProfileSocialLinks } from '@/lib/config';
 import UserStats from './UserStats';
 import FollowersModal from './FollowersModal';
-import { usePathname } from 'next/navigation';
 import { FutureFeature } from '../FeatureFuture';
+import { toast } from 'sonner';
 
 interface ProfileHeaderProps {
   profile: UserProfile;
   stats: UserStatsType;
   user: GetMeResponse;
+  isAuthenticated?: boolean;
+  isOwnProfile?: boolean;
 }
 
 export default function ProfileHeader({
   profile,
   stats,
   user,
+  isAuthenticated,
+  isOwnProfile,
 }: ProfileHeaderProps) {
   const [followersModalOpen, setFollowersModalOpen] = useState(false);
   const [followingModalOpen, setFollowingModalOpen] = useState(false);
-  const pathname = usePathname();
-
-  // const isOwnProfile = pathname === '/me';
+  const profileUrl = `${process.env.NEXT_PUBLIC_APP_URL}/profile/${profile.username}`;
 
   // Convert API user data to TeamMember format
   const convertToTeamMembers = (
@@ -56,6 +58,28 @@ export default function ProfileHeader({
 
   const handleFollowingClick = () => {
     setFollowingModalOpen(true);
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Share ${profile.username}'s profile`,
+          url: profileUrl,
+        });
+      } catch (err) {
+        console.error('Failed to share profile:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(profileUrl);
+        toast.success('Profile URL copied to clipboard!');
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to copy URL';
+        toast.error(errorMessage);
+      }
+    }
   };
 
   return (
@@ -90,7 +114,7 @@ export default function ProfileHeader({
                 alt={`${name} icon`}
                 width={24}
                 height={24}
-                className='h-6 w-6 fill-white'
+                className='h-4 w-4 fill-white'
               />
             </Link>
             {index < Object.keys(ProfileSocialLinks).length - 1 && (
@@ -103,33 +127,45 @@ export default function ProfileHeader({
         ))}
       </div>
       <UserStats
+        isAuthenticated={isAuthenticated}
+        isOwnProfile={isOwnProfile}
         stats={stats}
         onFollowersClick={handleFollowersClick}
         onFollowingClick={handleFollowingClick}
       />
       <div className='flex gap-4'>
-        <Link href='/me/settings'>
-          <BoundlessButton
-            variant='outline'
-            icon={<Settings className='h-4 w-4' />}
-          >
-            Edit Profile
-          </BoundlessButton>
-        </Link>
-        {pathname ? (
-          <FutureFeature badgeClassName='-top-5'>
-            <BoundlessButton icon={<View />} iconPosition='right'>
-              Preview
+        {/* Show Edit Profile only for own profile AND authenticated */}
+        {isOwnProfile && isAuthenticated && (
+          <Link href='/me/settings'>
+            <BoundlessButton
+              variant='outline'
+              icon={<Settings className='h-4 w-4' />}
+            >
+              Edit Profile
             </BoundlessButton>
-          </FutureFeature>
-        ) : (
+          </Link>
+        )}
+
+        {/* Show Follow button for others' profiles AND authenticated */}
+        {!isOwnProfile && isAuthenticated && (
           <FutureFeature badgeClassName='-top-5'>
             <BoundlessButton icon={<BellPlus />} iconPosition='right'>
               Follow
             </BoundlessButton>
           </FutureFeature>
         )}
-        <BoundlessButton variant='outline'>
+
+        {/* Show sign in prompt for non-authenticated users */}
+        {!isAuthenticated && (
+          <Link href='/auth?mode=signin'>
+            <BoundlessButton variant='outline'>
+              Sign in to Follow
+            </BoundlessButton>
+          </Link>
+        )}
+
+        {/* Share button - available to everyone */}
+        <BoundlessButton variant='outline' onClick={handleShare}>
           Share
           <Image src='/share.svg' alt='Share icon' width={16} height={16} />
         </BoundlessButton>

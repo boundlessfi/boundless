@@ -3,6 +3,7 @@ import OrganizationCard from './OrganizationCard';
 
 interface OrganizationsListProps {
   organizations: Organization[];
+  isOwnProfile?: boolean;
 }
 
 export default function OrganizationsList({

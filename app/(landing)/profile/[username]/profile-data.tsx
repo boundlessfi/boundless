@@ -1,68 +1,186 @@
-import {
-  getUserProfileByUsernameServer,
-  getMeServer,
-} from '@/lib/api/auth-server';
-import { GetMeResponse } from '@/lib/api/types';
-import { getServerUser } from '@/lib/auth/server-auth';
-import ProfileOverview from '@/components/profile/ProfileOverview';
+'use client';
 
-interface ProfileDataProps {
+import { useEffect, useState } from 'react';
+import { getUserProfileByUsername } from '@/lib/api/auth';
+import { GetMeResponse } from '@/lib/api/types';
+import { useAuthStore } from '@/lib/stores/auth-store';
+import ProfileOverview from '@/components/profile/ProfileOverview';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ActivityTab from '@/components/profile/ActivityTab';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import ActivityFeed from '@/components/profile/ActivityFeed';
+import ProjectsTab from '@/components/profile/ProjectsTab';
+import OrganizationsTab from '@/components/profile/OrganizationsTab';
+import { Filter } from 'lucide-react';
+
+interface PublicProfileDataProps {
   username: string;
 }
 
-export async function ProfileData({ username }: ProfileDataProps) {
-  const user = await getServerUser();
+const FILTER_OPTIONS = [
+  'All',
+  'Today',
+  'Yesterday',
+  'This Week',
+  'This Month',
+  'This Year',
+  'All Time',
+];
 
-  // Check if user is authenticated
-  if (!user) {
+export function ProfileData({ username }: PublicProfileDataProps) {
+  const [userData, setUserData] = useState<GetMeResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState('All');
+
+  const { user: authUser, isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        setLoading(true);
+        const data = await getUserProfileByUsername(username);
+        console.log('userData:', data); // This will log the actual data
+        setUserData(data);
+      } catch (err) {
+        setError(`Failed to load user profile: ${err}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProfile();
+  }, [username]);
+
+  // This logs on every render - will show null initially, then the data after fetch
+  useEffect(() => {
+    if (userData) {
+      console.log('Current userData state:', userData);
+    }
+  }, [userData]);
+
+  if (loading) {
     return (
       <section className='flex min-h-screen items-center justify-center'>
-        <div className='text-red-500'>Please sign in to view profiles</div>
+        <div className='text-white'>Loading profile...</div>
       </section>
     );
   }
 
-  try {
-    // Check if viewing own profile by comparing with user data
-    // We need to fetch user data first to get the username
-    const currentUserData = await getMeServer();
-    const isOwnProfile =
-      currentUserData.profile?.username === username ||
-      currentUserData._id === username;
+  if (error) {
+    return (
+      <section className='flex min-h-screen items-center justify-center'>
+        <div className='text-red-500'>{error}</div>
+      </section>
+    );
+  }
 
-    let userData: GetMeResponse;
+  if (!userData) {
+    return (
+      <section className='flex min-h-screen items-center justify-center'>
+        <div className='text-red-500'>User not found</div>
+      </section>
+    );
+  }
 
-    // Use server-side versions that forward cookies from request headers
-    if (isOwnProfile) {
-      // For own profile, use the already fetched user data
-      userData = currentUserData;
-    } else {
-      // For other profiles, fetch by username
-      userData = await getUserProfileByUsernameServer(username);
-    }
+  const organizationsData =
+    userData.organizations?.map(org => ({
+      name: org.name,
+      avatarUrl: org.logo || '/blog1.jpg',
+    })) || [];
+  // Determine if it's the user's own profile
+  const isOwnProfile =
+    isAuthenticated && authUser?.profile?.username === username;
 
-    return <ProfileOverview username={username} user={userData} />;
-  } catch (error) {
-    // Check if it's an authentication error
-    if (
-      error &&
-      typeof error === 'object' &&
-      'status' in error &&
-      error.status === 401
-    ) {
-      return (
-        <section className='flex min-h-screen items-center justify-center'>
-          <div className='text-red-500'>
-            Session expired. Please sign in again.
+  return (
+    <section className='mt-14 flex flex-col gap-8 lg:flex-row lg:gap-16'>
+      <ProfileOverview
+        username={username}
+        user={userData}
+        isAuthenticated={isAuthenticated}
+        isOwnProfile={isOwnProfile}
+      />
+
+      <div className='flex-1'>
+        <Tabs defaultValue='activity' className='w-full'>
+          <div className='border-b border-zinc-800'>
+            <TabsList className='h-auto w-full justify-start gap-6 bg-transparent p-0'>
+              <TabsTrigger
+                value='activity'
+                className='data-[state=active]:border-b-primary/45 rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white'
+              >
+                Activity
+              </TabsTrigger>
+              <TabsTrigger
+                value='projects'
+                className='data-[state=active]:border-b-primary/45 rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white'
+              >
+                Projects
+              </TabsTrigger>
+              <TabsTrigger
+                value='organizations'
+                className='data-[state=active]:border-primary rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white md:hidden'
+              >
+                Organizations
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </section>
-      );
-    }
 
-    return (
-      <section className='flex min-h-screen items-center justify-center'>
-        <div className='text-red-500'>Failed to load user profile</div>
-      </section>
-    );
-  }
+          <div className='mt-6'>
+            <TabsContent value='activity' className='mt-0 space-y-6'>
+              <ActivityTab user={userData} />
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant='outline'
+                    className='gap-2 border-zinc-800 bg-zinc-900/50 text-white hover:bg-zinc-900 hover:text-white!'
+                  >
+                    <Filter className='h-4 w-4' />
+                    {selectedFilter}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align='start'
+                  className='border-zinc-800 bg-zinc-950 text-white hover:text-white!'
+                >
+                  {FILTER_OPTIONS.map(filter => (
+                    <DropdownMenuItem
+                      key={filter}
+                      onClick={() => setSelectedFilter(filter)}
+                      className={
+                        selectedFilter === filter
+                          ? 'bg-zinc-800'
+                          : 'hover:!bg-zinc-600/50 hover:!text-white'
+                      }
+                    >
+                      {filter}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <ActivityFeed filter={selectedFilter} user={userData} />
+            </TabsContent>
+
+            <TabsContent value='projects' className='mt-0'>
+              <ProjectsTab user={userData} />
+            </TabsContent>
+
+            {isAuthenticated && isOwnProfile && (
+              <TabsContent value='organizations' className='mt-0'>
+                <OrganizationsTab organizations={organizationsData} />
+              </TabsContent>
+            )}
+          </div>
+        </Tabs>
+      </div>
+    </section>
+  );
 }

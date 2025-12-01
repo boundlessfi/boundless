@@ -1,4 +1,3 @@
-// ProfileDataClient.tsx - Main Component
 'use client';
 
 import { useState } from 'react';
@@ -19,6 +18,7 @@ import {
 import { Button } from '../ui/button';
 import ActivityHeatmap from './ActivityHeatMap';
 import { FutureFeature } from '../FeatureFuture';
+import { useAuthStore } from '@/lib/stores/auth-store';
 
 interface ProfileDataClientProps {
   user: GetMeResponse;
@@ -41,6 +41,13 @@ export default function ProfileDataClient({
 }: ProfileDataClientProps) {
   const [selectedFilter, setSelectedFilter] = useState('All');
 
+  // Get auth state from store
+  const { user: authUser, isAuthenticated } = useAuthStore();
+
+  // Determine if it's the user's own profile
+  const isOwnProfile =
+    isAuthenticated && authUser?.profile?.username === username;
+
   const organizationsData =
     user.organizations?.map(org => ({
       name: org.name,
@@ -49,7 +56,12 @@ export default function ProfileDataClient({
 
   return (
     <div className='mt-14 flex flex-col gap-8 lg:flex-row lg:gap-16'>
-      <ProfileOverview username={username} user={user} />
+      <ProfileOverview
+        username={username}
+        user={user}
+        isAuthenticated={isAuthenticated}
+        isOwnProfile={isOwnProfile}
+      />
 
       <div className='flex-1'>
         <Tabs defaultValue='activity' className='w-full'>

@@ -6,6 +6,7 @@ import { Project } from '@/types/project';
 import { GetMeResponse } from '@/lib/api/types';
 import { useWindowSize } from '@/hooks/use-window-size';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import Link from 'next/link';
 
 interface ProjectsTabProps {
   user: GetMeResponse;
@@ -127,24 +128,30 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
       >
         <div className='grid gap-4 pr-4 md:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2'>
           {projects.map(project => (
-            <ProjectCard
+            <Link
               key={project.id}
-              projectId={project.id}
-              creatorName={`${user.profile.firstName} ${user.profile.lastName}`}
-              creatorLogo={user.profile.avatar || '/avatar.png'}
-              projectImage={project.image || '/bitmed.png'}
-              projectTitle={project.name}
-              projectDescription={project.description}
-              status={getProjectStatus(project.status)}
-              deadlineInDays={30}
-              milestoneRejected={false}
-              isFullWidth={true}
-              funding={{
-                current: 0,
-                goal: project.amount || 10000,
-                currency: 'USDC',
-              }}
-            />
+              href={`/projects/${project.id}`}
+              target='_blank'
+            >
+              <ProjectCard
+                newTab={true}
+                projectId={project.id}
+                creatorName={`${user.profile.firstName} ${user.profile.lastName}`}
+                creatorLogo={user.profile.avatar || '/avatar.png'}
+                projectImage={project.image || '/bitmed.png'}
+                projectTitle={project.name}
+                projectDescription={project.description}
+                status={getProjectStatus(project.status)}
+                deadlineInDays={30}
+                milestoneRejected={false}
+                isFullWidth={true}
+                funding={{
+                  current: 0,
+                  goal: project.amount || 10000,
+                  currency: 'USDC',
+                }}
+              />
+            </Link>
           ))}
 
           {loading && (

@@ -4,6 +4,7 @@ import { formatNumber } from '@/lib/utils';
 import { useRouter } from 'nextjs-toploader/app';
 
 type ProjectCardProps = {
+  newTab?: boolean;
   projectId?: string;
   creatorName: string;
   creatorLogo: string;
@@ -30,6 +31,7 @@ type ProjectCardProps = {
 };
 function ProjectCard({
   projectId,
+  newTab = false,
   creatorName,
   creatorLogo,
   projectImage,
@@ -94,7 +96,7 @@ function ProjectCard({
 
   return (
     <div
-      onClick={handleClick}
+      onClick={!newTab ? handleClick : () => {}}
       className={`font-inter hover:border-primary/45 flex w-full ${isFullWidth ? 'max-w-full' : 'max-w-[397px]'} cursor-pointer flex-col gap-4 rounded-[8px] border border-gray-900 bg-[#030303] p-4 transition-all duration-300 sm:p-5`}
     >
       <div className='flex items-center justify-between'>

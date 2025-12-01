@@ -35,7 +35,7 @@ export const getUserProfileByUsername = async (
     message?: string;
     timestamp: string;
     path?: string;
-  }>(`/auth/profile/${username}`);
+  }>(`/users/profile/${username}`);
   return res.data.data;
 };
 
