@@ -253,7 +253,7 @@ export default function Explore() {
         <p className='bg-gradient-to-r from-[#3AE6B2] to-[#A7F950] bg-clip-text text-transparent'>
           Active Opportunities
         </p>
-        <h2 className='text-5xl max-sm:text-3xl'>Explore What’s Happening</h2>
+        <h2 className='text-5xl max-sm:text-3xl'>Explore What's Happening</h2>
 
         <div className='relative flex gap-8 overflow-auto border-b border-gray-700 px-4 md:px-0'>
           {tabs.map(tab => (
@@ -281,7 +281,7 @@ export default function Explore() {
         </div>
       </div>
 
-      <div className='mt-10 grid w-fit grid-cols-1 gap-6 px-4 md:grid-cols-2 md:px-6 lg:grid-cols-3 xl:px-0'>
+      <div className='mt-10 grid w-full grid-cols-1 gap-6 md:grid-cols-2 md:px-6 lg:grid-cols-3 xl:max-w-7xl xl:px-0'>
         {activeTab === 'featured-projects' && (
           <>
             {projectsLoading ? (

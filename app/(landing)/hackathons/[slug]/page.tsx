@@ -6,7 +6,6 @@ import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useRegisterHackathon } from '@/hooks/hackathon/use-register-hackathon';
 import { useLeaveHackathon } from '@/hooks/hackathon/use-leave-hackathon';
 import { RegisterHackathonModal } from '@/components/hackathons/overview/RegisterHackathonModal';
-
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
@@ -18,8 +17,8 @@ import { TeamFormationTab } from '@/components/hackathons/team-formation/TeamFor
 import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/LoadingScreen';
 import { useTimelineEvents } from '@/hooks/hackathon/use-timeline-events';
 import { toast } from 'sonner';
-import { Participant } from '@/lib/api/hackathons';
-// import { HackathonResources } from '@/components/hackathons/resources/resources';
+import type { Participant } from '@/lib/api/hackathons';
+import { HackathonStickyCard } from '@/components/hackathons/hackathonStickyCard';
 
 export default function HackathonPage() {
   const router = useRouter();
@@ -64,7 +63,6 @@ export default function HackathonPage() {
             },
           ]
         : []),
-
       {
         id: 'submission',
         label: 'Submissions',
@@ -76,7 +74,6 @@ export default function HackathonPage() {
     const participantType = currentHackathon?.participation?.participantType;
     const isTeamHackathon =
       participantType === 'team' || participantType === 'team_or_individual';
-
     const isTabEnabled =
       currentHackathon?.participation?.tabVisibility?.joinATeamTab !== false;
 
@@ -96,19 +93,18 @@ export default function HackathonPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
-  // Function to refresh all hackathon data
+  // Refresh hackathon data
   const refreshHackathonData = useCallback(async () => {
     if (hackathonId && refreshCurrentHackathon) {
       await refreshCurrentHackathon();
     }
   }, [hackathonId, refreshCurrentHackathon]);
 
-  // Registration logic - use the updated hook with setters
+  // Registration status
   const {
     isRegistered,
     hasSubmitted,
     checkStatus,
-    // isChecking,
     setIsRegistered,
     setParticipant,
   } = useRegisterHackathon({
@@ -117,29 +113,29 @@ export default function HackathonPage() {
     autoCheck: !!hackathonId,
   });
 
-  // Leave hackathon logic
+  // Leave hackathon functionality
   const { isLeaving, leave: leaveHackathon } = useLeaveHackathon({
     hackathonSlugOrId: hackathonId,
     organizationId: undefined,
   });
 
-  const isEnded = useMemo(() => {
-    if (!currentHackathon?.deadline) return false;
-    const deadline = new Date(currentHackathon.deadline);
-    const now = new Date();
-    return now > deadline;
-  }, [currentHackathon?.deadline]);
+  // Check if hackathon has ended
+  // const isEnded = useMemo(() => {
+  //   if (!currentHackathon?.deadline) return false
+  //   const deadline = new Date(currentHackathon.deadline)
+  //   const now = new Date()
+  //   return now > deadline
+  // }, [currentHackathon?.deadline])
 
-  // Check if team formation is available
+  // Team formation availability
   const isTeamHackathon =
     currentHackathon?.participation?.participantType === 'team' ||
     currentHackathon?.participation?.participantType === 'team_or_individual';
-
   const isTeamFormationEnabled =
     isTeamHackathon &&
     currentHackathon?.participation?.tabVisibility?.joinATeamTab !== false;
 
-  // Button handlers
+  // Event handlers
   const handleJoinClick = () => {
     setShowRegisterModal(true);
   };
@@ -148,11 +144,8 @@ export default function HackathonPage() {
     try {
       setIsRegistered(false);
       setParticipant(null);
-
       await leaveHackathon();
-
       refreshHackathonData();
-
       router.push('?tab=overview');
     } catch (error) {
       const errorMessage =
@@ -164,13 +157,9 @@ export default function HackathonPage() {
   };
 
   const handleRegisterSuccess = async (participantData: Participant) => {
-    // IMMEDIATELY update state with the returned participant data
     setIsRegistered(true);
     setParticipant(participantData);
-
-    // Refresh hackathon data in background (participants count)
     await refreshHackathonData();
-
     router.push('?tab=submission');
   };
 
@@ -186,12 +175,14 @@ export default function HackathonPage() {
     router.push('?tab=team-formation');
   };
 
+  // Set current hackathon on mount
   useEffect(() => {
     if (hackathonId) {
       setCurrentHackathon(hackathonId);
     }
   }, [hackathonId, setCurrentHackathon]);
 
+  // Handle tab changes from URL
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
     if (tabFromUrl && hackathonTabs.some(tab => tab.id === tabFromUrl)) {
@@ -206,10 +197,12 @@ export default function HackathonPage() {
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
+  // Loading state
   if (loading) {
     return <LoadingScreen />;
   }
 
+  // Hackathon not found
   if (!currentHackathon) {
     return (
       <div className='flex min-h-screen items-center justify-center'>
@@ -225,33 +218,100 @@ export default function HackathonPage() {
     );
   }
 
+  // Shared props for banner and sticky card
+  const sharedActionProps = {
+    deadline: currentHackathon.deadline,
+    startDate: currentHackathon.startDate,
+    totalPrizePool: currentHackathon.totalPrizePool,
+    isRegistered,
+    hasSubmitted,
+    isTeamFormationEnabled,
+    registrationDeadlinePolicy: currentHackathon.registrationDeadlinePolicy as
+      | 'before_start'
+      | 'before_submission_deadline'
+      | 'custom',
+    registrationDeadline: currentHackathon.registrationDeadline,
+    onJoinClick: handleJoinClick,
+    onLeaveClick: handleLeaveClick,
+    isLeaving,
+    onSubmitClick: handleSubmitClick,
+    onViewSubmissionClick: handleViewSubmissionClick,
+    onFindTeamClick: handleFindTeamClick,
+  };
+
   return (
-    <div className='mx-auto mt-10 max-w-[1440px] px-5 py-5 text-center text-4xl font-bold text-white md:px-[50px] lg:px-[100px]'>
-      {/* Banner */}
-      <HackathonBanner
-        title={currentHackathon.title}
-        tagline={currentHackathon.tagline}
-        deadline={currentHackathon.deadline}
-        categories={currentHackathon.categories}
-        status={currentHackathon.status}
-        participants={currentHackathon.participants}
-        totalPrizePool={currentHackathon.totalPrizePool}
-        imageUrl={currentHackathon.imageUrl}
-        startDate={currentHackathon.startDate}
-        endDate={currentHackathon.endDate}
-        isRegistered={isRegistered}
-        hasSubmitted={hasSubmitted}
-        isEnded={isEnded}
-        registrationDeadlinePolicy={currentHackathon.registrationDeadlinePolicy}
-        registrationDeadline={currentHackathon.registrationDeadline}
-        isTeamFormationEnabled={isTeamFormationEnabled}
-        onJoinClick={handleJoinClick}
-        onLeaveClick={handleLeaveClick}
-        isLeaving={isLeaving}
-        onSubmitClick={handleSubmitClick}
-        onViewSubmissionClick={handleViewSubmissionClick}
-        onFindTeamClick={handleFindTeamClick}
-      />
+    <div className='mx-auto mt-10 max-w-[1440px] px-5 py-5 md:px-[50px] lg:px-[100px]'>
+      <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
+        {/* Main Content (2/3 width on desktop) */}
+        <div className='lg:col-span-2'>
+          {/* Banner - Shows on all screens */}
+          <HackathonBanner
+            title={currentHackathon.title}
+            tagline={currentHackathon.tagline}
+            imageUrl={currentHackathon.imageUrl}
+            categories={currentHackathon.categories}
+            participants={currentHackathon.participants}
+            {...sharedActionProps}
+          />
+
+          {/* Navigation Tabs */}
+          <HackathonNavTabs
+            tabs={hackathonTabs}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
+
+          {/* Tab Content */}
+          <div className='py-12 text-left text-white'>
+            {activeTab === 'overview' && (
+              <HackathonOverview
+                content={currentHackathon.description}
+                timelineEvents={timeline_Events}
+                prizes={currentHackathon.prizeTiers}
+                totalPrizePool={currentHackathon.totalPrizePool}
+                hackathonSlugOrId={hackathonId}
+                venue={currentHackathon.venue}
+              />
+            )}
+
+            {activeTab === 'participants' && participants.length > 0 && (
+              <HackathonParticipants />
+            )}
+
+            {activeTab === 'submission' && (
+              <SubmissionTab
+                hackathonSlugOrId={hackathonId}
+                isRegistered={isRegistered}
+              />
+            )}
+
+            {activeTab === 'discussions' && (
+              <HackathonDiscussions
+                hackathonId={hackathonId}
+                isRegistered={isRegistered}
+              />
+            )}
+
+            {activeTab === 'team-formation' && (
+              <TeamFormationTab hackathonSlugOrId={hackathonId} />
+            )}
+
+            {activeTab === 'resources' &&
+              currentHackathon?.resources?.resources?.[0] && (
+                <HackathonResources hackathonSlugOrId={hackathonId} />
+              )}
+          </div>
+        </div>
+
+        {/* Sidebar - Sticky Card (1/3 width on desktop, hidden on mobile) */}
+        <div className='lg:col-span-1'>
+          <HackathonStickyCard
+            title={currentHackathon.title}
+            imageUrl={currentHackathon.imageUrl}
+            {...sharedActionProps}
+          />
+        </div>
+      </div>
 
       {/* Registration Modal */}
       {hackathonId && (
@@ -260,7 +320,7 @@ export default function HackathonPage() {
           onOpenChange={setShowRegisterModal}
           hackathonSlugOrId={hackathonId}
           organizationId={undefined}
-          onSuccess={handleRegisterSuccess} // Now passes participant data
+          onSuccess={handleRegisterSuccess}
           participantType={
             (currentHackathon?.participantType as
               | 'team'
@@ -269,53 +329,6 @@ export default function HackathonPage() {
           }
         />
       )}
-
-      {/* Tabs */}
-      <HackathonNavTabs
-        tabs={hackathonTabs}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-      />
-
-      {/* Content */}
-      <div className='mx-auto max-w-7xl px-6 py-12 text-white'>
-        {activeTab === 'overview' && (
-          <HackathonOverview
-            content={currentHackathon.description}
-            timelineEvents={timeline_Events}
-            prizes={currentHackathon.prizeTiers}
-            totalPrizePool={currentHackathon.totalPrizePool}
-            hackathonSlugOrId={hackathonId}
-            venue={currentHackathon.venue}
-          />
-        )}
-
-        {activeTab === 'participants' && participants.length > 0 && (
-          <HackathonParticipants />
-        )}
-
-        {activeTab === 'submission' && (
-          <SubmissionTab
-            hackathonSlugOrId={hackathonId}
-            isRegistered={isRegistered}
-          />
-        )}
-
-        {activeTab === 'discussions' && (
-          <HackathonDiscussions
-            hackathonId={hackathonId}
-            isRegistered={isRegistered}
-          />
-        )}
-
-        {activeTab === 'team-formation' && (
-          <TeamFormationTab hackathonSlugOrId={hackathonId} />
-        )}
-        {activeTab === 'resources' &&
-          currentHackathon?.resources?.resources?.[0] && (
-            <HackathonResources hackathonSlugOrId={hackathonId} />
-          )}
-      </div>
     </div>
   );
 }

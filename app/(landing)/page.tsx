@@ -11,7 +11,7 @@ export default function LandingPage() {
   return (
     <div className='relative overflow-hidden'>
       <BeamBackground />
-      <div className='relative z-10 mx-auto max-w-[1440px] space-y-[60px] px-5 py-5 md:space-y-[80px] md:px-[50px] lg:px-[100px]'>
+      <div className='relative z-10 mx-auto max-w-[1440px] space-y-[60px] px-5 pt-0 pb-5 md:space-y-[80px] md:px-[50px] lg:px-[100px]'>
         {/* <Hero /> */}
         <Hero2 />
         <Explore />

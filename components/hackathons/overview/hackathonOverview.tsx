@@ -108,7 +108,7 @@ export function HackathonOverview({
   };
 
   return (
-    <div className={`w-full py-8 ${className}`}>
+    <div className={`w-full pb-8 ${className}`}>
       <article className='max-w-none text-left'>
         {loading && <div className='text-gray-400'>Loading content...</div>}
         {error && (
