@@ -2,16 +2,40 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 import type { Participant } from '@/types/hackathon';
 import Image from 'next/image';
-import { MessageCircle, Users } from 'lucide-react';
-import { format } from 'date-fns';
+import { MessageCircle, Users, CheckCircle2 } from 'lucide-react';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import Link from 'next/link';
+
+const BRAND_COLOR = '#a7f950';
 
 interface ProfileCardProps {
   participant: Participant;
 }
+
+// Simple date formatter
+const formatJoinDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return `${months[date.getMonth()]} ${date.getFullYear()}`;
+};
 
 export function ProfileCard({ participant }: ProfileCardProps) {
   const [isFollowing, setIsFollowing] = useState(false);
@@ -19,165 +43,207 @@ export function ProfileCard({ participant }: ProfileCardProps) {
   const teamMembers = useMemo(() => {
     if (participant.role === 'leader' && participant.teamId) {
       return participants.filter(
-        p => p.teamId === participant.teamId && p.id !== participant.id // Exclude the current participant (leader)
+        p => p.teamId === participant.teamId && p.id !== participant.id
       );
     }
     return [];
   }, [participant, participants]);
 
-  // Check if this participant is a team leader
   const isTeamLeader = participant.role === 'leader' && participant.teamId;
 
-  // Check if this participant is a team member (but not leader)
-  // const isTeamMember = participant.role === 'member' && participant.teamId;
-
-  // Check if this is an individual participant
-  // const isIndividual = !participant.teamId || participant.isIndividual;
-
   return (
-    <div className='w-80 rounded-lg border border-gray-700 bg-black p-6 shadow-2xl'>
-      {/* Header with avatar */}
-      <div className='mb-4 flex items-start justify-between'>
-        <div className='flex items-center gap-4'>
-          <div className='h-16 w-16 overflow-hidden rounded-full border-2 border-[#a7f950]'>
-            <Image
-              src={participant.avatar}
-              alt={participant.username}
-              className='h-full w-full object-cover'
-              width={120}
-              height={120}
-            />
-          </div>
-          <div>
-            <h3 className='flex items-center gap-2 text-xl font-bold text-white'>
-              {participant.name}
+    <Card className='w-80 overflow-hidden border-zinc-800 bg-zinc-900 p-0 shadow-2xl'>
+      {/* Header with gradient background and wave pattern */}
+      <div
+        className='relative overflow-hidden px-6 pt-6 pb-4'
+        style={{
+          background: `linear-gradient(135deg, ${BRAND_COLOR}15 0%, transparent 100%)`,
+        }}
+      >
+        {/* Wave Background */}
+        <div className='absolute top-0 right-0 -z-10 h-full w-full opacity-5'>
+          <Image
+            src='/wave.svg'
+            alt=''
+            fill
+            className='object-cover'
+            priority={false}
+          />
+        </div>
+
+        <div className='flex items-start gap-4'>
+          <Avatar
+            className='h-16 w-16 border-2'
+            style={{ borderColor: BRAND_COLOR }}
+          >
+            <AvatarImage src={participant.avatar} alt={participant.username} />
+            <AvatarFallback className='bg-zinc-800 text-white'>
+              {participant.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
+
+          <div className='flex-1 pt-1'>
+            <div className='mb-1 flex items-center gap-2'>
+              <h3 className='text-lg font-bold text-white'>
+                {participant.name}
+              </h3>
               {participant.verified && (
-                <svg
-                  className='h-5 w-5 text-[#a7f950]'
-                  fill='currentColor'
-                  viewBox='0 0 20 20'
-                >
-                  <path
-                    fillRule='evenodd'
-                    d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707-9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
-                    clipRule='evenodd'
-                  />
-                </svg>
+                <CheckCircle2
+                  className='h-4 w-4'
+                  style={{ color: BRAND_COLOR }}
+                />
               )}
-            </h3>
-            <p className='text-sm text-gray-400'>@{participant.username}</p>
-            <p className='text-xs text-gray-500'>
-              Joined {format(new Date(participant.joinedDate!), 'MMM, yyyy')}
+            </div>
+            <p className='text-sm text-zinc-400'>@{participant.username}</p>
+            <p className='mt-0.5 text-xs text-zinc-500'>
+              Joined {formatJoinDate(participant.joinedDate!)}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Team Info */}
-      {participant.teamName && (
-        <div className='mb-3 flex items-center gap-2 rounded-lg bg-gray-800/50 p-3'>
-          <Users className='h-4 w-4 text-[#a7f950]' />
-          <div className='flex-1'>
-            <p className='text-sm font-semibold text-white'>
-              {participant.teamName}
-            </p>
-            <p className='text-xs text-gray-400'>
-              {isTeamLeader
-                ? `${teamMembers.length + 1} member${teamMembers.length + 1 !== 1 ? 's' : ''} • Team Leader`
-                : 'Team Member'}
-            </p>
+      <CardContent className='space-y-4 px-6 pb-6'>
+        {/* Team Info */}
+        {participant.teamName && (
+          <div
+            className='flex items-center gap-3 rounded-lg border border-zinc-800 p-3'
+            style={{ backgroundColor: `${BRAND_COLOR}08` }}
+          >
+            <div
+              className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg'
+              style={{ backgroundColor: `${BRAND_COLOR}20` }}
+            >
+              <Users className='h-4 w-4' style={{ color: BRAND_COLOR }} />
+            </div>
+            <div className='min-w-0 flex-1'>
+              <p className='truncate text-sm font-semibold text-white'>
+                {participant.teamName}
+              </p>
+              <p className='text-xs text-zinc-400'>
+                {isTeamLeader
+                  ? `${teamMembers.length + 1} member${teamMembers.length + 1 !== 1 ? 's' : ''} • Team Leader`
+                  : 'Team Member'}
+              </p>
+            </div>
           </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className='flex gap-2'>
+          <Button
+            onClick={() => setIsFollowing(!isFollowing)}
+            className='flex-1 font-semibold transition-all'
+            style={{
+              backgroundColor: isFollowing ? '#27272a' : BRAND_COLOR,
+              color: isFollowing ? '#ffffff' : '#000000',
+            }}
+            onMouseEnter={e => {
+              if (!isFollowing) {
+                e.currentTarget.style.backgroundColor = '#8ae63a';
+              } else {
+                e.currentTarget.style.backgroundColor = '#3f3f46';
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = isFollowing
+                ? '#27272a'
+                : BRAND_COLOR;
+            }}
+          >
+            {isFollowing ? 'Following' : 'Follow'}
+          </Button>
+          <Button
+            className='bg-zinc-800 text-white transition-colors hover:bg-zinc-700'
+            size='icon'
+          >
+            <MessageCircle className='h-4 w-4' />
+          </Button>
         </div>
-      )}
 
-      <div className='mb-4 flex gap-2'>
-        <Button
-          onClick={() => setIsFollowing(!isFollowing)}
-          className={`flex-1 rounded-lg px-4 py-2 font-semibold transition-all ${
-            isFollowing
-              ? 'bg-gray-700 text-white hover:bg-gray-600'
-              : 'bg-white text-black hover:bg-gray-200'
-          }`}
-        >
-          {isFollowing ? 'Following' : 'Follow'}
-        </Button>
-        <Button className='rounded-lg bg-gray-700 px-4 py-2 text-white transition-all hover:bg-gray-600'>
-          <MessageCircle className='h-4 w-4' />
-        </Button>
-      </div>
-
-      {isTeamLeader && teamMembers.length > 0 && (
-        <div className='mb-4 flex items-center gap-2'>
-          <div className='flex'>
-            {teamMembers.map(member => (
-              <Link
-                href={`/profile/${member.username}`}
-                key={member.id}
-                target='_blank'
-              >
-                <div
-                  className='relative -ml-2 h-8 w-8 overflow-hidden rounded-full border-2 border-black transition-colors first:ml-0 hover:border-[#a7f950]'
-                  title={member.name}
+        {/* Team Members */}
+        {isTeamLeader && teamMembers.length > 0 && (
+          <div className='flex items-center gap-2'>
+            <div className='flex -space-x-2'>
+              {teamMembers.slice(0, 4).map(member => (
+                <Link
+                  href={`/profile/${member.username}`}
+                  key={member.id}
+                  target='_blank'
                 >
-                  <Image
-                    src={member.avatar || '/placeholder.svg'}
-                    alt={member.username}
-                    width={32}
-                    height={32}
-                    className='h-full w-full object-cover'
-                  />
-                </div>
-              </Link>
-            ))}
+                  <Avatar
+                    className='h-8 w-8 border-2 border-zinc-900 transition-all hover:z-10 hover:border-[#a7f950]'
+                    title={member.name}
+                  >
+                    <AvatarImage
+                      src={member.avatar || '/placeholder.svg'}
+                      alt={member.username}
+                    />
+                    <AvatarFallback className='bg-zinc-800 text-xs text-white'>
+                      {member.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
+              ))}
+            </div>
+            {teamMembers.length > 4 && (
+              <span className='text-xs text-zinc-400'>
+                +{teamMembers.length - 4} more
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Description */}
+        {participant.description && (
+          <p className='line-clamp-3 text-sm leading-relaxed text-zinc-300'>
+            {participant.description}
+          </p>
+        )}
+
+        {/* Categories */}
+        {participant.categories && participant.categories.length > 0 && (
+          <div>
+            <p className='mb-2 text-xs font-semibold text-zinc-400'>
+              Interests
+            </p>
+            <div className='flex flex-wrap gap-2'>
+              {participant.categories.map((category, index) => (
+                <Badge
+                  key={index}
+                  variant='outline'
+                  className='rounded-md border-zinc-800 bg-zinc-800/50 text-zinc-300 transition-colors hover:bg-zinc-800'
+                >
+                  {category}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Separator className='bg-zinc-800' />
+
+        {/* Stats */}
+        <div className='grid grid-cols-3 gap-4'>
+          <div className='text-center'>
+            <p className='text-lg font-bold text-white'>
+              {participant.projects || 0}
+            </p>
+            <p className='text-xs text-zinc-400'>Projects</p>
+          </div>
+          <div className='text-center'>
+            <p className='text-lg font-bold text-white'>
+              {participant.followers || 0}
+            </p>
+            <p className='text-xs text-zinc-400'>Followers</p>
+          </div>
+          <div className='text-center'>
+            <p className='text-lg font-bold text-white'>
+              {participant.following || 0}
+            </p>
+            <p className='text-xs text-zinc-400'>Following</p>
           </div>
         </div>
-      )}
-
-      {/* Description */}
-      {participant.description && (
-        <p className='mb-4 line-clamp-3 text-sm text-gray-300'>
-          {participant.description}
-        </p>
-      )}
-
-      {/* Categories */}
-      {participant.categories && participant.categories.length > 0 && (
-        <div className='mb-4'>
-          <p className='mb-2 text-xs font-semibold text-gray-400'>Interests</p>
-          <div className='flex flex-wrap gap-2'>
-            {participant.categories.map((category, index) => (
-              <Badge
-                key={index}
-                className='rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300'
-              >
-                {category}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Stats */}
-      <div className='grid grid-cols-3 gap-4 border-t border-gray-700 pt-4'>
-        <div className='text-center'>
-          <p className='text-lg font-bold text-white'>
-            {participant.projects || 0}
-          </p>
-          <p className='text-xs text-gray-400'>Projects</p>
-        </div>
-        <div className='text-center'>
-          <p className='text-lg font-bold text-white'>
-            {participant.followers || 0}
-          </p>
-          <p className='text-xs text-gray-400'>Followers</p>
-        </div>
-        <div className='text-center'>
-          <p className='text-lg font-bold text-white'>
-            {participant.following || 0}
-          </p>
-          <p className='text-xs text-gray-400'>Following</p>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

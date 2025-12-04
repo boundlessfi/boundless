@@ -52,7 +52,8 @@ export function ParticipantAvatar({ participant }: ParticipantAvatarProps) {
             </div>
 
             <span className='text-sm text-gray-200 transition-colors group-hover:text-[#a7f950]'>
-              {participant.username}
+              {participant.username.slice(0, 1).toUpperCase() +
+                participant.username.slice(1)}
             </span>
           </div>
         </TooltipTrigger>
