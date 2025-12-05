@@ -298,7 +298,7 @@ export default function HackathonPage() {
 
             {activeTab === 'resources' &&
               currentHackathon?.resources?.resources?.[0] && (
-                <HackathonResources hackathonSlugOrId={hackathonId} />
+                <HackathonResources />
               )}
           </div>
         </div>

@@ -19,7 +19,7 @@ export const getMeServer = async (): Promise<GetMeResponse> => {
     message?: string;
     timestamp: string;
     path?: string;
-  }>('/me', {
+  }>('/users/me', {
     headers: authHeaders,
   });
   return res.data.data;

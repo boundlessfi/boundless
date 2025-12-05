@@ -34,7 +34,7 @@ export function ProtectedRoute({
     }
 
     // Check if user verification is required
-    if (requireVerified && user && !user.isVerified) {
+    if (requireVerified && user && !user.profile?.isVerified) {
       router.push('/auth/verify-email');
       return;
     }
@@ -78,7 +78,7 @@ export function ProtectedRoute({
   }
 
   // Show fallback if user is not verified
-  if (requireVerified && user && !user.isVerified) {
+  if (requireVerified && user && !user.profile?.isVerified) {
     return (
       fallback || (
         <div className='flex min-h-screen items-center justify-center'>

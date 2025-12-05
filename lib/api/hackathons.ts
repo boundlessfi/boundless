@@ -142,7 +142,7 @@ export interface HackathonCollaboration {
 }
 
 // Resources Tab Types
-export interface HackathonResource {
+export interface HackathonResourceItem {
   link?: string;
   description?: string;
   fileUrl?: string;
@@ -150,7 +150,7 @@ export interface HackathonResource {
 }
 
 export interface HackathonResources {
-  resources: HackathonResource[];
+  resources: HackathonResourceItem[];
 }
 
 // Complete Hackathon Data Structure
@@ -291,8 +291,7 @@ export interface HackathonStatistics {
   completedMilestones: number;
 }
 
-export interface HackathonStatisticsResponse
-  extends ApiResponse<HackathonStatistics> {
+export interface HackathonStatisticsResponse extends ApiResponse<HackathonStatistics> {
   success: true;
   data: HackathonStatistics;
   message: string;
@@ -314,8 +313,7 @@ export interface HackathonTimeSeriesData {
   };
 }
 
-export interface HackathonTimeSeriesResponse
-  extends ApiResponse<HackathonTimeSeriesData> {
+export interface HackathonTimeSeriesResponse extends ApiResponse<HackathonTimeSeriesData> {
   success: true;
   data: HackathonTimeSeriesData;
   message: string;
@@ -427,8 +425,7 @@ export interface Participant {
   submittedAt?: string;
 }
 
-export interface GetParticipantsResponse
-  extends PaginatedResponse<Participant> {
+export interface GetParticipantsResponse extends PaginatedResponse<Participant> {
   success: true;
   data: Participant[];
   pagination: {
@@ -453,8 +450,7 @@ export interface RegisterForHackathonResponse extends ApiResponse<Participant> {
   message: string;
 }
 
-export interface CheckRegistrationStatusResponse
-  extends ApiResponse<Participant | null> {
+export interface CheckRegistrationStatusResponse extends ApiResponse<Participant | null> {
   success: true;
   data: Participant | null;
   message: string;
@@ -474,29 +470,25 @@ export interface UpdateSubmissionRequest extends CreateSubmissionRequest {
   submissionId: string;
 }
 
-export interface CreateSubmissionResponse
-  extends ApiResponse<ParticipantSubmission> {
+export interface CreateSubmissionResponse extends ApiResponse<ParticipantSubmission> {
   success: true;
   data: ParticipantSubmission;
   message: string;
 }
 
-export interface UpdateSubmissionResponse
-  extends ApiResponse<ParticipantSubmission> {
+export interface UpdateSubmissionResponse extends ApiResponse<ParticipantSubmission> {
   success: true;
   data: ParticipantSubmission;
   message: string;
 }
 
-export interface GetMySubmissionResponse
-  extends ApiResponse<ParticipantSubmission | null> {
+export interface GetMySubmissionResponse extends ApiResponse<ParticipantSubmission | null> {
   success: true;
   data: ParticipantSubmission | null;
   message: string;
 }
 
-export interface GetSubmissionDetailsResponse
-  extends ApiResponse<ParticipantSubmission> {
+export interface GetSubmissionDetailsResponse extends ApiResponse<ParticipantSubmission> {
   success: true;
   data: ParticipantSubmission;
   message: string;
@@ -506,8 +498,10 @@ export interface VoteSubmissionRequest {
   value: 1 | -1; // 1 for upvote, -1 for downvote
 }
 
-export interface VoteSubmissionResponse
-  extends ApiResponse<{ votes: number; hasVoted: boolean }> {
+export interface VoteSubmissionResponse extends ApiResponse<{
+  votes: number;
+  hasVoted: boolean;
+}> {
   success: true;
   data: { votes: number; hasVoted: boolean };
   message: string;
@@ -658,8 +652,7 @@ export interface GradeSubmissionResponse {
   averageScore: number;
 }
 
-export interface GetJudgingSubmissionsResponse
-  extends PaginatedResponse<JudgingSubmission> {
+export interface GetJudgingSubmissionsResponse extends PaginatedResponse<JudgingSubmission> {
   success: true;
   data: JudgingSubmission[];
   pagination: {
@@ -673,11 +666,10 @@ export interface GetJudgingSubmissionsResponse
   message: string;
 }
 
-export interface LeaveHackathonResponse
-  extends ApiResponse<{
-    teamCleanedUp: boolean;
-    teamId?: string;
-  }> {
+export interface LeaveHackathonResponse extends ApiResponse<{
+  teamCleanedUp: boolean;
+  teamId?: string;
+}> {
   success: true;
   data: {
     teamCleanedUp: boolean;
@@ -686,15 +678,13 @@ export interface LeaveHackathonResponse
   message: string;
 }
 
-export interface GetSubmissionScoresResponse
-  extends ApiResponse<SubmissionScoresResponse> {
+export interface GetSubmissionScoresResponse extends ApiResponse<SubmissionScoresResponse> {
   success: true;
   data: SubmissionScoresResponse;
   message: string;
 }
 
-export interface SubmitGradeResponse
-  extends ApiResponse<GradeSubmissionResponse> {
+export interface SubmitGradeResponse extends ApiResponse<GradeSubmissionResponse> {
   success: true;
   data: GradeSubmissionResponse;
   message: string;
@@ -737,8 +727,7 @@ export interface HackathonEscrowData {
   canUpdate: boolean;
 }
 
-export interface GetHackathonEscrowResponse
-  extends ApiResponse<HackathonEscrowData> {
+export interface GetHackathonEscrowResponse extends ApiResponse<HackathonEscrowData> {
   success: true;
   data: HackathonEscrowData;
   message: string;
@@ -802,8 +791,7 @@ export interface PublicHackathonsListData {
   totalPages: number;
 }
 
-export interface PublicHackathonsListResponse
-  extends ApiResponse<PublicHackathonsListData> {
+export interface PublicHackathonsListResponse extends ApiResponse<PublicHackathonsListData> {
   success: true;
   data: PublicHackathonsListData;
   message: string;
@@ -965,11 +953,10 @@ export interface AcceptTeamInvitationRequest {
   token: string;
 }
 
-export interface AcceptTeamInvitationResponse
-  extends ApiResponse<{
-    message: string;
-    teamName: string;
-  }> {
+export interface AcceptTeamInvitationResponse extends ApiResponse<{
+  message: string;
+  teamName: string;
+}> {
   success: true;
   data: {
     message: string;
@@ -2020,8 +2007,7 @@ export interface ReportDiscussionRequest {
   description?: string;
 }
 
-export interface GetHackathonDiscussionsResponse
-  extends PaginatedResponse<Discussion> {
+export interface GetHackathonDiscussionsResponse extends PaginatedResponse<Discussion> {
   success: true;
   data: Discussion[];
   pagination: {
@@ -2206,7 +2192,7 @@ export const reportDiscussion = async (
 // Resources API Types and Functions
 // ============================================
 
-export interface HackathonResource {
+export interface HackathonResourceDocument {
   _id: string;
   title: string;
   type: 'pdf' | 'doc' | 'sheet' | 'slide' | 'link' | 'video';
@@ -2218,10 +2204,11 @@ export interface HackathonResource {
   updatedAt: string;
 }
 
-export interface GetHackathonResourcesResponse
-  extends ApiResponse<HackathonResource[]> {
+export interface GetHackathonResourcesResponse extends ApiResponse<
+  HackathonResourceDocument[]
+> {
   success: true;
-  data: HackathonResource[];
+  data: HackathonResourceDocument[];
   message: string;
 }
 
@@ -2302,8 +2289,7 @@ export interface GetTeamPostsOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
-export interface GetTeamPostsResponse
-  extends PaginatedResponse<TeamRecruitmentPost> {
+export interface GetTeamPostsResponse extends PaginatedResponse<TeamRecruitmentPost> {
   success: true;
   data: TeamRecruitmentPost[];
   pagination: {
@@ -2317,22 +2303,19 @@ export interface GetTeamPostsResponse
   message: string;
 }
 
-export interface GetTeamPostDetailsResponse
-  extends ApiResponse<TeamRecruitmentPost> {
+export interface GetTeamPostDetailsResponse extends ApiResponse<TeamRecruitmentPost> {
   success: true;
   data: TeamRecruitmentPost;
   message: string;
 }
 
-export interface CreateTeamPostResponse
-  extends ApiResponse<TeamRecruitmentPost> {
+export interface CreateTeamPostResponse extends ApiResponse<TeamRecruitmentPost> {
   success: true;
   data: TeamRecruitmentPost;
   message: string;
 }
 
-export interface UpdateTeamPostResponse
-  extends ApiResponse<TeamRecruitmentPost> {
+export interface UpdateTeamPostResponse extends ApiResponse<TeamRecruitmentPost> {
   success: true;
   data: TeamRecruitmentPost;
   message: string;

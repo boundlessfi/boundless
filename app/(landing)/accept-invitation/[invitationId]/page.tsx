@@ -53,14 +53,13 @@ export default function AcceptInvitationPage() {
         } else {
           throw new Error('Failed to accept invitation');
         }
-      } catch (error) {
-        console.error('Error accepting invitation:', error);
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Failed to accept invitation. It may be expired or invalid.';
-        setErrorMessage(message);
-        toast.error(message);
+      } catch {
+        setErrorMessage(
+          'Failed to accept invitation. It may be expired or invalid.'
+        );
+        toast.error(
+          'Failed to accept invitation. It may be expired or invalid.'
+        );
         setStatus('error');
       }
     };

@@ -18,7 +18,7 @@ import {
 import { Button } from '../ui/button';
 import ActivityHeatmap from './ActivityHeatMap';
 import { FutureFeature } from '../FeatureFuture';
-import { useAuthStore } from '@/lib/stores/auth-store';
+import { authClient } from '@/lib/auth-client';
 
 interface ProfileDataClientProps {
   user: GetMeResponse;
@@ -41,12 +41,16 @@ export default function ProfileDataClient({
 }: ProfileDataClientProps) {
   const [selectedFilter, setSelectedFilter] = useState('All');
 
-  // Get auth state from store
-  const { user: authUser, isAuthenticated } = useAuthStore();
+  // Get current session user to determine if it's the user's own profile
+  const { data: session } = authClient.useSession();
+  const currentUser = session?.user;
 
-  // Determine if it's the user's own profile
+  // Determine if it's the user's own profile by comparing IDs
   const isOwnProfile =
-    isAuthenticated && authUser?.profile?.username === username;
+    currentUser &&
+    (currentUser.id === user._id ||
+      currentUser._id === user._id ||
+      currentUser.email === user.email);
 
   const organizationsData =
     user.organizations?.map(org => ({
@@ -59,7 +63,7 @@ export default function ProfileDataClient({
       <ProfileOverview
         username={username}
         user={user}
-        isAuthenticated={isAuthenticated}
+        isAuthenticated={!!currentUser}
         isOwnProfile={isOwnProfile}
       />
 

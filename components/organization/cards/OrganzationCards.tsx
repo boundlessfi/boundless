@@ -11,6 +11,7 @@ import {
   Trash2,
   Loader2,
 } from 'lucide-react';
+import React from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { normalizeCloudinaryImageUrl } from '@/lib/utils/cloudinary-url';
@@ -85,7 +86,7 @@ export default function OrganizationCard({
     if (onEdit) {
       onEdit(id);
     } else {
-      router.push(`/organizations/${id}/edit`);
+      router.push(`/organizations/${id}/settings`);
     }
   };
 

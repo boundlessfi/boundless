@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { useAuthStore } from '@/lib/stores/auth-store';
 
 // Use Next.js API proxy to avoid CORS issues
 // The proxy route is at /api/proxy/[...path]
@@ -129,22 +128,8 @@ const createClientApi = (): AxiosInstance => {
         });
       }
 
-      // Handle 401 errors - Better Auth handles session refresh automatically
-      if (error.response?.status === 401) {
-        const authStore = useAuthStore.getState();
-        authStore.clearAuth();
-
-        // Only redirect if we're on the client side
-        if (typeof window !== 'undefined') {
-          window.location.href = '/auth?mode=signin';
-        }
-
-        return Promise.reject({
-          message: 'Session expired. Please login again.',
-          status: 401,
-          code: 'SESSION_EXPIRED',
-        });
-      }
+      // Let Better Auth handle session refresh transparently
+      // Do not manually clear auth state on 401 errors
 
       // Handle other errors
       if (error.response) {

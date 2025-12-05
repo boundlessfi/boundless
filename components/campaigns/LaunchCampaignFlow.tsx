@@ -201,10 +201,10 @@ const LaunchCampaignFlow: React.FC<LaunchCampaignFlowProps> = ({
   const isFormValid = (): boolean => {
     return Boolean(
       formData.title &&
-        formData.description &&
-        formData.fundingGoal &&
-        formData.images.length > 0 &&
-        formData.duration
+      formData.description &&
+      formData.fundingGoal &&
+      formData.images.length > 0 &&
+      formData.duration
     );
   };
 

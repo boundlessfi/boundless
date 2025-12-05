@@ -46,7 +46,7 @@ export function ProfileData({ username }: PublicProfileDataProps) {
       try {
         setLoading(true);
         const data = await getUserProfileByUsername(username);
-        console.log('userData:', data); // This will log the actual data
+        // console.log('userData:', data);
         setUserData(data);
       } catch (err) {
         setError(`Failed to load user profile: ${err}`);
@@ -59,11 +59,11 @@ export function ProfileData({ username }: PublicProfileDataProps) {
   }, [username]);
 
   // This logs on every render - will show null initially, then the data after fetch
-  useEffect(() => {
-    if (userData) {
-      console.log('Current userData state:', userData);
-    }
-  }, [userData]);
+  // useEffect(() => {
+  //   if (userData) {
+  //     console.log('Current userData state:', userData);
+  //   }
+  // }, [userData]);
 
   if (loading) {
     return (

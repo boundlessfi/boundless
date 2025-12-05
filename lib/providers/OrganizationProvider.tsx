@@ -281,12 +281,16 @@ export function OrganizationProvider({
   refreshInterval = 30000,
 }: OrganizationProviderProps) {
   const [state, dispatch] = useReducer(organizationReducer, initialState);
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitializedRef = useRef(false);
   const isFetchingOrganizationsRef = useRef(false);
   const isFetchingActiveOrgRef = useRef(false);
-  const fetchOrganizationsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const fetchActiveOrgTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchOrganizationsTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const fetchActiveOrgTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const setActiveOrgRef = useRef<((orgId: string) => void) | undefined>(
     undefined
   );
@@ -1070,13 +1074,10 @@ export function OrganizationProvider({
         const currentUserMember = data.members?.find(
           (member: { userId: string; role: string }) => member.userId === userId
         );
-        const ff = currentUserMember?.role === 'owner';
-        console.log('currentUserMember', ff);
 
         // Check if user's role is owner
         return currentUserMember?.role === 'owner';
-      } catch (error) {
-        console.error('Error checking owner status:', error);
+      } catch {
         // Fallback to local state
         const org = getOrganizationById(targetOrgId);
         return org?.role === 'owner';

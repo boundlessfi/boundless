@@ -36,11 +36,6 @@ export interface AssignRoleRequest {
   email: string;
 }
 
-export interface AssignRoleRequest {
-  action: 'promote' | 'demote';
-  email: string;
-}
-
 export interface CreateOrganizationRequest {
   name: string;
   logo?: string;
@@ -61,8 +56,7 @@ export interface GetOrganizationResponse extends ApiResponse<Organization> {
   message: string;
 }
 
-export interface GetOrganizationsResponse
-  extends PaginatedResponse<Organization> {
+export interface GetOrganizationsResponse extends PaginatedResponse<Organization> {
   success: true;
   data: Organization[];
   pagination: {
@@ -167,12 +161,11 @@ export interface RawOrganizationPermissions {
   };
 }
 
-export interface GetPermissionsResponse
-  extends ApiResponse<{
-    permissions: RawOrganizationPermissions;
-    isCustom: boolean;
-    canEdit: boolean;
-  }> {
+export interface GetPermissionsResponse extends ApiResponse<{
+  permissions: RawOrganizationPermissions;
+  isCustom: boolean;
+  canEdit: boolean;
+}> {
   success: true;
   data: {
     permissions: RawOrganizationPermissions;

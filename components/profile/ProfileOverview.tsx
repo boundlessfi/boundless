@@ -31,6 +31,7 @@ export default function ProfileOverview({
       (user as unknown as { socialLinks?: Record<string, string> })
         .socialLinks || {},
   };
+
   const pathname = usePathname();
   const isProfileRoute = pathname.startsWith('/profile');
   const statsData: UserStatsType = {

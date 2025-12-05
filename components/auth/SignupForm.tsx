@@ -82,6 +82,7 @@ const SignupForm = ({
         password: string;
         name: string;
         invitation?: string;
+        roles: string[];
       };
 
       const { error } = await authClient.signUp.email(signUpData, {

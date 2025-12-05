@@ -1,11 +1,12 @@
 'use client';
 import Link from 'next/link';
+import React from 'react';
 import {
   Menu,
   Plus,
   Building2,
   ArrowUpRight,
-  User,
+  User as UserIcon,
   LogOut,
   Settings,
   Sparkles,
@@ -299,51 +300,14 @@ function AuthenticatedActions() {
 
 function UnauthenticatedActions() {
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
-  const {
-    executeProtectedAction,
-    showWalletModal,
-    closeWalletModal,
-    handleWalletConnected,
-  } = useProtectedAction({
-    actionName: ACTIONS.CREATE_PROJECT,
-    onSuccess: () => setCreateProjectModalOpen(true),
-  });
-
-  const isDev = process.env.NODE_ENV !== 'production';
+  const { showWalletModal, closeWalletModal, handleWalletConnected } =
+    useProtectedAction({
+      actionName: ACTIONS.CREATE_PROJECT,
+      onSuccess: () => setCreateProjectModalOpen(true),
+    });
 
   return (
     <>
-      {isDev && (
-        <BoundlessButton
-          variant='outline'
-          size='sm'
-          onClick={() =>
-            executeProtectedAction(() => setCreateProjectModalOpen(true))
-          }
-          className='border-white/20 transition-all duration-200'
-          style={
-            {
-              '--hover-bg': `${BRAND_COLOR}1A`,
-              '--hover-border': `${BRAND_COLOR}66`,
-              '--hover-color': BRAND_COLOR,
-            } as React.CSSProperties
-          }
-          onMouseEnter={e => {
-            e.currentTarget.style.backgroundColor = `${BRAND_COLOR}1A`;
-            e.currentTarget.style.borderColor = `${BRAND_COLOR}66`;
-            e.currentTarget.style.color = BRAND_COLOR;
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.backgroundColor = '';
-            e.currentTarget.style.borderColor = '';
-            e.currentTarget.style.color = '';
-          }}
-        >
-          <Plus className='mr-2 h-4 w-4' />
-          Add Project
-        </BoundlessButton>
-      )}
-
       <Link
         href='/auth?mode=signin'
         className='inline-flex h-8 items-center justify-center gap-2 rounded-[10px] bg-[#a7f950] px-3 text-sm font-medium whitespace-nowrap text-black shadow-sm shadow-[#a7f950]/20 transition-all hover:bg-[#a7f950]/90'
@@ -493,7 +457,7 @@ const MobileMenu = ({
                         onClick={() => setIsOpen(false)}
                       >
                         <BoundlessButton variant='outline' className='w-full'>
-                          <User className='mr-2 h-4 w-4' />
+                          <UserIcon className='mr-2 h-4 w-4' />
                           Profile
                         </BoundlessButton>
                       </Link>

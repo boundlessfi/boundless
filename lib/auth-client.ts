@@ -1,6 +1,8 @@
+'use client';
 import { createAuthClient } from 'better-auth/react';
 import {
   emailOTPClient,
+  inferAdditionalFields,
   lastLoginMethodClient,
   oneTapClient,
   organizationClient,
@@ -16,6 +18,28 @@ const getAuthBaseURL = () => {
 export const authClient = createAuthClient({
   baseURL: getAuthBaseURL(),
   plugins: [
+    inferAdditionalFields({
+      user: {
+        profile: { type: 'json', required: false },
+        organizations: { type: 'json', required: false },
+        stats: { type: 'json', required: false },
+        following: { type: 'json', required: false },
+        followers: { type: 'json', required: false },
+        projects: { type: 'json', required: false },
+        activities: { type: 'json', required: false },
+        _id: { type: 'string', required: false },
+        isVerified: { type: 'boolean', required: false },
+        contributedProjects: { type: 'json', required: false },
+        createdAt: { type: 'date', required: false },
+        updatedAt: { type: 'date', required: false },
+        __v: { type: 'number', required: false },
+        lastLogin: { type: 'string', required: false },
+        isProfileComplete: { type: 'boolean', required: false },
+        missingProfileFields: { type: 'string[]', required: false },
+        profileCompletionPercentage: { type: 'number', required: false },
+        roles: { type: 'json', required: true },
+      },
+    }),
     emailOTPClient(),
     lastLoginMethodClient(),
     oneTapClient({

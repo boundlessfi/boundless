@@ -1,10 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
-  "installCommand": "npm install --no-save --platform=linuxmusl --arch=x64 lightningcss @tailwindcss/oxide && npm ci",
+  "installCommand": "npm install && npm rebuild lightningcss",
   "framework": "nextjs",
   "env": {
-    "npm_config_target_platform": "linuxmusl",
-    "npm_config_target_arch": "x64"
+    "npm_config_platform": "linux",
+    "npm_config_arch": "x64",
+    "npm_config_libc": "glibc"
   }
 }

@@ -1,113 +1,90 @@
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useCallback } from 'react';
-import { useAuthStore } from '@/lib/stores/auth-store';
+import { useEffect, useMemo, useCallback, useState } from 'react';
 import { authClient } from '@/lib/auth-client';
-import { refreshUserData } from '@/lib/api/auth';
+import { getMe } from '@/lib/api/auth';
 
-// Enhanced auth hook that works with Zustand store and Better Auth
 export function useAuth(requireAuth = true) {
   const {
     data: session,
     isPending: sessionPending,
     error: sessionError,
   } = authClient.useSession();
+
   const router = useRouter();
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
-  // Get Zustand store state
-  const {
-    user,
-    isAuthenticated,
-    isLoading: storeLoading,
-    error,
-    refreshUser,
-    clearAuth,
-    syncWithSession,
-  } = useAuthStore();
-
-  // Sync with Better Auth session when available
-  useEffect(() => {
+  const user = useMemo(() => {
     if (session && 'user' in session && session.user) {
-      // Convert Better Auth session user to SessionUser format
-      const sessionUser = {
+      return {
         id: session.user.id,
         email: session.user.email,
-        name: session.user.name || undefined,
-        image: session.user.image || undefined,
-        username: undefined, // Better Auth doesn't include username by default
-        role: 'USER', // Default role, can be extended if backend provides it
-        accessToken: undefined, // Better Auth handles tokens via cookies
+        name: session.user.name || null,
+        image: session.user.image || null,
+        role: 'USER' as 'USER' | 'ADMIN',
+        username: null,
+        profile: userProfile,
       };
-
-      // Only sync if we don't already have user data in Zustand store
-      if (!user || !isAuthenticated) {
-        syncWithSession(sessionUser).catch(() => {
-          // Silently handle sync failure
-        });
-      }
     }
-  }, [session, syncWithSession, user, isAuthenticated]);
+    return null;
+  }, [session, userProfile]);
 
-  // Memoize auth data to prevent unnecessary re-renders
-  const shouldUseStore = useMemo(
-    () => isAuthenticated || user,
-    [isAuthenticated, user]
-  );
+  const isAuthenticated = !!(session && 'user' in session && session.user);
+  const isLoading = sessionPending || profileLoading;
+  const error = sessionError?.message || null;
 
-  const authData = useMemo(() => {
-    return shouldUseStore
-      ? {
-          user,
-          isAuthenticated,
-          isLoading: storeLoading,
-          error,
-          refreshUser,
-          clearAuth,
+  // Fetch profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (
+        session &&
+        'user' in session &&
+        session.user &&
+        !userProfile &&
+        !profileLoading
+      ) {
+        try {
+          setProfileLoading(true);
+          const profile = await getMe();
+          setUserProfile(profile);
+        } catch {
+          // ignore error
+        } finally {
+          setProfileLoading(false);
         }
-      : {
-          user:
-            session && 'user' in session && session.user
-              ? {
-                  id: session.user.id,
-                  email: session.user.email,
-                  name: session.user.name || null,
-                  image: session.user.image || null,
-                  role: 'USER' as 'USER' | 'ADMIN', // Default role
-                  username: null,
-                }
-              : null,
-          isAuthenticated: !!(session && 'user' in session && session.user),
-          isLoading: sessionPending,
-          error: sessionError?.message || null,
-          refreshUser: () => refreshUserData(),
-          clearAuth: () => clearAuth(),
-        };
-  }, [
-    shouldUseStore,
-    session,
+      }
+    };
+
+    fetchProfile();
+  }, [session, userProfile, profileLoading]);
+
+  // Redirect if required and unauthenticated
+  useEffect(() => {
+    if (requireAuth && !isAuthenticated && !isLoading) {
+      router.push('/auth?mode=signin');
+    }
+  }, [requireAuth, isAuthenticated, isLoading, router]);
+
+  // refreshUser does not need useless try/catch
+  const refreshUser = useCallback(async () => {
+    const profile = await getMe();
+    setUserProfile(profile);
+  }, []);
+
+  // clearAuth — same fix
+  const clearAuth = useCallback(async () => {
+    setUserProfile(null);
+    await authClient.signOut();
+  }, []);
+
+  return {
     user,
     isAuthenticated,
-    storeLoading,
+    isLoading,
     error,
     refreshUser,
     clearAuth,
-    sessionPending,
-    sessionError,
-  ]);
-
-  useEffect(() => {
-    if (requireAuth && !authData.isAuthenticated && !authData.isLoading) {
-      router.push('/auth?mode=signin');
-    }
-  }, [requireAuth, authData.isAuthenticated, authData.isLoading, router]);
-
-  // Auto-refresh user data on mount if authenticated
-  useEffect(() => {
-    if (shouldUseStore && isAuthenticated && !user) {
-      refreshUser().catch(() => {});
-    }
-  }, [shouldUseStore, isAuthenticated, user, refreshUser]);
-
-  return authData;
+  };
 }
 
 export function useRequireAuth() {
@@ -118,144 +95,67 @@ export function useOptionalAuth() {
   return useAuth(false);
 }
 
-// New hook for Zustand-only auth (when not using NextAuth)
-export function useZustandAuth(requireAuth = true) {
-  const router = useRouter();
-  const {
-    user,
-    isAuthenticated,
-    isLoading,
-    error,
-    refreshUser,
-    clearAuth,
-    login,
-    logout,
-  } = useAuthStore();
-
-  useEffect(() => {
-    if (requireAuth && !isAuthenticated && !isLoading) {
-      router.push('/auth?mode=signin');
-    }
-  }, [requireAuth, isAuthenticated, isLoading, router]);
-
-  // Auto-refresh user data on mount if authenticated
-  useEffect(() => {
-    if (isAuthenticated && !user) {
-      refreshUser().catch(() => {});
-    }
-  }, [isAuthenticated, user, refreshUser]);
-
-  return {
-    user,
-    isAuthenticated,
-    isLoading,
-    error,
-    login,
-    logout,
-    refreshUser,
-    clearAuth,
-  };
-}
-
-// Hook for checking auth status without redirecting
 export function useAuthStatus() {
   const { data: session, isPending: sessionPending } = authClient.useSession();
-  const { isAuthenticated, isLoading, user, syncWithSession } = useAuthStore();
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
-  // Sync Better Auth session with Zustand store if needed
-  useEffect(() => {
-    if (
-      session &&
-      'user' in session &&
-      session.user &&
-      (!user || !isAuthenticated)
-    ) {
-      const sessionUser = {
+  const user = useMemo(() => {
+    if (session && 'user' in session && session.user) {
+      return {
         id: session.user.id,
         email: session.user.email,
-        name: session.user.name || undefined,
-        image: session.user.image || undefined,
-        username: undefined, // Better Auth doesn't include username by default
-        role: 'USER', // Default role
-        accessToken: undefined,
+        name: session.user.name || null,
+        image: session.user.image || null,
+        role: 'USER' as 'USER' | 'ADMIN',
+        username: null,
+        profile: userProfile,
       };
-      syncWithSession(sessionUser).catch(() => {
-        // Silently handle sync failure
-      });
     }
-  }, [session, user, isAuthenticated, syncWithSession]);
+    return null;
+  }, [session, userProfile]);
 
-  // Return Zustand store state (which should be synced with Better Auth)
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (
+        session &&
+        'user' in session &&
+        session.user &&
+        !userProfile &&
+        !profileLoading
+      ) {
+        try {
+          setProfileLoading(true);
+          const profile = await getMe();
+          setUserProfile(profile);
+        } catch {
+          // ignore
+        } finally {
+          setProfileLoading(false);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [session, userProfile, profileLoading]);
+
   return {
-    isAuthenticated,
-    isLoading: isLoading || sessionPending,
+    isAuthenticated: !!(session && 'user' in session && session.user),
+    isLoading: sessionPending || profileLoading,
     user,
   };
 }
 
-// Hook for auth actions
 export function useAuthActions() {
-  const { login, logout, refreshUser, clearAuth, setError } = useAuthStore();
-
-  const unifiedLogout = useCallback(async () => {
-    try {
-      // Clear Better Auth session
-      await authClient.signOut({
-        fetchOptions: {
-          onSuccess: async () => {
-            // Clear Zustand store after Better Auth sign out
-            try {
-              await logout();
-            } catch {
-              clearAuth();
-            }
-            // Clear persisted storage using zustand's persist API
-            if (typeof window !== 'undefined') {
-              useAuthStore.persist.clearStorage();
-            }
-          },
-          onError: () => {
-            // Force clear local state even if API calls fail
-            clearAuth();
-            // Clear persisted storage using zustand's persist API
-            if (typeof window !== 'undefined') {
-              useAuthStore.persist.clearStorage();
-            }
-          },
-        },
-      });
-    } catch {
-      // Force clear local state even if API calls fail
-      clearAuth();
-      // Clear persisted storage using zustand's persist API
-      if (typeof window !== 'undefined') {
-        useAuthStore.persist.clearStorage();
-      }
-    }
-  }, [logout, clearAuth]);
-
-  return {
-    login,
-    logout: unifiedLogout,
-    refreshUser,
-    clearAuth,
-    setError,
-  };
-}
-
-// Hook for handling 401 errors
-export function useAuthErrorHandler() {
-  const { clearAuth } = useAuthStore();
   const router = useRouter();
 
-  const handleAuthError = (error: { status?: number; code?: string }) => {
-    if (error?.status === 401 || error?.code === 'UNAUTHORIZED') {
-      clearAuth();
-      router.push('/auth?mode=signin');
-      return true; // Error was handled
-    }
-    return false; // Error was not handled
-  };
+  // remove useless catch
+  const logout = useCallback(async () => {
+    await authClient.signOut();
+    router.push('/');
+  }, []);
 
-  return { handleAuthError };
+  return {
+    logout,
+  };
 }

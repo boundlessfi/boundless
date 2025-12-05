@@ -59,7 +59,8 @@ const boundlessButtonVariants = cva(
 );
 
 export interface BoundlessButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof boundlessButtonVariants> {
   asChild?: boolean;
   loading?: boolean;
