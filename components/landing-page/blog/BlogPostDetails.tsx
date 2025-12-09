@@ -117,7 +117,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
   return (
     <>
       {isNavigating && <AuthLoadingState message='Loading article...' />}
-      <div className='relative z-10 mx-auto min-h-screen max-w-[1440px] justify-start space-y-[23px] bg-[#030303] px-5 py-5 text-white md:space-y-[80px] md:px-[50px] md:py-16 lg:px-[100px]'>
+      <div className='bg-background-main-bg relative z-10 mx-auto min-h-screen max-w-[1440px] justify-start space-y-[23px] px-5 py-5 text-white md:space-y-[80px] md:px-[50px] md:py-16 lg:px-[100px]'>
         <div className='relative flex flex-col lg:flex-row'>
           <div className='flex-1'>
             <div className='max-w-4xl py-6 sm:py-8'>
@@ -147,7 +147,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
                     {post.title}
                   </h1>
 
-                  <p className='mb-6 hidden text-base leading-relaxed text-white sm:mb-8 sm:text-lg'>
+                  <p className='mb-6 hidden text-justify text-base leading-relaxed text-white sm:mb-8 sm:text-lg'>
                     {post.excerpt}
                   </p>
                 </div>
@@ -168,7 +168,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
             </div>
 
             <div className='max-w-4xl py-8 sm:py-12'>
-              <div className='prose prose-invert prose-sm sm:prose-base max-w-none'>
+              <div className='prose prose-invert prose-justify prose-sm sm:prose-base max-w-none'>
                 {loading ? (
                   <div className='flex items-center justify-center py-12'>
                     <div className='flex items-center gap-2 text-[#B5B5B5]'>

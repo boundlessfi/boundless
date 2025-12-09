@@ -1,38 +1,109 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '@/lib/motion';
-//sample comment
+
 export const UserPageSkeleton = () => {
   return (
-    <div className='min-h-screen'>
-      <div className='mx-auto max-w-7xl p-4 sm:p-6 lg:p-8'>
-        {/* Header Section Skeleton */}
-        <div className='mb-8'>
-          <Skeleton className='h-8 w-64 sm:h-10 sm:w-80' />
-        </div>
+    <div className='mt-14 flex flex-col gap-8 lg:flex-row lg:gap-16'>
+      {/* Profile Overview Skeleton */}
+      <div className='w-full lg:w-auto'>
+        <div className='rounded-[12px] border border-[#2B2B2B] bg-[#1C1C1C] p-6'>
+          {/* Avatar and basic info */}
+          <div className='mb-6 flex items-center gap-4'>
+            <Skeleton className='h-16 w-16 rounded-full' />
+            <div className='flex-1'>
+              <Skeleton className='mb-2 h-6 w-32' />
+              <Skeleton className='h-4 w-48' />
+            </div>
+          </div>
 
-        <div className='mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={index}
-              className='rounded-[12px] border border-[#2B2B2B] bg-[#1C1C1C] p-4 sm:p-6'
-            >
-              <Skeleton className='mb-2 h-4 w-24' />
-              <Skeleton className='mb-3 h-8 w-16' />
-              <div className='flex items-center gap-2'>
-                <Skeleton className='h-4 w-4' />
-                <Skeleton className='h-4 w-32' />
+          {/* Stats */}
+          <div className='mb-6 grid grid-cols-2 gap-4'>
+            <div className='text-center'>
+              <Skeleton className='mx-auto mb-2 h-8 w-12' />
+              <Skeleton className='mx-auto h-3 w-16' />
+            </div>
+            <div className='text-center'>
+              <Skeleton className='mx-auto mb-2 h-8 w-12' />
+              <Skeleton className='mx-auto h-3 w-16' />
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div className='space-y-2'>
+            <Skeleton className='h-4 w-full' />
+            <Skeleton className='h-4 w-3/4' />
+            <Skeleton className='h-4 w-1/2' />
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs Section Skeleton */}
+      <div className='flex-1'>
+        <div className='w-full'>
+          {/* Tabs Header */}
+          <div className='border-b border-zinc-800'>
+            <div className='flex h-auto w-full justify-start gap-6 bg-transparent p-0'>
+              <Skeleton className='h-8 w-16' />
+              <Skeleton className='h-8 w-20' />
+              <Skeleton className='hidden h-8 w-24 md:block' />
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          <div className='mt-6'>
+            {/* Activity Tab Content */}
+            <div className='space-y-6'>
+              {/* Activity Stats */}
+              <div className='grid grid-cols-2 gap-4 sm:grid-cols-4'>
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className='rounded-[12px] border border-[#2B2B2B] bg-[#1C1C1C] p-4'
+                  >
+                    <Skeleton className='mb-2 h-4 w-16' />
+                    <Skeleton className='mb-3 h-8 w-8' />
+                    <div className='flex items-center gap-2'>
+                      <Skeleton className='h-4 w-4' />
+                      <Skeleton className='h-3 w-20' />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Filter Dropdown */}
+              <Skeleton className='h-10 w-32' />
+
+              {/* Activity Feed */}
+              <div className='space-y-4'>
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className='rounded-[12px] border border-[#2B2B2B] bg-[#1C1C1C] p-4'
+                  >
+                    <div className='flex items-start gap-3'>
+                      <Skeleton className='h-10 w-10 rounded-full' />
+                      <div className='flex-1'>
+                        <Skeleton className='mb-2 h-4 w-48' />
+                        <Skeleton className='h-3 w-32' />
+                      </div>
+                      <Skeleton className='h-3 w-16' />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Future Feature */}
+              <div className='rounded-[12px] border border-[#2B2B2B] bg-[#1C1C1C] p-6'>
+                <Skeleton className='mb-4 h-6 w-40' />
+                <div className='grid grid-cols-7 gap-2'>
+                  {Array.from({ length: 35 }).map((_, index) => (
+                    <Skeleton key={index} className='h-3 w-3 rounded-sm' />
+                  ))}
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-
-        <div className='mb-8'>
-          <RecentProjectsSkeleton />
-        </div>
-
-        <div className='flex w-full flex-col gap-6 rounded-[12px] bg-[#1C1C1C] p-4 sm:gap-8 sm:p-6'>
-          <CampaignTableSkeleton />
+          </div>
         </div>
       </div>
     </div>

@@ -92,6 +92,7 @@ export function useMarkdown(
             white-space: normal;
             word-wrap: break-word;
             max-width: 100%;
+            text-align: justify;
           }
           
           /* Preserve whitespace in code blocks */

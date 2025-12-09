@@ -28,8 +28,11 @@ export default function ProfileOverview({
     bio: (user as unknown as { bio?: string }).bio || 'No bio available',
     avatarUrl: user.profile.avatar || '',
     socialLinks:
-      (user as unknown as { socialLinks?: Record<string, string> })
-        .socialLinks || {},
+      (
+        user as unknown as {
+          profile?: { socialLinks?: Record<string, string> };
+        }
+      ).profile?.socialLinks || {},
   };
 
   const pathname = usePathname();
@@ -45,7 +48,7 @@ export default function ProfileOverview({
     user.organizations?.map(org => {
       const avatarUrl = isProfileRoute
         ? (org as { avatar?: string }).avatar
-        : (org as { logo?: string }).logo;
+        : (org as { avatar?: string }).avatar;
 
       return {
         name: org.name,

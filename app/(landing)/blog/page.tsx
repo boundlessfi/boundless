@@ -36,7 +36,7 @@ async function StreamingBlogGridWrapper() {
 
 function BlogGridLoading() {
   return (
-    <div className='min-h-screen bg-[#030303]'>
+    <div className='bg-background-main-bg min-h-screen'>
       <div className='mx-auto max-w-6xl px-6 py-8'>
         <div className='flex gap-3 md:flex-row md:items-center md:justify-between lg:gap-16'>
           <div className='flex items-center gap-3'>

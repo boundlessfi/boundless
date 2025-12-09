@@ -1,17 +1,14 @@
 'use client';
 import ProfileDataClient from '@/components/profile/ProfileDataClient';
 import { authClient } from '@/lib/auth-client';
+import { UserPageSkeleton } from '@/components/skeleton/UserPageSkeleton';
 
 export function ProfileData() {
-  const { data, error, isPending } = authClient.useSession();
-  if (isPending) {
-    return <div>Loading...</div>;
-  }
-  if (error) {
-    return <div>Error: {error.message}</div>;
-  }
-  if (!data?.user) {
-    return <div>Please sign in to view your profile</div>;
+  const { data, isRefetching } = authClient.useSession();
+
+  // Show skeleton loading when refetching
+  if (isRefetching || !data?.user) {
+    return <UserPageSkeleton />;
   }
 
   const username =

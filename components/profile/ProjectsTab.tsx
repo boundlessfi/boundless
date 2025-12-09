@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ProjectCard from '../landing-page/project/ProjectCard';
 import { Project } from '@/types/project';
 import { GetMeResponse } from '@/lib/api/types';
@@ -14,7 +14,6 @@ interface ProjectsTabProps {
 
 export default function ProjectsTab({ user }: ProjectsTabProps) {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const { height: windowHeight } = useWindowSize();
@@ -56,8 +55,6 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
 
   const loadProjects = useCallback(
     async (pageNum: number) => {
-      setLoading(true);
-
       // Simulate API delay for better UX
       await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -75,7 +72,6 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
       }
 
       setHasMore(endIndex < allProjects.length);
-      setLoading(false);
     },
     [user.projects]
   );
@@ -85,23 +81,19 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
   }, [loadProjects]);
 
   const handleScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
+    (e: React.UIEvent<HTMLDivElement, UIEvent>) => {
       const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
 
-      if (
-        scrollHeight - scrollTop <= clientHeight + 100 &&
-        !loading &&
-        hasMore
-      ) {
+      if (scrollHeight - scrollTop <= clientHeight + 100 && hasMore) {
         const nextPage = page + 1;
         setPage(nextPage);
         loadProjects(nextPage);
       }
     },
-    [loading, hasMore, page, loadProjects]
+    [hasMore, page, loadProjects]
   );
 
-  if (projects.length === 0 && !loading) {
+  if (projects.length === 0) {
     return (
       <div className='py-8 text-center'>
         <h3 className='mb-2 text-lg font-medium text-gray-300'>
@@ -153,17 +145,6 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
               />
             </Link>
           ))}
-
-          {loading && (
-            <div className='col-span-full flex justify-center py-8'>
-              <div className='flex items-center space-x-2'>
-                <div className='border-primary h-6 w-6 animate-spin rounded-full border-b-2'></div>
-                <span className='text-sm text-gray-400'>
-                  Loading more projects...
-                </span>
-              </div>
-            </div>
-          )}
 
           {!hasMore && projects.length > 0 && (
             <div className='col-span-full py-4 text-center'>
