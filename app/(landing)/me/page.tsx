@@ -1,8 +1,9 @@
 import { ProfileData } from './profile-data';
-import { checkAuth } from '@/lib/check-auth';
+// import { checkAuth } from '@/lib/check-auth';
 
 export default async function MePage() {
-  await checkAuth();
+  //Remove this comment when auth is implemented
+  // await checkAuth();
   return (
     <section className=''>
       <ProfileData />
