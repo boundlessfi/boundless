@@ -104,7 +104,6 @@ export function HackathonDiscussions({
   ) => {
     try {
       await reportDiscussion(commentId, reason, description);
-      // Report is handled, no need to update discussions
     } catch {
       // Error is already handled in the hook
     }
@@ -188,6 +187,7 @@ export function HackathonDiscussions({
         </div>
       )}
 
+      {/* Loading state for discussion operations */}
       {(isCreating || isUpdating || isDeleting) && (
         <div className='mx-4 mt-4 flex items-center gap-2 text-sm text-gray-400 md:mx-0'>
           <Loader2 className='h-4 w-4 animate-spin' />

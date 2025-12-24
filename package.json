@@ -111,7 +111,7 @@
     "marked": "^16.3.0",
     "media-chrome": "^4.15.1",
     "motion": "^12.23.24",
-    "next": "16.0.7",
+    "next": "^16.1.1",
     "next-auth": "^5.0.0-beta.29",
     "next-themes": "^0.4.6",
     "nextjs-toploader": "^3.9.17",
