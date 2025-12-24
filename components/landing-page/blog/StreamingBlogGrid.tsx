@@ -334,7 +334,6 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
             </div>
           </div>
         </div>
-
         <div className=''>
           {error && (
             <div className='mb-6 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-400'>
@@ -343,7 +342,7 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
           )}
 
           {displayPosts.length > 0 ? (
-            <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'>
+            <div className='grid grid-cols-1 gap-6 pt-5 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'>
               {displayPosts.map(post => (
                 <div key={post.id} className='w-full'>
                   <BlogCard post={post} onCardClick={handleCardClick} />
