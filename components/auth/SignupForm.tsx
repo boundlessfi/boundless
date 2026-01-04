@@ -4,7 +4,7 @@ import { LockIcon, MailIcon, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import z from 'zod';
@@ -19,7 +19,6 @@ import {
   FormMessage,
 } from '../ui/form';
 import { Input } from '../ui/input';
-import OtpForm from './OtpForm';
 import { authClient } from '@/lib/auth-client';
 
 const formSchema = z.object({
@@ -51,8 +50,6 @@ const SignupForm = ({
   lastMethod,
 }: SignupFormProps) => {
   const router = useRouter();
-  const [step, setStep] = useState<'signup' | 'otp'>('signup');
-  const [userData, setUserData] = useState<{ email: string } | null>(null);
   const isGoogleLastUsed = lastMethod === 'google';
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -90,9 +87,12 @@ const SignupForm = ({
           // Loading state handled by form
         },
         onSuccess: () => {
-          setUserData({ email: values.email });
-          setStep('otp');
-          toast.success('OTP sent to your email!');
+          toast.success(
+            'Verification email sent! Please check your email to verify your account. You will be automatically logged in once verified.'
+          );
+          router.push(
+            '/auth/check-email?email=' + encodeURIComponent(values.email)
+          );
         },
         onError: ctx => {
           if (ctx.error.status === 409 || ctx.error.code === 'CONFLICT') {
@@ -132,40 +132,6 @@ const SignupForm = ({
       });
     }
   };
-
-  const handleOtpSuccess = () => {
-    router.push('/auth?mode=signin');
-  };
-
-  const handleResendOtp = async () => {
-    if (!userData) return;
-
-    try {
-      const { data, error } = await authClient.emailOtp.sendVerificationOtp({
-        email: userData.email,
-        type: 'email-verification',
-      });
-
-      if (data) {
-        toast.success('OTP resent successfully!');
-      } else if (error) {
-        toast.error(error.message || 'Failed to resend OTP');
-      }
-    } catch {
-      toast.error('Failed to resend OTP');
-    }
-  };
-
-  if (step === 'otp' && userData) {
-    return (
-      <OtpForm
-        email={userData.email}
-        onOtpSuccess={handleOtpSuccess}
-        onResendOtp={handleResendOtp}
-        onLoadingChange={onLoadingChange}
-      />
-    );
-  }
 
   return (
     <>

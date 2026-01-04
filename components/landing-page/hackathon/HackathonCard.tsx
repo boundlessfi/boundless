@@ -1,41 +1,118 @@
 'use client';
-import { Progress } from '@/components/ui/progress';
-import { formatNumber } from '@/lib/utils';
 import { useRouter } from 'nextjs-toploader/app';
 import Image from 'next/image';
 import { MapPinIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Hackathon } from '@/lib/api/hackathons';
 
-type HackathonCardProps = {
-  hackathonId?: string;
-  organizationName: string;
-  hackathonSlug?: string;
-  organizerName: string;
-  organizerLogo: string;
-  hackathonImage: string;
-  hackathonTitle: string;
-  tagline: string;
-  hackathonDescription?: string;
-  status: 'Published' | 'Ongoing' | 'Completed' | 'Cancelled';
-  deadlineInDays: number;
-  startDate?: string;
-  submissionDeadline?: string;
-  categories: string[];
-  location?: string;
-  venueType?: 'virtual' | 'physical';
-  participantType?: 'individual' | 'team' | 'team_or_individual';
-  participants?: {
-    current: number;
-    goal?: number;
-  };
-  prizePool?: {
-    total: number;
-    currency: string;
-  };
-  isFullWidth?: boolean;
-  isListView?: boolean;
-  className?: string;
-};
+// type HackathonCardProps = {
+//   id: string;
+//   name: string;
+//   slug: string;
+//   tagline: string;
+//   description: string;
+
+//   banner: string;
+
+//   organizationId: string;
+//   organization: {
+//     id: string;
+//     name: string;
+//     logo: string;
+//   };
+
+//   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+//   isActive: boolean;
+
+//   venueType: "VIRTUAL" | "PHYSICAL" | "HYBRID";
+//   venueName: string;
+//   venueAddress: string;
+//   city: string;
+//   state: string;
+//   country: string;
+//   timezone: string;
+
+//   startDate: string; // ISO date
+//   endDate: string; // ISO date
+//   submissionDeadline: string; // ISO date
+//   registrationDeadline: string; // ISO date
+//   customRegistrationDeadline: string | null;
+
+//   registrationOpen: boolean;
+//   registrationDeadlinePolicy: "BEFORE_SUBMISSION_DEADLINE" | "CUSTOM";
+
+//   daysUntilStart: number;
+//   daysUntilEnd: number;
+
+//   participantType: "INDIVIDUAL" | "TEAM";
+//   teamMin: number;
+//   teamMax: number;
+
+//   categories: string[];
+
+//   enabledTabs: Array<
+//     | "detailsTab"
+//     | "participantsTab"
+//     | "resourcesTab"
+//     | "submissionTab"
+//     | "announcementsTab"
+//     | "discussionTab"
+//     | "winnersTab"
+//     | "sponsorsTab"
+//     | "joinATeamTab"
+//     | "rulesTab"
+//   >;
+
+//   judgingCriteria: Array<{
+//     id?: string;
+//     title?: string;
+//     description?: string;
+//     weight?: number;
+//   }>;
+
+//   prizeTiers: Array<{
+//     id?: string;
+//     title?: string;
+//     prizeAmount?: number;
+//     description?: string;
+//   }>;
+
+//   phases: Array<{
+//     id?: string;
+//     name?: string;
+//     startDate?: string;
+//     endDate?: string;
+//   }>;
+
+//   resources: any[];
+
+//   sponsorsPartners: any[];
+
+//   submissions: any[];
+//   followers: any[];
+
+//   requireGithub: boolean;
+//   requireDemoVideo: boolean;
+//   requireOtherLinks: boolean;
+
+//   contactEmail: string;
+//   discord: string;
+//   telegram: string;
+//   socialLinks: string[];
+
+//   publishedAt: string;
+//   createdAt: string;
+//   updatedAt: string;
+
+//   _count: {
+//     submissions: number;
+//     followers: number;
+//   };
+//   isFullWidth?: boolean;
+//   isListView?: boolean;
+//   className?: string;
+
+// };
 
 const formatFullNumber = (num: number): string =>
   new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(num);
@@ -81,25 +158,26 @@ function calculateTimeRemaining(targetDate: string): TimeRemaining {
 // }
 
 function HackathonCard({
-  hackathonId,
-  hackathonSlug,
-  organizerName,
-  organizerLogo,
-  hackathonImage,
-  hackathonTitle,
-  status,
-  // deadlineInDays,
-  startDate,
-  submissionDeadline,
-  categories,
-  location,
-  venueType,
-  participants,
-  prizePool,
+  id,
+  slug,
+  name,
   tagline,
+  banner,
+
+  organization,
+  status,
+
+  venueName,
+
+  startDate,
+
+  submissionDeadline,
+
+  categories,
+  prizeTiers,
   isFullWidth = false,
   // className,
-}: HackathonCardProps) {
+}: Hackathon & { isFullWidth?: boolean }) {
   const router = useRouter();
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>({
     days: 0,
@@ -110,14 +188,14 @@ function HackathonCard({
   });
 
   const handleClick = () => {
-    const slug = hackathonSlug || hackathonId || '';
-    router.push(`/hackathons/${slug}`);
+    const slugPath = slug || id || '';
+    router.push(`/hackathons/${slugPath}`);
   };
 
   // Determine top badge status using raw dates
   const getTopBadgeStatus = () => {
-    if (status === 'Cancelled') {
-      return 'Cancelled';
+    if (status === 'ARCHIVED') {
+      return 'Archived';
     }
 
     const now = new Date().getTime();
@@ -149,7 +227,7 @@ function HackathonCard({
         return 'text-blue-400 bg-blue-400/10';
       case 'Ended':
         return 'text-gray-400 bg-gray-800/20';
-      case 'Cancelled':
+      case 'Archived':
         return 'text-red-400 bg-red-400/10';
       default:
         return 'text-gray-400 bg-gray-800/20';
@@ -158,8 +236,8 @@ function HackathonCard({
 
   // Determine bottom status text using real-time countdown
   const getBottomStatusInfo = () => {
-    if (status === 'Cancelled') {
-      return { text: 'Cancelled', className: 'text-red-400' };
+    if (status === 'ARCHIVED') {
+      return { text: 'Archived', className: 'text-red-400' };
     }
 
     const badgeStatus = getTopBadgeStatus();
@@ -260,18 +338,18 @@ function HackathonCard({
   const topBadgeStatus = getTopBadgeStatus();
   const topBadgeColor = getTopBadgeColor();
 
-  const locationText = (() => {
-    if (location) {
-      return location;
-    }
-    if (venueType === 'virtual') {
-      return 'Virtual';
-    }
-    if (venueType === 'physical') {
-      return 'Physical';
-    }
-    return undefined;
-  })();
+  // const locationText = (() => {
+  //   if (location) {
+  //     return location;
+  //   }
+  //   if (venueType === 'VIRTUAL') {
+  //     return 'Virtual';
+  //   }
+  //   if (venueType === 'PHYSICAL') {
+  //     return 'Physical';
+  //   }
+  //   return undefined;
+  // })();
 
   const CategoriesDisplay = ({
     categoriesList,
@@ -315,8 +393,8 @@ function HackathonCard({
       {/* Image */}
       <div className='relative h-44 overflow-hidden sm:h-52'>
         <Image
-          src={hackathonImage}
-          alt={hackathonTitle}
+          src={banner}
+          alt={name}
           fill
           className='object-cover transition-transform duration-300 group-hover:scale-105'
           unoptimized
@@ -334,11 +412,11 @@ function HackathonCard({
 
         <div className='absolute bottom-3 left-3 flex items-center gap-2'>
           <div
-            style={{ backgroundImage: `url(${organizerLogo})` }}
+            style={{ backgroundImage: `url(${organization.logo})` }}
             className='size-7 rounded-full border border-white/20 bg-white bg-cover bg-center'
           />
           <span className='text-xs font-medium text-white/90 drop-shadow-md'>
-            {organizerName}
+            {organization.name}
           </span>
         </div>
       </div>
@@ -347,33 +425,39 @@ function HackathonCard({
       <div className='flex flex-col gap-3 pt-3'>
         <div className='px-4 sm:px-5'>
           <h2 className='line-clamp-2 text-base leading-tight font-semibold text-white sm:text-lg'>
-            {hackathonTitle}
+            {name}
           </h2>
           <p className='mt-1 line-clamp-2 text-sm text-gray-400'>{tagline}</p>
         </div>
 
         <div className='flex flex-wrap items-center justify-between border-t border-neutral-800 px-4 pt-3 text-sm text-gray-400 sm:px-5'>
-          {prizePool && (
+          {prizeTiers && (
             <div className='flex items-baseline gap-1'>
               <span className='text-primary text-base font-semibold'>
-                ${formatFullNumber(prizePool.total)}
+                $
+                {formatFullNumber(
+                  prizeTiers.reduce((acc, tier) => {
+                    const amount = Number(tier.prizeAmount);
+                    return acc + (Number.isFinite(amount) ? amount : 0);
+                  }, 0)
+                )}
               </span>
-              <span className='text-xs'>{prizePool.currency}</span>
+              <span className='text-xs'>{prizeTiers[0]?.place || 'Prize'}</span>
             </div>
           )}
-          {participants && (
+          {/* {participantsCount && (
             <div className='flex items-center gap-1'>
               <span className='text-white'>
-                {formatNumber(participants.current)}
-                {participants.goal && `/${formatNumber(participants.goal)}`}
+                {formatNumber(participantsCount)}
+                {participantsGoal && `/${formatNumber(participantsGoal)}`}
               </span>
               <span className='text-xs text-gray-500'>Participants</span>
             </div>
-          )}
-          {locationText && locationText !== 'TBD' && (
+          )} */}
+          {venueName && venueName !== 'TBD' && (
             <div className='flex items-center gap-1'>
               <MapPinIcon className='size-4 text-gray-500' />
-              <span className='text-xs'>{locationText}</span>
+              <span className='text-xs'>{venueName}</span>
             </div>
           )}
         </div>
@@ -384,12 +468,12 @@ function HackathonCard({
           >
             {bottomStatusInfo.text}
           </span>
-          {participants?.goal && (
+          {/* {participants?.goal && (
             <Progress
               value={(participants.current / participants.goal) * 100}
               className='h-1.5 w-24 rounded-full sm:w-32'
             />
-          )}
+          )} */}
         </div>
       </div>
     </div>

@@ -21,7 +21,6 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import OrganizationSelector from './cards/OrganizationSelector';
 import { useOrganization } from '@/lib/providers/OrganizationProvider';
 import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
@@ -36,8 +35,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 export default function OrganizationHeader() {
   const pathname = usePathname();
   const isOnOrganizationsPage = pathname === '/organizations';
-  const { organizations, activeOrg, setActiveOrg, isLoadingActiveOrg } =
-    useOrganization();
+  const { organizations, activeOrg, isLoadingActiveOrg } = useOrganization();
   const { handleConnect, handleDisconnect } = useWallet();
   const { walletAddress, walletName } = useWalletContext();
   const [copied, setCopied] = useState(false);
@@ -64,7 +62,7 @@ export default function OrganizationHeader() {
         if (activeOrg) {
           crumbs.push({
             label: activeOrg.name,
-            href: `/organizations/${activeOrg._id}`,
+            href: `/organizations/${activeOrg.id}`,
           });
         } else if (isLoadingActiveOrg && parts[1]) {
           // Show placeholder during loading
@@ -96,7 +94,7 @@ export default function OrganizationHeader() {
     if (showOrgSelector && activeOrg) {
       actions.push({
         label: 'Host Hackathon',
-        href: `/organizations/${activeOrg._id}/hackathons/new`,
+        href: `/organizations/${activeOrg.id}/hackathons/new`,
         icon: Zap,
       });
     }
@@ -194,7 +192,7 @@ export default function OrganizationHeader() {
           <>
             <div className='hidden h-6 w-px bg-zinc-800 lg:block' />
             <div className='hidden flex-shrink-0 lg:block'>
-              <OrganizationSelector
+              {/* <OrganizationSelector
                 organizations={organizations}
                 currentOrganization={
                   activeOrg
@@ -214,7 +212,7 @@ export default function OrganizationHeader() {
                 }
                 isLoading={isLoadingActiveOrg}
                 onOrganizationChange={orgId => setActiveOrg(orgId)}
-              />
+              /> */}
             </div>
           </>
         )}

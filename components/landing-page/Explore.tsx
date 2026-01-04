@@ -3,71 +3,33 @@
 import { cn } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ProjectCard from './project/ProjectCard';
 import HackathonCard from './hackathon/HackathonCard';
 import Link from 'next/link';
-import { getProjects } from '@/lib/api/project';
-import {
-  getPublicHackathonsList,
-  transformPublicHackathonToHackathon,
-} from '@/lib/api/hackathons';
-import { useHackathonTransform } from '@/hooks/hackathon/use-hackathon-transform';
+import { getPublicHackathonsList } from '@/lib/api/hackathons';
 import type { Hackathon } from '@/lib/api/hackathons';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useProjects } from '@/hooks/project/use-project';
 
-interface ProjectApi {
-  _id: string;
-  title: string;
-  description: string;
-  whitepaperUrl?: string;
-  tags?: string[];
-  category?: string;
-  type?: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  owner?: {
-    type?: {
-      _id?: string;
-      profile?: {
-        firstName?: string;
-        lastName?: string;
-        username?: string;
-        avatar?: string;
-      } | null;
-    } | null;
-  } | null;
-}
-
-// Map project status to ProjectCard status format
-const mapProjectStatus = (
+const mapCrowdfundingStatus = (
   status: string
 ): 'Validation' | 'Funding' | 'Funded' | 'Completed' => {
-  switch (status) {
-    case 'under_review':
+  switch (status?.toLowerCase()) {
+    case 'validation':
       return 'Validation';
+    case 'campaigning':
     case 'funding':
       return 'Funding';
     case 'funded':
       return 'Funded';
     case 'completed':
       return 'Completed';
-    case 'in_progress':
-      return 'Funding';
     default:
       return 'Validation';
   }
 };
 
-// Calculate days to deadline from project dates
-const calculateDaysToDeadline = (): number => {
-  // For now, return a default value since we don't have deadline info in the basic project API
-  // This would need to be enhanced when we have access to crowdfunding project details
-  return 30; // Default placeholder
-};
-
-// Project Card Skeleton
 const ProjectCardSkeleton = () => (
   <div className='font-inter flex w-full max-w-full flex-col gap-4 rounded-[8px] border border-gray-900 bg-[#030303] p-4 sm:p-5'>
     <div className='flex items-center justify-between'>
@@ -98,10 +60,8 @@ const ProjectCardSkeleton = () => (
   </div>
 );
 
-// Hackathon Card Skeleton
 const HackathonCardSkeleton = () => (
   <div className='group flex w-full flex-col overflow-hidden rounded-xl border border-neutral-800 bg-[#0c0c0c]'>
-    {/* Image */}
     <div className='relative h-44 overflow-hidden sm:h-52'>
       <Skeleton className='h-full w-full' />
       <div className='absolute top-3 right-3 left-3 flex items-center justify-between'>
@@ -113,7 +73,6 @@ const HackathonCardSkeleton = () => (
         <Skeleton className='h-4 w-24' />
       </div>
     </div>
-    {/* Body */}
     <div className='flex flex-col gap-3 pt-3'>
       <div className='px-4 sm:px-5'>
         <Skeleton className='mb-2 h-6 w-3/4' />
@@ -144,98 +103,62 @@ export default function Explore() {
   const [underlineStyle, setUnderlineStyle] = useState({});
   const tabRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
 
-  const [projects, setProjects] = useState<ProjectApi[]>([]);
-  const [projectsLoading, setProjectsLoading] = useState(false);
-  const [projectsError, setProjectsError] = useState<string | null>(null);
-  const [projectsFetched, setProjectsFetched] = useState(false);
+  const initialFilters = useMemo(() => ({}), []);
+
+  const {
+    projects,
+    loading: projectsLoading,
+    error: projectsError,
+  } = useProjects({
+    initialPage: 1,
+    pageSize: 6,
+    initialFilters,
+  });
 
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [hackathonsLoading, setHackathonsLoading] = useState(false);
   const [hackathonsError, setHackathonsError] = useState<string | null>(null);
   const [hackathonsFetched, setHackathonsFetched] = useState(false);
 
-  const { transformHackathonForCard } = useHackathonTransform();
-
-  const fetchProjects = useCallback(async () => {
-    if (projectsFetched) return; // Prevent refetching if already fetched
-
-    try {
-      setProjectsLoading(true);
-      setProjectsError(null);
-      const response = await getProjects(1, 6);
-      const apiProjects = (response.projects ?? []) as unknown as ProjectApi[];
-      setProjects(apiProjects);
-      setProjectsFetched(true); // Mark as fetched even if empty
-    } catch {
-      setProjectsError('Failed to fetch projects');
-      setProjectsFetched(true); // Mark as fetched even on error to prevent retries
-    } finally {
-      setProjectsLoading(false);
-    }
-  }, [projectsFetched]);
-
-  // Fetch hackathons
   const fetchHackathons = useCallback(async () => {
-    if (hackathonsFetched) return; // Prevent refetching if already fetched
+    if (hackathonsFetched) return;
 
     try {
       setHackathonsLoading(true);
       setHackathonsError(null);
+
       const response = await getPublicHackathonsList({
-        status: 'ongoing',
+        status: 'active',
         limit: 6,
         page: 1,
       });
 
-      // Transform public hackathons to Hackathon type
-      const hackathonsList = response.data.hackathons || [];
-      const transformedHackathons = hackathonsList.map(hackathon =>
-        transformPublicHackathonToHackathon(hackathon)
-      );
-
-      setHackathons(transformedHackathons);
-      setHackathonsFetched(true); // Mark as fetched even if empty
+      const hackathonsList = response.hackathons || [];
+      setHackathons(hackathonsList);
+      setHackathonsFetched(true);
     } catch {
       setHackathonsError('Failed to fetch hackathons');
-      setHackathonsFetched(true); // Mark as fetched even on error to prevent retries
+      setHackathonsFetched(true);
     } finally {
       setHackathonsLoading(false);
     }
   }, [hackathonsFetched]);
 
-  // Reset fetched flags when switching to a tab (allows fresh fetch)
   useEffect(() => {
-    if (activeTab === 'featured-projects') {
-      setProjectsFetched(false);
-    } else if (activeTab === 'ongoing-hackathons') {
+    if (activeTab === 'ongoing-hackathons') {
       setHackathonsFetched(false);
     }
   }, [activeTab]);
 
-  // Fetch data when tab changes and hasn't been fetched yet
   useEffect(() => {
     if (
-      activeTab === 'featured-projects' &&
-      !projectsFetched &&
-      !projectsLoading
-    ) {
-      fetchProjects();
-    } else if (
       activeTab === 'ongoing-hackathons' &&
       !hackathonsFetched &&
       !hackathonsLoading
     ) {
       fetchHackathons();
     }
-  }, [
-    activeTab,
-    fetchProjects,
-    fetchHackathons,
-    projectsFetched,
-    hackathonsFetched,
-    projectsLoading,
-    hackathonsLoading,
-  ]);
+  }, [activeTab, fetchHackathons, hackathonsFetched, hackathonsLoading]);
 
   useEffect(() => {
     const currentTab = tabRefs.current[activeTab];
@@ -300,26 +223,28 @@ export default function Explore() {
               </div>
             ) : (
               projects.map(project => {
-                const ownerName = project.owner?.type?.profile
-                  ? `${project.owner.type.profile.firstName || ''} ${project.owner.type.profile.lastName || ''}`.trim() ||
-                    'Anonymous'
-                  : 'Anonymous';
-                const ownerAvatar =
-                  project.owner?.type?.profile?.avatar || '/avatar.png';
-                const projectImage = project.whitepaperUrl || '/banner.png';
+                const daysToDeadline = project.fundingEndDate
+                  ? Math.ceil(
+                      (new Date(project.fundingEndDate).getTime() -
+                        Date.now()) /
+                        (1000 * 60 * 60 * 24)
+                    )
+                  : 30;
 
                 return (
                   <ProjectCard
                     isFullWidth={true}
-                    key={project._id}
-                    projectId={project._id}
-                    deadlineInDays={calculateDaysToDeadline()}
-                    status={mapProjectStatus(project.status)}
-                    creatorName={ownerName}
-                    creatorLogo={ownerAvatar}
-                    projectImage={projectImage}
-                    projectTitle={project.title}
-                    projectDescription={project.description}
+                    key={project.id}
+                    projectId={project.id}
+                    deadlineInDays={Math.max(0, daysToDeadline)}
+                    status={mapCrowdfundingStatus(project.project.status)}
+                    creatorName={project.project.creator?.name || 'Anonymous'}
+                    creatorLogo={
+                      project.project.creator?.image || '/avatar.png'
+                    }
+                    projectImage={project.project.logo || '/banner.png'}
+                    projectTitle={project.project.title}
+                    projectDescription={project.project.vision ?? undefined}
                   />
                 );
               })
@@ -344,24 +269,13 @@ export default function Explore() {
                 No ongoing hackathons at the moment.
               </div>
             ) : (
-              hackathons.map(hackathon => {
-                const orgName =
-                  '_organizationName' in hackathon
-                    ? (hackathon as Hackathon & { _organizationName?: string })
-                        ._organizationName
-                    : undefined;
-                const transformed = transformHackathonForCard(
-                  hackathon,
-                  orgName
-                );
-                return (
-                  <HackathonCard
-                    key={hackathon._id}
-                    isFullWidth={true}
-                    {...transformed}
-                  />
-                );
-              })
+              hackathons.map(hackathon => (
+                <HackathonCard
+                  key={hackathon.id}
+                  isFullWidth={true}
+                  {...hackathon}
+                />
+              ))
             )}
           </>
         )}
@@ -388,7 +302,6 @@ export default function Explore() {
         <ArrowRight className='h-3 w-3' />
       </div>
 
-      {/* Glow Effects */}
       <Image
         src='/landing/explore/explore-glow-top.svg'
         alt='Glow Effect'

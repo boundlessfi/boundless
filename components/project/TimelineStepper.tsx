@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Project } from '@/types/project';
+import { CrowdfundingProject } from '@/types/project';
 import { Check, ThumbsUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TimelineStepperProps {
-  project: Project;
+  project: CrowdfundingProject;
 }
 
 interface TimelineItem {

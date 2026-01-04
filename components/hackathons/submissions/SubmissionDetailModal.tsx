@@ -64,11 +64,7 @@ export function SubmissionDetailModal({
   const fetchSubmissionDetails = async () => {
     setIsLoading(true);
     try {
-      const response = await getSubmissionDetails(
-        hackathonSlugOrId,
-        submissionId,
-        organizationId
-      );
+      const response = await getSubmissionDetails(submissionId);
       if (response.success && response.data) {
         setSubmission(response.data);
         // Check if user has voted

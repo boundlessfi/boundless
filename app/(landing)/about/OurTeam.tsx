@@ -36,7 +36,7 @@ const OurTeam = () => {
       <div className='grid grid-cols-1 gap-8 md:gap-12 lg:grid-cols-2 lg:gap-16 xl:gap-20'>
         {/* Team Member 1 */}
         <div className='flex w-full flex-col items-center gap-4 sm:flex-row sm:items-start md:gap-6'>
-          <div className='h-48 w-48 flex-shrink-0 cursor-pointer rounded-xl bg-[#D9D9D9] transition duration-300 hover:scale-105 sm:h-56 sm:w-56 md:h-60 md:w-60 lg:h-64 lg:w-64 xl:h-72 xl:w-72'></div>
+          <div className='h-48 w-48 shrink-0 cursor-pointer rounded-xl bg-[#D9D9D9] transition duration-300 hover:scale-105 sm:h-56 sm:w-56 md:h-60 md:w-60 lg:h-64 lg:w-64 xl:h-72 xl:w-72'></div>
           <div className='w-full flex-1 text-center sm:text-left'>
             <h3 className='mb-2 text-xl font-medium text-white md:text-2xl'>
               Collins Ikechukwu
@@ -45,7 +45,7 @@ const OurTeam = () => {
               Blockchain Developer
             </p>
             <hr
-              className='mb-4 h-[1px] w-full border-0 md:mb-6'
+              className='mb-4 h-px w-full border-0 md:mb-6'
               style={{
                 background:
                   'radial-gradient(113.1% 103.23% at 45.52% -1.51%, rgba(255, 255, 255, 0.4704) 0%, rgba(255, 255, 255, 0.0784) 100%)',
@@ -95,7 +95,7 @@ const OurTeam = () => {
 
         {/* Team Member 2 */}
         <div className='flex w-full flex-col items-center gap-4 sm:flex-row sm:items-start md:gap-6'>
-          <div className='h-48 w-48 flex-shrink-0 cursor-pointer rounded-xl bg-[#D9D9D9] transition duration-300 hover:scale-105 sm:h-56 sm:w-56 md:h-60 md:w-60 lg:h-64 lg:w-64 xl:h-72 xl:w-72'></div>
+          <div className='h-48 w-48 shrink-0 cursor-pointer rounded-xl bg-[#D9D9D9] transition duration-300 hover:scale-105 sm:h-56 sm:w-56 md:h-60 md:w-60 lg:h-64 lg:w-64 xl:h-72 xl:w-72'></div>
           <div className='w-full flex-1 text-center sm:text-left'>
             <h3 className='mb-2 text-xl font-medium text-white md:text-2xl'>
               Nnaji Benjamin
@@ -104,7 +104,7 @@ const OurTeam = () => {
               Full-Stack & Blockchain Developer
             </p>
             <hr
-              className='mb-4 h-[1px] w-full border-0 md:mb-6'
+              className='mb-4 h-px w-full border-0 md:mb-6'
               style={{
                 background:
                   'radial-gradient(113.1% 103.23% at 45.52% -1.51%, rgba(255, 255, 255, 0.4704) 0%, rgba(255, 255, 255, 0.0784) 100%)',

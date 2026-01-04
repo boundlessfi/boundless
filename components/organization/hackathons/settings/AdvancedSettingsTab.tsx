@@ -88,7 +88,7 @@ export default function AdvancedSettingsTab({
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deleteHackathon(organizationId, hackathonId);
+      await deleteHackathon(hackathonId);
       toast.success('Hackathon deleted successfully', {
         description: 'All associated data has been permanently removed.',
       });

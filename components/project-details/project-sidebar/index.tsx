@@ -25,7 +25,7 @@ export function ProjectSidebar({
 
     setIsVoting(true);
     try {
-      await voteProject(project._id, value);
+      await voteProject(project.id, value);
       setUserVote(value);
     } catch {
       // Handle error silently or show user-friendly message

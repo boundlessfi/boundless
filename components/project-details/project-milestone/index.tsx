@@ -10,8 +10,8 @@ import {
 import { ListFilter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Status } from './milestone-card';
-import { CrowdfundingProject } from '@/lib/api/types';
 import EmptyState from '@/components/EmptyState';
+import { Crowdfunding } from '@/types/project';
 
 const filterOptions = [
   { value: 'all', label: 'All Milestones', count: 0 },
@@ -25,24 +25,23 @@ const filterOptions = [
 ];
 
 interface ProjectMilestoneProps {
-  projectId?: string;
-  project?: CrowdfundingProject;
+  crowdfund: Crowdfunding;
 }
 
-const ProjectMilestone = ({ projectId, project }: ProjectMilestoneProps) => {
+const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
   const [selectedFilter, setSelectedFilter] = useState<Status | 'all'>('all');
 
   const milestones: TimelineItemType[] = useMemo(() => {
-    if (!project?.milestones || project.milestones.length === 0) {
+    if (!crowdfund.milestones || crowdfund.milestones.length === 0) {
       return [];
     }
 
-    const totalAmount = project.milestones.reduce(
+    const totalAmount = crowdfund.milestones.reduce(
       (sum, milestone) => sum + milestone.amount,
       0
     );
 
-    return project.milestones.map(milestone => {
+    return crowdfund.milestones.map(milestone => {
       const percentage =
         totalAmount > 0
           ? Math.round((milestone.amount / totalAmount) * 100)
@@ -50,8 +49,8 @@ const ProjectMilestone = ({ projectId, project }: ProjectMilestoneProps) => {
 
       let dueDate = 'TBD';
       try {
-        if (milestone.dueDate) {
-          dueDate = new Date(milestone.dueDate).toLocaleDateString('en-US', {
+        if (milestone.endDate) {
+          dueDate = new Date(milestone.endDate).toLocaleDateString('en-US', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
@@ -93,8 +92,8 @@ const ProjectMilestone = ({ projectId, project }: ProjectMilestoneProps) => {
       const mappedStatus = mapStatus(milestone.status);
 
       return {
-        id: milestone._id,
-        title: milestone.title,
+        id: milestone.name,
+        title: milestone.name,
         description: milestone.description,
         dueDate,
         amount: milestone.amount,
@@ -105,7 +104,7 @@ const ProjectMilestone = ({ projectId, project }: ProjectMilestoneProps) => {
         ...(milestone.status === 'approved' && { isUnlocked: true }),
       };
     });
-  }, [project?.milestones]);
+  }, [crowdfund.milestones]);
 
   const filterOptionsWithCounts = useMemo(() => {
     return filterOptions.map(option => {
@@ -177,7 +176,7 @@ const ProjectMilestone = ({ projectId, project }: ProjectMilestoneProps) => {
         showConnector={true}
         variant='default'
         className='w-full'
-        projectId={projectId}
+        projectId={crowdfund.project.id}
       />
 
       {filteredMilestones.length === 0 && (

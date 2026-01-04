@@ -1,47 +1,158 @@
+// Enums matching backend specification
+export enum CommentEntityType {
+  PROJECT = 'PROJECT',
+  BOUNTY = 'BOUNTY',
+  CROWDFUNDING_CAMPAIGN = 'CROWDFUNDING_CAMPAIGN',
+  GRANT = 'GRANT',
+  GRANT_APPLICATION = 'GRANT_APPLICATION',
+  HACKATHON = 'HACKATHON',
+  HACKATHON_SUBMISSION = 'HACKATHON_SUBMISSION',
+}
+
+export enum CommentStatus {
+  ACTIVE = 'ACTIVE',
+  HIDDEN = 'HIDDEN',
+  DELETED = 'DELETED',
+  PENDING_MODERATION = 'PENDING_MODERATION',
+}
+
+export enum ReactionType {
+  LIKE = 'LIKE',
+  LOVE = 'LOVE',
+  CELEBRATE = 'CELEBRATE',
+  INSIGHTFUL = 'INSIGHTFUL',
+  DISLIKE = 'DISLIKE',
+  LAUGH = 'LAUGH',
+  THUMBS_UP = 'THUMBS_UP',
+  THUMBS_DOWN = 'THUMBS_DOWN',
+  FIRE = 'FIRE',
+  ROCKET = 'ROCKET',
+}
+
+export enum ReportReason {
+  SPAM = 'SPAM',
+  HARASSMENT = 'HARASSMENT',
+  HATE_SPEECH = 'HATE_SPEECH',
+  INAPPROPRIATE_CONTENT = 'INAPPROPRIATE_CONTENT',
+  COPYRIGHT_VIOLATION = 'COPYRIGHT_VIOLATION',
+  OTHER = 'OTHER',
+}
+
+export enum ReportStatus {
+  PENDING = 'PENDING',
+  RESOLVED = 'RESOLVED',
+  DISMISSED = 'DISMISSED',
+}
+
+// Base interfaces
 export interface CommentUser {
-  _id: string;
-  profile: {
-    firstName: string;
-    lastName: string;
-    username: string;
-    avatar?: string;
-  };
+  id: string;
+  name: string;
+  username?: string;
+  image?: string;
 }
 
-export interface CommentReactionCounts {
-  LIKE: number;
-  DISLIKE: number;
-  HELPFUL: number;
-}
-
-export interface CommentEditHistory {
-  content: string;
-  editedAt: string;
-}
-
-export interface CommentReport {
+export interface CommentReaction {
+  id: string;
+  commentId: string;
   userId: string;
-  reason: 'spam' | 'inappropriate' | 'harassment' | 'misinformation' | 'other';
-  description?: string;
+  reactionType: ReactionType;
   createdAt: string;
 }
 
+export interface CommentReport {
+  id: string;
+  commentId: string;
+  reportedBy: string;
+  reporter: {
+    id: string;
+    name: string;
+    username?: string;
+    image?: string;
+  };
+  reason: ReportReason;
+  description?: string;
+  status: ReportStatus;
+  reviewedBy?: string;
+  reviewer?: {
+    id: string;
+    name: string;
+    image?: string;
+  };
+  reviewedAt?: string;
+  resolution?: string;
+  createdAt: string;
+}
+
+// Main Comment interface matching actual backend API response
+export interface Comment {
+  id: string;
+  content: string;
+  authorId: string;
+  entityType: CommentEntityType;
+  entityId: string;
+  projectId?: string | null; // Legacy field, can be null
+  bountyId?: string | null; // Legacy field, can be null
+  parentId?: string | null;
+  status: CommentStatus;
+  moderatedAt?: string | null;
+  moderatedBy?: string | null;
+  moderationReason?: string | null;
+  isEdited: boolean;
+  editedAt?: string | null;
+  reactionCount: number;
+  metadata?: any;
+  createdAt: string;
+  updatedAt: string;
+  author: CommentUser;
+  reactions: CommentReaction[]; // Actual reactions array
+  reports: CommentReport[]; // Actual reports array
+  _count: {
+    replies: number;
+    reactions: number;
+    reports: number;
+  };
+  // Computed fields for UI (not in API response)
+  userReaction?: ReactionType; // Current user's reaction (computed)
+  replies?: Comment[]; // Nested replies (fetched separately)
+}
+
+// Legacy ProjectComment interface for backward compatibility
 export interface ProjectComment {
-  _id: string;
-  userId: CommentUser;
+  id: string;
+  author: CommentUser;
   projectId: string;
   content: string;
   parentCommentId?: string;
   status: 'active' | 'deleted' | 'flagged' | 'hidden';
-  editHistory: CommentEditHistory[];
-  reactionCounts: CommentReactionCounts;
+  isEdited: boolean;
+  editedAt: string | null;
+  // editHistory: {
+  //   content: string;
+  //   editedAt: string;
+  // }[];
+  reactionCounts: {
+    LIKE: number;
+    DISLIKE: number;
+    HELPFUL: number;
+  };
   totalReactions: number;
   replyCount: number;
   replies?: ProjectComment[]; // Nested replies
   createdAt: string;
   updatedAt: string;
   isSpam: boolean;
-  reports: CommentReport[];
+  reports: {
+    userId: string;
+    reason:
+      | 'spam'
+      | 'inappropriate'
+      | 'harassment'
+      | 'misinformation'
+      | 'other';
+    description?: string;
+    createdAt: string;
+  }[];
 }
 
 export interface ModerationResult {
@@ -49,9 +160,12 @@ export interface ModerationResult {
   reason?: string;
 }
 
+// Request/Response interfaces matching backend API
 export interface CreateCommentRequest {
   content: string;
-  parentCommentId?: string;
+  entityType: CommentEntityType;
+  entityId: string;
+  parentId?: string;
 }
 
 export interface UpdateCommentRequest {
@@ -59,23 +173,52 @@ export interface UpdateCommentRequest {
 }
 
 export interface ReportCommentRequest {
-  reason: 'spam' | 'inappropriate' | 'harassment' | 'misinformation' | 'other';
+  reason: ReportReason;
   description?: string;
 }
 
 export interface GetCommentsQuery {
+  entityType?: CommentEntityType;
+  entityId?: string;
+  authorId?: string;
+  parentId?: string;
+  status?: CommentStatus;
+  includeReactions?: boolean;
+  includeReports?: boolean;
   page?: number;
   limit?: number;
-  parentCommentId?: string;
-  sortBy?: 'createdAt' | 'updatedAt' | 'totalReactions';
+  sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
 
-// Response Types
+export interface AddReactionRequest {
+  reactionType: ReactionType;
+}
+
+export interface ModerationUpdateRequest {
+  status: CommentStatus;
+}
+
+export interface ReportResolutionRequest {
+  resolution: string;
+  action: 'approve' | 'hide' | 'delete';
+}
+
+// Response Types matching backend API
+
+export interface PaginationMeta {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 export interface CreateCommentResponse {
   success: boolean;
   data: {
-    comment: ProjectComment;
+    comment: Comment;
     moderationResult: ModerationResult;
   };
   message: string;
@@ -85,21 +228,23 @@ export interface CreateCommentResponse {
 
 export interface GetCommentsResponse {
   success: boolean;
+  message: string;
   data: {
-    comments: ProjectComment[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      itemsPerPage: number;
-      hasNext: boolean;
-      hasPrev: boolean;
-    };
-    filters: {
-      parentCommentId?: string;
-      sortBy: string;
-      sortOrder: string;
-    };
+    comments: Comment[];
+    total: number;
+    limit: number;
+    offset: number;
+  };
+  meta: {
+    timestamp: string;
+    requestId: string;
+  };
+}
+
+export interface GetSingleCommentResponse {
+  success: boolean;
+  data: {
+    comment: Comment;
   };
   message: string;
   timestamp: string;
@@ -109,7 +254,7 @@ export interface GetCommentsResponse {
 export interface UpdateCommentResponse {
   success: boolean;
   data: {
-    comment: ProjectComment;
+    comment: Comment;
     moderationResult: ModerationResult;
   };
   message: string;
@@ -125,9 +270,39 @@ export interface DeleteCommentResponse {
   path: string;
 }
 
-export interface ReportCommentResponse {
+export interface AddReactionResponse {
+  success: boolean;
+  data: {
+    reaction: CommentReaction;
+  };
+  message: string;
+  timestamp: string;
+  path: string;
+}
+
+export interface RemoveReactionResponse {
   success: boolean;
   data: null;
+  message: string;
+  timestamp: string;
+  path: string;
+}
+
+export interface ReportCommentResponse {
+  success: boolean;
+  data: {
+    report: CommentReport;
+  };
+  message: string;
+  timestamp: string;
+  path: string;
+}
+
+export interface GetReactionsResponse {
+  success: boolean;
+  data: {
+    reactions: CommentReaction[];
+  };
   message: string;
   timestamp: string;
   path: string;
@@ -145,32 +320,34 @@ export interface ApiErrorResponse {
 export type CommentApiResponse =
   | CreateCommentResponse
   | GetCommentsResponse
+  | GetSingleCommentResponse
   | UpdateCommentResponse
   | DeleteCommentResponse
+  | AddReactionResponse
+  | RemoveReactionResponse
   | ReportCommentResponse
+  | GetReactionsResponse
   | ApiErrorResponse;
 
 // Hook Types for React/Next.js
 export interface UseCommentsOptions {
-  projectId: string;
+  entityType: CommentEntityType;
+  entityId: string;
+  authorId?: string;
+  parentId?: string;
+  status?: CommentStatus;
+  includeReactions?: boolean;
+  includeReports?: boolean;
   page?: number;
   limit?: number;
-  parentCommentId?: string;
-  sortBy?: 'createdAt' | 'updatedAt' | 'totalReactions';
+  sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   enabled?: boolean;
 }
 
 export interface UseCommentsReturn {
-  comments: ProjectComment[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
+  comments: Comment[];
+  pagination: PaginationMeta;
   loading: boolean;
   error: string | null;
   refetch: () => void;
@@ -208,4 +385,31 @@ export interface UseReportCommentReturn {
   ) => Promise<ReportCommentResponse>;
   loading: boolean;
   error: string | null;
+}
+
+export interface UseReactionsReturn {
+  addReaction: (
+    commentId: string,
+    reactionType: ReactionType
+  ) => Promise<AddReactionResponse>;
+  removeReaction: (
+    commentId: string,
+    reactionType: ReactionType
+  ) => Promise<RemoveReactionResponse>;
+  getReactions: (commentId: string) => Promise<GetReactionsResponse>;
+  loading: boolean;
+  error: string | null;
+}
+
+// Validation and Content Filtering
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
+
+export interface ContentValidationRules {
+  minLength: number;
+  maxLength: number;
+  maxLinks: number;
+  prohibitedPatterns: RegExp[];
 }

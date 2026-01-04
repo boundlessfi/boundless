@@ -59,7 +59,7 @@ export const useParticipantSubmission = (
 
     const voters = Array.isArray(participant.submission.votes)
       ? participant.submission.votes.map(vote => ({
-          id: vote._id,
+          id: vote.id,
           name: `${vote.user.profile.firstName} ${vote.user.profile.lastName}`,
           username: vote.user.profile.username,
           avatar: vote.user.profile.avatar,
@@ -71,7 +71,7 @@ export const useParticipantSubmission = (
 
     const commentsList = Array.isArray(participant.submission.comments)
       ? participant.submission.comments.map(comment => ({
-          id: comment._id,
+          id: comment.id,
           content: comment.content,
           author: {
             name: `${comment.user.profile.firstName} ${comment.user.profile.lastName}`,
@@ -89,7 +89,7 @@ export const useParticipantSubmission = (
       : undefined;
 
     return {
-      id: participant.submission._id,
+      id: participant.submission.id,
       projectName: participant.submission.projectName,
       category: participant.submission.category,
       description: participant.submission.description,

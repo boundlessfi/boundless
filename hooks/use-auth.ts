@@ -137,7 +137,7 @@ export function useAuthStatus() {
     };
 
     fetchProfile();
-  }, [session, userProfile, profileLoading]);
+  }, [session, userProfile]);
 
   return {
     isAuthenticated: !!(session && 'user' in session && session.user),
@@ -157,5 +157,24 @@ export function useAuthActions() {
 
   return {
     logout,
+  };
+}
+
+export function useRequireAuthEnhanced(redirectTo = '/auth?mode=signin') {
+  const router = useRouter();
+  const { data: session, isPending, error, refetch } = authClient.useSession();
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push(redirectTo);
+    }
+  }, [session, isPending, router, redirectTo]);
+
+  return {
+    session,
+    isPending,
+    error,
+    refetch,
+    isAuthenticated: !!session,
   };
 }

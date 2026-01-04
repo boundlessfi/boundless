@@ -4,7 +4,7 @@ import { getMe } from '@/lib/api/auth';
 import Cookies from 'js-cookie';
 
 // Debounce utility for API calls
-let refreshTimeout: NodeJS.Timeout | null = null;
+let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // JWT payload interface
 interface JWTPayload {
@@ -165,19 +165,15 @@ export const useAuthStore = create<AuthState>()(
           const user = await getMe();
 
           const transformedUser: User = {
-            id: (user._id || user.id) as string,
+            id: user.id as string,
             email: user.email as string,
-            name: (user.profile?.firstName || user.name) as string | null,
-            image: (user.profile?.avatar || user.image) as string | null,
-            username: (user.profile?.username || user.username) as
-              | string
-              | null,
-            role: (user.roles?.[0] === 'ADMIN' ? 'ADMIN' : 'USER') as
-              | 'USER'
-              | 'ADMIN',
-            isVerified: user.isVerified as boolean | undefined,
+            name: user.name as string | null,
+            image: user.image as string | null,
+            username: user.username as string | null,
+            role: user.role as 'USER' | 'ADMIN',
+            isVerified: user.emailVerified as boolean | undefined,
             profile: user.profile as User['profile'],
-          };
+          } as User;
 
           set({
             user: transformedUser,
@@ -238,19 +234,15 @@ export const useAuthStore = create<AuthState>()(
               const user = await getMe();
 
               const transformedUser: User = {
-                id: (user._id || user.id) as string,
+                id: user.id as string,
                 email: user.email as string,
-                name: (user.profile?.firstName || user.name) as string | null,
-                image: (user.profile?.avatar || user.image) as string | null,
-                username: (user.profile?.username || user.username) as
-                  | string
-                  | null,
-                role: (user.roles?.[0] === 'ADMIN' ? 'ADMIN' : 'USER') as
-                  | 'USER'
-                  | 'ADMIN',
-                isVerified: user.isVerified as boolean | undefined,
+                name: user.name as string | null,
+                image: user.image as string | null,
+                username: user.username as string | null,
+                role: user.role as 'USER' | 'ADMIN',
+                isVerified: user.emailVerified as boolean | undefined,
                 profile: user.profile as User['profile'],
-              };
+              } as User;
 
               set({
                 user: transformedUser,
@@ -322,19 +314,15 @@ export const useAuthStore = create<AuthState>()(
             const user = await getMe();
 
             const transformedUser: User = {
-              id: (user._id || user.id) as string,
+              id: user.id as string,
               email: user.email as string,
-              name: (user.profile?.firstName || user.name) as string | null,
-              image: (user.profile?.avatar || user.image) as string | null,
-              username: (user.profile?.username || user.username) as
-                | string
-                | null,
-              role: (user.roles?.[0] === 'ADMIN' ? 'ADMIN' : 'USER') as
-                | 'USER'
-                | 'ADMIN',
-              isVerified: user.isVerified as boolean | undefined,
+              name: user.name as string | null,
+              image: user.image as string | null,
+              username: user.username as string | null,
+              role: user.role as 'USER' | 'ADMIN',
+              isVerified: user.emailVerified as boolean | undefined,
               profile: user.profile as User['profile'],
-            };
+            } as User;
 
             set({
               user: transformedUser,
@@ -422,7 +410,9 @@ export const useAuthStore = create<AuthState>()(
           // Store timeout ID for potential cleanup
           if (typeof window !== 'undefined') {
             (
-              window as unknown as { __authTimeoutId?: NodeJS.Timeout }
+              window as unknown as {
+                __authTimeoutId?: ReturnType<typeof setTimeout>;
+              }
             ).__authTimeoutId = timeoutId;
           }
         }

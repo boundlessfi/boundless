@@ -1,12 +1,8 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { BlogPost } from '@/types/blog';
-import {
-  getBlogPosts,
-  searchBlogPosts,
-  getBlogCategories,
-} from '@/lib/api/blog';
+import React, { useState, useCallback, useMemo, useTransition } from 'react';
+import { BlogPost, GetBlogPostsResponse } from '@/types/blog';
+import { useRouter } from 'next/navigation';
 import BlogCard from './BlogCard';
 import { Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -24,49 +20,42 @@ interface StreamingBlogGridProps {
   initialPosts: BlogPost[];
   hasMore: boolean;
   initialPage: number;
+  totalPages: number;
+  onLoadMore: (page: number) => Promise<GetBlogPostsResponse>;
 }
 
 const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
   initialPosts,
   hasMore: initialHasMore,
   initialPage,
+  onLoadMore,
 }) => {
   const [allPosts, setAllPosts] = useState<BlogPost[]>(initialPosts);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [hasMore, setHasMore] = useState(initialHasMore);
-  const [visiblePosts, setVisiblePosts] = useState(12);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<'Latest' | 'Oldest' | ''>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      setIsLoadingCategories(true);
-      try {
-        const categories = await getBlogCategories();
-        const categoryNames = categories.map(cat => cat.name);
-        setAvailableCategories(categoryNames);
-      } catch {
-        setAvailableCategories(['Web3', 'Community', 'Category']);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    };
-
-    fetchCategories();
-  }, []);
+  // Extract unique categories from all posts
+  const availableCategories = useMemo(() => {
+    const categories = new Set(
+      allPosts.map(post => post.categories || []).flat()
+    );
+    return Array.from(categories).sort();
+  }, [allPosts]);
 
   const filteredPosts = useMemo(() => {
     let filtered = allPosts;
 
     if (selectedCategories.length > 0) {
       filtered = filtered.filter(post =>
-        selectedCategories.includes(post.category)
+        post.categories?.some(category => selectedCategories.includes(category))
       );
     }
 
@@ -76,14 +65,15 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
         post =>
           post.title.toLowerCase().includes(query) ||
           post.excerpt.toLowerCase().includes(query) ||
-          post.tags.some(tag => tag.toLowerCase().includes(query))
+          (post.tags &&
+            post.tags.some(tag => tag.tag.name.toLowerCase().includes(query)))
       );
     }
 
     if (sortOrder) {
       filtered = [...filtered].sort((a, b) => {
-        const dateA = new Date(a.publishedAt).getTime();
-        const dateB = new Date(b.publishedAt).getTime();
+        const dateA = new Date(a.coverImage).getTime();
+        const dateB = new Date(b.createdAt).getTime();
         return sortOrder === 'Latest' ? dateB - dateA : dateA - dateB;
       });
     }
@@ -91,8 +81,9 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
     return filtered;
   }, [allPosts, selectedCategories, searchQuery, sortOrder]);
 
-  const displayPosts = filteredPosts.slice(0, visiblePosts);
-  const hasMorePostsToShow = hasMore;
+  const displayPosts = filteredPosts;
+  const hasMorePostsToShow =
+    hasMore && !searchQuery && selectedCategories.length === 0;
 
   const sortOptions: Array<'Latest' | 'Oldest'> = ['Latest', 'Oldest'];
 
@@ -104,54 +95,17 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
 
     try {
       const nextPage = currentPage + 1;
+      const response = await onLoadMore(nextPage);
 
-      let data;
-      if (searchQuery.trim()) {
-        data = await searchBlogPosts({
-          q: searchQuery,
-          page: nextPage,
-          limit: 12,
-          category:
-            selectedCategories.length === 1 ? selectedCategories[0] : undefined,
-          tags: selectedCategories.length > 1 ? selectedCategories : undefined,
-        });
-      } else {
-        data = await getBlogPosts({
-          page: nextPage,
-          limit: 12,
-          category:
-            selectedCategories.length === 1 ? selectedCategories[0] : undefined,
-          tags: selectedCategories.length > 1 ? selectedCategories : undefined,
-          sort:
-            sortOrder === 'Latest'
-              ? 'latest'
-              : sortOrder === 'Oldest'
-                ? 'oldest'
-                : 'latest',
-        });
-      }
-
-      if (data.posts && data.posts.length > 0) {
-        setAllPosts(prev => [...prev, ...data.posts]);
-        setCurrentPage(nextPage);
-        setHasMore(data.hasMore);
-        setVisiblePosts(prev => prev + data.posts.length);
-      } else {
-        setHasMore(false);
-      }
+      setAllPosts(prev => [...prev, ...response.data]);
+      setCurrentPage(nextPage);
+      setHasMore(response.hasMore);
     } catch {
       setError('Failed to load more posts. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [
-    isLoading,
-    hasMore,
-    currentPage,
-    searchQuery,
-    selectedCategories,
-    sortOrder,
-  ]);
+  }, [isLoading, hasMore, currentPage, onLoadMore]);
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategories(prev =>
@@ -159,28 +113,27 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
         ? prev.filter(c => c !== category)
         : [...prev, category]
     );
-    setVisiblePosts(12);
-    setCurrentPage(1);
-    setHasMore(true);
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setVisiblePosts(12);
-    setCurrentPage(1);
-    setHasMore(true);
   };
 
-  const handleCardClick = useCallback(() => {
-    setIsNavigating(true);
-    setTimeout(() => {
-      setIsNavigating(false);
-    }, 2000);
-  }, []);
+  const handleCardClick = useCallback(
+    (slug: string) => {
+      setIsNavigating(true);
+      startTransition(() => {
+        router.push(`/blog/${slug}`);
+      });
+    },
+    [router]
+  );
 
   return (
     <>
-      {isNavigating && <AuthLoadingState message='Loading article...' />}
+      {(isNavigating || isPending) && (
+        <AuthLoadingState message='Loading article...' />
+      )}{' '}
       <div className='bg-background-main-bg min-h-screen'>
         <div>
           <div className=''>
@@ -219,7 +172,7 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align='start'
-                    className='bg-background mt-2.5 w-[250px] rounded-[16px] border border-white/24 p-3 lg:w-[320px]'
+                    className='bg-background mt-2.5 w-[250px] rounded-2xl border border-white/24 p-3 lg:w-[320px]'
                   >
                     <DropdownMenuRadioGroup
                       value={sortOrder}
@@ -231,7 +184,7 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
                         <DropdownMenuRadioItem
                           key={opt}
                           value={opt}
-                          className='cursor-pointer rounded-md px-3 py-2 text-base font-medium text-white transition-colors duration-200 hover:!bg-transparent hover:!text-white data-[state=checked]:text-white [&>span:first-child]:hidden'
+                          className='cursor-pointer rounded-md px-3 py-2 text-base font-medium text-white transition-colors duration-200 hover:bg-transparent! hover:text-white! data-[state=checked]:text-white [&>span:first-child]:hidden'
                         >
                           <span
                             className={cn(
@@ -260,7 +213,6 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
                         selectedCategories.length > 0 &&
                           'border-[#A7F950]/30 bg-[#0F1A0B] text-[#A7F950]'
                       )}
-                      disabled={isLoadingCategories}
                     >
                       <svg
                         width='20'
@@ -283,15 +235,12 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align='start'
-                    className='bg-background mt-2.5 w-[220px] rounded-[16px] border border-white/24 p-3 sm:w-[250px] lg:w-[320px]'
+                    className='bg-background mt-2.5 w-[220px] rounded-2xl border border-white/24 p-3 sm:w-[250px] lg:w-[320px]'
                   >
                     <div className='space-y-1'>
-                      {isLoadingCategories ? (
-                        <div className='flex items-center justify-center py-4'>
-                          <Loader2 className='h-4 w-4 animate-spin text-[#B5B5B5]' />
-                          <span className='ml-2 text-sm text-[#B5B5B5]'>
-                            Loading categories...
-                          </span>
+                      {availableCategories.length === 0 ? (
+                        <div className='px-3 py-4 text-center text-sm text-[#B5B5B5]'>
+                          No categories available
                         </div>
                       ) : (
                         availableCategories.map((cat: string) => (
@@ -322,11 +271,11 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
               </div>
 
               <div className='relative w-full md:min-w-[300px]'>
-                <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#787878]' />
+                <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-700' />
                 <Input
                   type='text'
                   placeholder='Search article'
-                  className='w-full rounded-lg border border-white/10 bg-[#101010] py-2 pr-4 pl-10 text-sm text-white placeholder:text-[#B5B5B5] focus:outline-none focus-visible:border-[#A7F950] focus-visible:ring-[3px] focus-visible:ring-[#A7F950]/30 md:h-[42px] md:text-base'
+                  className='bg-background-card w-full rounded-lg border border-white/10 py-2 pr-4 pl-10 text-sm text-white placeholder:text-[#B5B5B5] focus:outline-none focus-visible:border-[#A7F950] focus-visible:ring-[3px] focus-visible:ring-[#A7F950]/30 md:h-[42px] md:text-base'
                   value={searchQuery}
                   onChange={handleSearchChange}
                 />

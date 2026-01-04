@@ -84,7 +84,7 @@ const FeaturedHackathonsCarousel = ({
 
               return (
                 <CarouselItem
-                  key={hackathon._id || index}
+                  key={hackathon.id || index}
                   className='md:basis-1/2'
                 >
                   <div className='hover:border-primary/50 flex h-full flex-col gap-4 rounded-xl border border-gray-800 bg-[#0a0a0a] p-6 transition-all duration-300'>

@@ -55,7 +55,7 @@ export const useSubmissionScores = ({
         .then(response => {
           if (response.success && response.data.scores) {
             const currentUserScore = response.data.scores.find(
-              score => score.judge._id === user.id
+              score => score.judge.id === user.id
             );
 
             if (currentUserScore) {

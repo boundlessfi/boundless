@@ -34,12 +34,12 @@ export default function LinksTab({
 
   useEffect(() => {
     if (!isInitialized) {
-      if (activeOrg?.links) {
+      if (activeOrg?.metadata?.links) {
         setLinks({
-          website: activeOrg.links.website || '',
-          x: activeOrg.links.x || '',
-          github: activeOrg.links.github || '',
-          others: activeOrg.links.others || '',
+          website: activeOrg.metadata.links.website || '',
+          x: activeOrg.metadata.links.x || '',
+          github: activeOrg.metadata.links.github || '',
+          others: activeOrg.metadata.links.others || '',
         });
       } else if (initialLinks) {
         setLinks(initialLinks);
@@ -51,13 +51,13 @@ export default function LinksTab({
 
   useEffect(() => {
     if (!isInitialized || hasUserChanges) return;
-    if (!activeOrg?.links) return;
+    if (!activeOrg?.metadata?.links) return;
 
     const newLinks = {
-      website: activeOrg.links.website || '',
-      x: activeOrg.links.x || '',
-      github: activeOrg.links.github || '',
-      others: activeOrg.links.others || '',
+      website: activeOrg.metadata.links.website || '',
+      x: activeOrg.metadata.links.x || '',
+      github: activeOrg.metadata.links.github || '',
+      others: activeOrg.metadata.links.others || '',
     };
 
     const currentLinksStr = JSON.stringify(links);
@@ -67,7 +67,7 @@ export default function LinksTab({
       setLinks(newLinks);
       setHasUserChanges(false);
     }
-  }, [activeOrg?.links, isInitialized, hasUserChanges, links]);
+  }, [activeOrg?.metadata?.links, isInitialized, hasUserChanges, links]);
 
   const updateLink = (field: keyof OrganizationLinks, value: string) => {
     setLinks(prev => ({ ...prev, [field]: value }));

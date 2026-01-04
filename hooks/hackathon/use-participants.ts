@@ -2,7 +2,39 @@ import { useState, useMemo } from 'react';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 
 export function useParticipants() {
-  const { participants } = useHackathonData();
+  const { currentHackathon } = useHackathonData();
+
+  // Transform API participants to match expected Participant type
+  const participants: Array<{
+    id: string;
+    name: string;
+    username: string;
+    avatar: string;
+    hasSubmitted: boolean;
+    joinedDate: string;
+    role: string;
+    categories: string[];
+    projects: number;
+    followers: number;
+    teamId?: string;
+    teamName?: string;
+    isIndividual: boolean;
+  }> = (currentHackathon?.participants || []).map(apiParticipant => ({
+    id: apiParticipant.id,
+    name: apiParticipant.user.profile.name,
+    username: apiParticipant.user.profile.username,
+    avatar: apiParticipant.user.profile.image || '',
+    hasSubmitted: !!apiParticipant.submission,
+    joinedDate: apiParticipant.registeredAt,
+    // Default values for fields not available in API
+    role: 'Participant',
+    categories: [],
+    projects: 0,
+    followers: 0,
+    teamId: apiParticipant.teamId,
+    teamName: apiParticipant.teamName,
+    isIndividual: apiParticipant.participationType === 'individual',
+  }));
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [submissionFilter, setSubmissionFilter] = useState('all');
@@ -17,10 +49,11 @@ export function useParticipants() {
         p =>
           p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           p.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.categories?.some(cat =>
-            cat.toLowerCase().includes(searchTerm.toLowerCase())
-          )
+          (p.role && p.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (p.categories &&
+            p.categories.some(cat =>
+              cat.toLowerCase().includes(searchTerm.toLowerCase())
+            ))
       );
     }
 
@@ -36,8 +69,9 @@ export function useParticipants() {
     if (skillFilter !== 'all') {
       filtered = filtered.filter(
         p =>
-          p.role?.toLowerCase().includes(skillFilter) ||
-          p.categories?.some(cat => cat.toLowerCase().includes(skillFilter))
+          (p.role && p.role.toLowerCase().includes(skillFilter)) ||
+          (p.categories &&
+            p.categories.some(cat => cat.toLowerCase().includes(skillFilter)))
       );
     }
 

@@ -41,7 +41,7 @@ export const transformToApiFormat = (stepData: {
 
   return {
     information: {
-      title: info?.name || '',
+      name: info?.name || '',
       banner: info?.banner || '',
       description: info?.description || '',
       tagline: info?.tagline || '',
@@ -103,11 +103,11 @@ export const transformToApiFormat = (stepData: {
     rewards: {
       prizeTiers:
         rewards?.prizeTiers?.map(tier => ({
-          position: tier.place,
-          amount: parseFloat(tier.prizeAmount) || 0,
+          place: tier.place,
+          prizeAmount: tier.prizeAmount || '0',
           currency: tier.currency || 'USDC',
-          description: tier.description,
-          passMark: tier.passMark,
+          description: tier.description || '',
+          passMark: tier.passMark || 0,
         })) || [],
     },
     resources: {
@@ -148,25 +148,25 @@ export const transformToApiFormat = (stepData: {
 };
 
 export const transformFromApiFormat = (draft: HackathonDraft) => {
-  const info = draft.information;
-  const timeline = draft.timeline;
-  const participation = draft.participation;
-  const rewards = draft.rewards;
-  const resources = draft.resources;
-  const judging = draft.judging;
-  const collaboration = draft.collaboration;
+  const info = draft.data?.information;
+  const timeline = draft.data?.timeline;
+  const participation = draft.data?.participation;
+  const rewards = draft.data?.rewards;
+  const resources = draft.data?.resources;
+  const judging = draft.data?.judging;
+  const collaboration = draft.data?.collaboration;
 
   // Handle categories array
   const categoriesArray: string[] = info?.categories ? info.categories : [];
 
   return {
     information: {
-      name: info?.title || '',
+      name: info?.name || '',
       banner: info?.banner || '',
       description: info?.description || '',
-      tagline: info.tagline || '',
+      tagline: info?.tagline || '',
       categories: categoriesArray,
-      venueType: info?.venue?.type || 'physical',
+      venueType: info?.venue?.type || 'virtual',
       country: info?.venue?.country || '',
       state: info?.venue?.state || '',
       city: info?.venue?.city || '',
@@ -222,8 +222,8 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
       prizeTiers:
         rewards?.prizeTiers?.map((tier, index) => ({
           id: `tier-${index}`,
-          place: tier.position,
-          prizeAmount: tier.amount.toString(),
+          place: tier.place,
+          prizeAmount: tier.prizeAmount || '0',
           currency: tier.currency || 'USDC',
           description: tier.description || '',
           passMark: tier.passMark,
@@ -235,10 +235,10 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
           id: `resource-${index}`,
           link: resource.link || '',
           description: resource.description || '',
-          file: resource.fileUrl
+          file: resource.file?.url
             ? {
-                url: resource.fileUrl,
-                name: resource.fileName || 'Uploaded file',
+                url: resource.file?.url || '',
+                name: resource.file?.name || '',
               }
             : undefined,
         })) || [],

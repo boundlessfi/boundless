@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Project } from '@/types/project';
+import { CrowdfundingProject } from '@/types/project';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ import { useWalletProtection } from '@/hooks/use-wallet-protection';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 
 interface ValidationFlowProps {
-  project: Project;
+  project: CrowdfundingProject;
   onVote?: (projectId: string) => void;
   onComment?: (projectId: string, comment: string) => void;
   onReact?: (commentId: string, reaction: string) => void;
@@ -142,7 +142,7 @@ const ValidationFlow: React.FC<ValidationFlowProps> = ({ project, onVote }) => {
             <div>
               <h3 className='font-medium text-[#F5F5F5]'>Collins Odumeje</h3>
               <h1 className='flex items-center text-2xl font-bold text-[#F5F5F5]'>
-                {project.name}
+                {project.title}
                 <div className='w-4' />
                 <Badge
                   className={cn(
@@ -160,7 +160,7 @@ const ValidationFlow: React.FC<ValidationFlowProps> = ({ project, onVote }) => {
         <div>
           <h2 className='mb-2 text-3xl font-bold'>
             <span className='text-[#F5F5F5]'>
-              ${project.amount.toLocaleString()}
+              ${project.funding?.goal.toLocaleString()}
             </span>
             <span className='text-[#B5B5B5]'>.00</span>
           </h2>

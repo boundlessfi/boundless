@@ -14,7 +14,7 @@ import { useNavigationLoading } from '@/lib/providers';
 
 interface Hackathon {
   id: string;
-  title: string;
+  name: string;
   status: 'draft' | 'ongoing' | 'completed';
   href: string;
 }
@@ -115,7 +115,7 @@ export default function HackathonSelector({
           />
 
           <span className='max-w-[200px] truncate text-sm font-medium text-white'>
-            {selectedHackathon.title || 'Select Hackathon'}
+            {selectedHackathon.name || 'Select Hackathon'}
           </span>
 
           <div className='ml-auto flex flex-col gap-0'>
@@ -135,12 +135,12 @@ export default function HackathonSelector({
             className='flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 hover:bg-[#252525] focus:bg-[#252525]'
           >
             <div
-              className={`h-2 w-2 flex-shrink-0 rounded-full ${getStatusColor(hackathon.status)}`}
+              className={`h-2 w-2 shrink-0 rounded-full ${getStatusColor(hackathon.status)}`}
             />
 
             <div className='flex flex-1 flex-col gap-0.5'>
               <span className='text-sm font-medium text-white'>
-                {hackathon.title}
+                {hackathon.name}
               </span>
               <span className='text-xs text-gray-400 capitalize'>
                 {hackathon.status}

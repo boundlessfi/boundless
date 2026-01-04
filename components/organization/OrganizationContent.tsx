@@ -88,9 +88,9 @@ export default function OrganizationContent() {
   const hasOrganizations = organizations.length > 0;
 
   const handleDeleteClick = (orgId: string) => {
-    const org = organizations.find(org => org._id === orgId);
+    const org = organizations.find(org => org.organizationId === orgId);
     if (org) {
-      setOrgToDelete({ id: org._id, name: org.name });
+      setOrgToDelete({ id: org.organizationId as string, name: org.name });
       setDeleteDialogOpen(true);
     }
   };
@@ -108,7 +108,7 @@ export default function OrganizationContent() {
       });
 
       // If the deleted org was the active org, redirect to organizations page
-      if (activeOrg?._id === orgToDelete.id) {
+      if (activeOrg?.id === orgToDelete.id) {
         router.push('/organizations');
       }
     } catch (error) {
@@ -130,7 +130,9 @@ export default function OrganizationContent() {
   };
 
   const handleArchive = async (orgId: string) => {
-    const orgToArchive = organizations.find(org => org._id === orgId);
+    const orgToArchive = organizations.find(
+      org => org.organizationId === orgId
+    );
     const orgName = orgToArchive?.name || 'this organization';
 
     if (
@@ -150,7 +152,7 @@ export default function OrganizationContent() {
       });
 
       // If the archived org was the active org, redirect to organizations page
-      if (activeOrg?._id === orgId) {
+      if (activeOrg?.id === orgId) {
         router.push('/organizations');
       }
     } catch (error) {
@@ -167,7 +169,9 @@ export default function OrganizationContent() {
   };
 
   const handleUnarchive = async (orgId: string) => {
-    const orgToUnarchive = organizations.find(org => org._id === orgId);
+    const orgToUnarchive = organizations.find(
+      org => org.organizationId === orgId
+    );
     const orgName = orgToUnarchive?.name || 'this organization';
 
     if (
@@ -331,13 +335,12 @@ export default function OrganizationContent() {
                 </Link>
               </div>
             </div>
-
             {filteredAndSortedOrganizations.length > 0 ? (
               <div className='grid grid-cols-1 gap-6'>
                 {filteredAndSortedOrganizations.map(org => (
                   <OrganizationCard
-                    key={org._id}
-                    id={org._id}
+                    key={org.organizationId as string}
+                    id={org.organizationId as string}
                     name={org.name}
                     logo={org.logo}
                     createdAt={org.createdAt}
@@ -353,8 +356,8 @@ export default function OrganizationContent() {
                     onArchive={handleArchive}
                     onUnarchive={handleUnarchive}
                     onDelete={handleDeleteClick}
-                    isDeleting={deletingId === org._id}
-                    isArchiving={archivingId === org._id}
+                    isDeleting={deletingId === org.organizationId}
+                    isArchiving={archivingId === org.organizationId}
                     isArchived={org.isArchived ?? false}
                   />
                 ))}

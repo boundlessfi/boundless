@@ -1,16 +1,16 @@
 'use client';
 
+import { CrowdfundingProject } from '@/types/project';
 import { create } from 'zustand';
-import type { Project } from '@/types/project';
 
 type ProjectSheetMode = 'initialize' | 'validate';
 
 interface ProjectSheetState {
   open: boolean;
   mode: ProjectSheetMode;
-  project?: Project;
+  project?: CrowdfundingProject;
   openInitialize: () => void;
-  openValidate: (project: Project) => void;
+  openValidate: (project: CrowdfundingProject) => void;
   setOpen: (open: boolean) => void;
   reset: () => void;
 }
@@ -21,7 +21,7 @@ export const useProjectSheetStore = create<ProjectSheetState>(set => ({
   project: undefined,
   openInitialize: () =>
     set({ open: true, mode: 'initialize', project: undefined }),
-  openValidate: (project: Project) =>
+  openValidate: (project: CrowdfundingProject) =>
     set({ open: true, mode: 'validate', project }),
   setOpen: (open: boolean) => set({ open }),
   reset: () => set({ open: false, mode: 'initialize', project: undefined }),

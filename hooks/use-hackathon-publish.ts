@@ -20,7 +20,7 @@ import {
   getTotalPrizePoolForFunding,
 } from '@/lib/utils/hackathon-escrow';
 import { transformToApiFormat } from '@/lib/utils/hackathon-form-transforms';
-import type { PublishHackathonRequest } from '@/lib/api/hackathons';
+import type { Hackathon, PublishHackathonRequest } from '@/lib/api/hackathons';
 import type { RewardsFormData } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
 import type { InfoFormData } from '@/components/organization/hackathons/new/tabs/schemas/infoSchema';
 import type { TimelineFormData } from '@/components/organization/hackathons/new/tabs/schemas/timelineSchema';
@@ -41,16 +41,17 @@ interface UseHackathonPublishProps {
   organizationId: string;
   stepData: StepData;
   draftId?: string | null;
-  publishHackathonAction: (
-    data: PublishHackathonRequest
-  ) => Promise<{ _id: string }>;
+  publishDraftAction: (
+    draftId: string,
+    organizationId: string
+  ) => Promise<Hackathon>;
 }
 
 export const useHackathonPublish = ({
   organizationId,
   stepData,
   draftId,
-  publishHackathonAction,
+  publishDraftAction,
 }: UseHackathonPublishProps) => {
   const router = useRouter();
   const { walletAddress } = useWalletContext();
@@ -217,13 +218,13 @@ export const useHackathonPublish = ({
         winnerMilestonesToBeAdded: true,
       };
 
-      const hackathon = await publishHackathonAction(apiData);
+      const hackathon = await publishDraftAction(draftId!, organizationId!);
       toast.success('Hackathon published successfully!');
 
-      if (organizationId && hackathon._id) {
+      if (organizationId && hackathon.id) {
         setTimeout(() => {
           router.push(
-            `/organizations/${organizationId}/hackathons/${hackathon._id}`
+            `/organizations/${organizationId}/hackathons/${hackathon.id}`
           );
         }, 1500);
       }

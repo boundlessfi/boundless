@@ -170,10 +170,10 @@ export function useTeamPosts({
 
         if (response.success && response.data) {
           setPosts(prev =>
-            prev.map(post => (post._id === postId ? response.data : post))
+            prev.map(post => (post.id === postId ? response.data : post))
           );
           setMyPosts(prev =>
-            prev.map(post => (post._id === postId ? response.data : post))
+            prev.map(post => (post.id === postId ? response.data : post))
           );
           toast.success('Team post updated successfully');
           return response.data;
@@ -211,8 +211,8 @@ export function useTeamPosts({
         );
 
         if (response.success) {
-          setPosts(prev => prev.filter(post => post._id !== postId));
-          setMyPosts(prev => prev.filter(post => post._id !== postId));
+          setPosts(prev => prev.filter(post => post.id !== postId));
+          setMyPosts(prev => prev.filter(post => post.id !== postId));
           toast.success('Team post deleted successfully');
         } else {
           throw new Error(response.message || 'Failed to delete team post');

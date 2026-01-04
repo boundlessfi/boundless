@@ -145,7 +145,7 @@ export const NotificationDropdown = ({
 
   return (
     <DropdownMenuContent
-      className='w-80 rounded-xl border border-zinc-800/50 bg-zinc-950/95 p-0 backdrop-blur-xl'
+      className='w-96 rounded-xl border border-zinc-800/50 bg-zinc-950/95 p-0 backdrop-blur-xl'
       align='end'
     >
       <div className='border-b border-zinc-800/50 p-4'>

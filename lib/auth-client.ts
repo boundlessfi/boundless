@@ -6,6 +6,8 @@ import {
   lastLoginMethodClient,
   oneTapClient,
   organizationClient,
+  twoFactorClient,
+  usernameClient,
 } from 'better-auth/client/plugins';
 import { nextCookiesRequest } from './next-cookies-request';
 
@@ -55,6 +57,8 @@ export const authClient = createAuthClient({
         maxAttempts: 5,
       },
     }),
+    usernameClient(),
     organizationClient(),
+    twoFactorClient(),
   ],
 });

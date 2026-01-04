@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -38,7 +38,6 @@ export default function MemberCard({
       <div className='flex gap-3'>
         <Avatar className='h-12 w-12'>
           <AvatarImage src={member.avatar} alt={member.name} />
-          <AvatarFallback>{member.name.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
         <div className='flex flex-col gap-0'>
           <h4 className='text-white'>{member.name}</h4>
@@ -48,7 +47,7 @@ export default function MemberCard({
 
       <div className='flex items-center gap-3'>
         <Popover>
-          <PopoverTrigger asChild>
+          <PopoverTrigger disabled={member.role === 'owner'} asChild>
             <Button
               variant='ghost'
               size='sm'
@@ -88,7 +87,7 @@ export default function MemberCard({
           </PopoverContent>
         </Popover>
         <Popover>
-          <PopoverTrigger asChild>
+          <PopoverTrigger disabled={member.role === 'member'} asChild>
             <Button className='h-6 w-6 rounded-full bg-white !p-1 hover:bg-gray-200'>
               <X className='size-5 text-black' />
             </Button>

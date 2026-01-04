@@ -26,7 +26,10 @@ import {
 import BoundlessSheet from '@/components/sheet/boundless-sheet';
 import Stepper from '@/components/stepper/Stepper';
 import { uploadService } from '@/lib/api/upload';
-import { useSubmission } from '@/hooks/hackathon/use-submission';
+import {
+  useSubmission,
+  type SubmissionFormData,
+} from '@/hooks/hackathon/use-submission';
 import { toast } from 'sonner';
 import { Loader2, Upload, X, Link2, Plus } from 'lucide-react';
 import Image from 'next/image';
@@ -48,24 +51,23 @@ const submissionSchema = z.object({
     .union([z.string().url('Please enter a valid URL'), z.literal('')])
     .optional(),
   introduction: z.string().optional(),
-  links: z
-    .array(
-      z.object({
-        type: z.string(),
-        url: z.string().url('Please enter a valid URL'),
-      })
-    )
-    .optional(),
+  links: z.array(
+    z.object({
+      type: z.string(),
+      url: z.string().url('Please enter a valid URL'),
+    })
+  ),
+  participationType: z.enum(['INDIVIDUAL', 'TEAM']),
 });
 
-type SubmissionFormData = z.infer<typeof submissionSchema>;
+type SubmissionFormDataLocal = z.infer<typeof submissionSchema>;
 
 interface CreateSubmissionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hackathonSlugOrId: string;
   organizationId?: string;
-  initialData?: Partial<SubmissionFormData>;
+  initialData?: Partial<SubmissionFormDataLocal>;
   submissionId?: string;
   onSuccess?: () => void;
 }
@@ -138,7 +140,7 @@ export function CreateSubmissionModal({
     autoFetch: false,
   });
 
-  const form = useForm<SubmissionFormData>({
+  const form = useForm<SubmissionFormDataLocal>({
     resolver: zodResolver(submissionSchema),
     mode: 'onChange',
     defaultValues: {
@@ -149,6 +151,7 @@ export function CreateSubmissionModal({
       videoUrl: '',
       introduction: '',
       links: [],
+      participationType: 'INDIVIDUAL',
     },
   });
 
@@ -166,6 +169,7 @@ export function CreateSubmissionModal({
         videoUrl: initialData.videoUrl || '',
         introduction: initialData.introduction || '',
         links: initialData.links || [],
+        participationType: initialData.participationType || 'INDIVIDUAL',
       });
       if (initialData.logo && isValidImageUrl(initialData.logo)) {
         setLogoPreview(initialData.logo);
@@ -186,6 +190,7 @@ export function CreateSubmissionModal({
           videoUrl: '',
           introduction: '',
           links: [],
+          participationType: 'INDIVIDUAL',
         });
         setLogoPreview('');
         setCurrentStep(0);
@@ -262,6 +267,7 @@ export function CreateSubmissionModal({
         { type: 'demo', url: 'https://demo.example.com/ai-task-manager' },
         { type: 'website', url: 'https://www.example.com/ai-task-manager' },
       ],
+      participationType: 'INDIVIDUAL' as const,
     };
 
     form.reset(mockData);
@@ -349,7 +355,7 @@ export function CreateSubmissionModal({
     }
   };
 
-  const onSubmit = async (data: SubmissionFormData) => {
+  const onSubmit = async (data: SubmissionFormDataLocal) => {
     try {
       // Use the data parameter directly (it's already validated by the form)
       // Get current form values as fallback
@@ -357,7 +363,7 @@ export function CreateSubmissionModal({
 
       // Ensure all required fields are strings (never undefined)
       // Use data parameter first, then fallback to currentValues
-      const safeData = {
+      const safeData: SubmissionFormData = {
         projectName: (data.projectName ?? currentValues.projectName ?? '')
           .toString()
           .trim(),
@@ -394,7 +400,8 @@ export function CreateSubmissionModal({
                   type: link.type.toString(),
                   url: link.url.toString().trim(),
                 }))
-            : undefined,
+            : [],
+        participationType: data.participationType || 'INDIVIDUAL',
       };
 
       // Validate all required fields one more time before submission
@@ -416,14 +423,15 @@ export function CreateSubmissionModal({
       }
 
       // Clean and prepare submission data
-      const submissionData = {
+      const submissionData: SubmissionFormData = {
         projectName: safeData.projectName,
         category: safeData.category,
         description: safeData.description,
         logo: safeData.logo,
         videoUrl: safeData.videoUrl,
         introduction: safeData.introduction,
-        links: safeData.links,
+        links: safeData.links || [],
+        participationType: safeData.participationType || 'INDIVIDUAL',
       };
 
       if (submissionId) {

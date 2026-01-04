@@ -50,8 +50,10 @@ const BlogGrid: React.FC<BlogGridProps> = ({
 
     // Filter by categories
     if (selectedCategories.length > 0) {
-      filtered = filtered.filter(post =>
-        selectedCategories.includes(post.category)
+      filtered = filtered.filter(
+        post =>
+          post.categories &&
+          post.categories.some(cat => selectedCategories.includes(cat))
       );
     }
 
@@ -62,15 +64,16 @@ const BlogGrid: React.FC<BlogGridProps> = ({
         post =>
           post.title.toLowerCase().includes(query) ||
           post.excerpt.toLowerCase().includes(query) ||
-          post.tags.some(tag => tag.toLowerCase().includes(query))
+          (post.tags &&
+            post.tags.some(tag => tag.tag.name.toLowerCase().includes(query)))
       );
     }
 
     // Sort posts
     if (sortOrder) {
       filtered = [...filtered].sort((a, b) => {
-        const dateA = new Date(a.publishedAt).getTime();
-        const dateB = new Date(b.publishedAt).getTime();
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
         return sortOrder === 'Latest' ? dateB - dateA : dateA - dateB;
       });
     }

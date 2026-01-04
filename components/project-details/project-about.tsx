@@ -1,6 +1,6 @@
 import { Github, Globe, Youtube, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CrowdfundingProject } from '@/lib/api/types';
+import { CrowdfundingProject } from '@/types/project';
 
 interface ProjectAboutProps {
   project: CrowdfundingProject & {
@@ -51,20 +51,10 @@ export function ProjectAbout({ project }: ProjectAboutProps) {
             <Avatar className='relative h-14 w-14 ring-2 ring-gray-800/50'>
               <AvatarImage
                 src={project.additionalCreator?.avatar || '/placeholder.svg'}
-                alt={
-                  project.additionalCreator?.name ||
-                  project.creator.profile.firstName +
-                    ' ' +
-                    project.creator.profile.lastName
-                }
+                alt={project.additionalCreator?.name}
               />
               <AvatarFallback className='bg-gradient-to-br from-[#a7f950] to-[#8fd93f] text-sm font-semibold text-black'>
-                {(
-                  project.additionalCreator?.name ||
-                  project.creator.profile.firstName +
-                    ' ' +
-                    project.creator.profile.lastName
-                )
+                {(project.additionalCreator?.name || project.creator.name)
                   .split(' ')
                   .map(n => n[0])
                   .join('')
@@ -74,10 +64,7 @@ export function ProjectAbout({ project }: ProjectAboutProps) {
           </div>
           <div className='min-w-0 flex-1'>
             <p className='text-lg leading-tight font-semibold text-white'>
-              {project.additionalCreator?.name ||
-                project.creator.profile.firstName +
-                  ' ' +
-                  project.creator.profile.lastName}
+              {project.additionalCreator?.name || project.creator.name}
             </p>
             <p className='mt-1.5 inline-block rounded-lg border border-[#a7f950]/30 bg-[#a7f950]/10 px-2.5 py-1 text-xs font-semibold tracking-wide text-[#a7f950] uppercase'>
               {project.additionalCreator?.role || 'CREATOR'}

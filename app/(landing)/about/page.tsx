@@ -17,7 +17,7 @@ export const metadata: Metadata = generatePageMetadata('about');
 const AboutPage = () => {
   return (
     <section>
-      <div className='relative z-10 mx-auto max-w-[1440px] space-y-[23px] md:space-y-[80px]'>
+      <div className='relative z-10 mx-auto max-w-[1440px] space-y-[23px] md:space-y-20'>
         <AboutUsHero2 />
         <Missionpage />
         <AboutUsDifferent />

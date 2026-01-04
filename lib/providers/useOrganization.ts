@@ -319,11 +319,11 @@ export function useOrganizationStats() {
   }
 
   return {
-    memberCount: activeOrg.members.length,
-    hackathonCount: activeOrg.hackathons.length,
-    grantCount: activeOrg.grants.length,
-    pendingInviteCount: activeOrg.pendingInvites.length,
-    isProfileComplete: activeOrg.isProfileComplete,
+    memberCount: activeOrg.members?.length ?? 0,
+    hackathonCount: activeOrg.hackathons?.length ?? 0,
+    grantCount: activeOrg.grants?.length ?? 0,
+    pendingInviteCount: activeOrg.pendingInvites?.length ?? 0,
+    isProfileComplete: activeOrg.isProfileComplete ?? false,
   };
 }
 

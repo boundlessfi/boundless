@@ -21,12 +21,10 @@ export default function JudgingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
-    currentPage: 1,
+    page: 1,
     totalPages: 1,
-    totalItems: 0,
-    itemsPerPage: 10,
-    hasNext: false,
-    hasPrev: false,
+    total: 0,
+    limit: 10,
   });
 
   const fetchSubmissions = useCallback(
@@ -43,8 +41,8 @@ export default function JudgingPage() {
         );
 
         if (response.success) {
-          setSubmissions(response.data);
-          setPagination(response.pagination);
+          setSubmissions(response.data || []);
+          setPagination(response.meta.pagination);
           setPage(pageNum);
         }
       } catch {
@@ -65,7 +63,7 @@ export default function JudgingPage() {
   };
 
   // Calculate statistics
-  const totalSubmissions = pagination.totalItems;
+  const totalSubmissions = pagination.total;
   const averageScore =
     submissions.length > 0
       ? submissions.reduce((sum, sub) => {
@@ -73,7 +71,7 @@ export default function JudgingPage() {
         }, 0) / submissions.length
       : 0;
   const totalJudges = new Set(
-    submissions.flatMap(sub => sub.scores.map(score => score.judge._id))
+    submissions.flatMap(sub => sub.scores.map(score => score.judge.id))
   ).size;
 
   return (
@@ -111,7 +109,7 @@ export default function JudgingPage() {
           <div className='flex flex-col gap-4'>
             {submissions.map(submission => (
               <JudgingParticipant
-                key={submission.participant._id}
+                key={submission.participant.id}
                 submission={submission}
                 organizationId={organizationId}
                 hackathonId={hackathonId}
@@ -126,18 +124,18 @@ export default function JudgingPage() {
               <Button
                 variant='outline'
                 onClick={() => fetchSubmissions(page - 1)}
-                disabled={!pagination.hasPrev || isLoading}
+                disabled={pagination.page <= 1 || isLoading}
                 className='border-gray-700 text-gray-400 hover:bg-gray-800'
               >
                 Previous
               </Button>
               <span className='text-sm text-gray-400'>
-                Page {pagination.currentPage} of {pagination.totalPages}
+                Page {pagination.page} of {pagination.totalPages}
               </span>
               <Button
                 variant='outline'
                 onClick={() => fetchSubmissions(page + 1)}
-                disabled={!pagination.hasNext || isLoading}
+                disabled={pagination.page >= pagination.totalPages || isLoading}
                 className='border-gray-700 text-gray-400 hover:bg-gray-800'
               >
                 Next

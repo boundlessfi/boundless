@@ -31,7 +31,7 @@ export function ProjectSidebarHeader({
         <div className='relative shrink-0'>
           <div className='absolute -inset-0.5 rounded-xl bg-gradient-to-br from-[#a7f950]/20 to-transparent opacity-50 blur-sm' />
           <Image
-            src={project.logo || project.media?.logo || '/icon.png'}
+            src={project.logo}
             alt={project.title}
             width={80}
             height={80}

@@ -91,15 +91,15 @@ export function HackathonPrizes({
                   </span>
                   <div>
                     <h3 className='text-lg font-bold text-white'>
-                      {prize.position}
+                      {prize.place}
                     </h3>
-                    <p className='text-xs text-gray-400'>{prize.position}</p>
+                    <p className='text-xs text-gray-400'>{prize.place}</p>
                   </div>
                 </div>
 
                 <div className='space-y-3'>
                   <div className='text-lg font-bold text-[#a7f950] transition-colors duration-300 group-hover:text-[#a7f950]'>
-                    {prize.amount} {prize.currency || 'USDC'}
+                    {prize.prizeAmount} {prize.currency || 'USDC'}
                   </div>
                 </div>
               </div>
@@ -143,10 +143,10 @@ export function HackathonPrizes({
                       className='border-b border-white/10 transition-colors hover:bg-white/5'
                     >
                       <td className='px-4 py-4 text-left text-sm font-medium text-white'>
-                        {prize.position}
+                        {prize.place}
                       </td>
                       <td className='px-4 py-4 text-left text-sm text-white/90'>
-                        {prize.amount}
+                        {prize.prizeAmount}
                       </td>
                       <td className='px-4 py-4 text-left text-sm text-white/90'>
                         {prize.currency || 'USDC'}

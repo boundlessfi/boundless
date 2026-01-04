@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useHackathons } from '@/hooks/use-hackathons';
-import {
-  transformFromApiFormat,
-  transformToApiFormat,
-} from '@/lib/utils/hackathon-form-transforms';
+import { transformFromApiFormat } from '@/lib/utils/hackathon-form-transforms';
 import type { InfoFormData } from '@/components/organization/hackathons/new/tabs/schemas/infoSchema';
 import type { TimelineFormData } from '@/components/organization/hackathons/new/tabs/schemas/timelineSchema';
 import type { ParticipantFormData } from '@/components/organization/hackathons/new/tabs/schemas/participantSchema';
@@ -13,8 +10,6 @@ import type { ResourcesFormData } from '@/components/organization/hackathons/new
 import type { JudgingFormData } from '@/components/organization/hackathons/new/tabs/schemas/judgingSchema';
 import type { CollaborationFormData } from '@/components/organization/hackathons/new/tabs/schemas/collaborationSchema';
 import type { StepKey } from '@/components/organization/hackathons/new/constants';
-import { STEP_ORDER } from '@/components/organization/hackathons/new/constants';
-import { isStepSavedInDraft } from '@/lib/utils/hackathon-step-validation';
 
 interface StepData {
   information?: InfoFormData;
@@ -44,8 +39,8 @@ export const useHackathonDraft = ({
   const draftInitializedRef = useRef<string | null>(null);
 
   const {
-    createDraftAction,
-    updateDraftAction,
+    initializeDraftAction,
+    updateDraftStepAction,
     fetchDraft,
     currentDraft,
     currentLoading,
@@ -54,7 +49,6 @@ export const useHackathonDraft = ({
     organizationId,
     autoFetch: false,
   });
-
   useEffect(() => {
     const loadDraft = async () => {
       if (!initialDraftId || !organizationId) return;
@@ -74,36 +68,25 @@ export const useHackathonDraft = ({
     loadDraft();
   }, [initialDraftId, organizationId, fetchDraft]);
 
+  // In hooks/use-hackathon-draft.ts useEffect:
   useEffect(() => {
     if (
       currentDraft &&
       initialDraftId &&
-      currentDraft._id === initialDraftId &&
-      draftInitializedRef.current !== currentDraft._id
+      currentDraft.id === initialDraftId &&
+      draftInitializedRef.current !== currentDraft.id
     ) {
-      try {
-        const formData = transformFromApiFormat(currentDraft);
-        setStepData(formData);
+      const formData = transformFromApiFormat(currentDraft);
+      setStepData(formData);
+      draftInitializedRef.current = currentDraft.id;
 
-        // Find the first incomplete step by checking the original draft object
-        // This is more reliable than checking transformed data since transformFromApiFormat
-        // always returns objects with default values
-        const firstIncompleteStep =
-          STEP_ORDER.find(step => {
-            if (step === 'review') return false; // Review is not a data step
-            return !isStepSavedInDraft(step, currentDraft);
-          }) || ('information' as StepKey);
-
-        draftInitializedRef.current = currentDraft._id;
-
-        if (onDraftLoaded) {
-          onDraftLoaded(formData, firstIncompleteStep);
-        }
-      } catch {
-        toast.error('Failed to load draft data');
+      if (onDraftLoaded) {
+        onDraftLoaded(formData, 'information' as StepKey);
       }
+    } else if (currentDraft && currentDraft.id === initialDraftId) {
+      console.log('⏭️ Draft already initialized, skipping'); // Debug
     }
-  }, [currentDraft, initialDraftId, onDraftLoaded]);
+  }, [currentDraft?.id, initialDraftId, onDraftLoaded]);
 
   const saveDraft = async () => {
     if (!organizationId) {
@@ -113,14 +96,69 @@ export const useHackathonDraft = ({
 
     setIsSavingDraft(true);
     try {
-      const apiData = transformToApiFormat(stepData);
-
       if (draftId) {
-        await updateDraftAction(draftId, apiData);
+        // Save all current steps to the draft
+        if (stepData.information) {
+          await updateDraftStepAction(
+            draftId,
+            'information',
+            stepData.information,
+            true
+          );
+        }
+        if (stepData.timeline) {
+          await updateDraftStepAction(
+            draftId,
+            'timeline',
+            stepData.timeline,
+            true
+          );
+        }
+        if (stepData.participation) {
+          await updateDraftStepAction(
+            draftId,
+            'participation',
+            stepData.participation,
+            true
+          );
+        }
+        if (stepData.rewards) {
+          await updateDraftStepAction(
+            draftId,
+            'rewards',
+            stepData.rewards,
+            true
+          );
+        }
+        if (stepData.resources) {
+          await updateDraftStepAction(
+            draftId,
+            'resources',
+            stepData.resources,
+            true
+          );
+        }
+        if (stepData.judging) {
+          await updateDraftStepAction(
+            draftId,
+            'judging',
+            stepData.judging,
+            true
+          );
+        }
+        if (stepData.collaboration) {
+          await updateDraftStepAction(
+            draftId,
+            'collaboration',
+            stepData.collaboration,
+            true
+          );
+        }
         toast.success('Draft saved successfully');
       } else {
-        const draft = await createDraftAction(apiData);
-        setDraftId(draft._id);
+        // Initialize new draft
+        const draft = await initializeDraftAction(organizationId);
+        setDraftId(draft.id);
         toast.success('Draft created successfully');
       }
     } catch {
@@ -148,17 +186,17 @@ export const useHackathonDraft = ({
     }
 
     const updatedStepData = { ...stepData, [stepKey]: data };
-    const apiData = transformToApiFormat(updatedStepData);
 
     if (draftId) {
-      await updateDraftAction(draftId, {
-        [stepKey]: apiData[stepKey as keyof typeof apiData],
-      });
+      // Update specific step using new API
+      await updateDraftStepAction(draftId, stepKey, data, true);
     } else {
-      const draft = await createDraftAction({
-        [stepKey]: apiData[stepKey as keyof typeof apiData],
-      });
-      setDraftId(draft._id);
+      // Initialize draft if it doesn't exist
+      const draft = await initializeDraftAction(organizationId);
+
+      setDraftId(draft.id);
+      // Then update the step
+      await updateDraftStepAction(draft.id, stepKey, data, true);
     }
 
     setStepData(updatedStepData);

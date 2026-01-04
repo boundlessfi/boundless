@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { Filter } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GetMeResponse } from '@/lib/api/types';
 import ProfileOverview from './ProfileOverview';
-import ActivityTab from './ActivityTab';
 import ProjectsTab from './ProjectsTab';
 import OrganizationsTab from './OrganizationsTab';
 import ActivityFeed from './ActivityFeed';
@@ -19,10 +17,10 @@ import { Button } from '../ui/button';
 import ActivityHeatmap from './ActivityHeatMap';
 import { FutureFeature } from '../FeatureFuture';
 import { authClient } from '@/lib/auth-client';
+import { User } from '@/types/user';
 
 interface ProfileDataClientProps {
-  user: GetMeResponse;
-  username: string;
+  user: User;
 }
 
 const FILTER_OPTIONS = [
@@ -35,33 +33,24 @@ const FILTER_OPTIONS = [
   'All Time',
 ];
 
-export default function ProfileDataClient({
-  user,
-  username,
-}: ProfileDataClientProps) {
+export default function ProfileDataClient({ user }: ProfileDataClientProps) {
   const [selectedFilter, setSelectedFilter] = useState('All');
-
   // Get current session user to determine if it's the user's own profile
   const { data: session } = authClient.useSession();
   const currentUser = session?.user;
 
   // Determine if it's the user's own profile by comparing IDs
-  const isOwnProfile =
-    currentUser &&
-    (currentUser.id === user._id ||
-      currentUser._id === user._id ||
-      currentUser.email === user.email);
-
+  const isOwnProfile = user.id === currentUser?.id;
   const organizationsData =
-    user.organizations?.map(org => ({
-      name: org.name,
-      avatarUrl: org.logo || '/blog1.jpg',
+    user.members?.map(org => ({
+      name: org.organization.name,
+      avatarUrl: org.organization.logo || '/blog1.jpg',
     })) || [];
 
   return (
     <div className='mt-14 flex flex-col gap-8 lg:flex-row lg:gap-16'>
       <ProfileOverview
-        username={username}
+        username={user.username}
         user={user}
         isAuthenticated={!!currentUser}
         isOwnProfile={isOwnProfile}
@@ -94,7 +83,7 @@ export default function ProfileDataClient({
 
           <div className='mt-6'>
             <TabsContent value='activity' className='mt-0 space-y-6'>
-              <ActivityTab user={user} />
+              {/* <ActivityTab user={user} /> */}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -128,7 +117,7 @@ export default function ProfileDataClient({
 
               <ActivityFeed filter={selectedFilter} user={user} />
               <FutureFeature className='w-full'>
-                <ActivityHeatmap />
+                <ActivityHeatmap activities={user.activities} />
               </FutureFeature>
             </TabsContent>
 

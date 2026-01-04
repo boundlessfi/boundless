@@ -1,10 +1,7 @@
 import { api } from './api';
-import {
-  Hackathon,
-  SubmissionCardProps,
-  Discussion,
-  ParticipantsResponse,
-} from '@/types/hackathon';
+import { SubmissionCardProps, ParticipantsResponse } from '@/types/hackathon';
+// Discussion type removed - using generic Comment type from @/types/comment
+import { GetHackathonResponse, Hackathon } from '@/lib/api/hackathons';
 
 export interface HackathonListResponse {
   success: boolean;
@@ -36,9 +33,10 @@ export interface SubmissionsResponse {
   message: string;
 }
 
+// @deprecated Use GetCommentsResponse from @/types/comment instead
 export interface DiscussionsResponse {
   success: boolean;
-  data: Discussion[];
+  data: any[]; // Use Comment[] from @/types/comment instead
   message: string;
 }
 
@@ -49,11 +47,18 @@ export const getHackathons = async (): Promise<HackathonListResponse> => {
 };
 
 // Get single hackathon by slug
+// export const getHackathon = async (
+//   slug: string
+// ): Promise<HackathonResponse> => {
+//   const response = await api.get<HackathonResponse>(`/hackathons/${slug}`);
+//   return response.data;
+// };
 export const getHackathon = async (
   slug: string
-): Promise<HackathonResponse> => {
-  const response = await api.get<HackathonResponse>(`/hackathons/${slug}`);
-  return response.data;
+): Promise<GetHackathonResponse> => {
+  const res = await api.get(`/hackathons/s/${slug}`);
+
+  return res.data as GetHackathonResponse;
 };
 
 // Get featured hackathons

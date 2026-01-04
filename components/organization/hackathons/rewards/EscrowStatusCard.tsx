@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { HackathonEscrowData } from '@/types/hackathon';
 
 interface EscrowStatusCardProps {
-  escrow: { balance: number } | null;
+  escrow: HackathonEscrowData | null;
   isLoading?: boolean;
 }
 

@@ -2,32 +2,36 @@
 
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useState, useTransition } from 'react';
 import AuthLoadingState from '@/components/auth/AuthLoadingState';
-import { BlogPost } from '@/lib/data/blog';
 import BlogCard from './BlogCard';
+import { BlogPost } from '@/types/blog';
 
 interface BlogSectionClientProps {
   posts: BlogPost[];
 }
 
 const BlogSectionClient = ({ posts }: BlogSectionClientProps) => {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const handleCardClick = useCallback((slug: string) => {
-    setIsNavigating(true);
-    // The navigation will be handled by Next.js Link, but we show loading state
-    // The loading state will be cleared when the page actually navigates
-    // eslint-disable-next-line no-console
-    console.log(`Navigating to blog post: ${slug}`);
-    setTimeout(() => {
-      setIsNavigating(false);
-    }, 5000);
-  }, []);
+  const handleCardClick = useCallback(
+    (slug: string) => {
+      setIsNavigating(true);
+      startTransition(() => {
+        router.push(`/blog/${slug}`);
+      });
+    },
+    [router]
+  );
 
   return (
     <>
-      {isNavigating && <AuthLoadingState message='Loading article...' />}
+      {(isNavigating || isPending) && (
+        <AuthLoadingState message='Loading article...' />
+      )}
       <section
         className='relative h-full w-full'
         aria-labelledby='blog-heading'
@@ -60,26 +64,35 @@ const BlogSectionClient = ({ posts }: BlogSectionClientProps) => {
           </div>
         </header>
 
-        <div
-          className='grid w-full max-w-none grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-6 xl:grid-cols-3'
-          role='list'
-          aria-label='Blog posts grid'
-        >
-          {posts.slice(0, 6).map((blog: BlogPost) => (
-            <div key={blog.id} role='listitem'>
-              <BlogCard post={blog} onCardClick={handleCardClick} />
-            </div>
-          ))}
-          <div className='flex justify-center text-center sm:hidden'>
-            <Link
-              className='mt-8 flex items-center justify-center gap-2 text-center font-medium text-white transition-colors hover:text-gray-300'
-              href='/blog'
-              aria-label='Read more blog articles'
-            >
-              <span className='underline'>Read More Articles</span>
-              <ArrowRight className='h-4 w-4' />
-            </Link>
+        {posts.length > 0 ? (
+          <div
+            className='grid w-full max-w-none grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-6'
+            role='list'
+            aria-label='Blog posts grid'
+          >
+            {posts.slice(0, 6).map(blog => (
+              <div key={blog.id} role='listitem'>
+                <BlogCard post={blog} onCardClick={handleCardClick} />
+              </div>
+            ))}
           </div>
+        ) : (
+          <div className='flex min-h-[300px] items-center justify-center'>
+            <p className='text-gray-400'>
+              No blog posts available at the moment.
+            </p>
+          </div>
+        )}
+
+        <div className='mt-8 flex justify-center sm:hidden'>
+          <Link
+            className='flex items-center gap-2 font-medium text-white transition-colors hover:text-gray-300'
+            href='/blog'
+            aria-label='Read more blog articles'
+          >
+            <span className='underline'>Read More Articles</span>
+            <ArrowRight className='h-4 w-4' />
+          </Link>
         </div>
       </section>
     </>

@@ -19,7 +19,7 @@ import { FutureFeature } from '@/components/FeatureFuture';
 
 interface Hackathon {
   id: string;
-  title: string;
+  name: string;
   status: 'draft' | 'ongoing' | 'completed';
   href: string;
 }
@@ -95,7 +95,7 @@ export default function HackathonSidebar({
       // The information field might be null/undefined, or title might be empty
       let title = 'Untitled Hackathon';
 
-      title = hackathon.title || title;
+      title = hackathon.name || title;
 
       // Fallback: if information doesn't exist, keep default title
       // Note: Hackathon type requires information field, but we handle edge cases
@@ -107,14 +107,14 @@ export default function HackathonSidebar({
           : 'Untitled Hackathon';
 
       items.push({
-        id: `hackathon-${hackathon._id}`,
-        title,
+        id: `hackathon-${hackathon.id}`,
+        name: title,
         status:
-          hackathon.status === 'published'
+          hackathon.status === 'PUBLISHED'
             ? 'ongoing'
             : (hackathon.status as 'draft' | 'ongoing' | 'completed'),
         href: derivedOrgId
-          ? `/organizations/${derivedOrgId}/hackathons/${hackathon._id}`
+          ? `/organizations/${derivedOrgId}/hackathons/${hackathon.id}`
           : '#',
       });
     });
@@ -125,8 +125,8 @@ export default function HackathonSidebar({
       // The information field might be null/undefined, or title might be empty
       let title = 'Untitled Hackathon';
 
-      if (draft.information) {
-        title = draft.information.title || title;
+      if (draft.data.information) {
+        title = draft.data.information.name || title;
       }
 
       // Fallback: if information doesn't exist, keep default title
@@ -139,11 +139,11 @@ export default function HackathonSidebar({
           : 'Untitled Hackathon';
 
       items.push({
-        id: `draft-${draft._id}`,
-        title,
+        id: `draft-${draft.id}`,
+        name: title,
         status: 'draft',
         href: derivedOrgId
-          ? `/organizations/${derivedOrgId}/hackathons/drafts/${draft._id}`
+          ? `/organizations/${derivedOrgId}/hackathons/drafts/${draft.id}`
           : '#',
       });
     });
@@ -325,7 +325,7 @@ export default function HackathonSidebar({
                 className={cn(
                   'group relative flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all',
                   isActive
-                    ? 'from-primary/10 text-primary shadow-primary/5 bg-gradient-to-r to-transparent shadow-lg'
+                    ? 'from-primary/10 text-primary shadow-primary/5 bg-linear-to-r to-transparent shadow-lg'
                     : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-white'
                 )}
               >

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useCallback, useRef, useEffect } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useHackathons } from '@/hooks/use-hackathons';
 import { useHackathonSteps } from '@/hooks/use-hackathon-steps';
@@ -40,7 +40,7 @@ export default function NewHackathonTab({
     return undefined;
   }, [organizationId]);
 
-  const { publishHackathonAction } = useHackathons({
+  const { publishDraftAction } = useHackathons({
     organizationId: derivedOrgId,
     autoFetch: false,
   });
@@ -53,6 +53,11 @@ export default function NewHackathonTab({
     updateStepCompletion,
     setActiveTab,
   } = useHackathonSteps('information');
+
+  // Use ref to store the callback to avoid circular dependency
+  const onDraftLoadedRef = useRef<
+    ((formData: any, firstIncompleteStep: StepKey) => void) | null
+  >(null);
 
   const {
     draftId,
@@ -67,6 +72,17 @@ export default function NewHackathonTab({
     organizationId: derivedOrgId,
     initialDraftId,
     onDraftLoaded: (formData, firstIncompleteStep) => {
+      // Use the ref to call the callback
+      if (onDraftLoadedRef.current) {
+        onDraftLoadedRef.current(formData, firstIncompleteStep);
+      }
+    },
+  });
+
+  // Define the callback after hooks are initialized
+  const onDraftLoaded = useCallback(
+    (formData: any, firstIncompleteStep: StepKey) => {
+      console.log('sjcdkformData', formData);
       setStepData(formData);
       setActiveTab(firstIncompleteStep);
 
@@ -135,13 +151,19 @@ export default function NewHackathonTab({
         );
       });
     },
-  });
+    [setStepData, setActiveTab, updateStepCompletion]
+  );
+
+  // Update the ref when the callback changes
+  useEffect(() => {
+    onDraftLoadedRef.current = onDraftLoaded;
+  }, [onDraftLoaded]);
 
   const { isPublishing, publish } = useHackathonPublish({
     organizationId: derivedOrgId || '',
     stepData,
-    draftId,
-    publishHackathonAction,
+    draftId: draftId || '',
+    publishDraftAction,
   });
 
   const {

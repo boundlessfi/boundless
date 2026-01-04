@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import ProjectCard from '../landing-page/project/ProjectCard';
-import { Project } from '@/types/project';
-import { GetMeResponse } from '@/lib/api/types';
+import { Project } from '@/types/user';
 import { useWindowSize } from '@/hooks/use-window-size';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
+import { User } from '@/types/user';
 
 interface ProjectsTabProps {
-  user: GetMeResponse;
+  user: User;
 }
 
 export default function ProjectsTab({ user }: ProjectsTabProps) {
@@ -128,18 +128,17 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
               <ProjectCard
                 newTab={true}
                 projectId={project.id}
-                creatorName={`${user.profile.firstName} ${user.profile.lastName}`}
-                creatorLogo={user.profile.avatar || '/avatar.png'}
-                projectImage={project.image || '/bitmed.png'}
-                projectTitle={project.name}
+                creatorName={``}
+                creatorLogo={user.image || '/avatar.png'}
+                projectImage={project.logo || '/bitmed.png'}
+                projectTitle={project.title}
                 projectDescription={project.description}
                 status={getProjectStatus(project.status)}
                 deadlineInDays={30}
-                milestoneRejected={false}
                 isFullWidth={true}
                 funding={{
                   current: 0,
-                  goal: project.amount || 10000,
+                  goal: 10000,
                   currency: 'USDC',
                 }}
               />

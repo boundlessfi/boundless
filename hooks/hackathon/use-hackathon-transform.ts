@@ -4,10 +4,9 @@ import * as React from 'react';
 import type { Hackathon } from '@/lib/api/hackathons';
 
 // Extended Hackathon type with additional properties that may come from API
-interface ExtendedHackathon extends Hackathon {
+interface ExtendedHackathon extends Omit<Hackathon, 'categories'> {
   _organizationName?: string;
   categories?: string[];
-  participants?: number;
   featured?: boolean;
   organizerLogo?: string;
 }
@@ -48,15 +47,15 @@ export function useHackathonTransform() {
       let deadlineInDays: number = 0;
 
       try {
-        if (hackathon.timeline?.submissionDeadline) {
+        if (hackathon.submissionDeadline) {
           const now = new Date();
-          const deadline = new Date(hackathon.timeline.submissionDeadline);
+          const deadline = new Date(hackathon.submissionDeadline);
           deadlineInDays = Math.ceil(
             (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
           );
-        } else if (hackathon.timeline?.winnerAnnouncementDate) {
+        } else if (hackathon.endDate) {
           const now = new Date();
-          const end = new Date(hackathon.timeline.winnerAnnouncementDate);
+          const end = new Date(hackathon.endDate);
           deadlineInDays = Math.ceil(
             (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
           );
@@ -68,49 +67,43 @@ export function useHackathonTransform() {
       // Map hackathon status to card status
       let cardStatus: 'Published' | 'Ongoing' | 'Completed' | 'Cancelled' =
         'Published';
-      if (hackathon.status === 'published') {
+      if (hackathon.status === 'PUBLISHED') {
         cardStatus = 'Published';
-      } else if (hackathon.status === 'ongoing') {
+      } else if (hackathon.status === 'ONGOING') {
         cardStatus = 'Ongoing';
-      } else if (hackathon.status === 'completed') {
+      } else if (hackathon.status === 'COMPLETED') {
         cardStatus = 'Completed';
-      } else if (hackathon.status === 'cancelled') {
+      } else if (hackathon.status === 'ARCHIVED') {
         cardStatus = 'Cancelled';
       }
 
       // Extract location information
-      const venue = hackathon.information?.venue;
       let locationText: string | undefined;
-      if (venue) {
-        if (venue.type === 'physical') {
-          if (venue.city && venue.country) {
-            locationText = `${venue.city}, ${venue.country}`;
-          } else if (venue.country) {
-            locationText = venue.country;
-          } else if (venue.state) {
-            locationText = venue.state;
-          } else if (venue.venueName) {
-            locationText = venue.venueName;
-          } else if (venue.venueAddress) {
-            locationText = venue.venueAddress;
-          }
-        } else if (venue.type === 'virtual') {
-          locationText = 'Virtual';
+      if (hackathon.venueType === 'VIRTUAL') {
+        locationText = 'Virtual';
+      } else if (hackathon.venueType === 'PHYSICAL') {
+        if (hackathon.city && hackathon.country) {
+          locationText = `${hackathon.city}, ${hackathon.country}`;
+        } else if (hackathon.country) {
+          locationText = hackathon.country;
+        } else if (hackathon.state) {
+          locationText = hackathon.state;
+        } else if (hackathon.venueName) {
+          locationText = hackathon.venueName;
+        } else if (hackathon.venueAddress) {
+          locationText = hackathon.venueAddress;
         }
       }
 
       // Calculate prize pool total
       let prizePoolTotal = 0;
       let prizeCurrency = 'USDC';
-      if (
-        hackathon.rewards?.prizeTiers &&
-        hackathon.rewards.prizeTiers.length > 0
-      ) {
-        prizePoolTotal = hackathon.rewards.prizeTiers.reduce(
-          (sum, tier) => sum + (tier.amount || 0),
+      if (hackathon.prizeTiers && hackathon.prizeTiers.length > 0) {
+        prizePoolTotal = hackathon.prizeTiers.reduce(
+          (sum, tier) => sum + Number(tier.prizeAmount || 0),
           0
         );
-        prizeCurrency = hackathon.rewards.prizeTiers[0]?.currency || 'USDC';
+        prizeCurrency = hackathon.prizeTiers[0]?.currency || 'USDC';
       }
 
       // Get organization name
@@ -125,10 +118,8 @@ export function useHackathonTransform() {
 
       // Extract categories
       const categories: string[] = [];
-      if (hackathon.information?.categories) {
-        if (Array.isArray(hackathon.information.categories)) {
-          categories.push(...hackathon.information.categories);
-        }
+      if (hackathon.categories) {
+        categories.push(...hackathon.categories);
       }
       if (
         extendedHackathon.categories &&
@@ -141,40 +132,34 @@ export function useHackathonTransform() {
       }
 
       // Extract participantType
-      const participantType = hackathon.participation?.participantType;
 
       return {
-        hackathonId: hackathon._id,
+        hackathonId: hackathon.id,
         organizationName: orgName,
-        hackathonSlug: hackathon.information.slug,
+        hackathonSlug: hackathon.slug,
         organizerName: orgName,
-        tagline: hackathon.information.tagline,
+        tagline: hackathon.tagline,
         organizerLogo: logoUrl,
         hackathonImage:
-          hackathon.information?.banner ||
-          '/landing/explore/project-placeholder-1.png',
-        hackathonTitle:
-          hackathon.information?.title ||
-          hackathon.title ||
-          'Untitled Hackathon',
-        hackathonDescription: hackathon.information?.description || '',
+          hackathon.banner || '/landing/explore/project-placeholder-1.png',
+        hackathonTitle: hackathon.name || 'Untitled Hackathon',
+        hackathonDescription: hackathon.description || '',
         status: cardStatus,
         deadlineInDays: Math.max(0, deadlineInDays),
         // Add only the two dates needed
-        startDate: hackathon.timeline?.startDate,
-        submissionDeadline: hackathon.timeline?.submissionDeadline,
+        startDate: hackathon.startDate,
+        submissionDeadline: hackathon.submissionDeadline,
         categories: categories,
         location: locationText,
-        venueType: venue?.type
-          ? venue.type === 'virtual'
-            ? 'virtual'
-            : 'physical'
-          : undefined,
-        participantType: participantType
-          ? (participantType as 'individual' | 'team' | 'team_or_individual')
+        venueType: hackathon.venueType === 'VIRTUAL' ? 'virtual' : 'physical',
+        participantType: hackathon.participantType
+          ? (hackathon.participantType as
+              | 'individual'
+              | 'team'
+              | 'team_or_individual')
           : undefined,
         participants: {
-          current: extendedHackathon.participants || 0,
+          current: hackathon._count.participants || 0,
         },
         prizePool:
           prizePoolTotal > 0

@@ -4,16 +4,12 @@ interface UserStatsProps {
   stats: UserStatsType;
   isAuthenticated?: boolean;
   isOwnProfile?: boolean;
-  onFollowersClick?: () => void;
-  onFollowingClick?: () => void;
 }
 
 export default function UserStats({
   stats,
   isAuthenticated,
   isOwnProfile,
-  onFollowersClick,
-  onFollowingClick,
 }: UserStatsProps) {
   return (
     <div className='flex flex-wrap items-center gap-4 sm:gap-6 lg:gap-8'>
@@ -32,19 +28,13 @@ export default function UserStats({
         </span>
         Projects
       </div>
-      <div
-        className='flex cursor-pointer items-center gap-1 text-xs font-medium text-[#B5B5B5] transition-colors hover:text-white sm:text-sm'
-        onClick={onFollowingClick}
-      >
+      <div className='flex cursor-pointer items-center gap-1 text-xs font-medium text-[#B5B5B5] transition-colors hover:text-white sm:text-sm'>
         <span className='text-sm font-medium text-white sm:text-base'>
           {stats.following}
         </span>
         Following
       </div>
-      <div
-        className='flex cursor-pointer items-center gap-1 text-xs font-medium text-[#B5B5B5] transition-colors hover:text-white sm:text-sm'
-        onClick={onFollowersClick}
-      >
+      <div className='flex cursor-pointer items-center gap-1 text-xs font-medium text-[#B5B5B5] transition-colors hover:text-white sm:text-sm'>
         <span className='text-sm font-medium text-white sm:text-base'>
           {stats.followers}
         </span>

@@ -23,7 +23,7 @@ export default function AboutUsHero() {
   }, []);
 
   return (
-    <div className='relative flex min-h-[100vh] flex-col justify-between overflow-hidden bg-[#030303] sm:min-h-[95vh] sm:justify-center'>
+    <div className='bg-background-main-bg relative flex min-h-screen flex-col justify-between overflow-hidden sm:min-h-[95vh] sm:justify-center'>
       <BeamBackground />
       <div
         ref={contentRef}
@@ -60,7 +60,7 @@ export default function AboutUsHero() {
               size='lg'
               fullWidth
               aria-label='Explore featured projects and campaigns'
-              className='min-h-[48px] touch-manipulation sm:min-h-[44px]'
+              className='min-h-12 touch-manipulation sm:min-h-11'
             >
               Explore Projects
             </BoundlessButton>
@@ -71,7 +71,7 @@ export default function AboutUsHero() {
               size='lg'
               fullWidth
               aria-label='Submit your project idea for funding'
-              className='min-h-[48px] touch-manipulation sm:min-h-[44px]'
+              className='min-h-12 touch-manipulation sm:min-h-11'
             >
               Submit Your Idea
             </BoundlessButton>
@@ -79,7 +79,7 @@ export default function AboutUsHero() {
         </nav>
       </div>
       <div className='relative right-0 bottom-20 left-0 z-0 mt-auto sm:absolute sm:bottom-0 sm:mt-0'>
-        <div className='absolute right-0 bottom-0 left-0 h-[120px] w-full bg-gradient-to-t from-[#030303] to-transparent opacity-80 sm:h-[100px] sm:opacity-50' />
+        <div className='from-background-main-bg absolute right-0 bottom-0 left-0 h-[120px] w-full bg-linear-to-t to-transparent opacity-80 sm:h-[100px] sm:opacity-50' />
         <Image
           src='/about-map.svg'
           alt=''

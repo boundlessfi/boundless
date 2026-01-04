@@ -1,5 +1,5 @@
 'use client';
-import { Hackathon } from '@/types/hackathon';
+import { Hackathon } from '@/lib/api/hackathons';
 import { useMemo } from 'react';
 
 export interface TimelineEvent {
@@ -48,8 +48,8 @@ export const useTimelineEvents = (
     }
 
     // Add submission deadline
-    if (currentHackathon.deadline) {
-      const deadline = new Date(currentHackathon.deadline);
+    if (currentHackathon.submissionDeadline) {
+      const deadline = new Date(currentHackathon.submissionDeadline);
       events.push({
         event: 'Submission Deadline',
         date: deadline.toLocaleDateString('en-US', deadlineFormat),
@@ -58,20 +58,11 @@ export const useTimelineEvents = (
       });
     }
 
-    // Add judging date
-    if (currentHackathon.judgingDate) {
-      const judgingDate = new Date(currentHackathon.judgingDate);
-      events.push({
-        event: 'Judging Period',
-        date: judgingDate.toLocaleDateString('en-US', dateFormat),
-        rawDate: judgingDate,
-        type: 'judging',
-      });
-    }
+    // Note: Judging date is not available in the current Hackathon type structure
 
-    // Add winner announcement date
-    if (currentHackathon.winnerAnnouncementDate) {
-      const winnerDate = new Date(currentHackathon.winnerAnnouncementDate);
+    // Add winner announcement date (using end date as fallback)
+    if (currentHackathon.endDate) {
+      const winnerDate = new Date(currentHackathon.endDate);
       events.push({
         event: 'Winners Announced',
         date: winnerDate.toLocaleDateString('en-US', dateFormat),
@@ -81,18 +72,23 @@ export const useTimelineEvents = (
     }
 
     // Add end date if enabled and different from winner announcement
-    if (
-      includeEndDate &&
-      currentHackathon.endDate &&
-      currentHackathon.endDate !== currentHackathon.winnerAnnouncementDate
-    ) {
+    if (includeEndDate && currentHackathon.endDate) {
       const endDate = new Date(currentHackathon.endDate);
-      events.push({
-        event: 'Hackathon Ends',
-        date: endDate.toLocaleDateString('en-US', dateFormat),
-        rawDate: endDate,
-        type: 'end',
-      });
+      // Only add end date if it's different from the winner announcement date (which uses endDate)
+      const hasWinnerEvent = events.some(event => event.type === 'winner');
+      const shouldAddEndDate =
+        !hasWinnerEvent ||
+        endDate.getTime() !==
+          events.find(e => e.type === 'winner')?.rawDate.getTime();
+
+      if (shouldAddEndDate) {
+        events.push({
+          event: 'Hackathon Ends',
+          date: endDate.toLocaleDateString('en-US', dateFormat),
+          rawDate: endDate,
+          type: 'end',
+        });
+      }
     }
 
     return events

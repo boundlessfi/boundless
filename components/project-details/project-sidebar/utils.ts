@@ -1,19 +1,24 @@
-import { ExtendedProject, CrowdfundData, ProjectStatus } from './types';
+import { Crowdfunding, CrowdfundingProject } from '@/types/project';
+import { ProjectStatus } from './types';
 
 /**
  * Determines the project status based on project data and crowdfund information
  */
 export function getProjectStatus(
-  project: ExtendedProject,
-  crowdfund?: CrowdfundData
+  project: CrowdfundingProject,
+  crowdfund?: Crowdfunding
 ): ProjectStatus {
-  if (project.status === 'idea' && crowdfund?.isVotingActive) {
+  if (project.status === 'idea') {
     return 'Validation';
   }
-  if (project.funding?.raised >= project.funding?.goal) {
+  if (
+    crowdfund?.fundingRaised &&
+    crowdfund?.fundingGoal &&
+    crowdfund?.fundingRaised >= crowdfund?.fundingGoal
+  ) {
     return 'Funded';
   }
-  if (project.status === 'campaigning' && !crowdfund?.isVotingActive) {
+  if (project.status === 'campaigning') {
     return 'campaigning';
   }
   return project.status as ProjectStatus;

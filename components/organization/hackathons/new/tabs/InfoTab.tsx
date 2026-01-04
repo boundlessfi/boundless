@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -64,6 +64,26 @@ export default function InfoTab({
       venueAddress: initialData?.venueAddress || '',
     },
   });
+
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        name: initialData.name || '',
+        banner: initialData.banner || '',
+        tagline: initialData.tagline || '',
+        description: initialData.description || '',
+        categories: Array.isArray(initialData.categories)
+          ? initialData.categories
+          : [],
+        venueType: initialData.venueType || 'virtual',
+        country: initialData.country || '',
+        state: initialData.state || '',
+        city: initialData.city || '',
+        venueName: initialData.venueName || '',
+        venueAddress: initialData.venueAddress || '',
+      });
+    }
+  }, [initialData, form]);
 
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedState, setSelectedState] = useState<string>('');

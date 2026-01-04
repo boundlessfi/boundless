@@ -71,18 +71,18 @@ export function ProjectSidebarLinks({ project }: ProjectSidebarLinksProps) {
         )}
 
         {/* Social Links */}
-        {project.socialLinks?.map((link, index) => (
+        {Object.entries(project.socialLinks).map(([platform, url], index) => (
           <a
             key={index}
-            href={link.url}
+            href={url.url}
             target='_blank'
             rel='noopener noreferrer'
             className='group flex items-center gap-3 text-sm text-white transition-colors hover:text-white'
           >
             <span className='text-gray-400 transition-colors group-hover:text-white'>
-              {getIcon(link.platform.toLowerCase())}
+              {getIcon(platform.toLowerCase())}
             </span>
-            <span className='truncate'>{link.url}</span>
+            <span className='truncate'>{url.url}</span>
           </a>
         ))}
       </div>

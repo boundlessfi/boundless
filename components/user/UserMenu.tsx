@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
-import { useContext } from 'react';
+import React, { useContext } from 'react';
 import { useAuthActions, useAuthStatus } from '@/hooks/use-auth';
 import { OrganizationContext } from '@/lib/providers/OrganizationProvider';
 
@@ -58,11 +58,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         >
           <Avatar className='h-7 w-7 border border-zinc-800'>
             <AvatarImage
-              src={user?.image || user?.profile?.avatar || ''}
+              src={user?.profile?.image || ''}
               alt={user?.name || user?.profile?.firstName || ''}
               className='object-cover'
             />
-            <AvatarFallback className='from-primary/20 to-primary/5 text-primary bg-gradient-to-br text-xs font-semibold'>
+            <AvatarFallback className='from-primary/20 to-primary/5 text-primary bg-linear-to-br text-xs font-semibold'>
               {(user?.name || user?.profile?.firstName || 'U')
                 .charAt(0)
                 .toUpperCase()}
@@ -84,10 +84,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             <Avatar className='h-10 w-10 border border-zinc-800'>
               <AvatarImage
                 className='object-cover'
-                src={user?.image || user?.profile?.avatar || ''}
+                src={user?.profile?.image || ''}
                 alt={user?.name || user?.profile?.firstName || ''}
               />
-              <AvatarFallback className='from-primary/20 to-primary/5 text-primary bg-gradient-to-br font-semibold'>
+              <AvatarFallback className='from-primary/20 to-primary/5 text-primary bg-linear-to-br font-semibold'>
                 {(user?.name || user?.profile?.firstName || 'U')
                   .charAt(0)
                   .toUpperCase()}

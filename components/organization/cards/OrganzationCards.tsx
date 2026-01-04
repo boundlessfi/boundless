@@ -132,13 +132,13 @@ export default function OrganizationCard({
         onClick={handleCardClick}
         className={`group hover:shadow-primary/10 relative cursor-pointer overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-2xl ${
           isArchived
-            ? 'border-zinc-700/50 bg-gradient-to-br from-zinc-950 to-black opacity-60'
-            : 'border-zinc-800 bg-gradient-to-br from-zinc-900 to-black hover:border-zinc-700'
+            ? 'border-zinc-700/50 bg-linear-to-br from-zinc-950 to-black opacity-60'
+            : 'border-zinc-800 bg-linear-to-br from-zinc-900 to-black hover:border-zinc-700'
         } ${isThisOrgLoading ? 'pointer-events-none opacity-75' : ''}`}
       >
         {/* Animated gradient overlay on hover */}
         <div className='pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100'>
-          <div className='from-primary/5 absolute inset-0 bg-gradient-to-r via-transparent to-purple-500/5'></div>
+          <div className='from-primary/5 absolute inset-0 bg-linear-to-r via-transparent to-purple-500/5'></div>
         </div>
 
         <div className='relative p-6'>
@@ -151,7 +151,9 @@ export default function OrganizationCard({
                 <div className='relative h-16 w-16 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition-all duration-300 group-hover:scale-105 group-hover:border-zinc-700'>
                   <Image
                     src={
-                      normalizeCloudinaryImageUrl(logo) || '/placeholder.svg'
+                      logo == null
+                        ? '/placeholder.svg'
+                        : normalizeCloudinaryImageUrl(logo)
                     }
                     alt={`${name} logo`}
                     width={48}

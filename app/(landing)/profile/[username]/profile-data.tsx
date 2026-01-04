@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getUserProfileByUsername } from '@/lib/api/auth';
-import { GetMeResponse } from '@/lib/api/types';
-import { useAuthStore } from '@/lib/stores/auth-store';
-import ProfileOverview from '@/components/profile/ProfileOverview';
+import { PublicUserProfile } from '@/types/project';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ActivityTab from '@/components/profile/ActivityTab';
 import {
@@ -14,10 +12,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import ActivityFeed from '@/components/profile/ActivityFeed';
-import ProjectsTab from '@/components/profile/ProjectsTab';
 import OrganizationsTab from '@/components/profile/OrganizationsTab';
 import { Filter } from 'lucide-react';
+import { authClient } from '@/lib/auth-client';
+import ProfileOverviewPublic from '@/components/profile/ProfileOverviewPublic';
+import ProjectsTabPublic from '@/components/profile/ProjectsTabPublic';
 
 interface PublicProfileDataProps {
   username: string;
@@ -34,19 +33,20 @@ const FILTER_OPTIONS = [
 ];
 
 export function ProfileData({ username }: PublicProfileDataProps) {
-  const [userData, setUserData] = useState<GetMeResponse | null>(null);
+  const [userData, setUserData] = useState<PublicUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState('All');
-
-  const { user: authUser, isAuthenticated } = useAuthStore();
-
+  const [authUser, setAuthUser] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   useEffect(() => {
     async function loadProfile() {
       try {
+        const { data: session } = await authClient.getSession();
+        setAuthUser(session?.user?.profile?.username || null);
+        setIsAuthenticated(!!session?.user);
         setLoading(true);
         const data = await getUserProfileByUsername(username);
-        // console.log('userData:', data);
         setUserData(data);
       } catch (err) {
         setError(`Failed to load user profile: ${err}`);
@@ -57,13 +57,6 @@ export function ProfileData({ username }: PublicProfileDataProps) {
 
     loadProfile();
   }, [username]);
-
-  // This logs on every render - will show null initially, then the data after fetch
-  // useEffect(() => {
-  //   if (userData) {
-  //     console.log('Current userData state:', userData);
-  //   }
-  // }, [userData]);
 
   if (loading) {
     return (
@@ -95,12 +88,11 @@ export function ProfileData({ username }: PublicProfileDataProps) {
       avatarUrl: org.logo || '/blog1.jpg',
     })) || [];
   // Determine if it's the user's own profile
-  const isOwnProfile =
-    isAuthenticated && authUser?.profile?.username === username;
+  const isOwnProfile = isAuthenticated && authUser === userData.username;
 
   return (
     <section className='mt-14 flex flex-col gap-8 lg:flex-row lg:gap-16'>
-      <ProfileOverview
+      <ProfileOverviewPublic
         username={username}
         user={userData}
         isAuthenticated={isAuthenticated}
@@ -165,12 +157,10 @@ export function ProfileData({ username }: PublicProfileDataProps) {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              <ActivityFeed filter={selectedFilter} user={userData} />
             </TabsContent>
 
             <TabsContent value='projects' className='mt-0'>
-              <ProjectsTab user={userData} />
+              <ProjectsTabPublic user={userData} />
             </TabsContent>
 
             {isAuthenticated && isOwnProfile && (

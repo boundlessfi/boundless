@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  createDraft,
-  updateDraft,
+  initializeDraft,
+  updateDraftStep,
+  publishDraft,
   getDraft,
   getDrafts,
-  publishHackathon,
   updateHackathon,
   getHackathon,
   deleteHackathon,
@@ -14,9 +14,6 @@ import {
   getParticipants,
   type Hackathon,
   type HackathonDraft,
-  type CreateDraftRequest,
-  type UpdateDraftRequest,
-  type PublishHackathonRequest,
   type UpdateHackathonRequest,
   type HackathonCategory,
   type Participant,
@@ -74,16 +71,20 @@ export interface UseHackathonsReturn {
   currentError: string | null;
 
   // Actions - Drafts
-  createDraftAction: (data: CreateDraftRequest) => Promise<HackathonDraft>;
-  updateDraftAction: (
+  initializeDraftAction: (organizationId: string) => Promise<HackathonDraft>;
+  updateDraftStepAction: (
     draftId: string,
-    data: UpdateDraftRequest
+    step: string,
+    data: any,
+    autoSave?: boolean
   ) => Promise<HackathonDraft>;
+  publishDraftAction: (
+    draftId: string,
+    organizationId: string
+  ) => Promise<Hackathon>;
   fetchDraft: (draftId: string) => Promise<void>;
   fetchDrafts: (page?: number, limit?: number) => Promise<void>;
 
-  // Actions - Published Hackathons
-  publishHackathonAction: (data: PublishHackathonRequest) => Promise<Hackathon>;
   updateHackathonAction: (
     hackathonId: string,
     data: UpdateHackathonRequest
@@ -219,17 +220,23 @@ export function useHackathons(
       try {
         // Use ref to get current page (always up-to-date)
         const currentPage = page ?? hackathonsPageRef.current;
-        const response = await getHackathons(
-          organizationId,
-          currentPage,
-          limit ?? pageSize,
-          filters ?? initialFilters
-        );
+        const response = await getHackathons(currentPage, limit ?? pageSize, {
+          ...(filters ?? initialFilters),
+          organizationId, // Add organization filter
+        });
 
-        setHackathons(response.data);
-        setHackathonsPagination(response.pagination);
+        console.trace('response.data', response.data?.hackathons);
+        setHackathons(response.data?.hackathons || []);
+        setHackathonsPagination({
+          currentPage: response.data?.pagination.page || 1,
+          totalPages: response.data?.pagination.totalPages || 1,
+          totalItems: response.data?.pagination.total || 0,
+          itemsPerPage: response.data?.pagination.limit || pageSize,
+          hasNext: response.data?.pagination.hasNext || false,
+          hasPrev: response.data?.pagination.hasPrev || false,
+        });
         // Update ref immediately
-        hackathonsPageRef.current = response.pagination.currentPage;
+        hackathonsPageRef.current = response.data?.pagination.page || 1;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to fetch hackathons';
@@ -265,10 +272,28 @@ export function useHackathons(
           limit ?? pageSize
         );
 
-        setDrafts(response.data);
-        setDraftsPagination(response.pagination);
+        setDrafts(response.data || []);
+        setDraftsPagination(
+          response.meta?.pagination
+            ? {
+                currentPage: response.meta.pagination.page,
+                totalPages: response.meta.pagination.totalPages,
+                totalItems: response.meta.pagination.total,
+                itemsPerPage: response.meta.pagination.limit,
+                hasNext: false, // Not provided in this pagination structure
+                hasPrev: false, // Not provided in this pagination structure
+              }
+            : {
+                currentPage: 1,
+                totalPages: 1,
+                totalItems: 0,
+                itemsPerPage: pageSize,
+                hasNext: false,
+                hasPrev: false,
+              }
+        );
         // Update ref immediately
-        draftsPageRef.current = response.pagination.currentPage;
+        draftsPageRef.current = response.meta?.pagination?.page || 1;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to fetch drafts';
@@ -296,7 +321,7 @@ export function useHackathons(
       setCurrentError(null);
 
       try {
-        const response = await getHackathon(organizationId, hackathonId);
+        const response = await getHackathon(hackathonId);
         setCurrentHackathon(response.data);
         setCurrentDraft(null);
       } catch (error) {
@@ -341,37 +366,39 @@ export function useHackathons(
     [organizationId]
   );
 
-  // Create Draft
-  const createDraftAction = useCallback(
-    async (data: CreateDraftRequest): Promise<HackathonDraft> => {
-      if (!organizationId) {
-        throw new Error('Organization ID is required');
-      }
-
+  // Initialize Draft (New API)
+  const initializeDraftAction = useCallback(
+    async (orgId: string): Promise<HackathonDraft> => {
       setDraftsLoading(true);
       setDraftsError(null);
 
       try {
-        const response = await createDraft(organizationId, data);
-        setDrafts(prev => [response.data, ...prev]);
-        return response.data;
+        const response = await initializeDraft(orgId);
+        if (response.data) {
+          setDrafts(prev => [response!.data, ...prev]);
+          return response.data;
+        } else {
+          throw new Error('No draft data received');
+        }
       } catch (error) {
         const errorMessage =
-          error instanceof Error ? error.message : 'Failed to create draft';
+          error instanceof Error ? error.message : 'Failed to initialize draft';
         setDraftsError(errorMessage);
         throw error;
       } finally {
         setDraftsLoading(false);
       }
     },
-    [organizationId]
+    []
   );
 
-  // Update Draft
-  const updateDraftAction = useCallback(
+  // Update Draft Step (New API)
+  const updateDraftStepAction = useCallback(
     async (
       draftId: string,
-      data: UpdateDraftRequest
+      step: string,
+      data: any,
+      autoSave?: boolean
     ): Promise<HackathonDraft> => {
       if (!organizationId) {
         throw new Error('Organization ID is required');
@@ -381,17 +408,31 @@ export function useHackathons(
       setDraftsError(null);
 
       try {
-        const response = await updateDraft(organizationId, draftId, data);
-        setDrafts(prev =>
-          prev.map(draft => (draft._id === draftId ? response.data : draft))
+        const response = await updateDraftStep(
+          organizationId,
+          draftId,
+          step,
+          data,
+          autoSave
         );
-        if (currentDraft?._id === draftId) {
-          setCurrentDraft(response.data);
+        if (response.data && response.data.data) {
+          setDrafts(prev =>
+            prev.map(draft =>
+              draft.id === draftId ? response.data!.data : draft
+            )
+          );
+          if (currentDraft?.id === draftId) {
+            setCurrentDraft(response.data.data);
+          }
+          return response.data.data;
+        } else {
+          throw new Error('No draft data received');
         }
-        return response.data;
       } catch (error) {
         const errorMessage =
-          error instanceof Error ? error.message : 'Failed to update draft';
+          error instanceof Error
+            ? error.message
+            : 'Failed to update draft step';
         setDraftsError(errorMessage);
         throw error;
       } finally {
@@ -401,23 +442,19 @@ export function useHackathons(
     [organizationId, currentDraft]
   );
 
-  // Publish Hackathon
-  const publishHackathonAction = useCallback(
-    async (data: PublishHackathonRequest): Promise<Hackathon> => {
-      if (!organizationId) {
-        throw new Error('Organization ID is required');
-      }
-
+  // Publish Draft (New API)
+  const publishDraftAction = useCallback(
+    async (draftId: string, organizationId: string): Promise<Hackathon> => {
       setHackathonsLoading(true);
       setHackathonsError(null);
 
       try {
-        const response = await publishHackathon(organizationId, data);
+        const response = await publishDraft(draftId, organizationId);
         setHackathons(prev => [response.data, ...prev]);
         setCurrentHackathon(response.data);
         // Optionally remove from drafts if it was a draft
         if (currentDraft) {
-          setDrafts(prev => prev.filter(d => d._id !== currentDraft._id));
+          setDrafts(prev => prev.filter(d => d.id !== currentDraft.id));
           setCurrentDraft(null);
         }
         return response.data;
@@ -432,7 +469,7 @@ export function useHackathons(
         setHackathonsLoading(false);
       }
     },
-    [organizationId, currentDraft]
+    [currentDraft]
   );
 
   // Update Hackathon
@@ -449,17 +486,13 @@ export function useHackathons(
       setHackathonsError(null);
 
       try {
-        const response = await updateHackathon(
-          organizationId,
-          hackathonId,
-          data
-        );
+        const response = await updateHackathon(hackathonId, data);
         setHackathons(prev =>
           prev.map(hackathon =>
-            hackathon._id === hackathonId ? response.data : hackathon
+            hackathon.id === hackathonId ? response.data : hackathon
           )
         );
-        if (currentHackathon?._id === hackathonId) {
+        if (currentHackathon?.id === hackathonId) {
           setCurrentHackathon(response.data);
         }
         return response.data;
@@ -486,11 +519,11 @@ export function useHackathons(
       setHackathonsError(null);
 
       try {
-        await deleteHackathon(organizationId, hackathonId);
+        await deleteHackathon(hackathonId);
         // Remove hackathon from list
-        setHackathons(prev => prev.filter(h => h._id !== hackathonId));
+        setHackathons(prev => prev.filter(h => h.id !== hackathonId));
         // Clear current hackathon if it was deleted
-        if (currentHackathon?._id === hackathonId) {
+        if (currentHackathon?.id === hackathonId) {
           setCurrentHackathon(null);
         }
       } catch (error) {
@@ -534,9 +567,16 @@ export function useHackathons(
           filters ?? initialParticipantFilters
         );
 
-        setParticipants(response.data);
-        setParticipantsPagination(response.pagination);
-        participantsPageRef.current = response.pagination.currentPage;
+        setParticipants(response.data?.participants || []);
+        setParticipantsPagination({
+          currentPage: response.data?.pagination.page || 1,
+          totalPages: response.data?.pagination.totalPages || 1,
+          totalItems: response.data?.pagination.total || 0,
+          itemsPerPage: response.data?.pagination.limit || pageSize,
+          hasNext: response.data?.pagination.hasNext || false,
+          hasPrev: response.data?.pagination.hasPrev || false,
+        });
+        participantsPageRef.current = response.data?.pagination.page || 1;
       } catch (error) {
         const errorMessage =
           error instanceof Error
@@ -587,13 +627,13 @@ export function useHackathons(
     currentError,
 
     // Actions - Drafts
-    createDraftAction,
-    updateDraftAction,
+    initializeDraftAction,
+    updateDraftStepAction,
+    publishDraftAction,
     fetchDraft,
     fetchDrafts,
 
     // Actions - Published
-    publishHackathonAction,
     updateHackathonAction,
     deleteHackathonAction,
     fetchHackathon,

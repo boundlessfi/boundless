@@ -1,8 +1,57 @@
 import { OrganizationPermissions } from '@/types/organization-permission';
 import { Organization } from '../api/types';
+import { Role } from '../api/organization';
+import React from 'react';
+
+// Better Auth member type
+export interface BetterAuthMember {
+  id: string;
+  organizationId: string;
+  userId: string;
+  role: string;
+  createdAt: Date;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    image?: string;
+  };
+}
+
+// Better Auth organization metadata
+export interface BetterAuthOrganizationMetadata {
+  tagline?: string;
+  about?: string;
+  links?: {
+    website?: string;
+    x?: string;
+    github?: string;
+    others?: string;
+  };
+}
+
+// Better Auth organization type
+export interface BetterAuthOrganization {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: Date;
+  logo?: string | null;
+  metadata?: BetterAuthOrganizationMetadata;
+  members?: Array<
+    | {
+        id: string;
+        organizationId: string;
+        userId: string;
+        role: string;
+        createdAt: Date;
+      }
+    | undefined
+  >;
+}
 
 export interface OrganizationSummary {
-  _id: string;
+  organizationId: string;
   name: string;
   logo: string;
   tagline?: string;
@@ -54,14 +103,17 @@ export interface OrganizationStats {
 
 export interface OrganizationFormData {
   name: string;
+  slug: string;
   logo?: string;
-  tagline?: string;
-  about?: string;
-  links?: {
-    website?: string;
-    x?: string;
-    github?: string;
-    others?: string;
+  metadata?: {
+    tagline?: string;
+    about?: string;
+    links?: {
+      website?: string;
+      x?: string;
+      github?: string;
+      others?: string;
+    };
   };
 }
 
@@ -158,7 +210,9 @@ export interface OrganizationContextActions {
   refreshOrganization: () => Promise<void>;
   refreshOrganizations: () => Promise<void>;
   refreshAll: () => Promise<void>;
-  createOrganization: (data: OrganizationFormData) => Promise<Organization>;
+  createOrganization: (
+    data: OrganizationFormData
+  ) => Promise<BetterAuthOrganization>;
   updateOrganization: (
     orgId: string,
     data: Partial<OrganizationFormData>
@@ -192,7 +246,7 @@ export interface OrganizationContextActions {
   assignRole: (
     orgId: string,
     email: string,
-    action: 'promote' | 'demote'
+    role: Role[]
   ) => Promise<Organization>;
   transferOwnership: (
     orgId: string,

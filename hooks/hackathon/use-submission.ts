@@ -11,6 +11,14 @@ import {
 import { useAuthStatus } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
+// Type for submission data from form (without backend-specific fields)
+export type SubmissionFormData = Omit<
+  CreateSubmissionRequest,
+  'hackathonId' | 'organizationId' | 'participationType'
+> & {
+  participationType?: 'INDIVIDUAL' | 'TEAM';
+};
+
 interface UseSubmissionOptions {
   hackathonSlugOrId: string;
   organizationId?: string;
@@ -40,7 +48,7 @@ export function useSubmission({
     setError(null);
 
     try {
-      const response = await getMySubmission(hackathonSlugOrId, organizationId);
+      const response = await getMySubmission(hackathonSlugOrId);
 
       if (response.success && response.data) {
         setSubmission(response.data);
@@ -55,10 +63,10 @@ export function useSubmission({
     } finally {
       setIsFetching(false);
     }
-  }, [hackathonSlugOrId, organizationId, isAuthenticated]);
+  }, [hackathonSlugOrId, isAuthenticated]);
 
   const create = useCallback(
-    async (data: CreateSubmissionRequest) => {
+    async (data: SubmissionFormData) => {
       if (!isAuthenticated) {
         toast.error('Please sign in to submit a project');
         throw new Error('Authentication required');
@@ -75,7 +83,11 @@ export function useSubmission({
       try {
         const response = await createSubmission(
           hackathonSlugOrId,
-          data,
+          {
+            ...data,
+            participationType: data.participationType || 'INDIVIDUAL',
+            links: data.links || [],
+          },
           organizationId
         );
 
@@ -96,14 +108,11 @@ export function useSubmission({
         setIsSubmitting(false);
       }
     },
-    [hackathonSlugOrId, organizationId, isAuthenticated]
+    [hackathonSlugOrId, isAuthenticated, organizationId]
   );
 
   const update = useCallback(
-    async (
-      submissionId: string,
-      data: Omit<CreateSubmissionRequest, 'projectName'>
-    ) => {
+    async (submissionId: string, data: Partial<SubmissionFormData>) => {
       if (!isAuthenticated) {
         toast.error('Please sign in to update your submission');
         throw new Error('Authentication required');
@@ -118,12 +127,7 @@ export function useSubmission({
       setError(null);
 
       try {
-        const response = await updateSubmission(
-          hackathonSlugOrId,
-          submissionId,
-          data,
-          organizationId
-        );
+        const response = await updateSubmission(submissionId, data);
 
         if (response.success && response.data) {
           setSubmission(response.data);
@@ -142,7 +146,7 @@ export function useSubmission({
         setIsSubmitting(false);
       }
     },
-    [hackathonSlugOrId, organizationId, isAuthenticated]
+    [hackathonSlugOrId, isAuthenticated]
   );
 
   // Auto-fetch submission on mount and when dependencies change

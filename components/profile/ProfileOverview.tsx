@@ -2,17 +2,16 @@
 
 import ProfileHeader from './ProfileHeader';
 import OrganizationsList from './OrganizationsList';
-import { GetMeResponse } from '@/lib/api/types';
 import {
   UserProfile,
   UserStats as UserStatsType,
   Organization,
 } from '@/types/profile';
-import { usePathname } from 'next/navigation';
+import { User } from '@/types/user';
 
 interface ProfileOverviewProps {
   username: string;
-  user: GetMeResponse;
+  user: User;
   isAuthenticated?: boolean;
   isOwnProfile?: boolean;
 }
@@ -23,36 +22,26 @@ export default function ProfileOverview({
   isOwnProfile,
 }: ProfileOverviewProps) {
   const profileData: UserProfile = {
-    username: user.profile.username,
-    displayName: `${user.profile.firstName} ${user.profile.lastName}`,
-    bio: (user as unknown as { bio?: string }).bio || 'No bio available',
-    avatarUrl: user.profile.avatar || '',
-    socialLinks:
-      (
-        user as unknown as {
-          profile?: { socialLinks?: Record<string, string> };
-        }
-      ).profile?.socialLinks || {},
+    username: user.username,
+    displayName: `${user.name?.split(' ')[0] || ''} ${user.name?.split(' ').slice(1).join(' ') || ''}`,
+    bio: user.profile?.bio || 'No bio available',
+    avatarUrl: user.image || '/',
+    socialLinks: user.profile?.socialLinks || {},
   };
 
-  const pathname = usePathname();
-  const isProfileRoute = pathname.startsWith('/profile');
   const statsData: UserStatsType = {
-    organizations: user.organizations?.length || 0,
+    organizations: user.members?.length || 0,
     projects: user.projects?.length || 0,
-    following: user.following?.length || 0,
-    followers: user.followers?.length || 0,
+    following: user.stats?.following || 0,
+    followers: user.stats?.followers || 0,
   };
 
   const organizationsData: Organization[] =
-    user.organizations?.map(org => {
-      const avatarUrl = isProfileRoute
-        ? (org as { avatar?: string }).avatar
-        : (org as { avatar?: string }).avatar;
-
+    user.members?.map(org => {
       return {
-        name: org.name,
-        avatarUrl: avatarUrl || '/blog1.jpg',
+        name: org.organization.name,
+        avatarUrl: org.organization.logo || '/blog1.jpg',
+        id: org.organizationId,
       };
     }) || [];
 

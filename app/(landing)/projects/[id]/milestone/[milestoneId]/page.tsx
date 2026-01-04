@@ -3,8 +3,8 @@ import MilstoneOverview from '@/components/project-details/project-milestone/mil
 import MilestoneDetails from '@/components/project-details/project-milestone/milestone-details/MilestoneDetails';
 import MilestoneLinks from '@/components/project-details/project-milestone/milestone-details/MilestoneLinks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getProjects } from '@/lib/api/project';
-import { CrowdfundingProject } from '@/lib/api/types';
+import { getCrowdfundingProject } from '@/lib/api/project';
+import { Crowdfunding } from '@/types/project';
 
 interface MilestonePageProps {
   params: Promise<{
@@ -17,25 +17,29 @@ const MilestonePage = async ({ params }: MilestonePageProps) => {
   const { id: projectId, milestoneId } = await params;
 
   // Fetch project data
-  let project: CrowdfundingProject | null = null;
+  let project: Crowdfunding | null = null;
   let milestone = null;
 
   try {
-    const projectResponse = await getProjects();
-    if (projectResponse.projects) {
-      // Find the specific project
-      const foundProject = projectResponse.projects.find(
-        (p: { id: string }) => p.id === projectId
-      );
-      project = foundProject
-        ? (foundProject as unknown as CrowdfundingProject)
-        : null;
+    const crowdfundingProject = await getCrowdfundingProject(projectId);
+    project = crowdfundingProject;
 
-      // Find the specific milestone
-      milestone = project?.milestones?.find(
-        (m: { _id: string }) => m._id === milestoneId
-      );
-    }
+    // Find the specific milestone
+    const foundMilestone = project?.milestones?.find(
+      m => m.id === milestoneId || m.name === milestoneId
+    );
+
+    // Transform milestone to match component expectations
+    milestone = foundMilestone
+      ? {
+          _id: foundMilestone.id || foundMilestone.name,
+          title: foundMilestone.name,
+          description: foundMilestone.description,
+          status: foundMilestone.status,
+          dueDate: foundMilestone.endDate,
+          amount: foundMilestone.amount,
+        }
+      : null;
   } catch {
     // Handle error silently
   }
@@ -59,7 +63,7 @@ const MilestonePage = async ({ params }: MilestonePageProps) => {
   return (
     <section className='mx-auto mt-5 flex max-w-[1440px] flex-col justify-center gap-5 px-5 py-5 md:flex-row md:justify-between md:gap-18 md:px-[50px] lg:px-[100px]'>
       <div className='w-full md:max-w-[500px]'>
-        <MilstoneOverview project={project} milestone={milestone} />
+        <MilstoneOverview project={project?.project} milestone={milestone} />
       </div>
       <Tabs defaultValue='details' className='w-full'>
         <div className='border-b border-gray-800 py-0'>
@@ -81,12 +85,12 @@ const MilestonePage = async ({ params }: MilestonePageProps) => {
         <TabsContent value='details'>
           <MilestoneDetails
             milestoneId={milestoneId}
-            project={project}
+            project={project?.project}
             milestone={milestone}
           />
         </TabsContent>
         <TabsContent value='links'>
-          <MilestoneLinks project={project} milestone={milestone} />
+          <MilestoneLinks project={project?.project} milestone={milestone} />
         </TabsContent>
       </Tabs>
     </section>

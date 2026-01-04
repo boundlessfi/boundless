@@ -1,49 +1,43 @@
 'use client';
 
 import React from 'react';
-import { CrowdfundingProject } from '@/lib/api/types';
 import { TeamList, TeamMember } from '@/components/ui/TeamList';
+import { Crowdfunding } from '@/types/project';
 
 interface ProjectTeamProps {
-  project: CrowdfundingProject;
+  crowdfund: Crowdfunding;
 }
 
-export function ProjectTeam({ project }: ProjectTeamProps) {
-  // Create team members from real project data
+export function ProjectTeam({ crowdfund }: ProjectTeamProps) {
   const teamMembers: TeamMember[] = React.useMemo(() => {
     const members: TeamMember[] = [];
 
-    // Add project creator as owner
-    if (project.creator) {
+    if (crowdfund.project.creator) {
       members.push({
-        id: project.creator._id,
-        name: `${project.creator.profile?.firstName} ${project.creator.profile?.lastName}`,
+        id: crowdfund.project.creator.id,
+        name: crowdfund.project.creator.name,
         role: 'OWNER',
-        avatar: (project.creator as { profile?: { avatar?: string } })?.profile
-          ?.avatar,
-        username: project.creator.profile?.username,
+        avatar: crowdfund.project.creator.image,
+        username: crowdfund.project.creator.username,
       });
     }
 
-    // Add team members
-    if (project.team && project.team.length > 0) {
-      project.team.forEach(member => {
-        // Skip if this member is already added as creator
-        if (member._id !== project.creator._id) {
+    if (crowdfund.team && crowdfund.team.length > 0) {
+      crowdfund.team.forEach(member => {
+        if (member.email !== crowdfund.project.creator.email) {
           members.push({
-            id: member._id,
-            name: `${member.profile?.firstName} ${member.profile?.lastName}`,
+            id: member.email,
+            name: member.name,
             role: member.role === 'OWNER' ? 'OWNER' : 'MEMBER',
-            avatar: (member.profile as { avatar?: string })?.avatar,
-            joinedAt: member.joinedAt,
-            username: member.profile?.username,
+            avatar: member?.image,
+            username: member.username,
           });
         }
       });
     }
 
     return members;
-  }, [project.creator, project.team]);
+  }, [crowdfund.project.creator, crowdfund.team]);
 
   const handleMemberClick = (member: TeamMember) => {
     window.open(`/profile/${member.username}`, '_blank');

@@ -4,9 +4,11 @@ import type {
   GetEscrowFromIndexerByContractIdsParams,
   MultiReleaseEscrow,
 } from '@trustless-work/escrow';
+// Import Hackathon types
 import {
   getJudgingSubmissions,
   getHackathon,
+  type Hackathon,
   type HackathonEscrowData,
 } from '@/lib/api/hackathons';
 import { mapJudgingSubmissionsToRewardSubmissions } from '@/lib/utils/rewards-data-mapper';
@@ -160,11 +162,13 @@ export const useHackathonRewards = (
   useEffect(() => {
     const fetchHackathon = async () => {
       try {
-        const response = await getHackathon(organizationId, hackathonId);
+        const response = await getHackathon(hackathonId);
         if (response.success) {
-          if (response.data.rewards?.prizeTiers) {
-            const tiers: PrizeTier[] = response.data.rewards.prizeTiers.map(
-              (tier, index) => ({
+          const hackathon: Hackathon = response.data;
+
+          if (hackathon.prizeTiers) {
+            const tiers: PrizeTier[] = hackathon.prizeTiers.map(
+              (tier: any, index: number) => ({
                 id: tier.position || `tier-${index}`,
                 place: tier.position || `${index + 1}st Place`,
                 prizeAmount: tier.amount?.toString() || '0',
@@ -177,7 +181,7 @@ export const useHackathonRewards = (
           }
 
           const hackathonContractId =
-            response.data.contractId || response.data.escrowAddress;
+            hackathon.contractId || hackathon.escrowAddress || null;
           if (hackathonContractId) {
             setContractId(hackathonContractId);
           }
@@ -218,7 +222,7 @@ export const useHackathonRewards = (
         );
         if (response.success) {
           const mappedSubmissions = mapJudgingSubmissionsToRewardSubmissions(
-            response.data
+            response.data || []
           );
           setSubmissions(mappedSubmissions);
         } else {

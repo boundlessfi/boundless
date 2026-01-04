@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMarkdown } from '@/hooks/use-markdown';
-import { CrowdfundingProject } from '@/lib/api/types';
+import { CrowdfundingProject } from '@/types/project';
 
 interface ProjectDetailsProps {
   project: CrowdfundingProject & {

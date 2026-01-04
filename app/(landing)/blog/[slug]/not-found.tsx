@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 export default function BlogNotFound() {
   return (
-    <div className='flex min-h-[80vh] items-center justify-center bg-[#030303]'>
+    <div className='bg-background-main-bg flex min-h-[80vh] items-center justify-center'>
       <div className='mx-auto max-w-md px-6 text-center'>
         <div className='mb-8'>
           <h1 className='mb-4 text-6xl font-bold text-white'>404</h1>

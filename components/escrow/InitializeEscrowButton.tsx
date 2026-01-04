@@ -51,7 +51,8 @@ export const InitializeEscrowButton = () => {
         platformFee: 4, // Commission that the platform will receive (4%)
         trustline: {
           // USDC trustline address
-          address: 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA',
+          address: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
+          symbol: 'USDC',
         },
         // Roles for multi-release (Omit<Roles, "receiver">)
         roles: {

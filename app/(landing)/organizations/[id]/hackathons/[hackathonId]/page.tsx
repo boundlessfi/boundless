@@ -64,7 +64,7 @@ export default function HackathonPage() {
       <div className='border-b border-gray-900 p-4'>
         <div className='mx-auto max-w-7xl'>
           <h1 className='text-3xl font-light tracking-tight text-white sm:text-4xl'>
-            {currentHackathon?.title || 'Hackathon Dashboard'}
+            {currentHackathon?.name || 'Hackathon Dashboard'}
           </h1>
           {/* {currentHackathon?.information?.description && (
             <p className='mt-3 max-w-2xl text-sm text-gray-400'>
@@ -106,7 +106,21 @@ export default function HackathonPage() {
               Timeline
             </h2>
           </div>
-          <HackathonTimeline timeline={currentHackathon?.timeline} />
+          <HackathonTimeline
+            timeline={{
+              startDate: currentHackathon?.startDate || '',
+              submissionDeadline: currentHackathon?.submissionDeadline || '',
+              judgingDate: currentHackathon?.endDate || '',
+              winnerAnnouncementDate:
+                currentHackathon?.registrationDeadline || '',
+              timezone: currentHackathon?.timezone || '',
+              phases: currentHackathon?.phases?.map(phase => ({
+                name: phase.name || '',
+                startDate: phase.startDate || '',
+                endDate: phase.endDate || '',
+              })),
+            }}
+          />
         </section>
       </div>
     </div>

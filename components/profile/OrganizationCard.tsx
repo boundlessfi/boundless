@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { Organization } from '@/types/profile';
+import Link from 'next/link';
 
 interface OrganizationCardProps {
   organization: Organization;
@@ -9,7 +10,11 @@ export default function OrganizationCard({
   organization,
 }: OrganizationCardProps) {
   return (
-    <div className='flex items-center gap-3 px-3'>
+    <Link
+      href={'/organizations/' + organization.id || ''}
+      target='_blank'
+      className='flex items-center gap-3 px-3'
+    >
       <div className='relative size-[46px] overflow-hidden rounded-full'>
         <Image
           src={organization.avatarUrl}
@@ -19,6 +24,6 @@ export default function OrganizationCard({
         />
       </div>
       <p className='font-base font-normal text-white'>{organization.name}</p>
-    </div>
+    </Link>
   );
 }

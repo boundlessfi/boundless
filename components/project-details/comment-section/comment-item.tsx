@@ -13,10 +13,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { CommentInput } from './comment-input';
-import { ProjectComment } from '@/types/comment';
+import { Comment } from '@/types/comment';
 
 interface CommentItemProps {
-  comment: ProjectComment;
+  comment: Comment;
   isReply?: boolean;
   onAddReply: (commentId: string, content: string) => void;
   onUpdate?: (commentId: string, content: string) => void;
@@ -46,20 +46,21 @@ export function CommentItem({
   const [reportDescription, setReportDescription] = useState<string>('');
 
   const hasReplies =
-    (comment.replies && comment.replies.length > 0) || comment.replyCount > 0;
-  const isOwner = currentUserId === comment.userId._id;
-  const canEdit = isOwner && comment.status === 'active';
+    (comment.replies && comment.replies.length > 0) ||
+    comment._count?.replies > 0;
+  const isOwner = currentUserId === comment.authorId;
+  const canEdit = isOwner && comment.status.toLowerCase() === 'active';
   const canDelete = isOwner;
 
   const handleReplySubmit = (content: string) => {
-    onAddReply(comment._id, content);
+    onAddReply(comment.id, content);
     setShowReplyInput(false);
     setShowReplies(true);
   };
 
   const handleEdit = () => {
     if (editContent.trim() && editContent !== comment.content && onUpdate) {
-      onUpdate(comment._id, editContent);
+      onUpdate(comment.id, editContent);
       setIsEditing(false);
     }
   };
@@ -69,13 +70,13 @@ export function CommentItem({
       window.confirm('Are you sure you want to delete this comment?') &&
       onDelete
     ) {
-      onDelete(comment._id);
+      onDelete(comment.id);
     }
   };
 
   const handleReport = () => {
     if (reportReason && onReport) {
-      onReport(comment._id, reportReason, reportDescription);
+      onReport(comment.id, reportReason, reportDescription);
       setShowReportForm(false);
       setReportReason('');
       setReportDescription('');
@@ -86,10 +87,10 @@ export function CommentItem({
     <div className={cn('flex gap-3', isReply && 'ml-12 md:ml-14')}>
       <Avatar className='size-8 shrink-0 md:size-10'>
         <AvatarImage
-          src={comment.userId.profile.avatar || '/user-icon.png'}
-          alt={comment.userId.profile.username}
+          src={comment.author.image || '/user-icon.png'}
+          alt={comment.author.username}
         />
-        <AvatarFallback>{comment.userId.profile.firstName[0]}</AvatarFallback>
+        <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
       </Avatar>
 
       <div className='min-w-0 flex-1'>
@@ -97,16 +98,15 @@ export function CommentItem({
           <div className='min-w-0 flex-1'>
             <div className='flex items-center gap-2'>
               <button className='text-sm font-medium text-white underline-offset-2 hover:underline'>
-                {comment.userId.profile.firstName}{' '}
-                {comment.userId.profile.lastName}
+                {comment.author.name}
               </button>
               <span className='text-xs text-zinc-400'>
-                @{comment.userId.profile.username}
+                @{comment.author.username}
               </span>
               <span className='text-xs text-zinc-400'>
                 {new Date(comment.createdAt).toLocaleDateString()}
               </span>
-              {comment.status === 'flagged' && (
+              {comment.status.toLowerCase() === 'flagged' && (
                 <span className='inline-flex items-center rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800'>
                   Under Review
                 </span>
@@ -143,14 +143,16 @@ export function CommentItem({
                 </div>
               </div>
             ) : (
-              <p className='mt-1 text-sm break-words whitespace-pre-wrap text-white md:text-base'>
+              <p className='mt-1 text-sm wrap-break-word whitespace-pre-wrap text-white md:text-base'>
                 {comment.content}
               </p>
             )}
 
-            {comment.editHistory.length > 0 && (
+            {comment.isEdited && (
               <p className='mt-1 text-xs text-zinc-400'>
-                Edited {comment.editHistory.length} time(s)
+                Edited{' '}
+                {comment.editedAt &&
+                  `on ${new Date(comment.editedAt).toLocaleDateString()}`}
               </p>
             )}
           </div>
@@ -216,7 +218,7 @@ export function CommentItem({
               )}
             />
             <span className='text-xs text-zinc-400 group-hover:text-white md:text-sm'>
-              {comment.totalReactions}
+              {comment.reactionCount}
             </span>
           </button>
         </div>
@@ -287,7 +289,7 @@ export function CommentItem({
               <div className='h-px w-8 bg-zinc-700 md:w-12' />
               <span>
                 {showReplies ? 'Hide' : 'Show'} replies (
-                {comment.replies?.length || comment.replyCount})
+                {comment.replies?.length || comment._count?.replies || 0})
               </span>
               {showReplies ? (
                 <ChevronUp className='size-3.5' />
@@ -298,9 +300,9 @@ export function CommentItem({
 
             {showReplies && comment.replies && comment.replies.length > 0 && (
               <div className='mt-4 space-y-4'>
-                {comment.replies.map(reply => (
+                {comment.replies.map((reply: any) => (
                   <CommentItem
-                    key={reply._id}
+                    key={reply.id}
                     comment={reply}
                     isReply
                     onAddReply={onAddReply}

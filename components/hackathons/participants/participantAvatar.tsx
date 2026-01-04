@@ -8,11 +8,11 @@ import {
 } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ProfileCard } from './profileCard';
-import type { Participant } from '@/types/hackathon';
+import type { ParticipantDisplay } from '@/lib/api/hackathons/index';
 import Image from 'next/image';
 
 interface ParticipantAvatarProps {
-  participant: Participant;
+  participant: ParticipantDisplay;
 }
 
 export function ParticipantAvatar({ participant }: ParticipantAvatarProps) {

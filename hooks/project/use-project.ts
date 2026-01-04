@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { getCrowdfundingProjects } from '@/lib/api/project';
-import type { CrowdfundingProject } from '@/lib/api/types';
+import type { Crowdfunding } from '@/types/project';
 
 type SortOption =
   | 'newest'
@@ -26,7 +26,7 @@ interface UseProjectsOptions {
 }
 
 interface UseProjectsReturn {
-  projects: CrowdfundingProject[];
+  projects: Crowdfunding[];
   loading: boolean;
   loadingMore: boolean;
   error: string | null;
@@ -43,7 +43,7 @@ export function useProjects(
 ): UseProjectsReturn {
   const { initialPage = 1, pageSize = 9, initialFilters = {} } = options;
 
-  const [projects, setProjects] = React.useState<CrowdfundingProject[]>([]);
+  const [projects, setProjects] = React.useState<Crowdfunding[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -56,63 +56,13 @@ export function useProjects(
     setFilters(initialFilters);
   }, [initialFilters]);
 
-  // Get project deadline in milliseconds
-  const getProjectDeadline = React.useCallback(
-    (project: CrowdfundingProject): number => {
-      if (project.status === 'idea') {
-        return new Date(project.voting.endDate).getTime();
-      } else if (
-        project.status === 'active' ||
-        project.status === 'completed'
-      ) {
-        return new Date(project.funding.endDate).getTime();
-      }
-      return 0;
-    },
-    []
-  );
-
-  // Sort projects based on sort option
-  const sortProjects = React.useCallback(
-    (
-      projects: CrowdfundingProject[],
-      sortOption: SortOption
-    ): CrowdfundingProject[] => {
-      const sorted = [...projects];
-
-      switch (sortOption) {
-        case 'newest':
-          return sorted.sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        case 'oldest':
-          return sorted.sort(
-            (a, b) =>
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
-        case 'funding_goal_high':
-          return sorted.sort((a, b) => b.funding.goal - a.funding.goal);
-        case 'funding_goal_low':
-          return sorted.sort((a, b) => a.funding.goal - b.funding.goal);
-        case 'deadline_soon':
-          return sorted.sort((a, b) => {
-            const aDeadline = getProjectDeadline(a);
-            const bDeadline = getProjectDeadline(b);
-            return aDeadline - bDeadline;
-          });
-        case 'deadline_far':
-          return sorted.sort((a, b) => {
-            const aDeadline = getProjectDeadline(a);
-            const bDeadline = getProjectDeadline(b);
-            return bDeadline - aDeadline;
-          });
-        default:
-          return sorted;
-      }
-    },
-    [getProjectDeadline]
-  );
+  // Get campaign deadline in milliseconds
+  // const getProjectDeadline = React.useCallback(
+  //   (campaign: CrowdfundingCampaign): number => {
+  //     return new Date(campaign.fundingEndDate).getTime();
+  //   },
+  //   []
+  // );
 
   const fetchProjects = React.useCallback(
     async (page: number, currentFilters: ProjectFilters, append = false) => {
@@ -124,32 +74,38 @@ export function useProjects(
         }
         setError(null);
 
+        // Map sort option to API parameters
+        const getSortParams = (sortOption: SortOption) => {
+          switch (sortOption) {
+            case 'newest':
+              return { sortBy: 'createdAt', sortOrder: 'desc' as const };
+            case 'oldest':
+              return { sortBy: 'createdAt', sortOrder: 'asc' as const };
+            case 'funding_goal_high':
+              return { sortBy: 'fundingGoal', sortOrder: 'desc' as const };
+            case 'funding_goal_low':
+              return { sortBy: 'fundingGoal', sortOrder: 'asc' as const };
+            case 'deadline_soon':
+              return { sortBy: 'fundingEndDate', sortOrder: 'asc' as const };
+            case 'deadline_far':
+              return { sortBy: 'fundingEndDate', sortOrder: 'desc' as const };
+            default:
+              return { sortBy: 'createdAt', sortOrder: 'desc' as const };
+          }
+        };
+
+        const sortParams = currentFilters.sort
+          ? getSortParams(currentFilters.sort)
+          : {};
+
         const response = await getCrowdfundingProjects(page, pageSize, {
           category: currentFilters.category,
           status: currentFilters.status,
+          search: currentFilters.search,
+          ...sortParams,
         });
 
-        let fetchedProjects = response.data.projects;
-
-        // Apply client-side search filtering
-        if (currentFilters.search) {
-          const searchLower = currentFilters.search.toLowerCase();
-          fetchedProjects = fetchedProjects.filter(
-            project =>
-              project.title.toLowerCase().includes(searchLower) ||
-              project.vision.toLowerCase().includes(searchLower) ||
-              project.description.toLowerCase().includes(searchLower) ||
-              project.category.toLowerCase().includes(searchLower) ||
-              `${project.creator.profile.firstName} ${project.creator.profile.lastName}`
-                .toLowerCase()
-                .includes(searchLower)
-          );
-        }
-
-        // Apply client-side sorting
-        if (currentFilters.sort) {
-          fetchedProjects = sortProjects(fetchedProjects, currentFilters.sort);
-        }
+        const fetchedProjects = response.data.campaigns;
 
         if (append) {
           setProjects(prev => [...prev, ...fetchedProjects]);
@@ -157,15 +113,17 @@ export function useProjects(
           setProjects(fetchedProjects);
         }
 
-        setHasMore(response.data.pagination.pages > page);
-      } catch {
-        setError('Failed to fetch projects. Please try again.');
+        setHasMore(response.data.pagination.totalPages > page);
+      } catch (err) {
+        setError(
+          'Failed to fetch projects. Please try again.' + (err as Error).message
+        );
       } finally {
         setLoading(false);
         setLoadingMore(false);
       }
     },
-    [pageSize, sortProjects]
+    [pageSize]
   );
 
   // Fetch projects when filters change

@@ -37,7 +37,7 @@ export function useDeleteHackathon({
     setError(null);
 
     try {
-      const response = await deleteHackathon(organizationId, hackathonId);
+      const response = await deleteHackathon(hackathonId);
 
       if (response.success) {
         toast.success('Hackathon deleted successfully');

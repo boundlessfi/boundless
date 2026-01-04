@@ -8,11 +8,11 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { Line, LineChart, XAxis } from 'recharts';
-import { GetMeResponse } from '@/lib/api/types';
 import { TrendingUp, Award, Zap, DollarSign } from 'lucide-react';
+import { PublicUserProfile } from '@/types/project';
 
 interface ActivityTabProps {
-  user: GetMeResponse;
+  user: PublicUserProfile;
 }
 
 const STAT_CONFIGS = [
@@ -35,17 +35,18 @@ const STAT_CONFIGS = [
 export default function ActivityTab({ user }: ActivityTabProps) {
   const generateChartData = () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    const stats = user.stats || {};
 
     return months.map(month => ({
       month,
-      votes: Math.floor((stats.votes || 0) * (0.5 + Math.random() * 0.5)),
-      grants: Math.floor((stats.grants || 0) * (0.5 + Math.random() * 0.5)),
+      votes: Math.floor((user.stats.votes || 0) * (0.5 + Math.random() * 0.5)),
+      grants: Math.floor(
+        (user.stats.grants || 0) * (0.5 + Math.random() * 0.5)
+      ),
       hackathons: Math.floor(
-        (stats.hackathons || 0) * (0.5 + Math.random() * 0.5)
+        (user.stats.hackathons || 0) * (0.5 + Math.random() * 0.5)
       ),
       donations: Math.floor(
-        (stats.donations || 0) * (0.5 + Math.random() * 0.5)
+        (user.stats.totalContributed || 0) * (0.5 + Math.random() * 0.5)
       ),
     }));
   };
@@ -74,7 +75,7 @@ export default function ActivityTab({ user }: ActivityTabProps) {
               <span className='text-sm text-zinc-500'>{label}</span>
             </div>
             <p className='text-2xl font-bold text-white'>
-              {user.stats?.[key as keyof typeof user.stats] || 0}
+              {user.stats[key as keyof typeof user.stats] || 0}
             </p>
           </div>
         ))}

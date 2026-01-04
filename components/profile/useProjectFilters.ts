@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Project } from '@/types/project';
+import { CrowdfundingProject } from '@/types/project';
 
-export function useProjectFilters(projects: Project[]) {
+export function useProjectFilters(projects: CrowdfundingProject[]) {
   const [activeTab, setActiveTab] = useState('Projects');
   const [sortFilter, setSortFilter] = useState('Default');
   const [statusFilter, setStatusFilter] = useState('Status');
@@ -13,21 +13,6 @@ export function useProjectFilters(projects: Project[]) {
     if (!projects) return [];
 
     let filteredProjects = [...projects];
-
-    // Filter by tab type
-    if (activeTab === 'Projects') {
-      filteredProjects = filteredProjects.filter(
-        project => project.type === 'crowdfunding'
-      );
-    } else if (activeTab === 'Hackathons') {
-      filteredProjects = filteredProjects.filter(
-        project => project.type === 'hackathon'
-      );
-    } else if (activeTab === 'Grants') {
-      filteredProjects = filteredProjects.filter(
-        project => project.type === 'grant'
-      );
-    }
 
     // Filter by status
     if (statusFilter !== 'Status') {

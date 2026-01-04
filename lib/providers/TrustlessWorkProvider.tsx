@@ -46,12 +46,8 @@ export function TrustlessWorkProvider({
   useEffect(() => {
     const key =
       process.env.NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY ||
-      'hFEAgfWW4Ez6NhbE-GaDEw.fff0e0a685f168f7ea5f61ed580ad952d9b6e224f5be9775be4912e79fcb4ab4';
+      'otpYaD_lfSkaZLivBnY0DA.26e285f5303050dc43978f482cee63d4028597ec4e3597e1e2ccd67af38472e4';
     setApiKey(key);
-
-    // Warn in development if API key is missing
-    if (process.env.NODE_ENV === 'development' && !key) {
-    }
   }, []);
 
   // Network can be configured via environment variable
@@ -80,7 +76,7 @@ export function TrustlessWorkProvider({
       <TrustlessWorkConfig
         baseURL={baseURL}
         apiKey={
-          'hFEAgfWW4Ez6NhbE-GaDEw.fff0e0a685f168f7ea5f61ed580ad952d9b6e224f5be9775be4912e79fcb4ab4'
+          'otpYaD_lfSkaZLivBnY0DA.26e285f5303050dc43978f482cee63d4028597ec4e3597e1e2ccd67af38472e4'
         }
       >
         {children}

@@ -14,16 +14,16 @@ export function organizationToSummary(
   userRole: 'owner' | 'member' = 'member'
 ): OrganizationSummary {
   return {
-    _id: org._id,
+    organizationId: org.id,
     name: org.name,
     logo: org.logo,
     tagline: org.tagline,
     isProfileComplete: org.isProfileComplete,
     role: userRole,
-    memberCount: org.members.length,
-    hackathonCount: org.hackathons.length,
-    grantCount: org.grants.length,
-    createdAt: org.createdAt,
+    memberCount: org.members?.length ?? 0,
+    hackathonCount: org.hackathons?.length ?? 0,
+    grantCount: org.grants?.length ?? 0,
+    createdAt: org.createdAt as string,
   };
 }
 
@@ -59,7 +59,7 @@ export function isUserOwner(org: Organization, userEmail: string): boolean {
  * Check if user is member of organization
  */
 export function isUserMember(org: Organization, userEmail: string): boolean {
-  return org.members.includes(userEmail) || org.owner === userEmail;
+  return org.members?.includes(userEmail) || org.owner === userEmail;
 }
 
 /**
@@ -77,7 +77,7 @@ export function getUserRole(
   userEmail: string
 ): 'owner' | 'member' | null {
   if (org.owner === userEmail) return 'owner';
-  if (org.members.includes(userEmail)) return 'member';
+  if (org.members?.includes(userEmail)) return 'member';
   return null;
 }
 
@@ -85,7 +85,7 @@ export function getUserRole(
  * Check if organization has pending invites
  */
 export function hasPendingInvites(org: Organization): boolean {
-  return org.pendingInvites.length > 0;
+  return (org.pendingInvites?.length ?? 0) > 0;
 }
 
 /**
@@ -93,10 +93,10 @@ export function hasPendingInvites(org: Organization): boolean {
  */
 export function getOrganizationStats(org: Organization) {
   return {
-    totalMembers: org.members.length,
-    totalHackathons: org.hackathons.length,
-    totalGrants: org.grants.length,
-    pendingInvites: org.pendingInvites.length,
+    totalMembers: org.members?.length ?? 0,
+    totalHackathons: org.hackathons?.length ?? 0,
+    totalGrants: org.grants?.length ?? 0,
+    pendingInvites: org.pendingInvites?.length ?? 0,
     isProfileComplete: org.isProfileComplete,
     completionPercentage: getOrganizationCompletionPercentage(org),
     missingFields: getOrganizationMissingFields(org),
@@ -212,7 +212,7 @@ export function getOrganizationDescription(
  * Get organization age in days
  */
 export function getOrganizationAge(org: Organization): number {
-  const createdAt = new Date(org.createdAt);
+  const createdAt = new Date(org.createdAt as string);
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - createdAt.getTime());
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -231,7 +231,7 @@ export function isNewOrganization(org: Organization): boolean {
 export function getOrganizationActivityLevel(
   org: Organization
 ): 'low' | 'medium' | 'high' {
-  const memberCount = org.members.length;
+  const memberCount = org.members?.length ?? 0;
   const age = getOrganizationAge(org);
 
   if (memberCount >= 10 && age >= 30) return 'high';
@@ -408,9 +408,7 @@ export function cacheOrganizationData(orgId: string, data: Organization): void {
     timestamp: Date.now(),
   };
 
-  try {
-    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-  } catch {}
+  localStorage.setItem(cacheKey, JSON.stringify(cacheData));
 }
 
 /**
@@ -503,14 +501,17 @@ export function generateOrganizationSuggestions(org: Organization): string[] {
   }
 
   const hasLinks =
-    org.links.website || org.links.x || org.links.github || org.links.others;
+    org.metadata?.links?.website ||
+    org.metadata?.links?.x ||
+    org.metadata?.links?.github ||
+    org.metadata?.links?.others;
   if (!hasLinks) {
     suggestions.push(
       'Add social media links to help people connect with your organization'
     );
   }
 
-  if (org.members.length <= 1) {
+  if (org.members?.length ?? 0 <= 1) {
     suggestions.push('Invite team members to join your organization');
   }
 

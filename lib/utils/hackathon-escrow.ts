@@ -5,7 +5,7 @@ import { RewardsFormData } from '@/components/organization/hackathons/new/tabs/s
  * USDC trustline address for Stellar network
  */
 const USDC_TRUSTLINE_ADDRESS =
-  'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA';
+  'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 
 /**
  * Platform fee percentage (4% as per plan)
@@ -193,6 +193,7 @@ export const createHackathonEscrow = (params: {
     platformFee: PLATFORM_FEE,
     trustline: {
       address: USDC_TRUSTLINE_ADDRESS,
+      symbol: 'USDC',
     },
     roles: {
       // Service Provider = Organizer (can update milestones, add evidence, raise disputes)

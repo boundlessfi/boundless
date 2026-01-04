@@ -5,16 +5,16 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import type { Participant } from '@/types/hackathon';
+import type { ParticipantDisplay } from '@/lib/api/hackathons/index';
 import Image from 'next/image';
 import { MessageCircle, Users, CheckCircle2 } from 'lucide-react';
-import { useHackathonData } from '@/lib/providers/hackathonProvider';
+import { useParticipants } from '@/hooks/hackathon/use-participants';
 import Link from 'next/link';
 
 const BRAND_COLOR = '#a7f950';
 
 interface ProfileCardProps {
-  participant: Participant;
+  participant: ParticipantDisplay;
 }
 
 // Simple date formatter
@@ -39,7 +39,7 @@ const formatJoinDate = (dateString: string) => {
 
 export function ProfileCard({ participant }: ProfileCardProps) {
   const [isFollowing, setIsFollowing] = useState(false);
-  const { participants } = useHackathonData();
+  const { participants } = useParticipants();
   const teamMembers = useMemo(() => {
     if (participant.role === 'leader' && participant.teamId) {
       return participants.filter(

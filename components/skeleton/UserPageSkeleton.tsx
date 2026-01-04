@@ -113,6 +113,8 @@ export const UserPageSkeleton = () => {
 export const RecentProjectsSkeleton = () => {
   return (
     <>
+      {' '}
+      E
       <motion.div
         className='flex flex-col items-start justify-between gap-3 sm:gap-4 xl:flex-row xl:items-center xl:gap-0'
         variants={fadeInUp}
@@ -126,7 +128,6 @@ export const RecentProjectsSkeleton = () => {
           <Skeleton className='h-10 w-24' />
         </div>
       </motion.div>
-
       <motion.div
         className='grid grid-cols-1 gap-4 sm:grid-cols-1 sm:gap-6 md:grid-cols-2 lg:grid-cols-3'
         variants={staggerContainer}

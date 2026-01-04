@@ -12,14 +12,27 @@ import { toast } from 'sonner';
 import { uploadService } from '@/lib/api/upload';
 import { useRouter } from 'next/navigation';
 import { Upload, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useDebounce } from '@/hooks/use-debounce';
+import { authClient } from '@/lib/auth-client';
+import { z } from 'zod';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface ProfileTabProps {
   organizationId?: string;
   initialData?: {
     name?: string;
+    slug?: string;
     logo?: string;
-    tagline?: string;
-    about?: string;
+    metadata?: {
+      tagline?: string;
+      about?: string;
+      links?: {
+        website?: string;
+        x?: string;
+        github?: string;
+        others?: string;
+      };
+    };
   };
   onSave?: (data: Record<string, unknown>) => void;
   isCreating?: boolean;
@@ -37,13 +50,23 @@ export default function ProfileTab({
     createOrganization,
     updateOrganization,
     isLoading,
+    isLoadingOrganizations,
   } = useOrganization();
 
   const [formData, setFormData] = useState({
     name: '',
+    slug: '',
     logo: '',
-    tagline: '',
-    about: '',
+    metadata: {
+      tagline: '',
+      about: '',
+      links: {
+        website: '',
+        x: '',
+        github: '',
+        others: '',
+      },
+    },
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -52,13 +75,51 @@ export default function ProfileTab({
   const [isInitialized, setIsInitialized] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isSlugAvailable, setIsSlugAvailable] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previousOrgIdRef = useRef<string | null>(null);
   const router = useRouter();
+  const debouncedSlug = useDebounce(formData.slug, 500);
+
+  useEffect(() => {
+    const checkSlugAvailability = async () => {
+      if (!debouncedSlug) {
+        setIsSlugAvailable(null);
+        return;
+      }
+      if (debouncedSlug.length < 3) {
+        setIsSlugAvailable(null);
+        return;
+      }
+      const slugValidation = z.string().min(3).safeParse(debouncedSlug);
+      if (!slugValidation.success) {
+        setIsSlugAvailable(false);
+        return;
+      }
+      try {
+        const { data: response } = await authClient.organization.checkSlug({
+          slug: debouncedSlug,
+        });
+        setIsSlugAvailable(response?.status ?? true);
+      } catch {
+        setIsSlugAvailable(false);
+      }
+    };
+    checkSlugAvailability();
+  }, [debouncedSlug]);
 
   useEffect(() => {
     if (isCreating) {
-      setFormData({ name: '', logo: '', tagline: '', about: '' });
+      setFormData({
+        name: '',
+        slug: '',
+        logo: '',
+        metadata: {
+          tagline: '',
+          about: '',
+          links: { website: '', x: '', github: '', others: '' },
+        },
+      });
       setLogoPreview('');
       setHasUserChanges(false);
       setIsInitialized(true);
@@ -66,22 +127,39 @@ export default function ProfileTab({
       if (activeOrg) {
         setFormData({
           name: activeOrg.name || '',
+          slug: activeOrg.slug || '',
           logo: activeOrg.logo || '',
-          tagline: activeOrg.tagline || '',
-          about: activeOrg.about || '',
+          metadata: {
+            tagline: activeOrg.tagline || '',
+            about: activeOrg.about || '',
+            links: {
+              website: activeOrg.links?.website || '',
+              x: activeOrg.links?.x || '',
+              github: activeOrg.links?.github || '',
+              others: activeOrg.links?.others || '',
+            },
+          },
         });
         setLogoPreview(activeOrg.logo || '');
         setHasUserChanges(false);
         setIsInitialized(true);
-        previousOrgIdRef.current = activeOrg._id;
+        previousOrgIdRef.current = activeOrg.id as string;
       } else if (initialData) {
         setFormData({
           name: initialData.name || '',
+          slug: initialData.slug || '',
           logo: initialData.logo || '',
-          tagline: initialData.tagline || '',
-          about: initialData.about || '',
+          metadata: {
+            tagline: initialData.metadata?.tagline || '',
+            about: initialData.metadata?.about || '',
+            links: {
+              website: initialData.metadata?.links?.website || '',
+              x: initialData.metadata?.links?.x || '',
+              github: initialData.metadata?.links?.github || '',
+              others: initialData.metadata?.links?.others || '',
+            },
+          },
         });
-        setLogoPreview(initialData.logo || '');
         setHasUserChanges(false);
         setIsInitialized(true);
       }
@@ -90,15 +168,24 @@ export default function ProfileTab({
 
   useEffect(() => {
     if (activeOrg && isInitialized && !isCreating) {
-      const currentOrgId = activeOrg._id;
+      const currentOrgId = activeOrg.id;
       const previousOrgId = previousOrgIdRef.current;
 
       if (currentOrgId && currentOrgId !== previousOrgId) {
         setFormData({
           name: activeOrg.name || '',
+          slug: activeOrg.slug || '',
           logo: activeOrg.logo || '',
-          tagline: activeOrg.tagline || '',
-          about: activeOrg.about || '',
+          metadata: {
+            tagline: activeOrg.metadata?.tagline || '',
+            about: activeOrg.metadata?.about || '',
+            links: {
+              website: activeOrg.metadata?.links?.website || '',
+              x: activeOrg.metadata?.links?.x || '',
+              github: activeOrg.metadata?.links?.github || '',
+              others: activeOrg.metadata?.links?.others || '',
+            },
+          },
         });
         setLogoPreview(activeOrg.logo || '');
         setHasUserChanges(false);
@@ -108,7 +195,36 @@ export default function ProfileTab({
   }, [activeOrg, isInitialized, isCreating]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'slug') {
+      setFormData(prev => ({ ...prev, slug: value }));
+    } else if (field === 'tagline') {
+      setFormData(prev => ({
+        ...prev,
+        metadata: { ...prev.metadata, tagline: value },
+      }));
+    } else if (field === 'about') {
+      setFormData(prev => ({
+        ...prev,
+        metadata: { ...prev.metadata, about: value },
+      }));
+    } else if (field === 'links') {
+      setFormData(prev => ({
+        ...prev,
+        metadata: {
+          ...prev.metadata,
+          links: { ...prev.metadata.links, [field]: value },
+        },
+      }));
+    } else if (field === 'name') {
+      setFormData(prev => ({ ...prev, name: value }));
+    } else if (field === 'logo') {
+      setFormData(prev => ({ ...prev, logo: value }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        metadata: { ...prev.metadata, [field]: value },
+      }));
+    }
     setHasUserChanges(true);
   };
 
@@ -246,17 +362,12 @@ export default function ProfileTab({
       return;
     }
 
-    if (!formData.logo.trim()) {
-      toast.error('Logo is required');
-      return;
-    }
-
-    if (!formData.tagline.trim()) {
+    if (!formData.metadata.tagline.trim()) {
       toast.error('Tagline is required');
       return;
     }
 
-    if (!formData.about.trim()) {
+    if (!formData.metadata.about.trim()) {
       toast.error('About section is required');
       return;
     }
@@ -273,22 +384,39 @@ export default function ProfileTab({
       if (isCreating) {
         const newOrg = await createOrganization({
           name: formData.name,
+          slug: formData.slug,
           logo: formData.logo,
-          tagline: formData.tagline,
-          about: formData.about,
+          metadata: {
+            tagline: formData.metadata.tagline,
+            about: formData.metadata.about,
+            links: {
+              website: formData.metadata.links?.website,
+              x: formData.metadata.links?.x,
+              github: formData.metadata.links?.github,
+              others: formData.metadata.links?.others,
+            },
+          },
         });
 
         toast.success('Organization created successfully');
         setTimeout(() => {
-          router.push(`/organizations/${newOrg._id}/settings`);
+          router.push(`/organizations/${newOrg.id}/settings`);
         }, 500);
       } else if (organizationId || activeOrgId) {
         const orgId = organizationId || activeOrgId;
         await updateOrganization(orgId as string, {
           name: formData.name,
           logo: formData.logo,
-          tagline: formData.tagline,
-          about: formData.about,
+          metadata: {
+            tagline: formData.metadata.tagline,
+            about: formData.metadata.about,
+            links: {
+              website: formData.metadata.links?.website,
+              x: formData.metadata.links?.x,
+              github: formData.metadata.links?.github,
+              others: formData.metadata.links?.others,
+            },
+          },
         });
 
         toast.success('Organization profile updated successfully');
@@ -335,20 +463,52 @@ export default function ProfileTab({
     }
   };
 
+  const loadingui = isSaving || isLoadingOrganizations;
+  if (loadingui) {
+    return (
+      <div className='relative h-[calc(100vh-300px)] space-y-8'>
+        {loadingui && (
+          <div className='absolute top-0 right-0 bottom-0 left-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm'>
+            <LoadingSpinner size='lg' className='z-20 text-white' />
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
     <div className='space-y-6'>
       {/* Organization Name */}
-      <div className='space-y-2'>
-        <Label className='text-sm font-medium text-white'>
-          Organization Name <span className='text-red-500'>*</span>
-        </Label>
-        <Input
-          onChange={e => handleInputChange('name', e.target.value)}
-          placeholder='Enter organization name'
-          className='h-11 border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
-          value={formData.name}
-          disabled={isSaving}
-        />
+      <div className='flex justify-between gap-4'>
+        <div className='flex-1 space-y-2'>
+          <Label className='text-sm font-medium text-white'>
+            Organization Name <span className='text-red-500'>*</span>
+          </Label>
+          <Input
+            onChange={e => handleInputChange('name', e.target.value)}
+            placeholder='Enter organization name'
+            className='h-11 border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
+            value={formData.name}
+            disabled={isSaving}
+          />
+        </div>
+        <div className='flex-1 space-y-2'>
+          <Label className='text-sm font-medium text-white'>
+            Slug <span className='text-red-500'>*</span>
+          </Label>
+          <Input
+            onChange={e => handleInputChange('slug', e.target.value)}
+            placeholder='Enter organization slug'
+            className='h-11 border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
+            value={formData.slug}
+            disabled={isSaving}
+          />
+          {isSlugAvailable === false && (
+            <p className='text-xs text-red-500'>Slug is already taken</p>
+          )}
+          {isSlugAvailable === true && (
+            <p className='text-xs text-green-500'>Slug is available</p>
+          )}
+        </div>
       </div>
 
       {/* Logo Upload */}
@@ -431,14 +591,14 @@ export default function ProfileTab({
             Tagline <span className='text-red-500'>*</span>
           </Label>
           <span className='text-xs text-zinc-500'>
-            {formData.tagline.length}/300
+            {formData.metadata.tagline.length}/300
           </span>
         </div>
         <Input
           placeholder='Describe your mission in one line'
           className='h-11 border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
           maxLength={300}
-          value={formData.tagline}
+          value={formData.metadata.tagline}
           onChange={e => handleInputChange('tagline', e.target.value)}
           disabled={isSaving}
         />
@@ -455,7 +615,7 @@ export default function ProfileTab({
         <Textarea
           placeholder="Tell your organization's story..."
           className='min-h-32 resize-y border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
-          value={formData.about}
+          value={formData.metadata.about}
           onChange={e => handleInputChange('about', e.target.value)}
           disabled={isSaving}
         />

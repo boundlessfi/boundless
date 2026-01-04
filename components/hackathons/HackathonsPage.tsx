@@ -7,10 +7,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { useHackathonFilters } from '@/hooks/hackathon/use-hackathon-filters';
 import { useHackathonsList } from '@/hooks/hackathon/use-hackathons-list';
 import { useHackathonTransform } from '@/hooks/hackathon/use-hackathon-transform';
-import type { Hackathon } from '@/lib/api/hackathons';
 import { BoundlessButton } from '../buttons';
-import { ArrowDownIcon, RefreshCwIcon, XIcon } from 'lucide-react';
-import EmptyState from '../EmptyState';
+import { ArrowDownIcon, XIcon } from 'lucide-react';
 import LoadingScreen from '../landing-page/project/CreateProjectModal/LoadingScreen';
 
 interface HackathonsPageProps {
@@ -39,21 +37,17 @@ export default function HackathonsPage({
     hasMore,
     totalCount,
     loadMore,
-    refetch,
   } = useHackathonsList({ initialFilters: filters });
 
   const { transformHackathonForCard } = useHackathonTransform();
-
   const hackathonCards = React.useMemo(() => {
     return hackathons.map(hackathon => {
-      const orgName =
-        '_organizationName' in hackathon
-          ? (hackathon as Hackathon & { _organizationName?: string })
-              ._organizationName
-          : undefined;
-      const cardData = transformHackathonForCard(hackathon, orgName);
       return (
-        <HackathonCard isFullWidth={true} key={hackathon._id} {...cardData} />
+        <HackathonCard
+          isFullWidth={true}
+          key={hackathon.id || hackathon.slug}
+          {...hackathon}
+        />
       );
     });
   }, [hackathons, transformHackathonForCard]);
@@ -106,7 +100,7 @@ export default function HackathonsPage({
         {error && (
           <div className='flex flex-col items-center justify-center py-16'>
             <div className='text-center'>
-              <EmptyState
+              {/* <EmptyState
                 title='Something went wrong'
                 description={error}
                 type='compact'
@@ -121,7 +115,7 @@ export default function HackathonsPage({
                     Try Again
                   </BoundlessButton>
                 }
-              />
+              /> */}
             </div>
           </div>
         )}
@@ -129,7 +123,7 @@ export default function HackathonsPage({
         {!loading && !error && hackathons.length === 0 && (
           <div className='flex flex-col items-center justify-center py-16'>
             <div className='text-center'>
-              <EmptyState
+              {/* <EmptyState
                 title='No hackathons found'
                 description={
                   filters.search ||
@@ -140,7 +134,7 @@ export default function HackathonsPage({
                     : 'No hackathons are available at the moment'
                 }
                 type='compact'
-              />
+              /> */}
 
               {(filters.search ||
                 filters.category ||

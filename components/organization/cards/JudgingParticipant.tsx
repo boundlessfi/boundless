@@ -45,9 +45,19 @@ const JudgingParticipant = ({
   const handleOpenJudgeModal = async () => {
     setIsLoadingCriteria(true);
     try {
-      const response = await getHackathon(organizationId, hackathonId);
-      if (response.success && response.data.judging?.criteria) {
-        setCriteria(response.data.judging.criteria);
+      const response = await getHackathon(hackathonId);
+      if (response.success && response.data.judgingCriteria) {
+        // Filter out criteria that don't have required title and weight
+        const validCriteria = response.data.judgingCriteria.filter(
+          (
+            criterion
+          ): criterion is {
+            title: string;
+            weight: number;
+            description?: string;
+          } => !!criterion.name && typeof criterion.weight === 'number'
+        );
+        setCriteria(validCriteria);
         setIsJudgeModalOpen(true);
       } else {
         setCriteria([]);
@@ -187,10 +197,10 @@ const JudgingParticipant = ({
         onOpenChange={setIsJudgeModalOpen}
         organizationId={organizationId}
         hackathonId={hackathonId}
-        participantId={participant._id}
+        participantId={participant.id}
         judgingCriteria={criteria}
         submission={{
-          id: participant._id,
+          id: participant.id,
           projectName: submissionData.projectName,
           category: submissionData.category,
           description: submissionData.description,

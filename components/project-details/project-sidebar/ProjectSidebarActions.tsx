@@ -5,7 +5,6 @@ import {
   ArrowUp,
   DollarSign,
   CheckCircle,
-  UserPlus,
   Share2,
   ThumbsUp,
   HandCoins,
@@ -13,9 +12,8 @@ import {
 import { ProjectSidebarActionsProps } from './types';
 import { BoundlessButton } from '@/components/buttons';
 import { SharePopup } from './SharePopup';
-import FundProject from '@/components/modals/fund-project';
 import { useProtectedAction } from '@/hooks/use-protected-action';
-import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
+import { FollowButton } from '@/components/follow';
 
 export function ProjectSidebarActions({
   project,
@@ -25,16 +23,9 @@ export function ProjectSidebarActions({
   onVote,
 }: ProjectSidebarActionsProps) {
   const [isSharePopupOpen, setIsSharePopupOpen] = useState(false);
-  const [isFundModalOpen, setIsFundModalOpen] = useState(false);
 
-  const {
-    executeProtectedAction,
-    showWalletModal,
-    closeWalletModal,
-    handleWalletConnected,
-  } = useProtectedAction({
+  const { executeProtectedAction } = useProtectedAction({
     actionName: 'fund project',
-    onSuccess: () => setIsFundModalOpen(true),
   });
 
   const handleShareClick = () => {
@@ -46,7 +37,7 @@ export function ProjectSidebarActions({
   };
 
   const handleFundClick = async () => {
-    await executeProtectedAction(() => setIsFundModalOpen(true));
+    await executeProtectedAction(() => {});
   };
 
   return (
@@ -85,18 +76,16 @@ export function ProjectSidebarActions({
         </div>
       )}
 
-      {projectStatus === 'funding' ||
-        projectStatus === 'Validated' ||
-        (projectStatus === 'campaigning' && (
-          <BoundlessButton
-            onClick={handleFundClick}
-            className='flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-[#A7F950] text-base font-semibold text-black shadow-lg transition-all duration-200 hover:bg-[#A7F950] hover:shadow-xl'
-            icon={<HandCoins className='h-5 w-5' />}
-            iconPosition='left'
-          >
-            <span className=''>Back Project</span>
-          </BoundlessButton>
-        ))}
+      {projectStatus === 'IDEA' && (
+        <BoundlessButton
+          onClick={handleFundClick}
+          className='flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-[#A7F950] text-base font-semibold text-black shadow-lg transition-all duration-200 hover:bg-[#A7F950] hover:shadow-xl'
+          icon={<HandCoins className='h-5 w-5' />}
+          iconPosition='left'
+        >
+          <span className=''>Back Project</span>
+        </BoundlessButton>
+      )}
 
       {projectStatus === 'Completed' && (
         <BoundlessButton
@@ -120,13 +109,13 @@ export function ProjectSidebarActions({
         </BoundlessButton>
       )}
 
-      <BoundlessButton
-        className='flex h-12 min-w-12 items-center justify-center gap-2 rounded-lg border border-white/24 bg-transparent text-sm font-medium text-gray-300 transition-all duration-200 hover:border-gray-600 hover:bg-transparent hover:text-white sm:flex-1'
-        icon={<UserPlus className='h-5 w-5' />}
-        iconPosition='left'
-      >
-        <span className='hidden sm:inline'>Follow</span>
-      </BoundlessButton>
+      <div className='flex-1'>
+        <FollowButton
+          entityType='PROJECT'
+          entityId={project.id}
+          className='h-12 w-full'
+        />
+      </div>
 
       <div className='relative'>
         <BoundlessButton
@@ -146,7 +135,7 @@ export function ProjectSidebarActions({
         />
       </div>
 
-      {/* Fund Project Modal */}
+      {/* Fund Project Modal
       <FundProject
         open={isFundModalOpen}
         setOpen={setIsFundModalOpen}
@@ -169,7 +158,7 @@ export function ProjectSidebarActions({
         onOpenChange={closeWalletModal}
         actionName='fund project'
         onWalletConnected={handleWalletConnected}
-      />
+      /> */}
     </div>
   );
 }

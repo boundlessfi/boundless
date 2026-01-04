@@ -151,12 +151,14 @@ export function TeamRecruitmentPostCard({
     if (onContactClick) {
       onContactClick(post);
     }
-    handleContact(
-      post.contactMethod,
-      post.contactInfo,
-      onTrackContact,
-      post._id
-    );
+    if (post.contactMethod && post.contactInfo) {
+      handleContact(
+        post.contactMethod,
+        post.contactInfo,
+        onTrackContact,
+        post.id
+      );
+    }
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
@@ -177,8 +179,6 @@ export function TeamRecruitmentPostCard({
     switch (status) {
       case 'active':
         return 'border-[#A7F950] bg-[#A7F950]/10 text-[#A7F950]';
-      case 'filled':
-        return 'border-blue-500 bg-blue-500/10 text-blue-500';
       case 'closed':
         return 'border-gray-500 bg-gray-500/10 text-gray-500';
       default:
@@ -193,20 +193,20 @@ export function TeamRecruitmentPostCard({
         <div className='flex items-center gap-2'>
           <Avatar className='h-8 w-8 border-2 border-[#2B2B2B] transition-all duration-300 group-hover:border-[#A7F950] sm:h-10 sm:w-10'>
             <AvatarImage
-              src={post.createdBy.avatar}
-              alt={post.createdBy.name}
+              src={post.createdBy?.avatar}
+              alt={post.createdBy?.name}
               className='object-cover'
             />
             <AvatarFallback className='bg-gray-700 text-white'>
-              {post.createdBy.name.slice(0, 2).toUpperCase()}
+              {(post.createdBy?.name || 'U').slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className='flex flex-col'>
             <h4 className='text-sm font-medium text-white'>
-              {post.createdBy.name}
+              {post.createdBy?.name}
             </h4>
             <span className='text-xs text-gray-500'>
-              @{post.createdBy.username}
+              @{post.createdBy?.username}
             </span>
           </div>
         </div>

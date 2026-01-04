@@ -166,7 +166,7 @@ const CodeOfConductContent = () => {
                 loading='lazy'
               />
             </div>
-            <div className='absolute -right-8 -bottom-8 -z-0 max-h-[132px] w-full opacity-50'>
+            <div className='absolute -right-8 -bottom-8 z-0 max-h-[132px] w-full opacity-50'>
               <Image
                 src='/grid-bg.svg'
                 alt='Background'
@@ -182,7 +182,7 @@ const CodeOfConductContent = () => {
         {/* Two Column Layout */}
         <div className='flex flex-col gap-8 lg:flex-row'>
           {/* Left Column - Table of Contents */}
-          <aside className='w-full lg:sticky lg:top-24 lg:h-fit lg:w-64 lg:flex-shrink-0'>
+          <aside className='w-full lg:sticky lg:top-24 lg:h-fit lg:w-64 lg:shrink-0'>
             <div className='space-y-6'>
               {/* Search Bar */}
               <div className='relative'>
@@ -192,7 +192,7 @@ const CodeOfConductContent = () => {
                   placeholder='Search keyword'
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className='w-full rounded-lg border border-[#2B2B2B] bg-[#101010] py-2.5 pr-4 pl-10 text-sm text-white placeholder:text-gray-500 focus:border-[#A7F950] focus:ring-1 focus:ring-[#A7F950] focus:outline-none'
+                  className='bg-background-card w-full rounded-lg border border-[#2B2B2B] py-2.5 pr-4 pl-10 text-sm text-white placeholder:text-gray-500 focus:border-[#A7F950] focus:ring-1 focus:ring-[#A7F950] focus:outline-none'
                 />
               </div>
 

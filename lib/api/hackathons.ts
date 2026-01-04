@@ -1,6 +1,6 @@
 import api from './api';
 import { ApiResponse, ErrorResponse, PaginatedResponse } from './types';
-import { Discussion } from '@/types/hackathon';
+// Discussion type removed - using generic Comment type from @/types/comment
 
 export type RegistrationDeadlinePolicy =
   | 'custom'
@@ -45,7 +45,7 @@ export interface HackathonVenue {
 }
 
 export interface HackathonInformation {
-  title: string;
+  name: string;
   banner: string;
   tagline: string;
   description: string;
@@ -104,11 +104,12 @@ export interface HackathonParticipation {
 
 // Rewards Tab Types
 export interface PrizeTier {
-  position: string;
-  amount: number;
+  id?: string;
+  place?: string; // Changed from position to place
   currency?: string;
-  description?: string;
   passMark?: number; // 0-100
+  description?: string;
+  prizeAmount?: string; // Changed from number to string to match API
 }
 
 export interface HackathonRewards {
@@ -145,7 +146,10 @@ export interface HackathonCollaboration {
 export interface HackathonResourceItem {
   link?: string;
   description?: string;
-  fileUrl?: string;
+  file?: {
+    url: string;
+    name: string;
+  };
   fileName?: string;
 }
 
@@ -153,52 +157,178 @@ export interface HackathonResources {
   resources: HackathonResourceItem[];
 }
 
-// Complete Hackathon Data Structure
-export interface HackathonData {
-  information: HackathonInformation;
-  timeline: HackathonTimeline;
-  participation: HackathonParticipation;
-  rewards: HackathonRewards;
+// Draft Data Structure
+export interface HackathonDraftData {
+  information?: HackathonInformation;
+  timeline?: HackathonTimeline;
+  participation?: HackathonParticipation;
+  rewards?: HackathonRewards;
   resources?: HackathonResources;
-  judging: HackathonJudging;
-  collaboration: HackathonCollaboration;
+  judging?: HackathonJudging;
+  collaboration?: HackathonCollaboration;
 }
 
 // Draft Types
-export interface HackathonDraft extends HackathonData {
-  _id: string;
-  organizationId: string;
+export interface HackathonDraft {
+  id: string;
   status: 'draft';
+  currentStep: number;
+  completedSteps: string[];
+  data: HackathonDraftData;
+  isValidForPublish: boolean;
+  validationErrors: Record<string, Array<{ field: string; message: string }>>;
   createdAt: string;
   updatedAt: string;
-  title: string;
-  contractId?: string;
-  escrowAddress?: string;
-  transactionHash?: string;
-  escrowDetails?: object;
 }
+
+// export interface Participant {
+//   id: string;
+//   name: string;
+//   username: string;
+//   image: string;
+// }
 
 // Published Hackathon Types
-export interface Hackathon extends HackathonData {
-  _id: string;
+export type Hackathon = {
+  id: string;
+  name: string;
+  slug: string;
+  tagline: string;
+  description: string;
+
+  banner: string;
+
   organizationId: string;
-  status: 'published' | 'ongoing' | 'completed' | 'cancelled' | 'draft';
+  organization: {
+    id: string;
+    name: string;
+    logo: string;
+  };
+
+  status:
+    | 'DRAFT'
+    | 'PUBLISHED'
+    | 'ARCHIVED'
+    | 'ONGOING'
+    | 'COMPLETED'
+    | 'CANCELLED'
+    | 'UPCOMING'
+    | 'ENDED';
+  isActive: boolean;
+  isParticipant: boolean;
+
+  venueType: 'VIRTUAL' | 'PHYSICAL';
+  venueName: string;
+  venueAddress: string;
+  city: string;
+  state: string;
+  country: string;
+  timezone: string;
+
+  startDate: string; // ISO date
+  endDate: string; // ISO date
+  submissionDeadline: string; // ISO date
+  registrationDeadline: string; // ISO date
+  customRegistrationDeadline: string | null;
+
+  registrationOpen: boolean;
+  registrationDeadlinePolicy:
+    | 'BEFORE_START'
+    | 'BEFORE_SUBMISSION_DEADLINE'
+    | 'CUSTOM';
+
+  daysUntilStart: number;
+  daysUntilEnd: number;
+
+  participantType: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
+  teamMin: number;
+  teamMax: number;
+
+  categories: string[];
+
+  enabledTabs: Array<
+    | 'detailsTab'
+    | 'participantsTab'
+    | 'resourcesTab'
+    | 'submissionTab'
+    | 'announcementsTab'
+    | 'discussionTab'
+    | 'winnersTab'
+    | 'sponsorsTab'
+    | 'joinATeamTab'
+    | 'rulesTab'
+  >;
+
+  judgingCriteria: Array<{
+    id?: string;
+    name?: string;
+    description?: string;
+    weight?: number;
+  }>;
+
+  prizeTiers: Array<{
+    id?: string;
+    place?: string;
+    prizeAmount?: string;
+    currency?: string;
+    description?: string;
+    passMark?: number;
+  }>;
+
+  phases: Array<{
+    id?: string;
+    name?: string;
+    startDate?: string;
+    endDate?: string;
+  }>;
+
+  resources: Array<{
+    id: string;
+    file: {
+      url: string;
+      name: string;
+    };
+    link: string;
+    description: string;
+  }>;
+
+  sponsorsPartners: any[];
+
+  submissions: any[];
+  followers: any[];
+
+  requireGithub: boolean;
+  requireDemoVideo: boolean;
+  requireOtherLinks: boolean;
+
+  contactEmail: string;
+  discord: string;
+  telegram: string;
+  socialLinks: string[];
+
+  publishedAt: string;
   createdAt: string;
   updatedAt: string;
-  publishedAt?: string;
-  title: string;
+  participants: Participant[];
+
+  _count: {
+    participants: number;
+    submissions: number;
+    followers: number;
+  };
+
   contractId?: string;
   escrowAddress?: string;
   transactionHash?: string;
   escrowDetails?: object;
-}
+};
 
 // Request Types
-export type CreateDraftRequest = Partial<HackathonData>;
+export type CreateDraftRequest = Partial<HackathonDraftData>;
 
-export type UpdateDraftRequest = Partial<HackathonData>;
+export type UpdateDraftRequest = Partial<HackathonDraftData>;
 
-export interface PublishHackathonRequest extends HackathonData {
+export interface PublishHackathonRequest extends Hackathon {
   draftId?: string;
   contractId?: string;
   escrowAddress?: string;
@@ -206,7 +336,7 @@ export interface PublishHackathonRequest extends HackathonData {
   escrowDetails?: object;
 }
 
-export type UpdateHackathonRequest = Partial<HackathonData>;
+export type UpdateHackathonRequest = Partial<Hackathon>;
 
 // Response Types
 export interface CreateDraftResponse extends ApiResponse<HackathonDraft> {
@@ -227,23 +357,14 @@ export interface GetDraftResponse extends ApiResponse<HackathonDraft> {
   message: string;
 }
 
-export interface PreviewDraftResponse extends ApiResponse<PublicHackathon> {
+export interface PreviewDraftResponse extends ApiResponse<Hackathon> {
   success: true;
-  data: PublicHackathon;
+  data: Hackathon;
   message: string;
 }
 
 export interface GetDraftsResponse extends PaginatedResponse<HackathonDraft> {
   success: true;
-  data: HackathonDraft[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
 }
 
 export interface PublishHackathonResponse extends ApiResponse<Hackathon> {
@@ -270,17 +391,26 @@ export interface DeleteHackathonResponse extends ApiResponse<null> {
   message: string;
 }
 
-export interface GetHackathonsResponse extends PaginatedResponse<Hackathon> {
-  success: true;
-  data: Hackathon[];
+export interface HackathonsData {
+  hackathons: Hackathon[];
   pagination: {
-    currentPage: number;
+    page: number;
+    limit: number;
+    total: number;
     totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
     hasNext: boolean;
     hasPrev: boolean;
   };
+  filters?: {
+    organizationId?: string;
+    status?: string;
+    category?: string;
+    search?: string;
+  };
+}
+
+export interface GetHackathonsResponse extends ApiResponse<HackathonsData> {
+  success: true;
 }
 
 // Statistics and Analytics Types
@@ -329,10 +459,10 @@ export interface ParticipantTeamMember {
 }
 
 export interface ParticipantVote {
-  _id: string;
+  id: string;
   userId: string;
   user: {
-    _id: string;
+    id: string;
     profile: {
       firstName: string;
       lastName: string;
@@ -346,10 +476,10 @@ export interface ParticipantVote {
 }
 
 export interface ParticipantComment {
-  _id: string;
+  id: string;
   userId: string;
   user: {
-    _id: string;
+    id: string;
     profile: {
       firstName: string;
       lastName: string;
@@ -369,7 +499,7 @@ export interface ParticipantComment {
 }
 
 export interface ParticipantSubmission {
-  _id: string;
+  id: string;
   projectName: string;
   category: string;
   description: string;
@@ -383,7 +513,7 @@ export interface ParticipantSubmission {
   status: 'submitted' | 'shortlisted' | 'disqualified';
   disqualificationReason?: string | null;
   reviewedBy?: {
-    _id: string;
+    id: string;
     profile: {
       firstName: string;
       lastName: string;
@@ -396,17 +526,16 @@ export interface ParticipantSubmission {
 }
 
 export interface Participant {
-  _id: string;
+  id: string;
   userId: string;
   hackathonId: string;
   organizationId: string;
   user: {
-    _id: string;
+    id: string;
     profile: {
-      firstName: string;
-      lastName: string;
+      name: string;
       username: string;
-      avatar?: string;
+      image?: string;
     };
     email: string;
   };
@@ -425,24 +554,27 @@ export interface Participant {
   submittedAt?: string;
 }
 
-export interface GetParticipantsResponse extends PaginatedResponse<Participant> {
-  success: true;
-  data: Participant[];
+export interface ParticipantsData {
+  participants: Participant[];
   pagination: {
-    currentPage: number;
+    page: number;
+    limit: number;
+    total: number;
     totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
     hasNext: boolean;
     hasPrev: boolean;
   };
 }
 
-export interface RegisterForHackathonRequest {
-  participationType: 'individual' | 'team';
-  teamName?: string;
-  teamMembers?: string[];
+export interface GetParticipantsResponse extends ApiResponse<ParticipantsData> {
+  success: true;
 }
+
+// export interface RegisterForHackathonRequest {
+//   participationType: 'individual' | 'team';
+//   teamName?: string;
+//   teamMembers?: string[];
+// }
 
 export interface RegisterForHackathonResponse extends ApiResponse<Participant> {
   success: true;
@@ -457,13 +589,32 @@ export interface CheckRegistrationStatusResponse extends ApiResponse<Participant
 }
 
 export interface CreateSubmissionRequest {
+  hackathonId: string;
+  organizationId: string;
+  projectId?: string;
+  participationType: 'INDIVIDUAL' | 'TEAM';
+  teamId?: string;
+  teamName?: string;
+  teamMembers?: Array<{
+    userId: string;
+    name: string;
+    username?: string;
+    role: string;
+    avatar?: string;
+  }>;
   projectName: string;
   category: string;
   description: string;
   logo?: string;
   videoUrl?: string;
   introduction?: string;
-  links?: Array<{ type: string; url: string }>;
+  links: Array<{ type: string; url: string }>;
+  socialLinks?: {
+    github?: string;
+    telegram?: string;
+    twitter?: string;
+    email?: string;
+  };
 }
 
 export interface UpdateSubmissionRequest extends CreateSubmissionRequest {
@@ -495,7 +646,7 @@ export interface GetSubmissionDetailsResponse extends ApiResponse<ParticipantSub
 }
 
 export interface VoteSubmissionRequest {
-  value: 1 | -1; // 1 for upvote, -1 for downvote
+  value: 1 | -1;
 }
 
 export interface VoteSubmissionResponse extends ApiResponse<{
@@ -520,9 +671,9 @@ export interface CriterionScore {
 }
 
 export interface JudgeScore {
-  _id: string;
+  id: string;
   judge: {
-    _id: string;
+    id: string;
     profile: {
       firstName: string;
       lastName: string;
@@ -540,12 +691,12 @@ export interface JudgeScore {
 
 export interface JudgingSubmission {
   participant: {
-    _id: string;
+    id: string;
     userId: string;
     hackathonId: string;
     organizationId: string;
     user: {
-      _id: string;
+      id: string;
       profile: {
         firstName: string;
         lastName: string;
@@ -559,7 +710,7 @@ export interface JudgingSubmission {
     teamName?: string;
   };
   submission: {
-    _id: string;
+    id: string;
     projectName: string;
     category: string;
     description: string;
@@ -579,12 +730,12 @@ export interface JudgingSubmission {
 
 export interface SubmissionScoresResponse {
   participant: {
-    _id: string;
+    id: string;
     userId: string;
     hackathonId: string;
     organizationId: string;
     user: {
-      _id: string;
+      id: string;
       profile: {
         firstName: string;
         lastName: string;
@@ -597,7 +748,7 @@ export interface SubmissionScoresResponse {
     teamId?: string;
     teamName?: string;
     submission: {
-      _id: string;
+      id: string;
       projectName: string;
       category: string;
       description: string;
@@ -626,17 +777,17 @@ export interface GradeSubmissionRequest {
 
 export interface GradeSubmissionResponse {
   submission: {
-    _id: string;
+    id: string;
     projectName: string;
     category: string;
     status: 'shortlisted';
   };
   score: {
-    _id: string;
+    id: string;
     weightedScore: number;
     scores: CriterionScore[];
     judgedBy: {
-      _id: string;
+      id: string;
       profile: {
         firstName: string;
         lastName: string;
@@ -654,16 +805,6 @@ export interface GradeSubmissionResponse {
 
 export interface GetJudgingSubmissionsResponse extends PaginatedResponse<JudgingSubmission> {
   success: true;
-  data: JudgingSubmission[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-  message: string;
 }
 
 export interface LeaveHackathonResponse extends ApiResponse<{
@@ -753,38 +894,9 @@ export interface CreateWinnerMilestonesResponse {
 }
 
 // Public Hackathons List API Types
-export interface PublicHackathon {
-  id: string;
-  slug: string;
-  title: string;
-  subtitle: string;
-  tagline: string;
-  description: string;
-  imageUrl: string;
-  status: 'upcoming' | 'ongoing' | 'ended';
-  participants: number;
-  totalPrizePool: string;
-  deadline: string;
-  categories: string[];
-  startDate: string;
-  endDate: string;
-  organizer: string;
-  organizerLogo?: string;
-  featured: boolean;
-  resources?: string[] | HackathonResources; // Support both old array format and new nested format
-  venue?: {
-    type: 'virtual' | 'physical';
-    country?: string;
-    state?: string;
-    city?: string;
-    venueName?: string;
-    venueAddress?: string;
-  };
-  participantType?: 'individual' | 'team' | 'team_or_individual';
-}
 
 export interface PublicHackathonsListData {
-  hackathons: PublicHackathon[];
+  hackathons: Hackathon[];
   hasMore: boolean;
   total: number;
   currentPage: number;
@@ -793,161 +905,17 @@ export interface PublicHackathonsListData {
 
 export interface PublicHackathonsListResponse extends ApiResponse<PublicHackathonsListData> {
   success: true;
-  data: PublicHackathonsListData;
-  message: string;
 }
 
 export interface PublicHackathonsListFilters {
   page?: number;
   limit?: number;
-  status?: 'upcoming' | 'ongoing' | 'ended';
+  status?: 'upcoming' | 'active' | 'ended';
   category?: string;
   search?: string;
   sort?: 'latest' | 'oldest' | 'participants' | 'prize' | 'deadline';
   featured?: boolean;
 }
-
-/**
- * Flat API response structure (before transformation)
- */
-interface FlatHackathonData {
-  _id?: string;
-  organizationId?: string;
-  status?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  publishedAt?: string;
-  title?: string;
-  contractId?: string;
-  escrowAddress?: string;
-  transactionHash?: string;
-  escrowDetails?: object;
-  // Flat fields that map to nested structure
-  banner?: string;
-  tagline?: string;
-  description?: string;
-  categories?: HackathonCategory[]; // New format
-  venue?: HackathonVenue;
-  startDate?: string;
-  submissionDeadline?: string;
-  judgingDate?: string;
-  winnerAnnouncementDate?: string;
-  timezone?: string;
-  phases?: HackathonPhase[];
-  participantType?: string | ParticipantType;
-  teamMin?: number;
-  teamMax?: number;
-  about?: string;
-  submissionRequirements?: SubmissionRequirements;
-  tabVisibility?: TabVisibility;
-  prizeTiers?: PrizeTier[];
-  criteria?: JudgingCriterion[];
-  contactEmail?: string;
-  telegram?: string;
-  discord?: string;
-  socialLinks?: string[];
-  sponsorsPartners?: SponsorPartner[];
-  resources?: HackathonResources;
-  // Nested structure (if already transformed)
-  information?: HackathonInformation;
-  timeline?: HackathonTimeline;
-  participation?: HackathonParticipation;
-  rewards?: HackathonRewards;
-  judging?: HackathonJudging;
-  collaboration?: HackathonCollaboration;
-  slug: string;
-}
-
-/**
- * Transform flat API response to nested Hackathon structure
- */
-const transformHackathonResponse = (
-  flatData: FlatHackathonData | Hackathon
-): Hackathon => {
-  // Check if data is already in nested format
-  if (
-    'information' in flatData &&
-    flatData.information &&
-    'timeline' in flatData &&
-    flatData.timeline &&
-    'participation' in flatData &&
-    flatData.participation
-  ) {
-    // Ensure resources field exists even if not provided
-    const hackathon = flatData as Hackathon;
-    if (!hackathon.resources) {
-      hackathon.resources = { resources: [] };
-    }
-    return hackathon;
-  }
-
-  // Type guard: if it's already a Hackathon, return it
-  if ('information' in flatData) {
-    const hackathon = flatData as Hackathon;
-    if (!hackathon.resources) {
-      hackathon.resources = { resources: [] };
-    }
-    return hackathon;
-  }
-
-  // Now we know it's FlatHackathonData, transform from flat to nested structure
-  const flat = flatData as FlatHackathonData;
-  return {
-    _id: flat._id || '',
-    organizationId: flat.organizationId || '',
-    status: (flat.status as Hackathon['status']) || 'draft',
-    createdAt: flat.createdAt || '',
-    updatedAt: flat.updatedAt || '',
-    publishedAt: flat.publishedAt,
-    title: flat.title || '',
-    contractId: flat.contractId,
-    escrowAddress: flat.escrowAddress,
-    transactionHash: flat.transactionHash,
-    escrowDetails: flat.escrowDetails,
-    information: {
-      title: flat.title || '',
-      banner: flat.banner || '',
-      description: flat.description || '',
-      tagline: flat.tagline || '',
-      slug: flat.slug || '',
-      // Support both new format (categories) and legacy format (category)
-      categories: Array.isArray(flat.categories)
-        ? (flat.categories as HackathonCategory[])
-        : [HackathonCategory.OTHER],
-      venue: flat.venue,
-    },
-    timeline: {
-      startDate: flat.startDate || '',
-      submissionDeadline: flat.submissionDeadline || '',
-      judgingDate: flat.judgingDate || '',
-      winnerAnnouncementDate: flat.winnerAnnouncementDate || '',
-      timezone: flat.timezone || 'UTC',
-      phases: flat.phases || [],
-    },
-    participation: {
-      participantType: flat.participantType as ParticipantType | undefined,
-      teamMin: flat.teamMin,
-      teamMax: flat.teamMax,
-      about: flat.about,
-      submissionRequirements: flat.submissionRequirements,
-      tabVisibility: flat.tabVisibility,
-    },
-    rewards: {
-      prizeTiers: flat.prizeTiers || [],
-    },
-    resources: flat.resources || { resources: [] },
-    judging: {
-      criteria: flat.criteria || [],
-    },
-    collaboration: {
-      contactEmail: flat.contactEmail || '',
-      telegram: flat.telegram,
-      discord: flat.discord,
-      socialLinks: flat.socialLinks || [],
-      sponsorsPartners: flat.sponsorsPartners || [],
-    },
-  };
-};
 
 export interface AcceptTeamInvitationRequest {
   token: string;
@@ -966,59 +934,52 @@ export interface AcceptTeamInvitationResponse extends ApiResponse<{
 }
 
 /**
- * Transform flat API response to nested HackathonDraft structure
+ * Initialize a new hackathon draft (new API)
  */
-const transformDraftResponse = (
-  flatData: FlatHackathonData | HackathonDraft
-): HackathonDraft => {
-  const hackathon = transformHackathonResponse(flatData);
-  return {
-    ...hackathon,
-    status: 'draft' as const,
-  };
-};
-
-/**
- * Create a new hackathon draft
- */
-export const createDraft = async (
-  organizationId: string,
-  data: CreateDraftRequest
+export const initializeDraft = async (
+  organizationId: string
 ): Promise<CreateDraftResponse> => {
   const res = await api.post(
-    `/organizations/${organizationId}/hackathons/drafts`,
-    data
+    `organizations/${organizationId}/hackathons/draft`
   );
 
-  // Transform flat response to nested structure
-  const transformedData = transformDraftResponse(res.data.data);
-
-  return {
-    ...res.data,
-    data: transformedData,
-  };
+  return res.data as CreateDraftResponse;
 };
 
 /**
- * Update an existing hackathon draft
+ * Update a specific step in hackathon draft (new API)
  */
-export const updateDraft = async (
+export const updateDraftStep = async (
   organizationId: string,
   draftId: string,
-  data: UpdateDraftRequest
-): Promise<UpdateDraftResponse> => {
-  const res = await api.put(
-    `/organizations/${organizationId}/hackathons/drafts/${draftId}`,
-    data
+  step: string,
+  data: any,
+  autoSave?: boolean
+) => {
+  const res = await api.patch<ApiResponse<UpdateDraftResponse>>(
+    `/organizations/${organizationId}/hackathons/draft/${draftId}`,
+    {
+      step,
+      data,
+      autoSave,
+    }
   );
 
-  // Transform flat response to nested structure
-  const transformedData = transformDraftResponse(res.data.data);
+  return res.data;
+};
 
-  return {
-    ...res.data,
-    data: transformedData,
-  };
+/**
+ * Publish a hackathon draft (new API)
+ */
+export const publishDraft = async (
+  draftId: string,
+  organizationId: string
+): Promise<PublishHackathonResponse> => {
+  const res = await api.put<ApiResponse<PublishHackathonResponse>>(
+    `/organizations/${organizationId}/hackathons/draft/${draftId}/publish`
+  );
+
+  return res.data.data as PublishHackathonResponse;
 };
 
 /**
@@ -1028,31 +989,11 @@ export const getDraft = async (
   organizationId: string,
   draftId: string
 ): Promise<GetDraftResponse> => {
-  const res = await api.get(
-    `/organizations/${organizationId}/hackathons/drafts/${draftId}`
+  const res = await api.get<ApiResponse<GetDraftResponse>>(
+    `/organizations/${organizationId}/hackathons/draft/${draftId}`
   );
 
-  // Transform flat response to nested structure
-  const transformedData = transformDraftResponse(res.data.data);
-
-  return {
-    ...res.data,
-    data: transformedData,
-  };
-};
-
-/**
- * Preview a hackathon draft (returns data in published hackathon format)
- */
-export const previewDraft = async (
-  organizationId: string,
-  draftId: string
-): Promise<PreviewDraftResponse> => {
-  const res = await api.get(
-    `/organizations/${organizationId}/hackathons/drafts/${draftId}/preview`
-  );
-
-  return res.data;
+  return res.data.data as GetDraftResponse;
 };
 
 /**
@@ -1068,42 +1009,11 @@ export const getDrafts = async (
     limit: limit.toString(),
   });
 
-  const res = await api.get(
+  const res = await api.get<ApiResponse<GetDraftsResponse>>(
     `/organizations/${organizationId}/hackathons/drafts?${params.toString()}`
   );
 
-  // Transform flat responses to nested structure
-  const transformedData = Array.isArray(res.data.data)
-    ? res.data.data.map((item: FlatHackathonData | HackathonDraft) =>
-        transformDraftResponse(item)
-      )
-    : [];
-
-  return {
-    ...res.data,
-    data: transformedData,
-  };
-};
-
-/**
- * Publish a hackathon draft (creates a published hackathon)
- */
-export const publishHackathon = async (
-  organizationId: string,
-  data: PublishHackathonRequest
-): Promise<PublishHackathonResponse> => {
-  const res = await api.post(
-    `/organizations/${organizationId}/hackathons`,
-    data
-  );
-
-  // Transform flat response to nested structure
-  const transformedData = transformHackathonResponse(res.data.data);
-
-  return {
-    ...res.data,
-    data: transformedData,
-  };
+  return res.data as GetDraftsResponse;
 };
 
 // Accpet invitition function
@@ -1130,21 +1040,19 @@ export const acceptTeamInvitation = async (
  * Update an existing published hackathon
  */
 export const updateHackathon = async (
-  organizationId: string,
   hackathonId: string,
   data: UpdateHackathonRequest
 ): Promise<UpdateHackathonResponse> => {
-  const res = await api.put(
-    `/organizations/${organizationId}/hackathons/${hackathonId}`,
-    data
-  );
-
-  // Transform flat response to nested structure
-  const transformedData = transformHackathonResponse(res.data.data);
+  const res = await api.put(`/hackathons/${hackathonId}`, data);
 
   return {
-    ...res.data,
-    data: transformedData,
+    success: true,
+    data: res.data,
+    message: 'Hackathon updated successfully',
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: '',
+    },
   };
 };
 
@@ -1152,19 +1060,18 @@ export const updateHackathon = async (
  * Get a single hackathon by ID
  */
 export const getHackathon = async (
-  organizationId: string,
   hackathonId: string
 ): Promise<GetHackathonResponse> => {
-  const res = await api.get(
-    `/organizations/${organizationId}/hackathons/${hackathonId}`
-  );
-
-  // Transform flat response to nested structure
-  const transformedData = transformHackathonResponse(res.data.data);
+  const res = await api.get(`/hackathons/${hackathonId}`);
 
   return {
-    ...res.data,
-    data: transformedData,
+    success: true,
+    data: res.data,
+    message: 'Hackathon retrieved successfully',
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: '',
+    },
   };
 };
 
@@ -1172,26 +1079,23 @@ export const getHackathon = async (
  * Delete a hackathon
  */
 export const deleteHackathon = async (
-  organizationId: string,
   hackathonId: string
 ): Promise<DeleteHackathonResponse> => {
-  const res = await api.delete(
-    `/organizations/${organizationId}/hackathons/${hackathonId}`
-  );
+  const res = await api.delete(`/hackathons/${hackathonId}`);
   return res.data;
 };
 
 /**
- * Get all hackathons for an organization
+ * Get all published hackathons
  */
 export const getHackathons = async (
-  organizationId: string,
   page = 1,
   limit = 10,
   filters?: {
     status?: 'published' | 'ongoing' | 'completed' | 'cancelled';
     category?: HackathonCategory;
     search?: string;
+    organizationId?: string; // Optional organization filter
   }
 ): Promise<GetHackathonsResponse> => {
   const params = new URLSearchParams({
@@ -1211,21 +1115,13 @@ export const getHackathons = async (
     params.append('search', filters.search);
   }
 
-  const res = await api.get(
-    `/organizations/${organizationId}/hackathons?${params.toString()}`
-  );
+  if (filters?.organizationId) {
+    params.append('organizationId', filters.organizationId);
+  }
 
-  // Transform flat responses to nested structure
-  const transformedData = Array.isArray(res.data.data)
-    ? res.data.data.map((item: FlatHackathonData | Hackathon) =>
-        transformHackathonResponse(item)
-      )
-    : [];
+  const res = await api.get(`/hackathons?${params.toString()}`);
 
-  return {
-    ...res.data,
-    data: transformedData,
-  };
+  return res.data;
 };
 
 /**
@@ -1415,81 +1311,11 @@ export const getParticipants = async (
     params.append('search', filters.search);
   }
 
-  const res = await api.get(
+  const res = await api.get<ApiResponse<ParticipantsData>>(
     `/organizations/${organizationId}/hackathons/${hackathonId}/participants?${params.toString()}`
   );
 
-  // Handle nested data structure: { success: true, data: { data: [...], pagination: {...} } }
-  const responseData = res.data;
-
-  // If data is nested, extract it
-  if (
-    responseData &&
-    typeof responseData === 'object' &&
-    'data' in responseData
-  ) {
-    const nestedData = responseData.data as {
-      data?: Participant[];
-      pagination?: GetParticipantsResponse['pagination'];
-    };
-
-    // Check if it's the nested structure
-    if (
-      nestedData &&
-      typeof nestedData === 'object' &&
-      'data' in nestedData &&
-      Array.isArray(nestedData.data)
-    ) {
-      return {
-        success: true,
-        data: nestedData.data,
-        pagination: nestedData.pagination || {
-          currentPage: page,
-          totalPages: 1,
-          totalItems: nestedData.data.length,
-          itemsPerPage: limit,
-          hasNext: false,
-          hasPrev: false,
-        },
-        message: responseData.message || 'Participants fetched successfully',
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
-
-  // If data is already an array (expected structure)
-  if (Array.isArray(responseData.data)) {
-    return {
-      success: true,
-      data: responseData.data,
-      pagination: responseData.pagination || {
-        currentPage: page,
-        totalPages: 1,
-        totalItems: responseData.data.length,
-        itemsPerPage: limit,
-        hasNext: false,
-        hasPrev: false,
-      },
-      message: responseData.message || 'Participants fetched successfully',
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  // Fallback: return empty array
-  return {
-    success: true,
-    data: [],
-    pagination: {
-      currentPage: page,
-      totalPages: 1,
-      totalItems: 0,
-      itemsPerPage: limit,
-      hasNext: false,
-      hasPrev: false,
-    },
-    message: 'No participants found',
-    timestamp: new Date().toISOString(),
-  };
+  return res.data as GetParticipantsResponse;
 };
 
 /**
@@ -1498,20 +1324,19 @@ export const getParticipants = async (
  */
 export const registerForHackathon = async (
   hackathonSlugOrId: string,
-  data: RegisterForHackathonRequest,
   organizationId?: string
 ): Promise<RegisterForHackathonResponse> => {
   let url: string;
 
   // If organizationId is provided, use authenticated endpoint
   if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/register`;
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/join`;
   } else {
     // Otherwise, use public slug-based endpoint
-    url = `/hackathons/${hackathonSlugOrId}/register`;
+    url = `/hackathons/${hackathonSlugOrId}/join`;
   }
 
-  const res = await api.post(url, data);
+  const res = await api.post(url);
   return res.data;
 };
 
@@ -1565,20 +1390,19 @@ export const checkRegistrationStatus = async (
  */
 export const createSubmission = async (
   hackathonSlugOrId: string,
-  data: CreateSubmissionRequest,
+  data: Omit<CreateSubmissionRequest, 'hackathonId' | 'organizationId'>,
   organizationId?: string
 ): Promise<CreateSubmissionResponse> => {
-  let url: string;
+  // Backend uses /hackathons/submissions with hackathonId in body
+  const submissionData: CreateSubmissionRequest = {
+    ...data,
+    hackathonId: hackathonSlugOrId,
+    organizationId: organizationId || '',
+    participationType: data.participationType || 'INDIVIDUAL',
+    links: data.links || [],
+  };
 
-  // If organizationId is provided, use authenticated endpoint
-  if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/submissions`;
-  } else {
-    // Otherwise, use public slug-based endpoint
-    url = `/hackathons/${hackathonSlugOrId}/submissions`;
-  }
-
-  const res = await api.post(url, data);
+  const res = await api.post('/hackathons/submissions', submissionData);
   return res.data;
 };
 
@@ -1586,22 +1410,11 @@ export const createSubmission = async (
  * Update a submission for a hackathon
  */
 export const updateSubmission = async (
-  hackathonSlugOrId: string,
   submissionId: string,
-  data: Omit<CreateSubmissionRequest, 'projectName'>,
-  organizationId?: string
+  data: Partial<Omit<CreateSubmissionRequest, 'hackathonId' | 'organizationId'>>
 ): Promise<UpdateSubmissionResponse> => {
-  let url: string;
-
-  // If organizationId is provided, use authenticated endpoint
-  if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/submissions/${submissionId}`;
-  } else {
-    // Otherwise, use public slug-based endpoint
-    url = `/hackathons/${hackathonSlugOrId}/submissions/${submissionId}`;
-  }
-
-  const res = await api.put(url, data);
+  // Backend uses /hackathons/submissions/:submissionId with PATCH
+  const res = await api.patch(`/hackathons/submissions/${submissionId}`, data);
   return res.data;
 };
 
@@ -1610,20 +1423,10 @@ export const updateSubmission = async (
  * Returns submission if exists, null otherwise
  */
 export const getMySubmission = async (
-  hackathonSlugOrId: string,
-  organizationId?: string
+  hackathonSlugOrId: string
 ): Promise<GetMySubmissionResponse> => {
-  let url: string;
-
-  // If organizationId is provided, use authenticated endpoint
-  if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/submissions/me`;
-  } else {
-    // Otherwise, use public slug-based endpoint
-    url = `/hackathons/${hackathonSlugOrId}/submissions/me`;
-  }
-
-  const res = await api.get(url);
+  // Backend uses /hackathons/:id/my-submission
+  const res = await api.get(`/hackathons/${hackathonSlugOrId}/my-submission`);
   return res.data;
 };
 
@@ -1632,21 +1435,10 @@ export const getMySubmission = async (
  * Returns full submission with votes and comments
  */
 export const getSubmissionDetails = async (
-  hackathonSlugOrId: string,
-  submissionId: string,
-  organizationId?: string
+  submissionId: string
 ): Promise<GetSubmissionDetailsResponse> => {
-  let url: string;
-
-  // If organizationId is provided, use authenticated endpoint
-  if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/submissions/${submissionId}`;
-  } else {
-    // Otherwise, use public slug-based endpoint
-    url = `/hackathons/${hackathonSlugOrId}/submissions/${submissionId}`;
-  }
-
-  const res = await api.get(url);
+  // Backend uses /hackathons/submissions/:submissionId
+  const res = await api.get(`/hackathons/submissions/${submissionId}`);
   return res.data;
 };
 
@@ -1701,7 +1493,7 @@ export const removeVote = async (
  */
 export const getPublicHackathonsList = async (
   filters: PublicHackathonsListFilters = {}
-): Promise<PublicHackathonsListResponse> => {
+): Promise<PublicHackathonsListData> => {
   const params = new URLSearchParams();
 
   if (filters.page !== undefined) {
@@ -1731,197 +1523,15 @@ export const getPublicHackathonsList = async (
 
   const res = await api.get<PublicHackathonsListResponse>(url);
 
-  return res.data;
-};
-
-/**
- * Transform PublicHackathon API response to Hackathon type structure
- * This allows the public API response to be used with existing components
- */
-export const transformPublicHackathonToHackathon = (
-  publicHackathon: PublicHackathon,
-  organizationName?: string
-): Hackathon & {
-  _organizationName?: string;
-  featured?: boolean;
-  organizerLogo?: string;
-} => {
-  // Parse totalPrizePool string to number (format: "50,000.00")
-  const prizePoolAmount =
-    parseFloat(publicHackathon.totalPrizePool.replace(/,/g, '')) || 0;
-
-  // Extract venue from API response or default to virtual
-  const venue: HackathonVenue | undefined = publicHackathon.venue
-    ? {
-        type:
-          publicHackathon.venue.type === 'physical'
-            ? VenueType.PHYSICAL
-            : VenueType.VIRTUAL,
-        country: publicHackathon.venue.country,
-        state: publicHackathon.venue.state,
-        city: publicHackathon.venue.city,
-        venueName: publicHackathon.venue.venueName,
-        venueAddress: publicHackathon.venue.venueAddress,
-      }
-    : undefined;
-
-  // Map API status to internal status
-  // API uses: upcoming, ongoing, ended
-  // Internal uses: published, ongoing, completed, cancelled
-  let internalStatus: Hackathon['status'] = 'published';
-  if (publicHackathon.status === 'ongoing') {
-    internalStatus = 'ongoing';
-  } else if (publicHackathon.status === 'ended') {
-    internalStatus = 'completed';
-  }
-
-  // Map all categories from API response
-  const categoriesArray: HackathonCategory[] = publicHackathon.categories
-    ? publicHackathon.categories
-        .map(cat => {
-          // Check if the category string matches any HackathonCategory enum value
-          const matchedCategory = Object.values(HackathonCategory).find(
-            enumCat => enumCat === cat
-          );
-          return matchedCategory || null;
-        })
-        .filter((cat): cat is HackathonCategory => cat !== null)
-    : [];
-
-  // Ensure at least one category
-  const categories: HackathonCategory[] =
-    categoriesArray.length > 0 ? categoriesArray : [HackathonCategory.OTHER];
-
-  // Extract resources (telegram, discord, etc.) from resources
-  // Handle both old format (array of strings) and new format (nested object)
-  let resourcesArray: string[] = [];
-  if (publicHackathon.resources) {
-    if (Array.isArray(publicHackathon.resources)) {
-      // Old format: array of strings
-      resourcesArray = publicHackathon.resources;
-    } else if (
-      typeof publicHackathon.resources === 'object' &&
-      'resources' in publicHackathon.resources &&
-      Array.isArray(publicHackathon.resources.resources)
-    ) {
-      // New format: nested object with resources array
-      resourcesArray = publicHackathon.resources.resources
-        .map(
-          (r: { link?: string; fileUrl?: string }) => r.link || r.fileUrl || ''
-        )
-        .filter((url: string) => url !== '');
+  return (
+    res.data.data || {
+      hackathons: [],
+      hasMore: false,
+      total: 0,
+      currentPage: 1,
+      totalPages: 0,
     }
-  }
-
-  const telegram = resourcesArray.find(
-    r => r.includes('t.me') || r.includes('telegram')
   );
-  const discord = resourcesArray.find(r => r.includes('discord'));
-
-  return {
-    _id: publicHackathon.id,
-    organizationId: '', // Not provided by public API
-    status: internalStatus,
-    createdAt: publicHackathon.startDate, // Use startDate as fallback
-    updatedAt: publicHackathon.endDate, // Use endDate as fallback
-    publishedAt: publicHackathon.startDate, // Use startDate as fallback
-    title: publicHackathon.title,
-    contractId: undefined,
-    escrowAddress: undefined,
-    transactionHash: undefined,
-    escrowDetails: undefined,
-    information: {
-      title: publicHackathon.title,
-      banner: publicHackathon.imageUrl,
-      description: publicHackathon.description,
-      categories: categories,
-      slug: publicHackathon.slug,
-      tagline: publicHackathon.tagline,
-      venue,
-    },
-    timeline: {
-      startDate: publicHackathon.startDate,
-      submissionDeadline: publicHackathon.deadline,
-      judgingDate: publicHackathon.deadline, // Use deadline as fallback
-      winnerAnnouncementDate: publicHackathon.endDate,
-      timezone: 'UTC', // Default timezone
-      phases: [],
-    },
-    participation: {
-      participantType: publicHackathon.participantType
-        ? publicHackathon.participantType === 'individual'
-          ? ParticipantType.INDIVIDUAL
-          : publicHackathon.participantType === 'team'
-            ? ParticipantType.TEAM
-            : ParticipantType.TEAM_OR_INDIVIDUAL
-        : undefined,
-      teamMin: undefined,
-      teamMax: undefined,
-      about: publicHackathon.subtitle,
-      submissionRequirements: undefined,
-      tabVisibility: undefined,
-    },
-    rewards: {
-      prizeTiers:
-        prizePoolAmount > 0
-          ? [
-              {
-                position: '1',
-                amount: prizePoolAmount,
-                currency: 'USDC', // Default currency
-                description: 'Total Prize Pool',
-              },
-            ]
-          : [],
-    },
-    resources: (() => {
-      if (!publicHackathon.resources) {
-        return { resources: [] };
-      }
-
-      // New format: nested object
-      if (
-        typeof publicHackathon.resources === 'object' &&
-        'resources' in publicHackathon.resources &&
-        Array.isArray(publicHackathon.resources.resources)
-      ) {
-        return publicHackathon.resources as HackathonResources;
-      }
-
-      // Old format: array of strings
-      if (Array.isArray(publicHackathon.resources)) {
-        return {
-          resources: publicHackathon.resources.map((resource: string) => ({
-            link: resource,
-            description: '',
-            fileUrl: undefined,
-            fileName: undefined,
-          })),
-        };
-      }
-
-      return { resources: [] };
-    })(),
-    judging: {
-      criteria: [],
-    },
-    collaboration: {
-      contactEmail: '',
-      telegram,
-      discord,
-      socialLinks: [],
-      sponsorsPartners: [],
-    },
-    _organizationName: organizationName || publicHackathon.organizer,
-    featured: publicHackathon.featured,
-    participants: publicHackathon.participants, // Add participants count for card display
-    organizerLogo: publicHackathon.organizerLogo,
-  } as Hackathon & {
-    _organizationName?: string;
-    featured?: boolean;
-    participants?: number;
-    organizerLogo?: string;
-  };
 };
 
 // Error handling utilities
@@ -1946,7 +1556,7 @@ export const isHackathon = (obj: unknown): obj is Hackathon => {
   return (
     typeof obj === 'object' &&
     obj !== null &&
-    '_id' in obj &&
+    'id' in obj &&
     'organizationId' in obj &&
     'information' in obj &&
     'timeline' in obj &&
@@ -1961,10 +1571,10 @@ export const isHackathonDraft = (obj: unknown): obj is HackathonDraft => {
   return (
     typeof obj === 'object' &&
     obj !== null &&
-    '_id' in obj &&
+    'id' in obj &&
     'organizationId' in obj &&
     'status' in obj &&
-    (obj as HackathonDraft).status === 'draft'
+    (obj as unknown as HackathonDraft).status === 'draft'
   );
 };
 
@@ -1990,7 +1600,13 @@ export const isPublishHackathonRequest = (
 };
 
 // ============================================
-// Discussions API Types and Functions
+// ============================================
+// Discussions API Types and Functions (DEPRECATED)
+// ============================================
+// These are deprecated. Use the generic comment system:
+// - Import from @/lib/api/comment instead
+// - Use CommentEntityType.HACKATHON for hackathon discussions
+// - Use Comment type from @/types/comment
 // ============================================
 
 export interface CreateDiscussionRequest {
@@ -2007,44 +1623,40 @@ export interface ReportDiscussionRequest {
   description?: string;
 }
 
-export interface GetHackathonDiscussionsResponse extends PaginatedResponse<Discussion> {
+// @deprecated Use GetCommentsResponse from @/types/comment instead
+export interface GetHackathonDiscussionsResponse extends PaginatedResponse<any> {
   success: true;
-  data: Discussion[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
+}
+
+// @deprecated Use CreateCommentResponse from @/types/comment instead
+export interface CreateDiscussionResponse extends ApiResponse<any> {
+  success: true;
+  data: any;
   message: string;
 }
 
-export interface CreateDiscussionResponse extends ApiResponse<Discussion> {
+// @deprecated Use UpdateCommentResponse from @/types/comment instead
+export interface UpdateDiscussionResponse extends ApiResponse<any> {
   success: true;
-  data: Discussion;
+  data: any;
   message: string;
 }
 
-export interface UpdateDiscussionResponse extends ApiResponse<Discussion> {
-  success: true;
-  data: Discussion;
-  message: string;
-}
-
+// @deprecated Use DeleteCommentResponse from @/types/comment instead
 export interface DeleteDiscussionResponse extends ApiResponse<null> {
   success: true;
   data: null;
   message: string;
 }
 
-export interface ReplyToDiscussionResponse extends ApiResponse<Discussion> {
+// @deprecated Use CreateCommentResponse from @/types/comment instead
+export interface ReplyToDiscussionResponse extends ApiResponse<any> {
   success: true;
-  data: Discussion;
+  data: any;
   message: string;
 }
 
+// @deprecated Use ReportCommentResponse from @/types/comment instead
 export interface ReportDiscussionResponse extends ApiResponse<null> {
   success: true;
   data: null;
@@ -2052,6 +1664,7 @@ export interface ReportDiscussionResponse extends ApiResponse<null> {
 }
 
 /**
+ * @deprecated Use getComments from @/lib/api/comment with CommentEntityType.HACKATHON instead
  * Get discussions for a hackathon
  */
 export const getHackathonDiscussions = async (
@@ -2193,7 +1806,7 @@ export const reportDiscussion = async (
 // ============================================
 
 export interface HackathonResourceDocument {
-  _id: string;
+  id: string;
   title: string;
   type: 'pdf' | 'doc' | 'sheet' | 'slide' | 'link' | 'video';
   url: string;
@@ -2235,7 +1848,7 @@ export const getHackathonResources = async (
 // ============================================
 
 export interface TeamRecruitmentPost {
-  _id: string;
+  id: string;
   hackathonId: string;
   organizationId: string;
   createdBy: {
@@ -2291,16 +1904,6 @@ export interface GetTeamPostsOptions {
 
 export interface GetTeamPostsResponse extends PaginatedResponse<TeamRecruitmentPost> {
   success: true;
-  data: TeamRecruitmentPost[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-  message: string;
 }
 
 export interface GetTeamPostDetailsResponse extends ApiResponse<TeamRecruitmentPost> {
@@ -2473,4 +2076,25 @@ export const trackContactClick = async (
 
   const res = await api.post(url);
   return res.data;
+};
+
+// export const GetHackathonBySlug = async (slug): Promise<Hackathon> => {
+//   const res = await api.get(`hackathons/s/${slug}`);
+//   return
+// }
+
+export const GetHackathonBySlug = async (
+  slug: string
+): Promise<GetHackathonResponse> => {
+  const res = await api.get(`/hackathons/s/${slug}`);
+
+  return {
+    success: true,
+    data: res.data,
+    message: 'Hackathon retrieved successfully',
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: '',
+    },
+  };
 };

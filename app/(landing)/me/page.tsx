@@ -1,12 +1,15 @@
+import { AuthGuard } from '@/components/auth';
 import { ProfileData } from './profile-data';
-// import { checkAuth } from '@/lib/check-auth';
 
 export default async function MePage() {
-  //Remove this comment when auth is implemented
-  // await checkAuth();
   return (
-    <section className=''>
-      <ProfileData />
-    </section>
+    <AuthGuard
+      redirectTo='/auth?mode=signin'
+      fallback={<div className='p-8 text-center'>Authenticating...</div>}
+    >
+      <section className=''>
+        <ProfileData />
+      </section>
+    </AuthGuard>
   );
 }

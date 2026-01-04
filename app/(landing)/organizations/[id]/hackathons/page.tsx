@@ -29,22 +29,23 @@ import { useDeleteHackathon } from '@/hooks/hackathon/use-delete-hackathon';
 import type { Hackathon, HackathonDraft } from '@/lib/api/hackathons';
 import { toast } from 'sonner';
 import DeleteHackathonDialog from '@/components/organization/DeleteHackathonDialog';
+import { Badge } from '@/components/ui/badge';
 
 const calculateDraftCompletion = (draft: HackathonDraft): number => {
   const fields = [
-    draft.information?.title,
-    draft.information?.banner,
-    draft.information?.description,
-    draft.information?.categories,
-    draft.timeline?.startDate,
-    draft.timeline?.submissionDeadline,
-    draft.timeline?.judgingDate,
-    draft.timeline?.winnerAnnouncementDate,
-    draft.timeline?.timezone,
-    draft.participation?.participantType,
-    draft.rewards?.prizeTiers?.length,
-    draft.judging?.criteria?.length,
-    draft.collaboration?.contactEmail,
+    draft.data.information?.name,
+    draft.data.information?.banner,
+    draft.data.information?.description,
+    draft.data.information?.categories,
+    draft.data.timeline?.startDate,
+    draft.data.timeline?.submissionDeadline,
+    draft.data.timeline?.judgingDate,
+    draft.data.timeline?.winnerAnnouncementDate,
+    draft.data.timeline?.timezone,
+    draft.data.participation?.participantType,
+    draft.data.rewards?.prizeTiers?.length,
+    draft.data.judging?.criteria?.length,
+    draft.data.collaboration?.contactEmail,
   ];
 
   const filledFields = fields.filter(field => {
@@ -92,7 +93,7 @@ export default function HackathonsPage() {
       organizationId,
       autoFetch: true,
     });
-
+  console.log('hackathons', hackathons);
   // Use the separate delete hook
   const { isDeleting, deleteHackathon } = useDeleteHackathon({
     organizationId,
@@ -116,7 +117,7 @@ export default function HackathonsPage() {
       type: 'draft' | 'hackathon';
       data: HackathonDraft | Hackathon;
     }> = [];
-
+    console.log({ drafts });
     drafts.forEach(draft => {
       if (statusFilter === 'all' || statusFilter === 'draft') {
         items.push({ type: 'draft', data: draft });
@@ -124,10 +125,10 @@ export default function HackathonsPage() {
     });
 
     hackathons.forEach(hackathon => {
-      if (hackathon.status === 'draft') return;
+      if (hackathon.status === 'DRAFT') return;
       if (
         statusFilter === 'all' ||
-        (statusFilter === 'open' && hackathon.status === 'published')
+        (statusFilter === 'open' && hackathon.status === 'PUBLISHED')
       ) {
         items.push({ type: 'hackathon', data: hackathon });
       }
@@ -137,7 +138,12 @@ export default function HackathonsPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = items.filter(item => {
-        const title = item.data.information?.title?.toLowerCase() || '';
+        const title =
+          item.type === 'draft'
+            ? (
+                item.data as HackathonDraft
+              ).data.information?.name?.toLowerCase() || ''
+            : (item.data as Hackathon).name?.toLowerCase() || '';
         return title.includes(query);
       });
     }
@@ -145,7 +151,11 @@ export default function HackathonsPage() {
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(item => {
         const category =
-          item.data.information?.categories?.join(',')?.toLowerCase() || '';
+          item.type === 'draft'
+            ? (item.data as HackathonDraft).data.information?.categories
+                ?.join(',')
+                ?.toLowerCase() || ''
+            : ''; // Categories filtering only applies to drafts for now
         return category.includes(categoryFilter.toLowerCase());
       });
     }
@@ -162,18 +172,19 @@ export default function HackathonsPage() {
   const isLoading = hackathonsLoading || draftsLoading;
 
   const stats = useMemo(() => {
-    const published = hackathons.filter(h => h.status === 'published').length;
+    const published = hackathons.filter(h => h.status === 'PUBLISHED').length;
     const total = hackathons.length + drafts.length;
     return { published, drafts: drafts.length, total };
   }, [hackathons, drafts]);
 
   const handleDeleteClick = (hackathonId: string) => {
-    const hackathon = allHackathons.find(item => item.data._id === hackathonId);
+    const hackathon = allHackathons.find(item => item.data.id === hackathonId);
     if (hackathon) {
       const title =
-        hackathon.data.information?.title ||
-        hackathon.data.title ||
-        'Untitled Hackathon';
+        hackathon.type === 'draft'
+          ? (hackathon.data as HackathonDraft).data.information?.name ||
+            'Untitled Hackathon'
+          : (hackathon.data as Hackathon).name || 'Untitled Hackathon';
       setHackathonToDelete({ id: hackathonId, title });
       setDeleteDialogOpen(true);
     }
@@ -373,43 +384,54 @@ export default function HackathonsPage() {
         ) : (
           <div className='space-y-3'>
             {allHackathons.map(item => {
-              const isDraft =
-                item.type === 'draft' ||
-                (item.data as Hackathon | HackathonDraft).status === 'draft';
+              const isDraft = item.type === 'draft';
               const hackathon = item.data;
-              const title =
-                hackathon.information?.title ||
-                hackathon.title ||
-                'Untitled Hackathon';
+              const title = isDraft
+                ? (hackathon as HackathonDraft).data.information?.name ||
+                  'Untitled Hackathon'
+                : (hackathon as Hackathon).name || 'Untitled Hackathon';
               const completion = isDraft
                 ? calculateDraftCompletion(hackathon as HackathonDraft)
                 : 0;
-              const endDate =
-                hackathon.timeline?.submissionDeadline ||
-                hackathon.timeline?.winnerAnnouncementDate;
-              const totalPrize =
-                hackathon.rewards?.prizeTiers?.reduce(
-                  (sum, tier) => sum + (tier.amount || 0),
-                  0
-                ) || 0;
+              const endDate = isDraft
+                ? (hackathon as HackathonDraft).data.timeline
+                    ?.submissionDeadline ||
+                  (hackathon as HackathonDraft).data.timeline
+                    ?.winnerAnnouncementDate
+                : (hackathon as Hackathon).submissionDeadline ||
+                  (hackathon as Hackathon).endDate;
+              const totalPrize = isDraft
+                ? (
+                    hackathon as HackathonDraft
+                  ).data.rewards?.prizeTiers?.reduce(
+                    (sum: number, tier: any) => sum + (tier.amount || 0),
+                    0
+                  ) || 0
+                : (hackathon as Hackathon).prizeTiers?.reduce(
+                    (sum: number, tier: any) => sum + (tier.amount || 0),
+                    0
+                  ) || 0;
 
               if (isDraft) {
                 return (
                   <div
-                    key={`draft-${hackathon._id}`}
+                    key={`draft-${hackathon.id}`}
                     onClick={() =>
                       router.push(
-                        `/organizations/${organizationId}/hackathons/drafts/${hackathon._id}`
+                        `/organizations/${organizationId}/hackathons/drafts/${hackathon.id}`
                       )
                     }
                     className='group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'
                   >
                     <div className='mb-4 flex items-center justify-between'>
                       <div className='flex items-center gap-3'>
-                        <span className='rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400'>
+                        <Badge
+                          variant='outline'
+                          className='rounded-full bg-zinc-500 px-3 py-1 text-xs font-medium text-zinc-100'
+                        >
                           Draft
-                        </span>
-                        <span className='text-sm text-zinc-500'>
+                        </Badge>
+                        <span className='text-sm text-white'>
                           {completion}% complete
                         </span>
                       </div>
@@ -418,7 +440,7 @@ export default function HackathonsPage() {
                           onClick={e => {
                             e.stopPropagation();
                             router.push(
-                              `/hackathons/preview/${organizationId}/${hackathon._id}`
+                              `/hackathons/preview/${organizationId}/${hackathon.id}`
                             );
                           }}
                           className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 opacity-0 transition-all group-hover:opacity-100 hover:border-zinc-700 hover:text-white'
@@ -429,7 +451,7 @@ export default function HackathonsPage() {
                         <button
                           onClick={e => {
                             e.stopPropagation();
-                            handleDeleteClick(hackathon._id);
+                            handleDeleteClick(hackathon.id);
                           }}
                           className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 opacity-0 transition-all group-hover:opacity-100 hover:border-red-600 hover:text-red-500'
                           title='Delete Draft'
@@ -444,7 +466,7 @@ export default function HackathonsPage() {
                           onClick={e => {
                             e.stopPropagation();
                             router.push(
-                              `/organizations/${organizationId}/hackathons/drafts/${hackathon._id}`
+                              `/organizations/${organizationId}/hackathons/drafts/${hackathon.id}`
                             );
                           }}
                         >
@@ -469,25 +491,26 @@ export default function HackathonsPage() {
 
               return (
                 <div
-                  key={`hackathon-${hackathon._id}`}
+                  key={`hackathon-${hackathon.id}`}
                   className='group rounded-xl border border-zinc-800 bg-zinc-900/30 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'
                 >
                   <div className='p-6'>
                     <div className='mb-4 flex items-start justify-between'>
                       <div className='flex-1'>
                         <div className='mb-3 flex items-center gap-3'>
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-medium ${
-                              hackathon.status === 'published' ||
-                              hackathon.status === 'ongoing'
+                          <Badge
+                            variant='outline'
+                            className={`rounded-full border-none px-3 py-1 text-xs font-medium ${
+                              hackathon.status === 'PUBLISHED' ||
+                              hackathon.status === 'ONGOING'
                                 ? 'bg-green-500/10 text-green-500'
-                                : 'bg-zinc-800 text-zinc-400'
+                                : 'bg-secondary-500/10 text-secondary-500'
                             }`}
                           >
-                            {hackathon.status === 'published'
+                            {hackathon.status === 'PUBLISHED'
                               ? 'Live'
                               : hackathon.status}
-                          </span>
+                          </Badge>
                           {endDate && (
                             <div className='flex items-center gap-1.5 text-sm text-zinc-500'>
                               <Calendar className='h-3.5 w-3.5' />
@@ -532,7 +555,7 @@ export default function HackathonsPage() {
                         <button
                           onClick={() =>
                             router.push(
-                              `/organizations/${organizationId}/hackathons/${hackathon._id}`
+                              `/organizations/${organizationId}/hackathons/${hackathon.id}`
                             )
                           }
                           className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-zinc-700 hover:text-white'
@@ -543,7 +566,7 @@ export default function HackathonsPage() {
                         <button
                           onClick={() =>
                             router.push(
-                              `/organizations/${organizationId}/hackathons/${hackathon._id}/settings`
+                              `/organizations/${organizationId}/hackathons/${hackathon.id}/settings`
                             )
                           }
                           className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-zinc-700 hover:text-white'
@@ -552,7 +575,7 @@ export default function HackathonsPage() {
                           <Settings className='h-4 w-4' />
                         </button>
                         <button
-                          onClick={() => handleDeleteClick(hackathon._id)}
+                          onClick={() => handleDeleteClick(hackathon.id)}
                           className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-red-600 hover:text-red-500'
                           title='Delete Hackathon'
                           disabled={isDeleting}

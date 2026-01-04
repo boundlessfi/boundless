@@ -23,7 +23,7 @@ export const HackathonParticipants = () => {
         <h3 className='mb-3 text-xl font-semibold text-white'>
           Understanding Participant Status
         </h3>
-        <div className='flex items-start gap-3 text-sm text-gray-300'>
+        <div className='flex shrink-0 items-start gap-3 text-sm text-gray-300'>
           <div className='flex flex-shrink-0 items-center gap-2'>
             <div className='relative'>
               <div className='h-8 w-8 rounded-full bg-gray-700' />

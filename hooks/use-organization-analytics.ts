@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { getOrganizationAnalytics } from '@/lib/api/organization';
+import { useMemo } from 'react';
+import { useOrganization } from '@/lib/providers';
 import type {
   OrganizationTrend,
   OrganizationTimeSeriesPoint,
-} from '@/lib/api/organization';
+} from '@/lib/api/types';
 
 export interface OrganizationAnalyticsData {
   trends: {
@@ -18,61 +18,39 @@ export interface OrganizationAnalyticsData {
   };
 }
 
-export interface UseOrganizationAnalyticsOptions {
-  organizationId?: string;
-  enabled?: boolean;
-}
-
 export interface UseOrganizationAnalyticsReturn {
   analytics: OrganizationAnalyticsData | null;
   isLoading: boolean;
   error: string | null;
-  refetch: () => Promise<void>;
 }
 
-export function useOrganizationAnalytics(
-  options: UseOrganizationAnalyticsOptions = {}
-): UseOrganizationAnalyticsReturn {
-  const { organizationId, enabled = true } = options;
+export function useOrganizationAnalytics(): UseOrganizationAnalyticsReturn {
+  const {
+    activeOrg,
+    isLoading: orgLoading,
+    error: orgError,
+  } = useOrganization();
 
-  const [analytics, setAnalytics] = useState<OrganizationAnalyticsData | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchAnalytics = useCallback(async () => {
-    if (!organizationId || !enabled) {
-      return;
+  const analytics = useMemo(() => {
+    if (!activeOrg?.analytics) {
+      return null;
     }
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await getOrganizationAnalytics(organizationId);
-      if (response.success && response.data) {
-        setAnalytics(response.data);
-      } else {
-        setError('Failed to fetch analytics data');
-      }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to fetch analytics';
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [organizationId, enabled]);
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+    return {
+      trends: {
+        members: activeOrg.analytics.trends.members,
+        hackathons: activeOrg.analytics.trends.hackathons,
+        grants: activeOrg.analytics.trends.grants,
+      },
+      timeSeries: {
+        hackathons: activeOrg.analytics.timeSeries.hackathons,
+      },
+    };
+  }, [activeOrg?.analytics]);
 
   return {
     analytics,
-    isLoading,
-    error,
-    refetch: fetchAnalytics,
+    isLoading: orgLoading,
+    error: orgError,
   };
 }

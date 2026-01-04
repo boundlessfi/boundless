@@ -2,14 +2,14 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TeamList, TeamMember } from '@/components/ui/TeamList';
-import { Project } from '@/types/project';
 import { ProjectList } from './ProjectList';
+import { CrowdfundingProject } from '@/types/project';
 
 interface ModalTabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   users?: TeamMember[];
-  projects: Project[];
+  projects: CrowdfundingProject[];
   onMemberClick: (member: TeamMember) => void;
 }
 

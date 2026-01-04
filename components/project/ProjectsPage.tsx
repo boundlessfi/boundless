@@ -6,7 +6,6 @@ import ExploreHeader from '@/components/projects/ExploreHeader';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useProjects } from '@/hooks/project/use-project';
 import { useProjectFilters } from '@/hooks/project/use-project-filters';
-import { useProjectTransform } from '@/hooks/project/use-project-transform';
 import { BoundlessButton } from '../buttons';
 import { ArrowDownIcon, RefreshCwIcon, XIcon } from 'lucide-react';
 import EmptyState from '../EmptyState';
@@ -32,15 +31,13 @@ export default function ProjectsClient({
   const { projects, loading, loadingMore, error, hasMore, loadMore, refetch } =
     useProjects({ initialFilters: filters });
 
-  const { transformProjectForCard } = useProjectTransform();
-
   // Memoized project cards to prevent unnecessary re-renders
   const projectCards = React.useMemo(() => {
-    return projects.map(project => {
-      const cardData = transformProjectForCard(project);
-      return <ProjectCard isFullWidth={true} key={project._id} {...cardData} />;
-    });
-  }, [projects, transformProjectForCard]);
+    // console.log({projects})
+    return projects.map(project => (
+      <ProjectCard isFullWidth={true} key={project.id} project={project} />
+    ));
+  }, [projects]);
 
   return (
     <div className={className} id='explore-project'>

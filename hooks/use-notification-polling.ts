@@ -14,8 +14,8 @@ export const useNotificationPolling = (
   notificationsHook: UseNotificationsReturn,
   options: UseNotificationPollingOptions = {}
 ): void => {
-  const { interval = 30000, enabled = true } = options;
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { interval = 900000000000000, enabled = false } = options;
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { refetch } = notificationsHook;
 
   useEffect(() => {

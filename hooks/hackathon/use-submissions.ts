@@ -24,7 +24,8 @@ export function useSubmissions() {
     const categoriesSet = new Set<string>();
     submissions.forEach(sub => {
       if (sub.category) categoriesSet.add(sub.category);
-      if (sub.categories) sub.categories.forEach(cat => categoriesSet.add(cat));
+      if (sub.categories)
+        sub.categories.forEach((cat: string) => categoriesSet.add(cat));
     });
 
     return [
@@ -55,7 +56,7 @@ export function useSubmissions() {
           ? [sub.category, ...(sub.categories || [])]
           : sub.categories || [];
         return allCategories.some(
-          cat => cat.toLowerCase() === selectedCategory.toLowerCase()
+          (cat: string) => cat.toLowerCase() === selectedCategory.toLowerCase()
         );
       });
     }

@@ -1,28 +1,4 @@
-import type { CrowdfundingProject } from '@/lib/api/types';
-
-export interface ExtendedProject extends CrowdfundingProject {
-  // Additional fields that might be added during transformation
-  daysToDeadline?: number;
-  additionalCreator?: {
-    name: string;
-    role: string;
-    avatar: string;
-  };
-  links?: Array<{
-    type: string;
-    url: string;
-    icon: string;
-  }>;
-  // Legacy fields for backward compatibility
-  name?: string;
-  logo?: string;
-  validation?: string;
-  date?: string;
-  totalVotes?: number;
-  // Escrow fields
-  contractId?: string;
-  escrowAddress?: string;
-}
+import { Crowdfunding, CrowdfundingProject } from '@/types/project';
 
 export interface CrowdfundData {
   _id: string;
@@ -38,25 +14,25 @@ export interface CrowdfundData {
 }
 
 export interface ProjectSidebarProps {
-  project: ExtendedProject;
-  crowdfund?: CrowdfundData;
+  project: CrowdfundingProject;
+  crowdfund?: Crowdfunding;
   isMobile?: boolean;
 }
 
 export interface ProjectSidebarHeaderProps {
-  project: ExtendedProject;
+  project: CrowdfundingProject;
   projectStatus: ProjectStatus;
 }
 
 export interface ProjectSidebarProgressProps {
-  project: ExtendedProject;
-  crowdfund?: CrowdfundData;
+  project: CrowdfundingProject;
+  crowdfund?: Crowdfunding;
   projectStatus: string;
 }
 
 export interface ProjectSidebarActionsProps {
-  project: ExtendedProject;
-  crowdfund?: CrowdfundData;
+  project: CrowdfundingProject;
+  crowdfund?: Crowdfunding;
   projectStatus: string;
   isVoting: boolean;
   userVote: 1 | -1 | null;
@@ -64,11 +40,11 @@ export interface ProjectSidebarActionsProps {
 }
 
 export interface ProjectSidebarCreatorProps {
-  project: ExtendedProject;
+  project: CrowdfundingProject;
 }
 
 export interface ProjectSidebarLinksProps {
-  project: ExtendedProject;
+  project: CrowdfundingProject;
 }
 
 export type ProjectStatus =

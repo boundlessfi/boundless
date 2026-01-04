@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMarkdown } from '@/hooks/use-markdown';
-import { CrowdfundingProject } from '@/lib/api/types';
+import { CrowdfundingProject } from '@/types/project';
 
 interface MilestoneDetailsProps {
   milestoneId: string;
@@ -158,7 +158,9 @@ const MilestoneDetails = ({
       )}
 
       {/* Project Links Section */}
-      {(projectLinks.length > 0 || projectWebsite || githubUrl) && (
+      {((project?.socialLinks && project?.socialLinks.length > 0) ||
+        project?.projectWebsite ||
+        project?.githubUrl) && (
         <section>
           <h2 className='mb-6 text-2xl font-bold text-white'>Project Links</h2>
           <div className='space-y-3'>

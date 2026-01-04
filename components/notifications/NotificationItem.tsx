@@ -70,7 +70,7 @@ export const NotificationItem = ({
   const content = (
     <div
       className={cn(
-        'flex items-start gap-3 rounded-lg border p-4 transition-all',
+        'flex items-start gap-3 rounded-lg border p-2 transition-all',
         !notification.read
           ? 'border-primary/30 bg-primary/5 hover:bg-primary/10'
           : 'border-zinc-800/50 bg-zinc-900/30 hover:bg-zinc-900/50',

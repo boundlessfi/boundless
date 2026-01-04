@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -13,14 +13,33 @@ import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BoundlessButton } from '@/components/buttons';
 import { useOrganization } from '@/lib/providers/OrganizationProvider';
+import { authClient } from '@/lib/auth-client';
 import { toast } from 'sonner';
+import LoadingSpinner from '@/components/LoadingSpinner';
+
+interface BetterAuthMember {
+  id: string;
+  organizationId: string;
+  userId: string;
+  role: string;
+  createdAt: Date;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    image?: string;
+  };
+}
 
 interface Member {
   id: string;
+  userId: string;
   name: string;
   email: string;
   avatar?: string;
-  role: 'member';
+  role: 'owner' | 'admin' | 'member';
+  joinedAt: string;
+  status: 'active' | 'pending' | 'suspended';
 }
 
 interface TransferOwnershipTabProps {
@@ -33,21 +52,56 @@ export default function TransferOwnershipTab({
   const [selectedMember, setSelectedMember] = useState<string>('');
   const [isTransferring, setIsTransferring] = useState(false);
   const [popoverWidth, setPopoverWidth] = useState(0);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const { activeOrg, activeOrgId, transferOwnership } = useOrganization();
+  const { activeOrgId, transferOwnership } = useOrganization();
 
-  // Create members list using the SAME logic as MembersTab
-  const members: Member[] =
-    activeOrg?.members
-      ?.filter(email => email !== activeOrg?.owner) // Exclude owner
-      ?.map((email, idx) => ({
-        id: `${idx}-${email}`,
-        name: email.split('@')[0] || email,
-        email,
-        role: 'member' as const,
-        joinedAt: new Date().toISOString(),
-        status: 'active' as const,
-      })) || [];
+  // Fetch members using Better Auth API (same as MembersTab)
+  const fetchMembers = useCallback(async () => {
+    if (!activeOrgId) return;
+
+    setLoadingMembers(true);
+    try {
+      const { data, error } = await authClient.organization.listMembers({
+        query: {
+          organizationId: activeOrgId,
+          limit: 100,
+          offset: 0,
+          sortBy: 'createdAt',
+          sortDirection: 'desc',
+        },
+      });
+
+      if (error) {
+        toast.error('Failed to load members');
+        return;
+      }
+
+      const transformedMembers: Member[] = (data?.members || [])
+        .filter((member: BetterAuthMember) => member.role !== 'owner') // Exclude owners
+        .map((member: BetterAuthMember) => ({
+          id: member.id,
+          userId: member.userId,
+          name: member.user.name || member.user.email,
+          email: member.user.email,
+          avatar: member.user.image,
+          role: member.role as 'owner' | 'admin' | 'member',
+          joinedAt: member.createdAt.toISOString(),
+          status: 'active' as const,
+        }));
+
+      setMembers(transformedMembers);
+    } catch {
+      toast.error('Failed to load members');
+    } finally {
+      setLoadingMembers(false);
+    }
+  }, [activeOrgId]);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
 
   useEffect(() => {
     const updateWidth = () => {
@@ -77,9 +131,12 @@ export default function TransferOwnershipTab({
         return;
       }
 
-      await transferOwnership(activeOrgId, selectedMemberData.email);
+      await transferOwnership(activeOrgId, selectedMemberData.id);
 
       toast.success('Ownership transferred successfully');
+
+      // Refresh members after transfer
+      await fetchMembers();
 
       onTransfer?.(selectedMember);
       setSelectedMember(''); // Reset selection
@@ -91,7 +148,18 @@ export default function TransferOwnershipTab({
       setIsTransferring(false);
     }
   };
-
+  const loadingui = loadingMembers;
+  if (loadingui) {
+    return (
+      <div className='relative h-[calc(100vh-300px)] space-y-8'>
+        {loadingui && (
+          <div className='absolute top-0 right-0 bottom-0 left-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm'>
+            <LoadingSpinner size='lg' className='z-20 text-white' />
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
     <>
       <div className='mb-6 space-y-6 rounded-[12px] border border-gray-900 bg-[#101010] p-4'>
@@ -109,7 +177,8 @@ export default function TransferOwnershipTab({
           </p>
           {/* Debug info */}
           <div className='mt-2 text-xs text-gray-400'>
-            Available members: {members.length}
+            Available members: {members.length}{' '}
+            {loadingMembers && '(Loading...)'}
           </div>
         </div>
 

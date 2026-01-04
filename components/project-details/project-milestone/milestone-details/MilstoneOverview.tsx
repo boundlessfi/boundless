@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Github } from 'lucide-react';
 import Image from 'next/image';
-import { CrowdfundingProject } from '@/lib/api/types';
+import { CrowdfundingProject } from '@/types/project';
 
 interface MilstoneOverviewProps {
   project?: CrowdfundingProject | null;
@@ -151,11 +151,11 @@ const MilstoneOverview = ({ project, milestone }: MilstoneOverviewProps) => {
             <div className='flex items-center space-x-4'>
               <div className='relative'>
                 <div className='h-12 w-12 overflow-hidden rounded-full border-[0.5px] border-[#2B2B2B]'>
-                  {project?.media?.logo ? (
+                  {project?.logo ? (
                     <Image
                       width={48}
                       height={48}
-                      src={project.media.logo}
+                      src={project.logo}
                       alt={project.title}
                       className='h-full w-full object-cover'
                     />
@@ -216,8 +216,7 @@ const MilstoneOverview = ({ project, milestone }: MilstoneOverviewProps) => {
 
                 <div className='flex flex-col space-y-0.5'>
                   <span className='text-base font-normal text-white'>
-                    {project.creator.profile?.firstName}{' '}
-                    {project.creator.profile?.lastName}
+                    {project.creator.name}{' '}
                   </span>
                   <span className='text-sm text-[#DBF936]'>OWNER</span>
                 </div>

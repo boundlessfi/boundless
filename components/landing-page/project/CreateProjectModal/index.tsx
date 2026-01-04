@@ -135,6 +135,24 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
     return () => {};
   }, [currentStep]);
 
+  // Auto-trigger transaction signing when we reach the signing state
+  useEffect(() => {
+    if (
+      flowStep === 'signing' &&
+      unsignedTransaction &&
+      !isSigningTransaction &&
+      submitErrors.length === 0
+    ) {
+      // Automatically trigger signing without requiring manual button click
+      handleSignTransaction();
+    }
+  }, [
+    flowStep,
+    unsignedTransaction,
+    isSigningTransaction,
+    submitErrors.length,
+  ]);
+
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
@@ -248,10 +266,9 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
         backup: contact.backupContact || '',
       },
       socialLinks: apiSocialLinks,
-      contractId: '',
-      escrowAddress: '',
+      escrowId: '',
       transactionHash: '',
-      escrowDetails: {},
+      validateMilestones: true,
     };
   };
 
@@ -353,24 +370,19 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
       // Add escrow data
       const projectRequest: CreateCrowdfundingProjectRequest = {
         ...apiRequest,
-        contractId,
-        escrowAddress: contractId, // In Stellar, contractId is the escrow address
+        escrowId: contractId, // Use contractId as escrowId
         transactionHash,
-        escrowDetails: {}, // Optional escrow details
+        validateMilestones: true,
       };
 
       // Create the project
-      const response = await createCrowdfundingProject(projectRequest);
+      await createCrowdfundingProject(projectRequest);
 
-      if (response.success) {
-        // Project created successfully
-        setFlowStep('success');
-        setShowSuccess(true);
-        setIsSigningTransaction(false);
-        setIsSubmitting(false);
-      } else {
-        throw new Error(response.message || 'Failed to create project');
-      }
+      // Project created successfully (new response structure)
+      setFlowStep('success');
+      setShowSuccess(true);
+      setIsSigningTransaction(false);
+      setIsSubmitting(false);
     } catch (error) {
       let errorMessage = 'Failed to create project. Please try again.';
 
@@ -624,7 +636,8 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
         description: payload.basic?.vision || payload.details?.vision || '',
         platformFee: 4, // 4% platform fee
         trustline: {
-          address: 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA', // USDC trustline
+          address: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
+          symbol: 'USDC',
         },
         roles: {
           approver: walletAddress,
@@ -856,27 +869,24 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
     if (flowStep === 'success' || showSuccess) {
       return <SuccessScreen onContinue={handleReset} />;
     }
+    // Show loading screen during signing and confirming states
     if (
-      flowStep === 'signing' &&
-      unsignedTransaction &&
-      !isSigningTransaction
+      flowStep === 'signing' ||
+      flowStep === 'confirming' ||
+      isSigningTransaction
     ) {
       return (
         <TransactionSigningScreen
           onSign={handleSignTransaction}
-          flowStep='signing'
+          isSigning={true}
+          flowStep={
+            flowStep === 'signing' || flowStep === 'confirming'
+              ? flowStep
+              : 'confirming'
+          }
           onRetry={handleRetry}
           hasError={submitErrors.length > 0}
           errorMessage={submitErrors[0]}
-        />
-      );
-    }
-    if (flowStep === 'confirming' || isSigningTransaction) {
-      return (
-        <TransactionSigningScreen
-          onSign={handleSignTransaction}
-          isSigning={true}
-          flowStep='confirming'
         />
       );
     }

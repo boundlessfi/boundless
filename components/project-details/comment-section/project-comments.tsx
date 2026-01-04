@@ -1,72 +1,117 @@
 'use client';
 
 import { useState } from 'react';
-import { useComments, useCommentManagement } from '@/hooks/use-comments';
+import { useAuth } from '@/hooks/use-auth';
+import { useCommentSystem } from '@/hooks/use-comment-system';
+import { useCommentRealtime } from '@/hooks/use-comment-realtime';
 import { CommentsSortDropdown } from './comments-sort-dropdown';
 import { CommentItem } from './comment-item';
 import { CommentInput } from './comment-input';
 import { CommentsEmptyState } from './comments-empty-state';
-// import { ProjectComment } from '@/types/comment';
+import { CommentEntityType, Comment } from '@/types/comment';
 
 interface ProjectCommentsProps {
   projectId: string;
 }
 
 export function ProjectComments({ projectId }: ProjectCommentsProps) {
+  const { user } = useAuth();
   const [sortBy, setSortBy] = useState<
     'createdAt' | 'updatedAt' | 'totalReactions'
   >('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const { comments, pagination, loading, error, refetch, loadMore } =
-    useComments({
-      projectId,
-      sortBy,
-      sortOrder,
-      enabled: true,
-    });
+  // Current user info
+  const currentUserId = user?.id;
+  const isRegistered = !!user;
 
-  const {
-    createComment,
-    updateComment,
-    deleteComment,
-    reportComment,
-    error: actionError,
-  } = useCommentManagement(projectId);
+  // Initialize the comment system for this project
+  const commentSystem = useCommentSystem({
+    entityType: CommentEntityType.PROJECT,
+    entityId: projectId,
+    page: 1,
+    limit: 20,
+    enabled: true,
+  });
+
+  console.log('commentSystem comments:', commentSystem.comments.comments);
+
+  // Real-time updates
+  useCommentRealtime(
+    {
+      entityType: CommentEntityType.PROJECT,
+      entityId: projectId,
+      userId: currentUserId,
+      enabled: true,
+    },
+    {
+      onCommentCreated: comment => {
+        // For replies, we might need to fetch the parent comment with replies
+        // For now, refetch all comments to ensure proper nesting
+        console.log('comment created', comment);
+        commentSystem.comments.refetch();
+      },
+      onCommentUpdated: comment => {
+        console.log('comment updated', comment);
+        commentSystem.comments.refetch();
+      },
+      onCommentDeleted: commentId => {
+        console.log('comment deleted', commentId);
+        commentSystem.comments.refetch();
+      },
+      onReactionAdded: data => {
+        console.log('reaction added', data);
+        commentSystem.comments.refetch();
+      },
+      onReactionRemoved: data => {
+        console.log('reaction removed', data);
+        commentSystem.comments.refetch();
+      },
+      onCommentStatusChanged: data => {
+        console.log('comment status changed', data);
+        commentSystem.comments.refetch();
+      },
+    }
+  );
 
   const handleAddComment = async (content: string) => {
     try {
-      await createComment({ content });
-      refetch();
-    } catch {
-      // Handle error silently or show user-friendly message
+      await commentSystem.createComment.createComment({
+        content,
+        entityType: CommentEntityType.PROJECT,
+        entityId: projectId,
+      });
+    } catch (error) {
+      console.error('Failed to create comment:', error);
     }
   };
 
   const handleAddReply = async (parentCommentId: string, content: string) => {
     try {
-      await createComment({ content, parentCommentId });
-      refetch();
-    } catch {
-      // Handle error silently or show user-friendly message
+      await commentSystem.createComment.createComment({
+        content,
+        parentId: parentCommentId,
+        entityType: CommentEntityType.PROJECT,
+        entityId: projectId,
+      } as any);
+    } catch (error) {
+      console.error('Failed to create reply:', error);
     }
   };
 
   const handleUpdateComment = async (commentId: string, content: string) => {
     try {
-      await updateComment(commentId, { content });
-      refetch();
-    } catch {
-      // Handle error silently or show user-friendly message
+      await commentSystem.updateComment.updateComment(commentId, { content });
+    } catch (error) {
+      console.error('Failed to update comment:', error);
     }
   };
 
   const handleDeleteComment = async (commentId: string) => {
     try {
-      await deleteComment(commentId);
-      refetch();
-    } catch {
-      // Handle error silently or show user-friendly message
+      await commentSystem.deleteComment.deleteComment(commentId);
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
     }
   };
 
@@ -76,22 +121,60 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
     description?: string
   ) => {
     try {
-      await reportComment(commentId, {
-        reason: reason as
-          | 'spam'
-          | 'inappropriate'
-          | 'harassment'
-          | 'misinformation'
-          | 'other',
+      await commentSystem.reportComment.reportComment(commentId, {
+        reason: reason as any,
         description,
       });
-      refetch();
-    } catch {
-      // Handle error silently or show user-friendly message
+    } catch (error) {
+      console.error('Failed to report comment:', error);
     }
   };
 
-  if (loading && comments.length === 0) {
+  const handleSortChange = (
+    newSortBy: 'createdAt' | 'updatedAt' | 'totalReactions',
+    newSortOrder: 'asc' | 'desc'
+  ) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    // Refetch with new sorting
+    commentSystem.comments.refetch();
+  };
+
+  // Function to nest comments based on parentId
+  const nestComments = (comments: Comment[]): Comment[] => {
+    const commentMap = new Map<string, Comment>();
+    const topLevelComments: Comment[] = [];
+
+    // First pass: create a map of all comments
+    comments.forEach(comment => {
+      commentMap.set(comment.id, { ...comment, replies: [] });
+    });
+
+    // Second pass: nest replies under their parents
+    comments.forEach(comment => {
+      if (comment.parentId) {
+        // This is a reply, add it to its parent
+        const parent = commentMap.get(comment.parentId);
+        if (parent && parent.replies) {
+          parent.replies.push(commentMap.get(comment.id)!);
+        }
+      } else {
+        // This is a top-level comment
+        topLevelComments.push(commentMap.get(comment.id)!);
+      }
+    });
+
+    return topLevelComments;
+  };
+  console.log(
+    'Rendering ProjectComments component',
+    nestComments(commentSystem.comments.comments)
+  );
+
+  if (
+    commentSystem.comments.loading &&
+    commentSystem.comments.comments.length === 0
+  ) {
     return (
       <div className='w-full'>
         <div className='flex items-center justify-center py-8'>
@@ -101,14 +184,14 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
     );
   }
 
-  if (error) {
+  if (commentSystem.comments.error) {
     return (
       <div className='w-full'>
         <div className='py-4 text-center text-red-600'>
-          Error loading comments: {error}
+          Error loading comments: {commentSystem.comments.error}
         </div>
         <button
-          onClick={refetch}
+          onClick={() => commentSystem.comments.refetch()}
           className='mx-auto block rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700'
         >
           Retry
@@ -117,8 +200,13 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
     );
   }
 
-  if (comments.length === 0) {
-    return <CommentsEmptyState onAddComment={handleAddComment} />;
+  if (commentSystem.comments.comments.length === 0) {
+    return (
+      <CommentsEmptyState
+        onAddComment={handleAddComment}
+        isRegistered={isRegistered}
+      />
+    );
   }
 
   return (
@@ -127,46 +215,46 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
         <CommentsSortDropdown
           sortBy={sortBy}
           sortOrder={sortOrder}
-          onSortChange={(
-            newSortBy: 'createdAt' | 'updatedAt' | 'totalReactions',
-            newSortOrder: 'asc' | 'desc'
-          ) => {
-            setSortBy(newSortBy);
-            setSortOrder(newSortOrder);
-          }}
+          onSortChange={handleSortChange}
         />
       </div>
 
       <div className='space-y-6 px-4 pb-6 md:px-6'>
-        {comments.map(comment => (
+        {nestComments(commentSystem.comments.comments).map(comment => (
           <CommentItem
-            key={comment._id}
+            key={comment.id}
             comment={comment}
             onAddReply={handleAddReply}
             onUpdate={handleUpdateComment}
             onDelete={handleDeleteComment}
             onReport={handleReportComment}
+            currentUserId={currentUserId}
+            isRegistered={isRegistered}
           />
         ))}
       </div>
 
-      {pagination.hasNext && (
+      {commentSystem.comments.pagination.hasNext && (
         <div className='mt-6 px-4 text-center md:px-6'>
           <button
-            onClick={loadMore}
-            disabled={loading}
+            onClick={() => commentSystem.comments.loadMore()}
+            disabled={commentSystem.comments.loading}
             className='rounded-md bg-gray-100 px-6 py-2 text-gray-700 hover:bg-gray-200 disabled:opacity-50'
           >
-            {loading ? 'Loading...' : 'Load More Comments'}
+            {commentSystem.comments.loading
+              ? 'Loading...'
+              : 'Load More Comments'}
           </button>
         </div>
       )}
 
       <CommentInput onSubmit={handleAddComment} />
 
-      {actionError && (
+      {commentSystem.createComment.error && (
         <div className='mx-4 mt-4 rounded-md border border-red-200 bg-red-50 p-3 md:mx-6'>
-          <p className='text-sm text-red-600'>{actionError}</p>
+          <p className='text-sm text-red-600'>
+            {commentSystem.createComment.error}
+          </p>
         </div>
       )}
     </div>

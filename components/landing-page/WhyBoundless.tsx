@@ -2,7 +2,7 @@
 
 import { FileLock, Globe, UserCheck } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface FeatureCardProps {
@@ -139,6 +139,7 @@ const WhyBoundless = () => {
               width={800}
               height={600}
               priority
+              unoptimized
               className={`z-30 mx-auto h-auto w-full max-w-[754px] rounded-xl object-cover transition-opacity duration-300 ${
                 gifLoading ? 'opacity-0' : 'opacity-100'
               }`}

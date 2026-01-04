@@ -1,11 +1,5 @@
+import { Activity } from '@/types/user';
 import React, { useMemo } from 'react';
-
-interface Activity {
-  id: string;
-  description: string;
-  timestamp: string;
-  image?: string;
-}
 
 interface ActivityHeatmapProps {
   activities?: Activity[];
@@ -24,12 +18,18 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
     const activityMap = new Map<string, number>();
 
     activities.forEach(activity => {
-      if (!activity.timestamp) return;
+      if (!activity.createdAt) return;
 
-      const date = new Date(activity.timestamp);
-      date.setHours(0, 0, 0, 0);
-      const dateKey = date.toISOString().split('T')[0];
-      activityMap.set(dateKey, (activityMap.get(dateKey) || 0) + 1);
+      try {
+        const date = new Date(activity.createdAt);
+        if (isNaN(date.getTime()) || date < oneYearAgo || date > today) return;
+
+        date.setHours(0, 0, 0, 0);
+        const dateKey = date.toISOString().split('T')[0];
+        activityMap.set(dateKey, (activityMap.get(dateKey) || 0) + 1);
+      } catch {
+        return;
+      }
     });
 
     const data: Array<{ date: Date; count: number }> = [];
@@ -57,9 +57,9 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
       .filter(day => day.date >= firstDayOfMonth)
       .reduce((sum, day) => sum + day.count, 0);
 
-    const todayCount = data
-      .filter(day => day.date.toDateString() === today.toDateString())
-      .reduce((sum, day) => sum + day.count, 0);
+    const todayCount =
+      data.find(day => day.date.toDateString() === today.toDateString())
+        ?.count || 0;
 
     const avgPerDay =
       data.length > 0 ? (totalCount / data.length).toFixed(1) : '0.0';
@@ -168,6 +168,63 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
 
   return (
     <div className='w-full space-y-6'>
+      <div className='grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8'>
+        <div className='rounded-lg border border-zinc-800 bg-zinc-950 p-3 sm:p-4'>
+          <div className='text-xs text-zinc-400 sm:text-sm'>Today</div>
+          <div className='mt-1 text-xl font-bold text-white sm:text-2xl'>
+            {stats.today}
+          </div>
+        </div>
+        <div className='rounded-lg border border-zinc-800 bg-zinc-950 p-3 sm:p-4'>
+          <div className='text-xs text-zinc-400 sm:text-sm'>This Week</div>
+          <div className='mt-1 text-xl font-bold text-white sm:text-2xl'>
+            {stats.currentWeek}
+          </div>
+        </div>
+        <div className='rounded-lg border border-zinc-800 bg-zinc-950 p-3 sm:p-4'>
+          <div className='text-xs text-zinc-400 sm:text-sm'>This Month</div>
+          <div className='mt-1 text-xl font-bold text-white sm:text-2xl'>
+            {stats.currentMonth}
+          </div>
+        </div>
+        <div className='rounded-lg border border-zinc-800 bg-zinc-950 p-3 sm:p-4'>
+          <div className='text-xs text-zinc-400 sm:text-sm'>Total</div>
+          <div className='mt-1 text-xl font-bold text-white sm:text-2xl'>
+            {stats.total}
+          </div>
+        </div>
+        <div className='rounded-lg border border-zinc-800 bg-zinc-950 p-3 sm:p-4'>
+          <div className='text-xs text-zinc-400 sm:text-sm'>Avg/Day</div>
+          <div className='mt-1 text-xl font-bold text-white sm:text-2xl'>
+            {stats.avgPerDay}
+          </div>
+        </div>
+        <div className='rounded-lg border border-zinc-800 bg-zinc-950 p-3 sm:p-4'>
+          <div className='text-xs text-zinc-400 sm:text-sm'>Current Streak</div>
+          <div className='mt-1 text-xl font-bold text-emerald-500 sm:text-2xl'>
+            {stats.currentStreak}
+          </div>
+        </div>
+        <div className='rounded-lg border border-zinc-800 bg-zinc-950 p-3 sm:p-4'>
+          <div className='text-xs text-zinc-400 sm:text-sm'>Longest Streak</div>
+          <div className='mt-1 text-xl font-bold text-emerald-500 sm:text-2xl'>
+            {stats.longestStreak}
+          </div>
+        </div>
+        <div className='rounded-lg border border-zinc-800 bg-zinc-950 p-3 sm:p-4'>
+          <div className='text-xs text-zinc-400 sm:text-sm'>Best Day</div>
+          <div className='mt-1 text-xl font-bold text-white sm:text-2xl'>
+            {stats.mostActiveDay.count}
+          </div>
+          <div className='mt-1 text-[10px] text-zinc-500'>
+            {stats.mostActiveDay.date.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            })}
+          </div>
+        </div>
+      </div>
+
       <div className='w-full max-w-full overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 p-4 sm:p-6'>
         <h3 className='mb-2 text-lg font-semibold text-white sm:text-xl'>
           {stats.total} contributions in the last year
@@ -196,14 +253,52 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
             </div>
 
             <div className='flex gap-1'>
-              <div className='flex flex-col justify-between gap-1 pr-2 text-xs text-zinc-400'>
-                <div style={{ height: '8px' }}></div>
-                <div className='text-[10px] sm:text-xs'>Mon</div>
-                <div style={{ height: '8px' }}></div>
-                <div className='text-[10px] sm:text-xs'>Wed</div>
-                <div style={{ height: '8px' }}></div>
-                <div className='text-[10px] sm:text-xs'>Fri</div>
-                <div style={{ height: '8px' }}></div>
+              <div
+                className='flex flex-col gap-1 pr-2 text-xs text-zinc-400'
+                style={{ minWidth: '36px' }}
+              >
+                <div
+                  className='text-[10px] sm:text-xs'
+                  style={{ height: '8px', lineHeight: '8px' }}
+                >
+                  Sun
+                </div>
+                <div
+                  className='text-[10px] sm:text-xs'
+                  style={{ height: '8px', lineHeight: '8px' }}
+                >
+                  Mon
+                </div>
+                <div
+                  className='text-[10px] sm:text-xs'
+                  style={{ height: '8px', lineHeight: '8px' }}
+                >
+                  Tue
+                </div>
+                <div
+                  className='text-[10px] sm:text-xs'
+                  style={{ height: '8px', lineHeight: '8px' }}
+                >
+                  Wed
+                </div>
+                <div
+                  className='text-[10px] sm:text-xs'
+                  style={{ height: '8px', lineHeight: '8px' }}
+                >
+                  Thu
+                </div>
+                <div
+                  className='text-[10px] sm:text-xs'
+                  style={{ height: '8px', lineHeight: '8px' }}
+                >
+                  Fri
+                </div>
+                <div
+                  className='text-[10px] sm:text-xs'
+                  style={{ height: '8px', lineHeight: '8px' }}
+                >
+                  Sat
+                </div>
               </div>
 
               <div className='flex gap-1'>
@@ -232,16 +327,27 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
               </div>
             </div>
 
-            <div className='mt-4 flex flex-col items-start justify-between gap-2 text-xs text-zinc-400 sm:flex-row sm:items-center sm:gap-0'>
-              <div className='text-[10px] sm:text-xs'>Inspired by GitHub</div>
+            <div className='mt-4 flex flex-col items-start justify-between gap-3 text-xs text-zinc-400 sm:flex-row sm:items-center sm:gap-0'>
+              <div className='flex items-center gap-3'>
+                <span className='text-[10px] text-zinc-500 italic sm:text-xs'>
+                  Inspired by GitHub
+                </span>
+                {stats.currentStreak > 0 && (
+                  <div className='flex items-center gap-1.5 rounded-md bg-zinc-900 px-2 py-1'>
+                    <span className='text-[10px] font-medium text-emerald-500 sm:text-xs'>
+                      🔥 {stats.currentStreak} day streak
+                    </span>
+                  </div>
+                )}
+              </div>
               <div className='flex items-center gap-2'>
                 <span className='text-[10px] sm:text-xs'>Less</span>
                 <div className='flex gap-0.5 sm:gap-1'>
                   <div className='h-[8px] w-[8px] rounded-sm border border-zinc-800 bg-zinc-900 sm:h-[10px] sm:w-[10px]'></div>
-                  <div className='bg-primary/40 h-[8px] w-[8px] rounded-sm sm:h-[10px] sm:w-[10px]'></div>
-                  <div className='bg-primary/60 h-[8px] w-[8px] rounded-sm sm:h-[10px] sm:w-[10px]'></div>
-                  <div className='bg-primary/80 h-[8px] w-[8px] rounded-sm sm:h-[10px] sm:w-[10px]'></div>
-                  <div className='bg-primary h-[8px] w-[8px] rounded-sm sm:h-[10px] sm:w-[10px]'></div>
+                  <div className='h-[8px] w-[8px] rounded-sm bg-emerald-900/40 sm:h-[10px] sm:w-[10px]'></div>
+                  <div className='h-[8px] w-[8px] rounded-sm bg-emerald-700/60 sm:h-[10px] sm:w-[10px]'></div>
+                  <div className='h-[8px] w-[8px] rounded-sm bg-emerald-600/80 sm:h-[10px] sm:w-[10px]'></div>
+                  <div className='h-[8px] w-[8px] rounded-sm bg-emerald-500 sm:h-[10px] sm:w-[10px]'></div>
                 </div>
                 <span className='text-[10px] sm:text-xs'>More</span>
               </div>

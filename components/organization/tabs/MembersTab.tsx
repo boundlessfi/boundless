@@ -1,21 +1,21 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BoundlessButton } from '@/components/buttons';
 import { useOrganization } from '@/lib/providers/OrganizationProvider';
-import {
-  removeBetterAuthMember,
-  listBetterAuthInvitations,
-  cancelBetterAuthInvitation,
-} from '@/lib/api/better-auth-organization';
+import { BetterAuthMember } from '@/lib/providers/organization-types';
+import { removeBetterAuthMember } from '@/lib/api/better-auth-organization';
+import { authClient } from '@/lib/auth-client';
 import EmailInviteSection from './MembersTab/EmailInviteSection';
-import PermissionsTable from './MembersTab/PermissionsTable';
 import TeamManagementSection from './MembersTab/TeamManagementSection';
 import { toast } from 'sonner';
-import { X, Mail, Clock } from 'lucide-react';
+import { X, Mail, Clock, Loader2 } from 'lucide-react';
+import { Role } from '@/lib/api/organization';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Member {
   id: string;
+  userId: string;
   name: string;
   email: string;
   avatar?: string;
@@ -44,7 +44,6 @@ export default function MembersTab({ onSave }: MembersTabProps) {
     activeOrg,
     activeOrgId,
     updateOrganizationMembers,
-    inviteMember,
     assignRole,
     isLoading,
     isOwner,
@@ -52,25 +51,65 @@ export default function MembersTab({ onSave }: MembersTabProps) {
   } = useOrganization();
 
   const [userIsOwner, setUserIsOwner] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+
   useEffect(() => {
     const checkUserIsOwner = async () => {
       const checkIsOwner = await isOwner(activeOrgId || undefined);
       setUserIsOwner(checkIsOwner);
     };
     checkUserIsOwner();
+  }, [activeOrgId, isOwner]);
+
+  // Fetch members using the new Better Auth API
+  const fetchMembers = useCallback(async () => {
+    if (!activeOrgId) return;
+
+    setLoadingMembers(true);
+    try {
+      const { data, error } = await authClient.organization.listMembers({
+        query: {
+          organizationId: activeOrgId,
+          limit: 100,
+          offset: 0,
+          sortBy: 'createdAt',
+          sortDirection: 'desc',
+        },
+      });
+
+      if (error) {
+        toast.error('Failed to load members');
+        return;
+      }
+
+      // Transform API response to Member interface
+      const transformedMembers: Member[] = (data?.members || []).map(
+        (member: BetterAuthMember) => ({
+          id: member.id,
+          userId: member.userId,
+          name: member.user.name || member.user.email,
+          email: member.user.email,
+          avatar: member.user.image,
+          role: member.role as 'owner' | 'admin' | 'member',
+          joinedAt: member.createdAt.toISOString(),
+          status: 'active' as const,
+        })
+      );
+
+      setMembers(transformedMembers);
+    } catch {
+      toast.error('Failed to load members');
+    } finally {
+      setLoadingMembers(false);
+    }
   }, [activeOrgId]);
 
-  const members: Member[] = useMemo(() => {
-    const emails = activeOrg?.members ?? [];
-    return emails.map((email, idx) => ({
-      id: `${idx}-${email}`,
-      name: email.split('@')[0] || email,
-      email,
-      role: 'member',
-      joinedAt: new Date().toISOString(),
-      status: 'active',
-    }));
-  }, [activeOrg?.members]);
+  useEffect(() => {
+    if (activeOrgId) {
+      fetchMembers();
+    }
+  }, [activeOrgId, fetchMembers]);
 
   const [inviteEmails, setInviteEmails] = useState<string[]>([]);
   const [emailInput, setEmailInput] = useState('');
@@ -81,43 +120,49 @@ export default function MembersTab({ onSave }: MembersTabProps) {
     null
   );
 
+  const fetchInvitations = useCallback(async () => {
+    if (!activeOrgId) return;
+    const { data, error } = await authClient.organization.listInvitations({
+      query: {
+        organizationId: activeOrgId || '',
+      },
+    });
+    if (error) {
+      toast.error(error.message);
+    }
+    setInvitations(data || []);
+  }, [activeOrgId]);
+
   // Fetch invitations when component mounts or activeOrg changes
   useEffect(() => {
-    const fetchInvitations = async () => {
-      if (!activeOrg?.betterAuthOrgId) return;
-
-      setLoadingInvitations(true);
-      try {
-        const data = await listBetterAuthInvitations(activeOrg.betterAuthOrgId);
-        setInvitations(data || []);
-      } catch {
-        toast.error('Failed to load invitations');
-      } finally {
-        setLoadingInvitations(false);
-      }
-    };
-
     fetchInvitations();
-  }, [activeOrg?.betterAuthOrgId]);
+  }, [fetchInvitations]);
 
   const handleInvite = async () => {
+    setLoadingInvitations(true);
     if (inviteEmails.length > 0 && activeOrgId) {
-      await inviteMember(activeOrgId, inviteEmails);
-      setInviteEmails([]);
-      setEmailInput('');
-
-      // Refresh invitations list after sending new invites
-      if (activeOrg?.betterAuthOrgId) {
-        try {
-          const data = await listBetterAuthInvitations(
-            activeOrg.betterAuthOrgId
-          );
-          setInvitations(data || []);
-        } catch (error) {
-          console.error(error);
+      // await inviteMember(activeOrgId, inviteEmails);
+      // setInviteEmails([]);
+      // setEmailInput('');
+      for (const email of inviteEmails) {
+        const { error } = await authClient.organization.inviteMember({
+          email,
+          role: 'member',
+          organizationId: activeOrgId,
+          resend: true,
+        });
+        if (error) {
+          toast.error(error.message);
         }
+        setInviteEmails([]);
+        setEmailInput('');
       }
+      await fetchInvitations();
+
+      // Refresh members list in case any invites were auto-accepted
+      await fetchMembers();
     }
+    setLoadingInvitations(false);
   };
 
   const handleRoleChange = async (memberId: string, newRole: string) => {
@@ -126,14 +171,13 @@ export default function MembersTab({ onSave }: MembersTabProps) {
     if (!member) return;
 
     try {
-      const action = newRole === 'admin' ? 'promote' : 'demote';
-      await assignRole(activeOrgId, member.email, action);
-      setHasUserChanges(true);
+      await assignRole(activeOrgId, member.id, [newRole as Role]);
+      await fetchMembers();
       toast.success(`Member role updated to ${newRole}`);
     } catch (error) {
-      // Handle error (show toast, etc.)
-      const msg = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to update member role: ${msg}`);
+      toast.error(
+        `Failed to update member role: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   };
 
@@ -161,6 +205,10 @@ export default function MembersTab({ onSave }: MembersTabProps) {
       if (activeOrg?.betterAuthOrgId) {
         // Use Better Auth API
         await removeBetterAuthMember(member.email, activeOrg.betterAuthOrgId);
+
+        // Update local state immediately for better UX
+        setMembers(prev => prev.filter(m => m.id !== memberId));
+
         toast.success(`${member.email} has been removed from the organization`);
       } else {
         // Fallback to custom API for legacy organizations
@@ -173,13 +221,14 @@ export default function MembersTab({ onSave }: MembersTabProps) {
       // Refresh organization data to reflect changes
       await refreshOrganization();
       setHasUserChanges(true);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to remove member: ${msg}`);
+    } catch {
+      const msg = 'Failed to remove member';
+      toast.error(msg);
     }
   };
 
   const handleCancelInvitation = async (invitationId: string) => {
+    setCancelingInvitation(invitationId);
     if (!activeOrgId) {
       toast.error('No organization selected');
       return;
@@ -192,16 +241,17 @@ export default function MembersTab({ onSave }: MembersTabProps) {
       return;
     }
 
-    setCancelingInvitation(invitationId);
     try {
-      await cancelBetterAuthInvitation(invitationId);
+      const { error } = await authClient.organization.cancelInvitation({
+        invitationId,
+      });
+      if (error) {
+        toast.error(error.message);
+      }
+      await fetchInvitations();
       toast.success('Invitation cancelled successfully');
-
-      // Remove invitation from local state
-      setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to cancel invitation: ${msg}`);
+    } catch {
+      toast.error('Failed to cancel invitation');
     } finally {
       setCancelingInvitation(null);
     }
@@ -214,23 +264,37 @@ export default function MembersTab({ onSave }: MembersTabProps) {
       await updateOrganizationMembers(activeOrgId, emails);
       onSave?.(members);
       setHasUserChanges(false);
-    } catch (error) {
-      console.error(error);
+      toast.success('Member changes saved successfully');
+    } catch {
+      toast.error('Failed to save member changes');
     }
   };
+  const loadingui = loadingMembers || loadingInvitations;
+  if (loadingui) {
+    return (
+      <div className='relative h-[calc(100vh-300px)] space-y-8'>
+        {loadingui && (
+          <div className='absolute top-0 right-0 bottom-0 left-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm'>
+            <LoadingSpinner size='lg' className='z-20 text-white' />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className='space-y-8'>
+    <div className='relative space-y-8'>
       <EmailInviteSection
         inviteEmails={inviteEmails}
         setInviteEmails={setInviteEmails}
         emailInput={emailInput}
         setEmailInput={setEmailInput}
         onInvite={handleInvite}
+        loading={loadingInvitations}
       />
 
       {/* Pending Invitations Section */}
-      {activeOrg?.betterAuthOrgId && (
+      {activeOrgId && (
         <div className='space-y-4'>
           <div className='flex items-center justify-between'>
             <h3 className='text-lg font-semibold text-white'>
@@ -240,8 +304,7 @@ export default function MembersTab({ onSave }: MembersTabProps) {
               <span className='text-sm text-zinc-400'>Loading...</span>
             )}
           </div>
-
-          {invitations.length > 0 ? (
+          {invitations?.length > 0 ? (
             <div className='space-y-2'>
               {invitations.map(invitation => (
                 <div
@@ -275,14 +338,24 @@ export default function MembersTab({ onSave }: MembersTabProps) {
                   {userIsOwner && (
                     <button
                       onClick={() => handleCancelInvitation(invitation.id)}
-                      disabled={cancelingInvitation === invitation.id}
+                      disabled={
+                        cancelingInvitation === invitation.id ||
+                        invitation.status === 'canceled'
+                      }
                       className='flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50'
                       title='Cancel invitation'
                     >
-                      <X className='h-4 w-4' />
-                      {cancelingInvitation === invitation.id
-                        ? 'Canceling...'
-                        : 'Cancel'}
+                      {cancelingInvitation === invitation.id ? (
+                        <>
+                          <Loader2 className='h-4 w-4 animate-spin' />
+                          Canceling...
+                        </>
+                      ) : (
+                        <>
+                          <X className='h-4 w-4' />
+                          Cancel
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
@@ -297,14 +370,20 @@ export default function MembersTab({ onSave }: MembersTabProps) {
         </div>
       )}
 
-      <PermissionsTable />
+      {/* <PermissionsTable /> */}
 
-      <TeamManagementSection
-        members={members}
-        onRoleChange={handleRoleChange}
-        onRemoveMember={handleRemoveMember}
-        activeOrg={activeOrg}
-      />
+      {loadingMembers ? (
+        <div className='rounded-lg border border-zinc-800 bg-zinc-900/50 p-8 text-center'>
+          <div className='text-sm text-zinc-400'>Loading members...</div>
+        </div>
+      ) : (
+        <TeamManagementSection
+          members={members}
+          onRoleChange={handleRoleChange}
+          onRemoveMember={handleRemoveMember}
+          activeOrg={activeOrg}
+        />
+      )}
 
       <div className='space-y-2'>
         {hasUserChanges && (

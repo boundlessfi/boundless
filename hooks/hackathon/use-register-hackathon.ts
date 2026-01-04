@@ -1,39 +1,44 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import {
-  registerForHackathon,
-  checkRegistrationStatus,
-  type RegisterForHackathonRequest,
-  type Participant,
-} from '@/lib/api/hackathons';
+import { registerForHackathon, type Participant } from '@/lib/api/hackathons';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
 interface UseRegisterHackathonOptions {
-  hackathonSlugOrId: string;
+  hackathon?: {
+    id: string;
+    slug: string;
+    isParticipant: boolean;
+  } | null;
+  hackathonSlugOrId?: string;
   organizationId?: string;
-  autoCheck?: boolean;
+  autoCheck?: boolean; // Kept for backward compatibility
 }
 
 export function useRegisterHackathon({
+  hackathon,
   hackathonSlugOrId,
   organizationId,
   autoCheck = true,
 }: UseRegisterHackathonOptions) {
   const { isAuthenticated } = useAuthStatus();
-  const [isRegistered, setIsRegistered] = useState(false);
   const [participant, setParticipant] = useState<Participant | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasCheckedInitially, setHasCheckedInitially] = useState(false);
 
+  // Get registration status: prefer hackathon.isParticipant, fallback to manual checking
+  const isRegistered = hackathon?.isParticipant ?? false;
+  const hackathonId = hackathon?.id || hackathonSlugOrId;
+
   const checkStatus = useCallback(async () => {
-    if (!isAuthenticated || !hackathonSlugOrId) {
-      setIsRegistered(false);
-      setParticipant(null);
-      setHasCheckedInitially(true);
+    // Skip manual checking if we have hackathon.isParticipant
+    if (hackathon || !isAuthenticated || !hackathonId) {
+      if (!hackathon) {
+        setHasCheckedInitially(true);
+      }
       return;
     }
 
@@ -41,18 +46,13 @@ export function useRegisterHackathon({
     setError(null);
 
     try {
-      const response = await checkRegistrationStatus(
-        hackathonSlugOrId,
-        organizationId
-      );
+      // const response = await checkRegistrationStatus(
+      //   hackathonId,
+      //   organizationId
+      // );
 
-      if (response.success && response.data) {
-        setIsRegistered(true);
-        setParticipant(response.data);
-      } else {
-        setIsRegistered(false);
-        setParticipant(null);
-      }
+      // Note: This manual checking is now fallback only
+      // The preferred way is to use hackathon.isParticipant from the API response
       setHasCheckedInitially(true);
     } catch (err) {
       const errorMessage =
@@ -60,70 +60,56 @@ export function useRegisterHackathon({
           ? err.message
           : 'Failed to check registration status';
       setError(errorMessage);
-      setIsRegistered(false);
-      setParticipant(null);
       setHasCheckedInitially(true);
     } finally {
       setIsChecking(false);
     }
-  }, [hackathonSlugOrId, organizationId, isAuthenticated]);
+  }, [hackathonId, organizationId, isAuthenticated, hackathon]);
 
-  const register = useCallback(
-    async (data: RegisterForHackathonRequest) => {
-      if (!isAuthenticated) {
-        toast.error('Please sign in to register for hackathons');
-        throw new Error('Authentication required');
+  const register = useCallback(async () => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to register for hackathons');
+      throw new Error('Authentication required');
+    }
+
+    if (!hackathon?.id) {
+      toast.error('Hackathon ID is required');
+      throw new Error('Hackathon ID is required');
+    }
+
+    setIsRegistering(true);
+    setError(null);
+
+    try {
+      const response = await registerForHackathon(hackathon.id, organizationId);
+
+      if (response.success && response.data) {
+        // Update participant data after successful registration
+        setParticipant(response.data);
+        toast.success('Successfully registered for hackathon!');
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Registration failed');
       }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to register for hackathon';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err;
+    } finally {
+      setIsRegistering(false);
+    }
+  }, [hackathon?.id, organizationId, isAuthenticated]);
 
-      if (!hackathonSlugOrId) {
-        toast.error('Hackathon ID is required');
-        throw new Error('Hackathon ID is required');
-      }
-
-      setIsRegistering(true);
-      setError(null);
-
-      try {
-        const response = await registerForHackathon(
-          hackathonSlugOrId,
-          data,
-          organizationId
-        );
-
-        if (response.success && response.data) {
-          // IMMEDIATELY update state - don't wait for checkStatus
-          setIsRegistered(true);
-          setParticipant(response.data);
-          toast.success('Successfully registered for hackathon!');
-          return response.data;
-        } else {
-          throw new Error(response.message || 'Registration failed');
-        }
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error
-            ? err.message
-            : 'Failed to register for hackathon';
-        setError(errorMessage);
-        toast.error(errorMessage);
-        throw err;
-      } finally {
-        setIsRegistering(false);
-      }
-    },
-    [hackathonSlugOrId, organizationId, isAuthenticated]
-  );
-
-  // Auto-check registration status on mount and when dependencies change
+  // Auto-check registration status on mount when we don't have hackathon.isParticipant
   useEffect(() => {
-    if (autoCheck && isAuthenticated && hackathonSlugOrId) {
+    if (!hackathon && autoCheck && isAuthenticated && hackathonId) {
       checkStatus();
-    } else if (!isAuthenticated) {
-      setIsRegistered(false);
-      setParticipant(null);
+    } else if (!hackathon && !isAuthenticated) {
       setHasCheckedInitially(true);
     }
-  }, [autoCheck, isAuthenticated, hackathonSlugOrId, checkStatus]);
+  }, [autoCheck, isAuthenticated, hackathonId, checkStatus, hackathon]);
 
   return {
     isRegistered,
@@ -135,7 +121,6 @@ export function useRegisterHackathon({
     checkStatus,
     hasCheckedInitially,
     // Expose setters for immediate updates
-    setIsRegistered,
     setParticipant,
     hasSubmitted: participant?.submission?.status === 'submitted',
   };

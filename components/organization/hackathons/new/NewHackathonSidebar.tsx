@@ -7,11 +7,12 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useWindowSize } from '@/hooks/use-window-size';
 import { useHackathons } from '@/hooks/use-hackathons';
+import { Hackathon } from '@/lib/api/hackathons';
 
 interface HackathonItem {
   id: string;
   title: string;
-  status: 'draft' | 'ongoing' | 'completed' | 'published' | 'cancelled';
+  status: Hackathon['status'];
   href: string;
 }
 
@@ -42,7 +43,6 @@ export default function NewHackathonSidebar({
       organizationId: derivedOrgId,
       autoFetch: true,
     });
-
   const normalizedPath =
     pathname?.endsWith('/') && pathname !== '/'
       ? pathname.slice(0, -1)
@@ -52,20 +52,19 @@ export default function NewHackathonSidebar({
   const hackathonData = useMemo<HackathonItem[]>(() => {
     const items: HackathonItem[] = [];
 
-    // Add drafts first (for "Continue Editing" section)
     drafts.forEach(draft => {
-      // Get title from information field (required by HackathonDraft type)
-      const title = draft.information?.title || 'Untitled Hackathon';
+      // Get title from data.information field (required by HackathonDraft type)
+      const title = draft.data.information?.name || 'Untitled Hackathon';
 
       items.push({
-        id: `draft-${draft._id}`,
+        id: `draft-${draft.id}`,
         title:
           typeof title === 'string'
             ? title.trim() || 'Untitled Hackathon'
             : 'Untitled Hackathon',
-        status: 'draft',
+        status: 'DRAFT',
         href: derivedOrgId
-          ? `/organizations/${derivedOrgId}/hackathons/drafts/${draft._id}`
+          ? `/organizations/${derivedOrgId}/hackathons/drafts/${draft.id}`
           : '#',
       });
     });
@@ -73,17 +72,17 @@ export default function NewHackathonSidebar({
     // Add published hackathons
     hackathons.forEach(hackathon => {
       // Get title from information field (required by Hackathon type)
-      const title = hackathon.information?.title || 'Untitled Hackathon';
+      const title = hackathon.name || 'Untitled Hackathon';
 
       items.push({
-        id: `hackathon-${hackathon._id}`,
+        id: `hackathon-${hackathon.id}`,
         title:
           typeof title === 'string'
             ? title.trim() || 'Untitled Hackathon'
             : 'Untitled Hackathon',
-        status: hackathon.status === 'published' ? 'ongoing' : hackathon.status,
+        status: hackathon.status === 'PUBLISHED' ? 'ONGOING' : hackathon.status,
         href: derivedOrgId
-          ? `/organizations/${derivedOrgId}/hackathons/${hackathon._id}`
+          ? `/organizations/${derivedOrgId}/hackathons/${hackathon.id}`
           : '#',
       });
     });

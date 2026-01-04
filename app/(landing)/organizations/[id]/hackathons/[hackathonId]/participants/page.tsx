@@ -18,15 +18,20 @@ export default function ParticipantsPage() {
     participantsLoading,
     participantsError,
     fetchParticipants,
+    currentHackathon,
+    fetchHackathon,
   } = useHackathons({
     organizationId,
     autoFetch: false,
   });
 
+  // Get the actual hackathon ID from the fetched hackathon data
+  const actualHackathonId = currentHackathon?.id;
+
   // Handler to refresh participants after review actions
   const handleReviewSuccess = () => {
-    if (organizationId && hackathonId) {
-      fetchParticipants(hackathonId);
+    if (organizationId && actualHackathonId) {
+      fetchParticipants(actualHackathonId);
     }
   };
 
@@ -46,28 +51,43 @@ export default function ParticipantsPage() {
   useEffect(() => {
     if (
       lastOrgIdRef.current !== organizationId ||
-      lastHackathonIdRef.current !== hackathonId
+      lastHackathonIdRef.current !== (actualHackathonId || null)
     ) {
       // IDs changed, reset fetch flags
       hasFetchedParticipantsRef.current = false;
       hasFetchedStatisticsRef.current = false;
       lastOrgIdRef.current = organizationId;
-      lastHackathonIdRef.current = hackathonId;
+      lastHackathonIdRef.current = actualHackathonId || null;
     }
-  }, [organizationId, hackathonId]);
+  }, [organizationId, actualHackathonId]);
 
-  // Fetch participants on mount or when IDs change
+  // First fetch the hackathon to get the actual ID
   useEffect(() => {
-    if (organizationId && hackathonId && !hasFetchedParticipantsRef.current) {
-      hasFetchedParticipantsRef.current = true;
-      fetchParticipants(hackathonId);
+    if (organizationId && hackathonId && !currentHackathon) {
+      void fetchHackathon(hackathonId);
     }
-  }, [organizationId, hackathonId, fetchParticipants]);
+  }, [organizationId, hackathonId, currentHackathon, fetchHackathon]);
 
-  // Fetch statistics only once on mount or when IDs change
+  // Fetch participants on mount or when actual hackathon ID is available
+  useEffect(() => {
+    if (
+      organizationId &&
+      actualHackathonId &&
+      !hasFetchedParticipantsRef.current
+    ) {
+      hasFetchedParticipantsRef.current = true;
+      fetchParticipants(actualHackathonId);
+    }
+  }, [organizationId, actualHackathonId, fetchParticipants]);
+
+  // Fetch statistics only once on mount or when actual hackathon ID is available
   useEffect(() => {
     const loadStatistics = async () => {
-      if (!organizationId || !hackathonId || hasFetchedStatisticsRef.current) {
+      if (
+        !organizationId ||
+        !actualHackathonId ||
+        hasFetchedStatisticsRef.current
+      ) {
         return;
       }
 
@@ -76,7 +96,7 @@ export default function ParticipantsPage() {
       try {
         const response = await getHackathonStatistics(
           organizationId,
-          hackathonId
+          actualHackathonId
         );
         setStatistics({
           participantsCount: response.data.participantsCount,
@@ -90,10 +110,10 @@ export default function ParticipantsPage() {
       }
     };
 
-    if (organizationId && hackathonId) {
+    if (organizationId && actualHackathonId) {
       loadStatistics();
     }
-  }, [organizationId, hackathonId]);
+  }, [organizationId, actualHackathonId]);
 
   // Ensure participants is always an array
   const participantsList = useMemo(() => {
@@ -175,7 +195,7 @@ export default function ParticipantsPage() {
         ) : (
           participantsList.map(participant => (
             <Participant
-              key={participant._id}
+              key={participant.id}
               participant={participant}
               organizationId={organizationId}
               hackathonId={hackathonId}

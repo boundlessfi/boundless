@@ -205,7 +205,7 @@ export function CreateTeamPostModal({
       }
 
       if (isEditMode && initialData) {
-        await updatePost(initialData._id, data);
+        await updatePost(initialData.id, data);
         toast.success('Team post updated successfully');
       } else {
         await createPost(data);

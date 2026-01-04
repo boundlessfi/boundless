@@ -30,39 +30,41 @@ export const isStepSavedInDraft = (
   switch (stepKey) {
     case 'information':
       return !!(
-        draft.information &&
-        draft.information.title &&
-        draft.information.banner &&
-        draft.information.description
+        draft.data.information &&
+        draft.data.information.name &&
+        draft.data.information.banner &&
+        draft.data.information.description
       );
     case 'timeline':
       return !!(
-        draft.timeline &&
-        draft.timeline.startDate &&
-        draft.timeline.submissionDeadline
+        draft.data.timeline &&
+        draft.data.timeline.startDate &&
+        draft.data.timeline.submissionDeadline
       );
     case 'participation':
-      return !!(draft.participation && draft.participation.participantType);
+      return !!(
+        draft.data.participation && draft.data.participation.participantType
+      );
     case 'rewards':
       return !!(
-        draft.rewards &&
-        draft.rewards.prizeTiers &&
-        draft.rewards.prizeTiers.length > 0
+        draft.data.rewards &&
+        draft.data.rewards.prizeTiers &&
+        draft.data.rewards.prizeTiers.length > 0
       );
     case 'resources':
       // Resources are optional, so return true if the field exists (even if empty)
-      return draft.resources !== undefined;
+      return draft.data.resources !== undefined;
     case 'judging':
       return !!(
-        draft.judging &&
-        draft.judging.criteria &&
-        draft.judging.criteria.length > 0
+        draft.data.judging &&
+        draft.data.judging.criteria &&
+        draft.data.judging.criteria.length > 0
       );
     case 'collaboration':
       return !!(
-        draft.collaboration &&
-        draft.collaboration.contactEmail &&
-        draft.collaboration.contactEmail.trim() !== ''
+        draft.data.collaboration &&
+        draft.data.collaboration.contactEmail &&
+        draft.data.collaboration.contactEmail.trim() !== ''
       );
     default:
       return false;

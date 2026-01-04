@@ -54,17 +54,18 @@ const Participant = ({
 
     setIsLoadingCriteria(true);
     try {
-      const response = await getHackathon(organizationId, hackathonId);
-      if (response.success && response.data.judging?.criteria) {
-        setCriteria(response.data.judging.criteria);
-        setIsJudgeModalOpen(true);
-      } else {
-        // If no criteria, still open modal but with empty criteria
-        setCriteria([]);
+      const response = await getHackathon(hackathonId);
+      if (response.success) {
+        setCriteria(
+          response.data?.judgingCriteria?.map(criterion => ({
+            title: criterion.name || '',
+            weight: criterion.weight || 0,
+            description: criterion.description || '',
+          })) || []
+        );
         setIsJudgeModalOpen(true);
       }
     } catch {
-      // Open modal anyway, criteria will be fetched in the modal
       setCriteria([]);
       setIsJudgeModalOpen(true);
     } finally {
@@ -134,7 +135,7 @@ const Participant = ({
           currentIndex={0}
           organizationId={organizationId}
           hackathonId={hackathonId}
-          participantId={participant._id}
+          participantId={participant.id}
           onSuccess={onReviewSuccess}
         />
       )}
@@ -149,10 +150,10 @@ const Participant = ({
             onOpenChange={setIsJudgeModalOpen}
             organizationId={organizationId}
             hackathonId={hackathonId}
-            participantId={participant._id}
+            participantId={participant.id}
             judgingCriteria={criteria}
             submission={{
-              id: participant._id,
+              id: participant.id,
               projectName: participant.submission.projectName,
               category: participant.submission.category,
               description: participant.submission.description,

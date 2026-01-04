@@ -9,16 +9,12 @@ import React, {
   useCallback,
   useRef,
 } from 'react';
-import {
-  Discussion,
-  Participant,
-  SubmissionCardProps,
-  Hackathon,
-} from '@/types/hackathon';
+import { SubmissionCardProps } from '@/types/hackathon';
+import { Comment } from '@/types/comment';
+import { Hackathon, HackathonResourceItem } from '@/lib/api/hackathons';
 import {
   getHackathons,
   getHackathon,
-  getHackathonParticipants,
   getHackathonSubmissions,
 } from '@/lib/api/hackathon';
 
@@ -51,14 +47,12 @@ interface ResourceItem {
 
 interface HackathonDataContextType {
   hackathons: Hackathon[];
-  featuredHackathons: Hackathon[];
   ongoingHackathons: Hackathon[];
   upcomingHackathons: Hackathon[];
   pastHackathons: Hackathon[];
 
   currentHackathon: Hackathon | null;
-  discussions: Discussion[];
-  participants: Participant[];
+  discussions: Comment[]; // Using generic Comment type
   submissions: SubmissionCardProps[];
   // content: string;
   timelineEvents: TimelineEvent[];
@@ -113,7 +107,6 @@ export function HackathonDataProvider({
   const [currentHackathonSlug, setCurrentHackathonSlug] = useState<
     string | null
   >(hackathonSlug || null);
-  const [participants, setParticipants] = useState<Participant[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionCardProps[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
@@ -198,40 +191,6 @@ export function HackathonDataProvider({
   );
 
   // --------------------------------
-  // Fetch participants
-  // --------------------------------
-  const fetchParticipants = useCallback(async (slug: string) => {
-    try {
-      const response = await getHackathonParticipants(slug, { limit: 50 });
-      if (response.success && response.data) {
-        const data = response.data;
-
-        let flattenedParticipants: Participant[] = [];
-
-        // Handle both grouped and flat responses
-        if (data.grouping === 'team' && data.groups) {
-          // Flatten the groups
-          flattenedParticipants = data.groups.flatMap(group =>
-            group.members.map(member => ({
-              ...member,
-              teamId: group.teamId,
-              teamName: group.teamName,
-              isIndividual: group.isIndividual,
-            }))
-          );
-        } else if (data.participants) {
-          // Flat response
-          flattenedParticipants = data.participants;
-        }
-
-        setParticipants(flattenedParticipants);
-      }
-    } catch {
-      setParticipants([]);
-    }
-  }, []);
-
-  // --------------------------------
   // Fetch submissions
   // --------------------------------
   const fetchSubmissions = useCallback(async (slug: string) => {
@@ -248,23 +207,19 @@ export function HackathonDataProvider({
   // --------------------------------
   // Computed lists
   // --------------------------------
-  const featuredHackathons = React.useMemo(
-    () => hackathons.filter(h => h.featured),
-    [hackathons]
-  );
 
   const ongoingHackathons = React.useMemo(
-    () => hackathons.filter(h => h.status === 'ongoing'),
+    () => hackathons.filter(h => h.status === 'ONGOING'),
     [hackathons]
   );
 
   const upcomingHackathons = React.useMemo(
-    () => hackathons.filter(h => h.status === 'upcoming'),
+    () => hackathons.filter(h => h.status === 'UPCOMING'),
     [hackathons]
   );
 
   const pastHackathons = React.useMemo(
-    () => hackathons.filter(h => h.status === 'ended'),
+    () => hackathons.filter(h => h.status === 'ENDED'),
     [hackathons]
   );
 
@@ -284,15 +239,10 @@ export function HackathonDataProvider({
       const data = await fetchHackathonBySlug(slug);
 
       if (data) {
-        await Promise.all([fetchParticipants(slug), fetchSubmissions(slug)]);
+        await Promise.all([fetchSubmissions(slug)]);
       }
     },
-    [
-      currentHackathonSlug,
-      fetchHackathonBySlug,
-      fetchParticipants,
-      fetchSubmissions,
-    ]
+    [currentHackathonSlug, fetchHackathonBySlug, fetchSubmissions]
   );
 
   const refreshHackathons = async () => {
@@ -309,60 +259,8 @@ export function HackathonDataProvider({
   // Mock Data
   // --------------------------------
 
-  const mockDiscussions: Discussion[] = [
-    {
-      _id: '1',
-      userId: {
-        _id: 'user1',
-        profile: {
-          firstName: 'Sarah',
-          lastName: 'Chen',
-          username: 'sarahc',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-        },
-      },
-      projectId: '',
-      content:
-        'Excited to participate in this hackathon! Are there any team formation channels?',
-      status: 'active',
-      createdAt: '2025-01-10T10:30:00Z',
-      updatedAt: '2025-01-10T10:30:00Z',
-      totalReactions: 12,
-      reactionCounts: { LIKE: 12, DISLIKE: 0, HELPFUL: 0 },
-      editHistory: [],
-      replyCount: 1,
-      isSpam: false,
-      reports: [],
-      replies: [
-        {
-          _id: '1-1',
-          userId: {
-            _id: 'user2',
-            profile: {
-              firstName: 'Alex',
-              lastName: 'Rodriguez',
-              username: 'alexr',
-              avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-            },
-          },
-          projectId: '',
-          content:
-            "Yes! Check out the Discord server, there's a #team-formation channel.",
-          status: 'active',
-          createdAt: '2025-01-10T11:00:00Z',
-          updatedAt: '2025-01-10T11:00:00Z',
-          totalReactions: 5,
-          reactionCounts: { LIKE: 5, DISLIKE: 0, HELPFUL: 0 },
-          editHistory: [],
-          replyCount: 0,
-          isSpam: false,
-          reports: [],
-          replies: [],
-          parentCommentId: '1',
-        },
-      ],
-    },
-  ];
+  // Discussions are now fetched directly in components via useCommentSystem
+  const mockDiscussions: Comment[] = [];
 
   // const mockContent = `# ${
   //   currentHackathon?.title || 'Hackathon'
@@ -381,7 +279,9 @@ export function HackathonDataProvider({
         },
         {
           event: 'Submission Deadline',
-          date: new Date(currentHackathon.deadline).toLocaleDateString(),
+          date: new Date(
+            currentHackathon.submissionDeadline
+          ).toLocaleDateString(),
         },
         {
           event: 'Winners Announced',
@@ -395,26 +295,28 @@ export function HackathonDataProvider({
         {
           title: 'Grand Prize',
           rank: '1 winner',
-          prize: `${currentHackathon.totalPrizePool} in prizes`,
+          prize: `${currentHackathon.prizeTiers.reduce((acc, prize) => acc + Number(prize.prizeAmount || 0), 0)} in prizes`,
           icon: '⭐',
           details: [
-            `Prize: ${currentHackathon.totalPrizePool}`,
+            `Prize: ${currentHackathon.prizeTiers.reduce((acc, prize) => acc + Number(prize.prizeAmount || 0), 0)}`,
             'Premium Swag Box',
           ],
         },
       ]
     : [];
 
-  const mockResources: ResourceItem[] = currentHackathon?.resources?.resources
-    ? currentHackathon.resources.resources.map((resource, index) => ({
-        id: index + 1,
-        title: resource.description || `Resource ${index + 1}`,
-        type: resource.fileUrl ? 'file' : 'link',
-        size: 'N/A',
-        url: resource.fileUrl || resource.link || '',
-        uploadDate: new Date().toISOString(),
-        description: resource.description || '',
-      }))
+  const mockResources: ResourceItem[] = currentHackathon?.resources
+    ? (currentHackathon.resources.map(
+        (resource: HackathonResourceItem, index: number) => ({
+          id: index,
+          title: resource.description || `Resource ${index + 1}`,
+          type: resource.file?.url ? 'file' : 'link',
+          size: 'N/A',
+          url: resource.file?.url || '',
+          uploadDate: new Date().toISOString(),
+          description: resource.description || '',
+        })
+      ) as ResourceItem[])
     : [];
 
   // --------------------------------
@@ -469,14 +371,12 @@ export function HackathonDataProvider({
 
   const value: HackathonDataContextType = {
     hackathons,
-    featuredHackathons,
     ongoingHackathons,
     upcomingHackathons,
     pastHackathons,
 
     currentHackathon,
     discussions: mockDiscussions,
-    participants,
     submissions,
     // content: mockContent,
     timelineEvents: mockTimelineEvents,

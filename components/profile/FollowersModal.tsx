@@ -2,17 +2,17 @@
 
 import BoundlessSheet from '../sheet/boundless-sheet';
 import { TeamMember } from '@/components/ui/TeamList';
-import { Project } from '@/types/project';
 import { ModalTabs } from './ModalTabs';
 import { FollowersContent } from './FollowersContent';
 import { useProjectFilters } from './useProjectFilters';
+import { CrowdfundingProject } from '@/types/project';
 
 interface FollowersModalProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   type: 'followers' | 'following';
   users?: TeamMember[];
-  projects?: Project[];
+  projects?: CrowdfundingProject[];
 }
 
 export default function FollowersModal({

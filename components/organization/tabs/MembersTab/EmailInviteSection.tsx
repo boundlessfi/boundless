@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import React, { useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { X as XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ interface EmailInviteSectionProps {
   emailInput: string;
   setEmailInput: (input: string) => void;
   onInvite: () => void;
+  loading: boolean;
 }
 
 export default function EmailInviteSection({
@@ -20,6 +21,7 @@ export default function EmailInviteSection({
   emailInput,
   setEmailInput,
   onInvite,
+  loading,
 }: EmailInviteSectionProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -99,6 +101,7 @@ export default function EmailInviteSection({
             inviteEmails.length === 0 && 'cursor-not-allowed opacity-50'
           )}
           size='xl'
+          loading={loading}
         >
           Invite {inviteEmails.length > 0 && `(${inviteEmails.length})`}
         </BoundlessButton>

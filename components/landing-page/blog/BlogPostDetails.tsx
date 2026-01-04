@@ -4,12 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Tag, BookOpen, Check } from 'lucide-react';
 import { BlogPost } from '@/types/blog';
-import { getRelatedPosts } from '@/lib/api/blog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useMarkdown } from '@/hooks/use-markdown';
 import BlogCard from './BlogCard';
 import AuthLoadingState from '@/components/auth/AuthLoadingState';
+import { getRelatedPosts } from '@/lib/api/blog';
 
 interface BlogPostDetailsProps {
   post: BlogPost;
@@ -36,8 +36,8 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
       try {
         setIsLoadingRelated(true);
         setRelatedPostsError(null);
-        const related = await getRelatedPosts(post.slug, { limit: 3 });
-        setRelatedPosts(related || []);
+        const related = await getRelatedPosts(post.id);
+        setRelatedPosts(related.posts);
       } catch {
         setRelatedPostsError('Failed to load related posts');
         setRelatedPosts([]);
@@ -127,7 +127,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
                     <div className='flex items-center gap-3'>
                       <Avatar className='h-8 w-8 border border-[#2B2B2B] bg-[#1C1C1C] sm:h-10 sm:w-10'>
                         <AvatarImage
-                          src={post.author.avatar}
+                          src={post.author.image}
                           alt={post.author.name}
                         />
                         <AvatarFallback className='border border-[#2B2B2B] bg-[#1C1C1C] text-base sm:text-lg'>
@@ -139,7 +139,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
                       </span>
                     </div>
                     <span className='text-sm text-[#DFDFDF] sm:text-base'>
-                      {formatDate(post.publishedAt)}
+                      {formatDate(post.createdAt)}
                     </span>
                   </div>
 
@@ -157,7 +157,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
             <div className='max-w-4xl'>
               <div className='relative h-[250px] w-full overflow-hidden rounded-lg border border-white/20 sm:h-[300px] md:h-[400px] lg:h-[500px]'>
                 <Image
-                  src={post.image}
+                  src={post.coverImage}
                   alt={post.title}
                   fill
                   className='rounded-lg object-cover'
@@ -191,14 +191,14 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
                   <span className='text-sm font-medium text-white sm:text-base'>
                     Tags:
                   </span>
-                  {post.tags.map(tag => (
+                  {post.tags?.map(tag => (
                     <Badge
-                      key={tag}
+                      key={tag.id}
                       variant='secondary'
                       className='bg-[#2B2B2B] text-[#B5B5B5] transition-colors hover:bg-[#3B3B3B]'
                     >
                       <Tag className='mr-1 h-3 w-3' />
-                      {tag}
+                      {tag.tag.name}
                     </Badge>
                   ))}
                 </div>

@@ -33,12 +33,17 @@ export const useJudgingCriteria = ({
       (!localCriteria || localCriteria.length === 0)
     ) {
       setIsFetchingCriteria(true);
-      getHackathon(organizationId, hackathonId)
+      getHackathon(hackathonId)
         .then(response => {
           if (response.success) {
-            const criteria = response.data.judging?.criteria || [];
+            const criteria = response.data.judgingCriteria || [];
             if (criteria && criteria.length > 0) {
-              setLocalCriteria(criteria);
+              // Filter out criteria that don't have required title and weight
+              const validCriteria = criteria.filter(
+                (criterion): criterion is JudgingCriterion =>
+                  !!criterion.name && typeof criterion.weight === 'number'
+              );
+              setLocalCriteria(validCriteria);
             }
           }
         })

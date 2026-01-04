@@ -3,11 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import {
-  previewDraft,
-  PrizeTier,
-  transformPublicHackathonToHackathon,
-} from '@/lib/api/hackathons';
+import { getDraft, PrizeTier, VenueType } from '@/lib/api/hackathons';
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
@@ -15,7 +11,7 @@ import { HackathonResources } from '@/components/hackathons/resources/resources'
 import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/LoadingScreen';
 import { Badge } from '@/components/ui/badge';
 import { BoundlessButton } from '@/components/buttons';
-import type { Hackathon } from '@/types/hackathon';
+import type { Hackathon } from '@/lib/api/hackathons';
 
 // Mock data for preview (since drafts don't have participants/submissions yet)
 const mockContent = `
@@ -31,26 +27,29 @@ const mockTimelineEvents = [
 
 const mockPrizes: PrizeTier[] = [
   {
-    position: '1st',
-    amount: 5000,
-    currency: 'USD',
+    place: '1st',
+    prizeAmount: '5000',
+    currency: 'USDC',
     description: 'Cash prize, Certificate, Featured on homepage',
   },
   {
-    position: '2nd',
-    amount: 3000,
-    currency: 'USD',
+    place: '2nd',
+    prizeAmount: '3000',
+    currency: 'USDC',
     description: 'Cash prize, Certificate',
   },
   {
-    position: '3rd',
-    amount: 2000,
-    currency: 'USD',
+    place: '3rd',
+    prizeAmount: '2000',
+    currency: 'USDC',
     description: 'Cash prize, Certificate',
   },
 ];
 
-const totalPrizePool = mockPrizes.reduce((sum, prize) => sum + prize.amount, 0);
+const totalPrizePool = mockPrizes.reduce(
+  (sum, prize) => sum + parseFloat(prize.prizeAmount || '0'),
+  0
+);
 
 interface PreviewPageProps {
   params: Promise<{
@@ -90,48 +89,159 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
         setLoading(true);
         setError(null);
 
-        const response = await previewDraft(
+        const response = await getDraft(
           resolvedParams.orgId,
           resolvedParams.draftId
         );
 
         if (response.success && response.data) {
-          // Transform PublicHackathon to Hackathon type
-          const transformed = transformPublicHackathonToHackathon(
-            response.data,
-            response.data.organizer
-          );
+          const draft = response.data;
 
-          // Map to the Hackathon type expected by components
+          // Map draft data to the Hackathon type expected by components
           const hackathon: Hackathon = {
-            id: transformed._id,
-            title: transformed.information.title,
-            tagline: transformed.participation?.about || '',
-            description: transformed.information.description,
-            slug: transformed.information.slug || '',
-            imageUrl: transformed.information.banner,
-            status:
-              transformed.status === 'ongoing'
-                ? 'ongoing'
-                : transformed.status === 'completed'
-                  ? 'ended'
-                  : 'upcoming',
-            participants: 0, // Always 0 for drafts
-            registrationDeadlinePolicy:
-              transformed.participation.registrationDeadlinePolicy ||
-              'before_submission_deadline',
+            id: draft.id,
+            isParticipant: false,
+            name: draft.data.information?.name || 'Untitled Hackathon',
+            slug: draft.data.information?.slug || '',
+            tagline: draft.data.participation?.about || '',
+            description: draft.data.information?.description || '',
+
+            banner: draft.data.information?.banner || '',
+
+            organizationId: resolvedParams.orgId,
+            organization: {
+              id: resolvedParams.orgId,
+              name: '', // We don't have organizer name from draft
+              logo: '',
+            },
+
+            status: 'DRAFT',
+            isActive: false,
+
+            venueType: (draft.data.information?.venue?.type ===
+            VenueType.VIRTUAL
+              ? 'VIRTUAL'
+              : draft.data.information?.venue?.type === VenueType.PHYSICAL
+                ? 'PHYSICAL'
+                : 'VIRTUAL') as 'VIRTUAL' | 'PHYSICAL',
+            venueName: draft.data.information?.venue?.venueName || '',
+            venueAddress: draft.data.information?.venue?.venueAddress || '',
+            city: draft.data.information?.venue?.city || '',
+            state: draft.data.information?.venue?.state || '',
+            country: draft.data.information?.venue?.country || '',
+            timezone: draft.data.timeline?.timezone || 'UTC',
+
+            startDate: draft.data.timeline?.startDate || '',
+            endDate: draft.data.timeline?.winnerAnnouncementDate || '',
+            submissionDeadline: draft.data.timeline?.submissionDeadline || '',
             registrationDeadline:
-              transformed.participation.registrationDeadline,
-            totalPrizePool: response.data.totalPrizePool,
-            deadline: transformed.timeline.submissionDeadline,
-            categories: transformed.information.categories.map(cat =>
-              cat.toString()
-            ),
-            startDate: transformed.timeline.startDate,
-            endDate: transformed.timeline.winnerAnnouncementDate,
-            organizer: response.data.organizer,
-            featured: transformed.featured || false,
-            resources: transformed.resources || { resources: [] },
+              draft.data.participation?.registrationDeadline || '',
+            customRegistrationDeadline:
+              draft.data.participation?.registrationDeadline || null,
+
+            registrationOpen: false,
+            registrationDeadlinePolicy:
+              (draft.data.participation?.registrationDeadlinePolicy as
+                | 'BEFORE_START'
+                | 'BEFORE_SUBMISSION_DEADLINE'
+                | 'CUSTOM') || 'BEFORE_SUBMISSION_DEADLINE',
+
+            daysUntilStart: 0,
+            daysUntilEnd: 0,
+
+            participantType: (draft.data.participation?.participantType ===
+            'individual'
+              ? 'INDIVIDUAL'
+              : draft.data.participation?.participantType === 'team'
+                ? 'TEAM'
+                : draft.data.participation?.participantType ===
+                    'team_or_individual'
+                  ? 'TEAM_OR_INDIVIDUAL'
+                  : 'INDIVIDUAL') as
+              | 'INDIVIDUAL'
+              | 'TEAM'
+              | 'TEAM_OR_INDIVIDUAL',
+            teamMin: draft.data.participation?.teamMin || 1,
+            teamMax: draft.data.participation?.teamMax || 4,
+
+            categories: draft.data.information?.categories || [],
+
+            enabledTabs: [
+              'detailsTab',
+              'participantsTab',
+              'resourcesTab',
+              'submissionTab',
+              'announcementsTab',
+              'discussionTab',
+              'winnersTab',
+              'sponsorsTab',
+              'joinATeamTab',
+              'rulesTab',
+            ],
+
+            judgingCriteria: draft.data.judging?.criteria || [],
+
+            prizeTiers:
+              draft.data.rewards?.prizeTiers?.map(tier => ({
+                place: tier.place || '1st',
+                prizeAmount: tier.prizeAmount || '0',
+                currency: tier.currency || 'USDC',
+                description: tier.description || '',
+                passMark: tier.passMark,
+              })) || [],
+
+            phases: draft.data.timeline?.phases || [],
+            resources:
+              (draft.data.resources?.resources?.map((resource, index) => ({
+                id: index.toString(),
+                file: {
+                  url: resource.file?.url || '',
+                  name: resource.file?.name || '',
+                },
+                link: resource.link || '',
+                description: resource.description || '',
+              })) as {
+                id: string;
+                file: { url: string; name: string };
+                link: string;
+                description: string;
+              }[]) || [],
+
+            sponsorsPartners: draft.data.collaboration?.sponsorsPartners || [],
+
+            submissions: [],
+            followers: [],
+            participants: [],
+
+            requireGithub:
+              draft.data.participation?.submissionRequirements?.requireGithub ||
+              false,
+            requireDemoVideo:
+              draft.data.participation?.submissionRequirements
+                ?.requireDemoVideo || false,
+            requireOtherLinks:
+              draft.data.participation?.submissionRequirements
+                ?.requireOtherLinks || false,
+
+            contactEmail: draft.data.collaboration?.contactEmail || '',
+            discord: draft.data.collaboration?.telegram || '',
+            telegram: draft.data.collaboration?.telegram || '',
+            socialLinks: draft.data.collaboration?.socialLinks || [],
+
+            publishedAt: '',
+            createdAt: draft.createdAt,
+            updatedAt: draft.updatedAt,
+
+            _count: {
+              participants: 0,
+              submissions: 0,
+              followers: 0,
+            },
+
+            contractId: undefined,
+            escrowAddress: undefined,
+            transactionHash: undefined,
+            escrowDetails: undefined,
           };
 
           setPreviewHackathon(hackathon);
@@ -382,14 +492,13 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
 
       {/* Banner */}
       <HackathonBanner
-        title={previewHackathon.title}
+        title={previewHackathon.name}
         tagline={previewHackathon.tagline}
-        deadline={previewHackathon.deadline}
+        deadline={previewHackathon.submissionDeadline}
         categories={previewHackathon.categories}
         status={previewHackathon.status}
-        participants={previewHackathon.participants}
-        totalPrizePool={previewHackathon.totalPrizePool}
-        imageUrl={previewHackathon.imageUrl}
+        participants={0}
+        imageUrl={previewHackathon.banner}
         startDate={previewHackathon.startDate}
         endDate={previewHackathon.endDate}
       />

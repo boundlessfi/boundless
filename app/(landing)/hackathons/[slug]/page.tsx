@@ -9,7 +9,6 @@ import { RegisterHackathonModal } from '@/components/hackathons/overview/Registe
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
-import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
 import { HackathonResources } from '@/components/hackathons/resources/resources';
 import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
 import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
@@ -19,6 +18,7 @@ import { useTimelineEvents } from '@/hooks/hackathon/use-timeline-events';
 import { toast } from 'sonner';
 import type { Participant } from '@/lib/api/hackathons';
 import { HackathonStickyCard } from '@/components/hackathons/hackathonStickyCard';
+import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
 
 export default function HackathonPage() {
   const router = useRouter();
@@ -27,7 +27,6 @@ export default function HackathonPage() {
 
   const {
     currentHackathon,
-    participants,
     submissions,
     loading,
     setCurrentHackathon,
@@ -40,8 +39,18 @@ export default function HackathonPage() {
   });
 
   const hackathonTabs = useMemo(() => {
-    const hasParticipants = participants.length > 0;
-    const hasResources = currentHackathon?.resources?.resources?.[0];
+    const hasParticipants =
+      Array.isArray(currentHackathon?.participants) &&
+      currentHackathon.participants.length > 0;
+
+    const hasResources = currentHackathon?.resources?.[0];
+    const participantType = currentHackathon?.participantType;
+    const isTeamHackathon =
+      participantType === 'TEAM' ||
+      participantType === 'TEAM_OR_INDIVIDUAL' ||
+      participantType === 'INDIVIDUAL';
+    const isTabEnabled =
+      currentHackathon?.enabledTabs?.includes('joinATeamTab') !== false;
 
     const tabs = [
       { id: 'overview', label: 'Overview' },
@@ -50,7 +59,7 @@ export default function HackathonPage() {
             {
               id: 'participants',
               label: 'Participants',
-              badge: participants.length,
+              badge: currentHackathon?.participants.length,
             },
           ]
         : []),
@@ -59,7 +68,7 @@ export default function HackathonPage() {
             {
               id: 'resources',
               label: 'Resources',
-              badge: currentHackathon?.resources?.resources?.length,
+              badge: currentHackathon?.resources?.length,
             },
           ]
         : []),
@@ -71,22 +80,17 @@ export default function HackathonPage() {
       { id: 'discussions', label: 'Discussions' },
     ];
 
-    const participantType = currentHackathon?.participation?.participantType;
-    const isTeamHackathon =
-      participantType === 'team' || participantType === 'team_or_individual';
-    const isTabEnabled =
-      currentHackathon?.participation?.tabVisibility?.joinATeamTab !== false;
-
     if (isTeamHackathon && isTabEnabled) {
       tabs.push({ id: 'team-formation', label: 'Find Team' });
     }
 
     return tabs;
   }, [
-    participants.length,
+    currentHackathon?.participants,
+    currentHackathon?.resources,
+    currentHackathon?.participantType,
+    currentHackathon?.enabledTabs,
     submissions,
-    currentHackathon?.participation?.participantType,
-    currentHackathon?.participation?.tabVisibility?.joinATeamTab,
   ]);
 
   const hackathonId = params.slug as string;
@@ -104,20 +108,34 @@ export default function HackathonPage() {
   const {
     isRegistered,
     hasSubmitted,
-    checkStatus,
-    setIsRegistered,
     setParticipant,
+    register: registerForHackathon,
   } = useRegisterHackathon({
-    hackathonSlugOrId: hackathonId,
+    hackathon: currentHackathon
+      ? {
+          id: currentHackathon.id,
+          slug: currentHackathon.slug,
+          isParticipant: currentHackathon.isParticipant,
+        }
+      : null,
     organizationId: undefined,
-    autoCheck: !!hackathonId,
   });
 
   // Leave hackathon functionality
   const { isLeaving, leave: leaveHackathon } = useLeaveHackathon({
-    hackathonSlugOrId: hackathonId,
+    hackathonSlugOrId: currentHackathon?.id || '',
     organizationId: undefined,
   });
+  const handleRegister = async () => {
+    try {
+      const participantData = await registerForHackathon();
+
+      toast.success('Successfully registered for hackathon!');
+      handleRegisterSuccess(participantData);
+    } catch {
+      // Error handled in hook
+    }
+  };
 
   // Check if hackathon has ended
   // const isEnded = useMemo(() => {
@@ -129,20 +147,20 @@ export default function HackathonPage() {
 
   // Team formation availability
   const isTeamHackathon =
-    currentHackathon?.participation?.participantType === 'team' ||
-    currentHackathon?.participation?.participantType === 'team_or_individual';
+    currentHackathon?.participantType === 'TEAM' ||
+    currentHackathon?.participantType === 'TEAM_OR_INDIVIDUAL' ||
+    currentHackathon?.participantType === 'INDIVIDUAL';
   const isTeamFormationEnabled =
     isTeamHackathon &&
-    currentHackathon?.participation?.tabVisibility?.joinATeamTab !== false;
+    currentHackathon?.enabledTabs?.includes('joinATeamTab') !== false;
 
   // Event handlers
   const handleJoinClick = () => {
-    setShowRegisterModal(true);
+    handleRegister();
   };
 
   const handleLeaveClick = async () => {
     try {
-      setIsRegistered(false);
       setParticipant(null);
       await leaveHackathon();
       refreshHackathonData();
@@ -151,15 +169,13 @@ export default function HackathonPage() {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to leave hackathon';
       toast.error(errorMessage);
-      setIsRegistered(true);
-      checkStatus();
+      // refreshHackathonData() will update the isParticipant status
     }
   };
 
   const handleRegisterSuccess = async (participantData: Participant) => {
-    setIsRegistered(true);
     setParticipant(participantData);
-    await refreshHackathonData();
+    await refreshHackathonData(); // This will update hackathon.isParticipant
     router.push('?tab=submission');
   };
 
@@ -220,16 +236,15 @@ export default function HackathonPage() {
 
   // Shared props for banner and sticky card
   const sharedActionProps = {
-    deadline: currentHackathon.deadline,
+    deadline: currentHackathon.submissionDeadline,
     startDate: currentHackathon.startDate,
-    totalPrizePool: currentHackathon.totalPrizePool,
+    totalPrizePool: currentHackathon.prizeTiers
+      .reduce((acc, prize) => acc + Number(prize.prizeAmount || 0), 0)
+      .toString(),
     isRegistered,
     hasSubmitted,
     isTeamFormationEnabled,
-    registrationDeadlinePolicy: currentHackathon.registrationDeadlinePolicy as
-      | 'before_start'
-      | 'before_submission_deadline'
-      | 'custom',
+    registrationDeadlinePolicy: currentHackathon.registrationDeadlinePolicy, // Now matches API casing
     registrationDeadline: currentHackathon.registrationDeadline,
     onJoinClick: handleJoinClick,
     onLeaveClick: handleLeaveClick,
@@ -246,11 +261,11 @@ export default function HackathonPage() {
         <div className='lg:col-span-2'>
           {/* Banner - Shows on all screens */}
           <HackathonBanner
-            title={currentHackathon.title}
+            title={currentHackathon.name}
             tagline={currentHackathon.tagline}
-            imageUrl={currentHackathon.imageUrl}
+            imageUrl={currentHackathon.banner}
             categories={currentHackathon.categories}
-            participants={currentHackathon.participants}
+            participants={currentHackathon._count.participants}
             {...sharedActionProps}
           />
 
@@ -267,20 +282,46 @@ export default function HackathonPage() {
               <HackathonOverview
                 content={currentHackathon.description}
                 timelineEvents={timeline_Events}
-                prizes={currentHackathon.prizeTiers}
-                totalPrizePool={currentHackathon.totalPrizePool}
+                prizes={currentHackathon.prizeTiers.map(tier => ({
+                  id: tier.id,
+                  place: tier.place,
+                  currency: tier.currency,
+                  passMark: tier.passMark,
+                  description: tier.description,
+                  prizeAmount: tier.prizeAmount, // Keep as string to match PrizeTier interface
+                }))}
+                totalPrizePool={currentHackathon.prizeTiers
+                  .reduce(
+                    (acc, prize) => acc + Number(prize.prizeAmount || 0),
+                    0
+                  )
+                  .toString()}
                 hackathonSlugOrId={hackathonId}
-                venue={currentHackathon.venue}
+                venue={{
+                  type: currentHackathon.venueType.toLowerCase() as
+                    | 'virtual'
+                    | 'physical',
+                  country: currentHackathon.country,
+                  state: currentHackathon.state,
+                  city: currentHackathon.city,
+                  venueName: currentHackathon.venueName,
+                  venueAddress: currentHackathon.venueAddress,
+                }}
               />
             )}
 
-            {activeTab === 'participants' && participants.length > 0 && (
-              <HackathonParticipants />
-            )}
+            {activeTab === 'resources' &&
+              currentHackathon.resources?.length > 0 && ( // Direct array check
+                <HackathonResources />
+              )}
+            {activeTab === 'participants' &&
+              currentHackathon.participants?.length > 0 && ( // Direct array check
+                <HackathonParticipants />
+              )}
 
             {activeTab === 'submission' && (
               <SubmissionTab
-                hackathonSlugOrId={hackathonId}
+                organizationId={currentHackathon.organizationId}
                 isRegistered={isRegistered}
               />
             )}
@@ -296,18 +337,17 @@ export default function HackathonPage() {
               <TeamFormationTab hackathonSlugOrId={hackathonId} />
             )}
 
-            {activeTab === 'resources' &&
-              currentHackathon?.resources?.resources?.[0] && (
-                <HackathonResources />
-              )}
+            {activeTab === 'resources' && currentHackathon?.resources?.[0] && (
+              <HackathonResources />
+            )}
           </div>
         </div>
 
         {/* Sidebar - Sticky Card (1/3 width on desktop, hidden on mobile) */}
         <div className='lg:col-span-1'>
           <HackathonStickyCard
-            title={currentHackathon.title}
-            imageUrl={currentHackathon.imageUrl}
+            title={currentHackathon.name}
+            imageUrl={currentHackathon.banner}
             {...sharedActionProps}
           />
         </div>
@@ -318,15 +358,9 @@ export default function HackathonPage() {
         <RegisterHackathonModal
           open={showRegisterModal}
           onOpenChange={setShowRegisterModal}
-          hackathonSlugOrId={hackathonId}
+          hackathon={currentHackathon}
           organizationId={undefined}
           onSuccess={handleRegisterSuccess}
-          participantType={
-            (currentHackathon?.participantType as
-              | 'team'
-              | 'individual'
-              | 'team_or_individual') ?? 'individual'
-          }
         />
       )}
     </div>

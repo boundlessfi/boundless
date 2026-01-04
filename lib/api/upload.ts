@@ -103,8 +103,10 @@ class UploadService {
       formData.append('folder', options.folder);
     }
 
-    if (options?.tags) {
-      formData.append('tags', options.tags.join(','));
+    if (options?.tags && options.tags.length > 0) {
+      options.tags.forEach(tag => {
+        formData.append('tags[]', tag);
+      });
     }
 
     const response = await api.post<UploadResponse>(
@@ -140,8 +142,10 @@ class UploadService {
       formData.append('folder', options.folder);
     }
 
-    if (options?.tags) {
-      formData.append('tags', options.tags.join(','));
+    if (options?.tags && options.tags.length > 0) {
+      options.tags.forEach(tag => {
+        formData.append('tags[]', tag);
+      });
     }
 
     const response = await api.post<MultipleUploadResponse>(

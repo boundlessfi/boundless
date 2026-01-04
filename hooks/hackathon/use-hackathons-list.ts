@@ -3,8 +3,8 @@
 import * as React from 'react';
 import {
   getPublicHackathonsList,
-  transformPublicHackathonToHackathon,
   type Hackathon,
+  type PublicHackathonsListData,
 } from '@/lib/api/hackathons';
 import type { HackathonFilters } from './use-hackathon-filters';
 import { mapSortToAPI, mapStatusToAPI } from './use-hackathon-filters';
@@ -63,11 +63,11 @@ export function useHackathonsList(
   const getHackathonDeadline = React.useCallback(
     (hackathon: Hackathon): number => {
       try {
-        if (hackathon.timeline?.submissionDeadline) {
-          return new Date(hackathon.timeline.submissionDeadline).getTime();
+        if (hackathon?.submissionDeadline) {
+          return new Date(hackathon?.submissionDeadline).getTime();
         }
-        if (hackathon.timeline?.winnerAnnouncementDate) {
-          return new Date(hackathon.timeline.winnerAnnouncementDate).getTime();
+        if (hackathon?.endDate) {
+          return new Date(hackathon?.endDate).getTime();
         }
       } catch {
         // Handle error silently
@@ -80,12 +80,9 @@ export function useHackathonsList(
   // Get prize pool total
   const getPrizePoolTotal = React.useCallback(
     (hackathon: Hackathon): number => {
-      if (
-        hackathon.rewards?.prizeTiers &&
-        hackathon.rewards.prizeTiers.length > 0
-      ) {
-        return hackathon.rewards.prizeTiers.reduce(
-          (sum, tier) => sum + (tier.amount || 0),
+      if (hackathon?.prizeTiers && hackathon?.prizeTiers.length > 0) {
+        return hackathon?.prizeTiers.reduce(
+          (sum, tier) => sum + Number(tier.prizeAmount || 0),
           0
         );
       }
@@ -131,21 +128,21 @@ export function useHackathonsList(
       let filtered = [...hackathonsList];
 
       if (location === 'virtual') {
-        filtered = filtered.filter(
-          h => h.information?.venue?.type === 'virtual'
-        );
+        filtered = filtered.filter(h => h.venueType === 'VIRTUAL');
       } else if (location === 'physical') {
-        filtered = filtered.filter(
-          h => h.information?.venue?.type === 'physical'
-        );
+        filtered = filtered.filter(h => h.venueType === 'PHYSICAL');
       } else {
-        // Filter by country/city if provided
+        // Filter by country/city/state if provided
         filtered = filtered.filter(h => {
-          const venue = h.information?.venue;
-          if (!venue) return false;
+          const country = h.country?.toLowerCase();
+          const city = h.city?.toLowerCase();
+          const state = h.state?.toLowerCase();
+          const searchLocation = location.toLowerCase();
+
           return (
-            venue.country?.toLowerCase().includes(location.toLowerCase()) ||
-            venue.city?.toLowerCase().includes(location.toLowerCase())
+            country?.includes(searchLocation) ||
+            city?.includes(searchLocation) ||
+            state?.includes(searchLocation)
           );
         });
       }
@@ -181,17 +178,13 @@ export function useHackathonsList(
         };
 
         // Call public API
-        const response = await getPublicHackathonsList(apiFilters);
-
-        // Transform API response to Hackathon format
-        const transformedHackathons = response.data.hackathons.map(
-          publicHackathon =>
-            transformPublicHackathonToHackathon(publicHackathon)
-        );
+        const response: PublicHackathonsListData =
+          await getPublicHackathonsList(apiFilters);
+        let hackathonsList = response.hackathons || [];
 
         // Apply client-side location filtering (API doesn't support it)
-        let filteredHackathons = filterByLocation(
-          transformedHackathons,
+        hackathonsList = filterByLocation(
+          hackathonsList,
           currentFilters.location
         );
 
@@ -200,33 +193,23 @@ export function useHackathonsList(
           currentFilters.sort === 'prize_pool_low' ||
           currentFilters.sort === 'deadline_far'
         ) {
-          filteredHackathons = sortHackathons(
-            filteredHackathons,
+          hackathonsList = sortHackathons(
+            hackathonsList,
             currentFilters.sort as SortOption
           );
         }
 
-        // Separate featured hackathons
-        const featured = filteredHackathons
-          .filter(
-            (h): h is Hackathon & { featured?: boolean } =>
-              '_organizationName' in h || 'featured' in h
-          )
-          .filter(
-            h =>
-              'featured' in h &&
-              (h as Hackathon & { featured?: boolean }).featured === true
-          );
-        setFeaturedHackathons(featured as Hackathon[]);
+        // Separate featured hackathons (currently empty - no featured logic implemented)
+        setFeaturedHackathons([]);
 
         // Update state
-        setTotalCount(response.data.total);
-        setHasMore(response.data.hasMore);
+        setTotalCount(response.total || 0);
+        setHasMore(response.hasMore ?? false);
 
         if (append) {
-          setHackathons(prev => [...prev, ...filteredHackathons]);
+          setHackathons(prev => [...prev, ...hackathonsList]);
         } else {
-          setHackathons(filteredHackathons);
+          setHackathons(hackathonsList);
         }
       } catch (err) {
         const errorMessage =
@@ -237,7 +220,7 @@ export function useHackathonsList(
         setLoadingMore(false);
       }
     },
-    [pageSize, filterByLocation, sortHackathons]
+    [pageSize, filterByLocation, sortHackathons, mapStatusToAPI, mapSortToAPI]
   );
 
   // Fetch hackathons when filters change

@@ -2,19 +2,21 @@
 import { Progress } from '@/components/ui/progress';
 import { formatNumber } from '@/lib/utils';
 import { useRouter } from 'nextjs-toploader/app';
+import type { Crowdfunding } from '@/types/project';
 
 type ProjectCardProps = {
   newTab?: boolean;
-  projectId?: string;
-  creatorName: string;
-  creatorLogo: string;
-  projectImage: string;
-  projectTitle: string;
-  projectDescription: string;
-  status: 'Validation' | 'Funding' | 'Funded' | 'Completed';
-  deadlineInDays: number;
-  milestoneRejected?: boolean;
   isFullWidth?: boolean;
+  project?: Crowdfunding;
+  // Legacy props for backward compatibility
+  projectId?: string;
+  creatorName?: string;
+  creatorLogo?: string;
+  projectImage?: string;
+  projectTitle?: string;
+  projectDescription?: string;
+  status?: 'Validation' | 'Funding' | 'Funded' | 'Completed';
+  deadlineInDays?: number;
   votes?: {
     current: number;
     goal: number;
@@ -30,25 +32,75 @@ type ProjectCardProps = {
   };
 };
 function ProjectCard({
-  projectId,
+  project,
   newTab = false,
+  isFullWidth = false,
+  projectId,
   creatorName,
   creatorLogo,
   projectImage,
   projectTitle,
   projectDescription,
-  status,
-  deadlineInDays,
-  milestoneRejected,
-  isFullWidth = false,
+  status: legacyStatus,
+  deadlineInDays: legacyDeadline,
   votes,
   funding,
   milestones,
 }: ProjectCardProps) {
   const router = useRouter();
-  const handleClick = () => {
-    router.push(`/projects/${projectId}`);
+
+  const isNewFormat =
+    !!project && typeof project === 'object' && 'fundingGoal' in project;
+  const currentProjectId =
+    (isNewFormat && project ? project.id : projectId) || '';
+  const currentCreatorName =
+    (isNewFormat && project ? project.project.creator.name : creatorName) ||
+    'Unknown Creator';
+  const currentCreatorLogo =
+    (isNewFormat && project ? project.project.creator.image : creatorLogo) ||
+    '/user.png';
+  const currentProjectImage =
+    (isNewFormat && project ? project.project.logo : projectImage) ||
+    '/landing/explore/project-placeholder-1.png';
+  const currentProjectTitle =
+    (isNewFormat && project ? project.project.title : projectTitle) || '';
+  const currentProjectDescription =
+    (isNewFormat && project
+      ? project.project.description || project.project.vision
+      : projectDescription) || '';
+
+  const getProjectStatus = () => {
+    if (!isNewFormat || !project) return legacyStatus || 'Funding';
+
+    const status = project.project.status;
+    if (status === 'IDEA') return 'Validation';
+    if (status === 'ACTIVE') return 'Funding';
+    if (status === 'COMPLETED') return 'Completed';
+    return 'Funding'; // default
   };
+
+  const getDeadlineInDays = () => {
+    if (!isNewFormat || !project) return legacyDeadline || 0;
+
+    try {
+      const now = new Date();
+      const end = new Date(project.fundingEndDate);
+      return Math.max(
+        0,
+        Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      );
+    } catch {
+      return 0;
+    }
+  };
+
+  const status = getProjectStatus();
+  const deadlineInDays = getDeadlineInDays();
+
+  const handleClick = () => {
+    router.push(`/projects/${currentProjectId}`);
+  };
+
   const getStatusStyles = () => {
     switch (status) {
       case 'Funding':
@@ -65,11 +117,17 @@ function ProjectCard({
   };
 
   const getDeadlineInfo = () => {
-    if (status === 'Completed' && milestoneRejected) {
-      return {
-        text: '1 Milestone Rejected',
-        className: 'text-red-500',
-      };
+    if (status === 'Completed' && isNewFormat && project) {
+      // Check if any milestones are rejected
+      const rejectedMilestones = project.milestones.filter(
+        m => m.status === 'rejected'
+      );
+      if (rejectedMilestones.length > 0) {
+        return {
+          text: `${rejectedMilestones.length} Milestone${rejectedMilestones.length > 1 ? 's' : ''} Rejected`,
+          className: 'text-red-500',
+        };
+      }
     }
 
     if (deadlineInDays <= 3) {
@@ -102,10 +160,12 @@ function ProjectCard({
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
           <div
-            style={{ backgroundImage: `url(${creatorLogo})` }}
+            style={{ backgroundImage: `url(${currentCreatorLogo})` }}
             className='size-6 rounded-full bg-white bg-cover bg-center'
           ></div>
-          <h4 className='text-sm font-normal text-gray-500'>{creatorName}</h4>
+          <h4 className='text-sm font-normal text-gray-500'>
+            {currentCreatorName}
+          </h4>
         </div>
         <div className='flex items-center gap-3'>
           <div className='bg-office-brown border-office-brown-darker text-office-brown-darker flex w-[63px] items-center justify-center rounded-[4px] border px-1 py-0.5 text-xs font-semibold'>
@@ -120,16 +180,16 @@ function ProjectCard({
       </div>
       <div className='flex items-start gap-3 sm:gap-5'>
         <div
-          style={{ backgroundImage: `url(${projectImage})` }}
+          style={{ backgroundImage: `url(${currentProjectImage})` }}
           className='h-[70px] w-[60px] flex-shrink-0 rounded-[8px] bg-white bg-cover bg-center sm:h-[90px] sm:w-[79.41px]'
         ></div>
         <div className='flex min-w-0 flex-1 flex-col gap-2'>
           <h2 className='line-clamp-2 text-left text-sm font-semibold text-white sm:text-base'>
-            {projectTitle}
+            {currentProjectTitle}
           </h2>
           <div className='group relative'>
             <p className='line-clamp-3 cursor-pointer text-left text-xs font-normal text-white sm:text-sm'>
-              {projectDescription}
+              {currentProjectDescription}
             </p>
           </div>
         </div>
@@ -137,21 +197,42 @@ function ProjectCard({
       <div className='flex flex-col gap-2'>
         <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
           <div className='flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2'>
-            {status === 'Validation' && votes && (
+            {status === 'Validation' && (
               <h3 className='text-xs font-medium text-[#f5f5f5] sm:text-sm'>
-                {formatNumber(votes.current)}/{formatNumber(votes.goal)}{' '}
+                {formatNumber(
+                  isNewFormat ? project.project.votes || 0 : votes?.current || 0
+                )}
+                /{formatNumber(isNewFormat ? 100 : votes?.goal || 100)}{' '}
                 <span className='text-gray-500'>Votes</span>
               </h3>
             )}
-            {status === 'Funding' && funding && (
+            {status === 'Funding' && (
               <h3 className='text-xs font-medium text-[#f5f5f5] sm:text-sm'>
-                {formatNumber(funding.current)}/{formatNumber(funding.goal)}{' '}
-                <span className='text-gray-500'>{funding.currency} raised</span>
+                {formatNumber(
+                  isNewFormat ? project.fundingRaised : funding?.current || 0
+                )}
+                /
+                {formatNumber(
+                  isNewFormat ? project.fundingGoal : funding?.goal || 0
+                )}{' '}
+                <span className='text-gray-500'>
+                  {isNewFormat
+                    ? project.fundingCurrency
+                    : funding?.currency || 'USD'}{' '}
+                  raised
+                </span>
               </h3>
             )}
-            {(status === 'Funded' || status === 'Completed') && milestones && (
+            {(status === 'Funded' || status === 'Completed') && (
               <h3 className='text-xs font-medium text-[#f5f5f5] sm:text-sm'>
-                {milestones.current}/{milestones.goal}{' '}
+                {isNewFormat
+                  ? project.milestones.filter(m => m.status === 'completed')
+                      .length
+                  : milestones?.current || 0}
+                /
+                {isNewFormat
+                  ? project.milestones.length
+                  : milestones?.goal || 0}{' '}
                 <span className='text-gray-500'>Milestones Submitted</span>
               </h3>
             )}
@@ -167,16 +248,27 @@ function ProjectCard({
           <Progress
             value={
               status === 'Validation'
-                ? votes
-                  ? (votes.current / votes.goal) * 100
-                  : 0
+                ? ((isNewFormat && project
+                    ? project.project.votes || 0
+                    : votes?.current || 0) /
+                    (isNewFormat ? 100 : votes?.goal || 100)) *
+                  100
                 : status === 'Funding'
-                  ? funding
-                    ? (funding.current / funding.goal) * 100
-                    : 0
-                  : milestones
-                    ? (milestones.current / milestones.goal) * 100
-                    : 0
+                  ? ((isNewFormat && project
+                      ? project.fundingRaised
+                      : funding?.current || 0) /
+                      (isNewFormat && project
+                        ? project.fundingGoal
+                        : funding?.goal || 1)) *
+                    100
+                  : ((isNewFormat && project
+                      ? project.milestones.filter(m => m.status === 'completed')
+                          .length
+                      : milestones?.current || 0) /
+                      (isNewFormat && project
+                        ? project.milestones.length
+                        : milestones?.goal || 1)) *
+                    100
             }
             className='h-2 w-full rounded-full'
           />

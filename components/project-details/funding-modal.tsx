@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,38 +12,44 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  prepareProjectFunding,
-  confirmProjectFunding,
-} from '@/lib/api/project';
-import { useWalletInfo, useWalletSigning } from '@/hooks/use-wallet';
+import { contributeToProject } from '@/lib/api/project';
+import { useWalletInfo } from '@/hooks/use-wallet';
 import { Loader2, DollarSign } from 'lucide-react';
+import {
+  FundEscrowPayload,
+  useFundEscrow,
+  useSendTransaction,
+} from '@trustless-work/escrow';
+import { toast } from 'sonner';
+import { signTransaction } from '@/lib/config/wallet-kit';
 
 interface FundingModalProps {
-  projectId: string;
+  campaignId: string;
   projectTitle: string;
   currentRaised: number;
   fundingGoal: number;
+  escrowAddress: string;
   children: React.ReactNode;
 }
 
 export function FundingModal({
-  projectId,
+  campaignId,
   projectTitle,
   currentRaised,
   fundingGoal,
+  escrowAddress,
   children,
 }: FundingModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'input' | 'signing' | 'confirming'>('input');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [unsignedXdr, setUnsignedXdr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const walletSigning = useWalletSigning();
   const walletInfo = useWalletInfo();
   const address = walletInfo?.address || '';
+
+  const { fundEscrow } = useFundEscrow();
+  const { sendTransaction } = useSendTransaction();
 
   const remainingGoal = Math.max(0, fundingGoal - currentRaised);
   const progressPercentage = (currentRaised / fundingGoal) * 100;
@@ -67,44 +73,46 @@ export function FundingModal({
     try {
       // Step 1: Prepare funding
       setStep('signing');
-      const prepareResponse = await prepareProjectFunding(projectId, {
-        amount: parseFloat(amount),
+      const fundEscrowPayload: FundEscrowPayload = {
+        contractId: escrowAddress,
         signer: address || '',
-      });
-
-      if (!prepareResponse.success) {
-        throw new Error(prepareResponse.message || 'Failed to prepare funding');
+        amount: parseFloat(amount),
+      };
+      const { unsignedTransaction } = await fundEscrow(
+        fundEscrowPayload,
+        'multi-release'
+      );
+      if (!unsignedTransaction) {
+        throw new Error('Failed to fund escrow');
       }
 
-      setUnsignedXdr(prepareResponse.data.unsignedXdr);
-
       // Step 2: Sign transaction
-      const signedXdr = await walletSigning.signTransaction(
-        prepareResponse.data.unsignedXdr
-      );
-
-      // Step 3: Confirm funding
-      setStep('confirming');
-      const confirmResponse = await confirmProjectFunding(projectId, {
-        signedXdr,
-        transactionHash: 'mock-hash', // This should come from the signing process
-        amount: parseFloat(amount),
+      const signedXdr = await signTransaction({
+        /* This method should be provided by the wallet */ unsignedTransaction,
+        address: address || '',
       });
 
-      if (!confirmResponse.success) {
-        throw new Error(confirmResponse.message || 'Failed to confirm funding');
+      setStep('confirming');
+      const data = await sendTransaction(signedXdr);
+      if (!data) {
+        throw new Error('Failed to send transaction');
+      }
+      await contributeToProject(campaignId, {
+        amount: parseFloat(amount),
+        transactionHash: data.message,
+      });
+      if (data.status === 'SUCCESS') {
+        toast.success('Escrow Funded');
       }
 
       // Success - close modal and refresh data
       setIsOpen(false);
       setAmount('');
       setStep('input');
-      setUnsignedXdr(null);
 
-      // TODO: Refresh project data or show success message
-      window.location.reload(); // Temporary solution
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      window.location.reload();
+    } catch {
+      setError('An error occurred');
       setStep('input');
     } finally {
       setIsLoading(false);

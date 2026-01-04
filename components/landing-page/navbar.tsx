@@ -51,7 +51,7 @@ const MENU_ITEMS = [
 // Types
 interface UserProfile {
   firstName?: string | null;
-  avatar?: string | null;
+  image?: string | null;
 }
 
 interface User {
@@ -350,7 +350,6 @@ const MobileMenu = ({
   const displayName = useMemo(() => {
     return user?.name || user?.profile?.firstName || 'User';
   }, [user]);
-
   return (
     <div className='min-[990px]:hidden'>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -388,12 +387,11 @@ const MobileMenu = ({
           showCloseButton={true}
         >
           <div className='flex flex-1 flex-col gap-6 overflow-y-auto pb-6'>
-            {/* User Info (if authenticated) */}
             {isAuthenticated && user && (
               <div className='flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-4 transition-colors hover:bg-white/8'>
                 <Avatar className='h-10 w-10 border border-white/10'>
                   <AvatarImage
-                    src={user?.image || user?.profile?.avatar || ''}
+                    src={user.profile?.image || ''}
                     alt={displayName}
                   />
                   <AvatarFallback className='bg-white/10 text-white/80'>

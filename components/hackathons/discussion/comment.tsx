@@ -5,7 +5,9 @@ import { CommentsSortDropdown } from '@/components/project-details/comment-secti
 import { CommentItem } from '@/components/project-details/comment-section/comment-item';
 import { CommentInput } from '@/components/project-details/comment-section/comment-input';
 import { CommentsEmptyState } from '@/components/project-details/comment-section/comments-empty-state';
-import { useDiscussions } from '@/hooks/hackathon/use-discussions-api';
+import { useCommentSystem } from '@/hooks/use-comment-system';
+import { CommentEntityType, Comment, ReportReason } from '@/types/comment';
+import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
 interface HackathonDiscussionsProps {
@@ -13,9 +15,17 @@ interface HackathonDiscussionsProps {
   organizationId?: string;
   isRegistered?: boolean;
 }
+
+// Adapter function to convert Comment to ProjectComment for CommentItem
+const commentToProjectComment = (comment: Comment): Comment => {
+  return {
+    ...comment,
+    replies: comment.replies?.map(commentToProjectComment),
+  };
+};
+
 export function HackathonDiscussions({
   hackathonId,
-  organizationId,
   isRegistered = false,
 }: HackathonDiscussionsProps) {
   const [sortBy, setSortBy] = useState<
@@ -23,30 +33,48 @@ export function HackathonDiscussions({
   >('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  const { user } = useAuth(false);
+
+  // Use the generic comment system
   const {
-    discussions,
-    isLoading,
-    isCreating,
-    isUpdating,
-    isDeleting,
-    error,
-    addDiscussion,
-    addReply,
-    updateDiscussion,
-    deleteDiscussion,
-    reportDiscussion,
-    fetchDiscussions,
-  } = useDiscussions({
-    hackathonSlugOrId: hackathonId,
-    organizationId,
-    autoFetch: true,
-    sortBy,
-    sortOrder,
+    comments: commentsHook,
+    createComment: createCommentHook,
+    updateComment: updateCommentHook,
+    deleteComment: deleteCommentHook,
+    reportComment: reportCommentHook,
+  } = useCommentSystem({
+    entityType: CommentEntityType.HACKATHON,
+    entityId: hackathonId,
+    page: 1,
+    limit: 100,
+    enabled: true,
   });
 
-  // Sort discussions client-side (API may also sort, but we do it here for consistency)
-  const sortedDiscussions = useMemo(() => {
-    return [...discussions].sort((a, b) => {
+  // Build nested comment structure and sort
+  const sortedComments = useMemo(() => {
+    // Separate top-level comments and replies
+    const topLevelComments = commentsHook.comments.filter(
+      comment => !comment.parentId
+    );
+    const repliesMap = new Map<string, Comment[]>();
+
+    // Group replies by parent ID
+    commentsHook.comments.forEach(comment => {
+      if (comment.parentId) {
+        const replies = repliesMap.get(comment.parentId) || [];
+        replies.push(comment);
+        repliesMap.set(comment.parentId, replies);
+      }
+    });
+
+    // Attach replies to parent comments
+    const commentsWithReplies = topLevelComments.map(comment => ({
+      ...comment,
+      replies: repliesMap.get(comment.id) || [],
+    }));
+
+    // Sort top-level comments
+    return commentsWithReplies.sort((a, b) => {
       let comparison = 0;
       if (sortBy === 'createdAt') {
         comparison =
@@ -55,16 +83,20 @@ export function HackathonDiscussions({
         comparison =
           new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
       } else {
-        comparison = a.totalReactions - b.totalReactions;
+        comparison = (a.reactionCount || 0) - (b.reactionCount || 0);
       }
       return sortOrder === 'desc' ? -comparison : comparison;
     });
-  }, [discussions, sortBy, sortOrder]);
+  }, [commentsHook.comments, sortBy, sortOrder]);
 
-  const handleAddDiscussion = async (content: string) => {
+  const handleAddComment = async (content: string) => {
     try {
-      await addDiscussion(content);
-      // Discussions will be automatically updated by the hook
+      await createCommentHook.createComment({
+        content,
+        entityType: CommentEntityType.HACKATHON,
+        entityId: hackathonId,
+      });
+      commentsHook.refetch();
     } catch {
       // Error is already handled in the hook
     }
@@ -72,44 +104,54 @@ export function HackathonDiscussions({
 
   const handleAddReply = async (parentCommentId: string, content: string) => {
     try {
-      await addReply(parentCommentId, content);
-      // Discussions will be automatically updated by the hook
+      await createCommentHook.createComment({
+        content,
+        entityType: CommentEntityType.HACKATHON,
+        entityId: hackathonId,
+        parentId: parentCommentId,
+      });
+      commentsHook.refetch();
     } catch {
       // Error is already handled in the hook
     }
   };
 
-  const handleUpdateDiscussion = async (commentId: string, content: string) => {
+  const handleUpdateComment = async (commentId: string, content: string) => {
     try {
-      await updateDiscussion(commentId, content);
-      // Discussions will be automatically updated by the hook
+      await updateCommentHook.updateComment(commentId, { content });
+      commentsHook.refetch();
     } catch {
       // Error is already handled in the hook
     }
   };
 
-  const handleDeleteDiscussion = async (commentId: string) => {
+  const handleDeleteComment = async (commentId: string) => {
     try {
-      await deleteDiscussion(commentId);
-      // Discussions will be automatically updated by the hook
+      await deleteCommentHook.deleteComment(commentId);
+      commentsHook.refetch();
     } catch {
       // Error is already handled in the hook
     }
   };
 
-  const handleReportDiscussion = async (
+  const handleReportComment = async (
     commentId: string,
     reason: string,
     description?: string
   ) => {
     try {
-      await reportDiscussion(commentId, reason, description);
+      // Convert string reason to ReportReason enum
+      const reportReason = reason.toUpperCase() as keyof typeof ReportReason;
+      await reportCommentHook.reportComment(commentId, {
+        reason: ReportReason[reportReason] || ReportReason.OTHER,
+        description,
+      });
     } catch {
       // Error is already handled in the hook
     }
   };
 
-  const loading = isLoading && discussions.length === 0;
+  const loading = commentsHook.loading && commentsHook.comments.length === 0;
 
   if (loading)
     return (
@@ -119,12 +161,14 @@ export function HackathonDiscussions({
       </div>
     );
 
-  if (error && discussions.length === 0)
+  if (commentsHook.error && commentsHook.comments.length === 0)
     return (
       <div className='w-full py-4 text-center'>
-        <p className='mb-4 text-red-400'>Error loading discussions: {error}</p>
+        <p className='mb-4 text-red-400'>
+          Error loading discussions: {commentsHook.error}
+        </p>
         <button
-          onClick={() => fetchDiscussions()}
+          onClick={() => commentsHook.refetch()}
           className='rounded-md bg-[#a7f950] px-4 py-2 text-black hover:bg-[#8fd93f]'
         >
           Retry
@@ -132,10 +176,10 @@ export function HackathonDiscussions({
       </div>
     );
 
-  if (discussions.length === 0)
+  if (commentsHook.comments.length === 0)
     return (
       <CommentsEmptyState
-        onAddComment={handleAddDiscussion}
+        onAddComment={handleAddComment}
         isRegistered={isRegistered}
       />
     );
@@ -154,14 +198,15 @@ export function HackathonDiscussions({
       </div>
 
       <div className='space-y-6 text-left font-normal'>
-        {sortedDiscussions.map(discussion => (
+        {sortedComments.map(comment => (
           <CommentItem
-            key={discussion._id}
-            comment={discussion}
+            key={comment.id}
+            comment={commentToProjectComment(comment)}
             onAddReply={handleAddReply}
-            onUpdate={handleUpdateDiscussion}
-            onDelete={handleDeleteDiscussion}
-            onReport={handleReportDiscussion}
+            onUpdate={handleUpdateComment}
+            onDelete={handleDeleteComment}
+            onReport={handleReportComment}
+            currentUserId={user?.id}
             isRegistered={isRegistered}
           />
         ))}
@@ -169,11 +214,11 @@ export function HackathonDiscussions({
 
       {isRegistered && (
         <div className='mt-10 px-4 md:px-0'>
-          <CommentInput onSubmit={handleAddDiscussion} />
+          <CommentInput onSubmit={handleAddComment} />
         </div>
       )}
 
-      {!isRegistered && discussions.length > 0 && (
+      {!isRegistered && commentsHook.comments.length > 0 && (
         <div className='mt-8 rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-6 text-center md:px-6'>
           <p className='text-sm text-gray-400'>
             Register for this hackathon to join the discussion
@@ -181,20 +226,21 @@ export function HackathonDiscussions({
         </div>
       )}
 
-      {error && discussions.length > 0 && (
+      {commentsHook.error && commentsHook.comments.length > 0 && (
         <div className='mx-4 mt-4 rounded-md border border-red-500/50 bg-red-500/10 p-3 md:mx-0'>
-          <p className='text-sm text-red-400'>{error}</p>
+          <p className='text-sm text-red-400'>{commentsHook.error}</p>
         </div>
       )}
 
-      {/* Loading state for discussion operations */}
-      {(isCreating || isUpdating || isDeleting) && (
+      {(createCommentHook.loading ||
+        updateCommentHook.loading ||
+        deleteCommentHook.loading) && (
         <div className='mx-4 mt-4 flex items-center gap-2 text-sm text-gray-400 md:mx-0'>
           <Loader2 className='h-4 w-4 animate-spin' />
           <span>
-            {isCreating && 'Posting...'}
-            {isUpdating && 'Updating...'}
-            {isDeleting && 'Deleting...'}
+            {createCommentHook.loading && 'Posting...'}
+            {updateCommentHook.loading && 'Updating...'}
+            {deleteCommentHook.loading && 'Deleting...'}
           </span>
         </div>
       )}

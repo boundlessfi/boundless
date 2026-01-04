@@ -58,7 +58,7 @@ export default function Hero2() {
           <div className='space-y-4'>
             <h1 className='text-4xl leading-none font-bold tracking-tight md:text-6xl lg:text-7xl'>
               <span
-                className='bg-gradient-to-r from-[#a7f950] to-[#8ae63a] bg-clip-text text-transparent'
+                className='bg-linear-to-r from-[#a7f950] to-[#8ae63a] bg-clip-text text-transparent'
                 style={{ color: BRAND_COLOR }}
               >
                 Launch Projects
@@ -118,22 +118,100 @@ export default function Hero2() {
         <div className='relative mx-auto hidden h-[500px] max-w-5xl md:block'>
           <div className='absolute top-12 left-0 z-10 w-72 -rotate-3 transform cursor-pointer shadow-xl transition-transform duration-300 hover:rotate-0'>
             <HackathonCard
-              tagline='Build the future of boundless'
-              organizationName='Boundless'
-              deadlineInDays={10}
-              categories={['Web3', 'DeFi', 'Blockchain']}
-              location='Virtual'
-              venueType='virtual'
-              participants={{ current: 127, goal: 200 }}
-              prizePool={{ total: 50000, currency: 'USD' }}
-              status='Published'
-              hackathonSlug='boundless-hackathon-2024'
-              hackathonId='hackathon-1'
-              organizerName='Boundless Team'
-              organizerLogo='/bitmed.png'
-              hackathonImage='/banner.png'
-              hackathonTitle='Boundless Innovation Hackathon'
-              hackathonDescription='Join the biggest hackathon on Stellar blockchain. Build innovative solutions and compete for $50,000 in prizes.'
+              {...{
+                id: 'hackathon-1',
+                name: 'Boundless Innovation Hackathon',
+                slug: 'boundless-hackathon-2024',
+                tagline: 'Build the future of boundless',
+                description:
+                  'Join the biggest hackathon on Stellar blockchain. Build innovative solutions and compete for $50,000 in prizes.',
+                banner: '/banner.png',
+                organizationId: '1',
+                organization: {
+                  id: '1',
+                  name: 'Boundless',
+                  logo: '/bitmed.png',
+                },
+                status: 'PUBLISHED' as const,
+                isActive: true,
+                isParticipant: false,
+                venueType: 'VIRTUAL' as const,
+                venueName: 'Virtual',
+                venueAddress: '123 Main St, Anytown, USA',
+                city: 'Anytown',
+                state: 'CA',
+                country: 'USA',
+                timezone: 'UTC',
+                startDate: '2024-01-01',
+                endDate: '2024-01-01',
+                submissionDeadline: '2024-01-01',
+                registrationDeadline: '2024-01-01',
+                customRegistrationDeadline: '2024-01-01',
+                registrationOpen: true,
+                registrationDeadlinePolicy:
+                  'BEFORE_SUBMISSION_DEADLINE' as const,
+                daysUntilStart: 10,
+                daysUntilEnd: 10,
+                participantType: 'INDIVIDUAL' as const,
+                teamMin: 1,
+                teamMax: 4,
+                categories: ['Web3', 'DeFi', 'Blockchain'],
+                enabledTabs: [
+                  'detailsTab',
+                  'participantsTab',
+                  'resourcesTab',
+                  'submissionTab',
+                  'announcementsTab',
+                  'discussionTab',
+                  'winnersTab',
+                  'sponsorsTab',
+                  'joinATeamTab',
+                  'rulesTab',
+                ],
+                judgingCriteria: [
+                  {
+                    id: '1',
+                    name: 'Best Project',
+                    description: 'For the best project',
+                    weight: 100,
+                  },
+                ],
+                prizeTiers: [
+                  {
+                    id: '1',
+                    place: '1',
+                    prizeAmount: '50000',
+                    description: 'For the best project',
+                  },
+                ],
+                phases: [
+                  {
+                    id: '1',
+                    name: 'Phase 1',
+                    startDate: '2024-01-01',
+                    endDate: '2024-01-01',
+                  },
+                ],
+                resources: [],
+                sponsorsPartners: [],
+                submissions: [],
+                followers: [],
+                participants: [],
+                requireGithub: true,
+                requireDemoVideo: true,
+                requireOtherLinks: true,
+                contactEmail: 'contact@boundless.com',
+                discord: 'https://discord.com/boundless',
+                telegram: 'https://t.me/boundless',
+                socialLinks: [
+                  'https://x.com/boundless',
+                  'https://www.linkedin.com/company/boundless',
+                ],
+                publishedAt: '2024-01-01',
+                createdAt: '2024-01-01',
+                updatedAt: '2024-01-01',
+                _count: { participants: 0, submissions: 0, followers: 0 },
+              }}
             />
           </div>
 
@@ -168,22 +246,100 @@ export default function Hero2() {
 
           <div className='absolute bottom-0 left-1/2 z-20 w-96 -translate-x-1/2 transform cursor-pointer rounded-2xl shadow-xl transition-transform duration-300 hover:scale-105'>
             <HackathonCard
-              tagline='Build the future of boundless'
-              organizationName='Boundless'
-              deadlineInDays={5}
-              categories={['AI', 'Machine Learning', 'Open Source']}
-              location='Virtual'
-              venueType='virtual'
-              participants={{ current: 89, goal: 150 }}
-              prizePool={{ total: 30000, currency: 'USD' }}
-              status='Published'
-              hackathonSlug='ai-innovation-challenge'
-              hackathonId='hackathon-2'
-              organizerName='Boundless AI'
-              organizerLogo='/bitmed.png'
-              hackathonImage='/banner.png'
-              hackathonTitle='AI Innovation Challenge'
-              hackathonDescription='Build the next generation of AI-powered applications'
+              {...{
+                id: 'hackathon-2',
+                name: 'AI Innovation Challenge',
+                slug: 'ai-innovation-challenge',
+                tagline: 'Build the future of boundless',
+                description:
+                  'Build the next generation of AI-powered applications',
+                banner: '/banner.png',
+                organizationId: '1',
+                organization: {
+                  id: '1',
+                  name: 'Boundless',
+                  logo: '/bitmed.png',
+                },
+                status: 'PUBLISHED' as const,
+                isActive: true,
+                isParticipant: false,
+                venueType: 'PHYSICAL' as const,
+                venueName: 'University of California, Los Angeles',
+                venueAddress: '123 Main St, Anytown, USA',
+                city: 'Los Angeles',
+                state: 'California',
+                country: 'United States',
+                timezone: 'America/Los_Angeles',
+                startDate: '2026-01-01',
+                endDate: '2026-01-01',
+                submissionDeadline: '2026-01-01',
+                registrationDeadline: '2026-01-01',
+                customRegistrationDeadline: '2026-01-01',
+                registrationOpen: true,
+                registrationDeadlinePolicy:
+                  'BEFORE_SUBMISSION_DEADLINE' as const,
+                daysUntilStart: 10,
+                daysUntilEnd: 10,
+                participantType: 'INDIVIDUAL' as const,
+                teamMin: 1,
+                teamMax: 4,
+                categories: ['AI', 'Machine Learning', 'Open Source'],
+                enabledTabs: [
+                  'detailsTab',
+                  'participantsTab',
+                  'resourcesTab',
+                  'submissionTab',
+                  'announcementsTab',
+                  'discussionTab',
+                  'winnersTab',
+                  'sponsorsTab',
+                  'joinATeamTab',
+                  'rulesTab',
+                ],
+                judgingCriteria: [
+                  {
+                    id: '1',
+                    name: 'Best Project',
+                    description: 'For the best project',
+                    weight: 100,
+                  },
+                ],
+                prizeTiers: [
+                  {
+                    id: '1',
+                    place: '1st Place',
+                    prizeAmount: '50000',
+                    description: 'For the best project',
+                  },
+                ],
+                phases: [
+                  {
+                    id: '1',
+                    name: 'Phase 1',
+                    startDate: '2026-01-01',
+                    endDate: '2026-01-01',
+                  },
+                ],
+                resources: [],
+                sponsorsPartners: [],
+                submissions: [],
+                followers: [],
+                participants: [],
+                requireGithub: true,
+                requireDemoVideo: true,
+                requireOtherLinks: true,
+                contactEmail: 'contact@boundless.com',
+                discord: 'https://discord.com/boundless',
+                telegram: 'https://t.me/boundless',
+                socialLinks: [
+                  'https://x.com/boundless',
+                  'https://www.linkedin.com/company/boundless',
+                ],
+                publishedAt: '2024-01-01',
+                createdAt: '2024-01-01',
+                updatedAt: '2024-01-01',
+                _count: { participants: 0, submissions: 0, followers: 0 },
+              }}
             />
           </div>
         </div>

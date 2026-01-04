@@ -1,6 +1,6 @@
 'use client';
 import React, { useRef, useCallback, memo } from 'react';
-import { Project } from '@/types/project';
+import { CrowdfundingProject } from '@/types/project';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
 import gsap from 'gsap';
@@ -9,7 +9,7 @@ import Image from 'next/image';
 import { Progress } from './ui/progress';
 
 interface ProjectCardProps {
-  project: Project;
+  project: CrowdfundingProject;
   creatorName?: string;
   creatorAvatar?: string;
   daysLeft?: number;
@@ -200,7 +200,7 @@ const ProjectCard: React.FC<ProjectCardProps> = memo(
           <div className='relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl sm:h-[90px] sm:w-[80px]'>
             <Image
               src='/bitmed.png'
-              alt={project.name}
+              alt={project.title}
               fill
               className='object-cover'
               priority={false}
@@ -210,7 +210,7 @@ const ProjectCard: React.FC<ProjectCardProps> = memo(
 
           <div ref={contentRef} className='min-w-0 flex-1 text-left'>
             <h3 className='mb-2 line-clamp-1 text-lg font-bold text-white sm:text-base'>
-              {project.name}
+              {project.title}
             </h3>
             <p className='line-clamp-2 text-left text-xs leading-relaxed text-gray-300 sm:line-clamp-3 sm:text-sm'>
               {project.description}

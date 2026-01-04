@@ -27,8 +27,8 @@ export const mapJudgingSubmissionToRewardSubmission = (
   const maxScore = 100; // Judging uses 0-100 scale
 
   return {
-    id: participant._id,
-    participantId: participant._id,
+    id: participant.id,
+    participantId: participant.id,
     name,
     projectName: submission.projectName,
     avatar: user.profile.avatar,

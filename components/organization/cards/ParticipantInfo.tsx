@@ -15,8 +15,8 @@ export const ParticipantInfo: React.FC<ParticipantInfoProps> = ({
   participant,
   onTeamClick,
 }) => {
-  const userName = `${participant.user.profile.firstName} ${participant.user.profile.lastName}`;
-  const userAvatar = participant.user.profile.avatar;
+  const userName = `${participant.user.profile.name}`;
+  const userAvatar = participant.user.profile.image;
   const username = participant.user.profile.username;
   const hasTeam =
     participant.participationType === 'team' || participant.teamMembers;

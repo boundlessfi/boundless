@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Github } from 'lucide-react';
 import Image from 'next/image';
-import { CrowdfundingProject } from '@/lib/api/types';
+import { CrowdfundingProject } from '@/types/project';
 
 interface MilestoneLinksProps {
   project?: CrowdfundingProject | null;
@@ -62,12 +62,12 @@ const MilestoneLinks = ({ project }: MilestoneLinksProps) => {
           )}
       </div>
       {/* Project Team Section */}
-      {project?.team && project.team.length > 0 && (
+      {project?.teamMembers && project.teamMembers.length > 0 && (
         <div className='flex flex-col gap-0'>
           <h4 className='mb-3 text-sm font-medium text-gray-500'>
             Project Team
           </h4>
-          {project.team.slice(0, 3).map((member, index) => (
+          {project.teamMembers.slice(0, 3).map((member, index) => (
             <div
               key={member._id || index}
               className='flex cursor-pointer items-center justify-between rounded py-2 transition-colors hover:bg-gray-900/30'

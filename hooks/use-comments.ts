@@ -2,24 +2,19 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  ProjectComment,
+  Comment,
+  GetCommentsQuery,
+  UseCommentsOptions,
+  UseCommentsReturn,
   CreateCommentRequest,
   UpdateCommentRequest,
   ReportCommentRequest,
-  UseCommentsOptions,
-  UseCommentsReturn,
 } from '@/types/comment';
-import {
-  getComments,
-  createComment as createCommentApi,
-  updateComment as updateCommentApi,
-  deleteComment as deleteCommentApi,
-  reportComment as reportCommentApi,
-} from '@/lib/api/comment';
+import { getComments as getCommentsApi } from '@/lib/api/comment';
 
-// Hook for fetching comments
+// Hook for fetching comments with new generic API
 export const useComments = (options: UseCommentsOptions): UseCommentsReturn => {
-  const [comments, setComments] = useState<ProjectComment[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -30,6 +25,7 @@ export const useComments = (options: UseCommentsOptions): UseCommentsReturn => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPollingPaused, setIsPollingPaused] = useState(false);
 
   const fetchComments = useCallback(async () => {
     if (!options.enabled) return;
@@ -38,29 +34,51 @@ export const useComments = (options: UseCommentsOptions): UseCommentsReturn => {
     setError(null);
 
     try {
-      const response = await getComments(
-        options.projectId,
-        options.page || 1,
-        options.limit || 10,
-        {
-          parentCommentId: options.parentCommentId,
-          sortBy: options.sortBy || 'createdAt',
-          sortOrder: options.sortOrder || 'desc',
-        }
-      );
+      const query: GetCommentsQuery = {
+        entityType: options.entityType,
+        entityId: options.entityId,
+        authorId: options.authorId,
+        parentId: options.parentId,
+        status: options.status,
+        includeReactions: options.includeReactions ?? true,
+        includeReports: options.includeReports ?? false,
+        page: options.page || 1,
+        limit: options.limit || 20,
+        sortBy: options.sortBy,
+        sortOrder: options.sortOrder,
+      };
 
-      setComments(response.data.comments);
-      setPagination(response.data.pagination);
+      const response = await getCommentsApi(query);
+
+      if (query.page === 1) {
+        setComments(response.data.comments);
+      } else {
+        setComments(prev => [...prev, ...response.data.comments]);
+      }
+      setPagination({
+        currentPage: Math.floor(response.data.offset / response.data.limit) + 1,
+        totalPages: Math.ceil(response.data.total / response.data.limit),
+        totalItems: response.data.total,
+        itemsPerPage: response.data.limit,
+        hasNext:
+          response.data.offset + response.data.limit < response.data.total,
+        hasPrev: response.data.offset > 0,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch comments');
     } finally {
       setLoading(false);
     }
   }, [
-    options.projectId,
+    options.entityType,
+    options.entityId,
+    options.authorId,
+    options.parentId,
+    options.status,
+    options.includeReactions,
+    options.includeReports,
     options.page,
     options.limit,
-    options.parentCommentId,
     options.sortBy,
     options.sortOrder,
     options.enabled,
@@ -73,19 +91,33 @@ export const useComments = (options: UseCommentsOptions): UseCommentsReturn => {
       setError(null);
 
       try {
-        const response = await getComments(
-          options.projectId,
-          nextPage,
-          options.limit || 10,
-          {
-            parentCommentId: options.parentCommentId,
-            sortBy: options.sortBy || 'createdAt',
-            sortOrder: options.sortOrder || 'desc',
-          }
-        );
+        const query: GetCommentsQuery = {
+          entityType: options.entityType,
+          entityId: options.entityId,
+          authorId: options.authorId,
+          parentId: options.parentId,
+          status: options.status,
+          includeReactions: options.includeReactions ?? true,
+          includeReports: options.includeReports ?? false,
+          page: nextPage,
+          limit: options.limit || 20,
+          sortBy: options.sortBy,
+          sortOrder: options.sortOrder,
+        };
+
+        const response = await getCommentsApi(query);
 
         setComments(prev => [...prev, ...response.data.comments]);
-        setPagination(response.data.pagination);
+        setPagination({
+          currentPage:
+            Math.floor(response.data.offset / response.data.limit) + 1,
+          totalPages: Math.ceil(response.data.total / response.data.limit),
+          totalItems: response.data.total,
+          itemsPerPage: response.data.limit,
+          hasNext:
+            response.data.offset + response.data.limit < response.data.total,
+          hasPrev: response.data.offset > 0,
+        });
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Failed to load more comments'
@@ -95,9 +127,14 @@ export const useComments = (options: UseCommentsOptions): UseCommentsReturn => {
       }
     }
   }, [
-    options.projectId,
+    options.entityType,
+    options.entityId,
+    options.authorId,
+    options.parentId,
+    options.status,
+    options.includeReactions,
+    options.includeReports,
     options.limit,
-    options.parentCommentId,
     options.sortBy,
     options.sortOrder,
     pagination.hasNext,
@@ -110,20 +147,28 @@ export const useComments = (options: UseCommentsOptions): UseCommentsReturn => {
     fetchComments();
   }, [fetchComments]);
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 30 seconds (unless paused)
   useEffect(() => {
-    if (!options.enabled) return;
+    if (!options.enabled || isPollingPaused) return;
 
     const interval = setInterval(() => {
       fetchComments();
-    }, 5000); // 30 seconds
+    }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, [fetchComments, options.enabled]);
+  }, [fetchComments, options.enabled, isPollingPaused]);
 
   const refetch = useCallback(() => {
     fetchComments();
   }, [fetchComments]);
+
+  const pausePolling = useCallback(() => {
+    setIsPollingPaused(true);
+  }, []);
+
+  const resumePolling = useCallback(() => {
+    setIsPollingPaused(false);
+  }, []);
 
   return {
     comments,
@@ -132,43 +177,42 @@ export const useComments = (options: UseCommentsOptions): UseCommentsReturn => {
     error,
     refetch,
     loadMore,
-    pausePolling: () => {}, // Simplified - no pause functionality
-    resumePolling: () => {}, // Simplified - no resume functionality
-    isPolling: !!options.enabled, // Always polling when enabled
+    pausePolling,
+    resumePolling,
+    isPolling: Boolean(options.enabled && !isPollingPaused),
   };
 };
 
-// Simple hook for comment management
+// Legacy hook for backward compatibility with project-specific comments
 export const useCommentManagement = (projectId: string) => {
+  console.log('useCommentManagement', projectId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createComment = useCallback(
-    async (data: CreateCommentRequest) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await createCommentApi(projectId, data);
-        return response;
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to create comment'
-        );
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [projectId]
-  );
+  const createComment = useCallback(async (data: CreateCommentRequest) => {
+    console.log('createComment', data);
+    setLoading(true);
+    setError(null);
+    try {
+      throw new Error(
+        'Legacy useCommentManagement.createComment is deprecated. Use the new comment system hooks instead.'
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create comment');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const updateComment = useCallback(
     async (commentId: string, data: UpdateCommentRequest) => {
+      console.log('updateComment', commentId, data);
       setLoading(true);
       setError(null);
       try {
-        const response = await updateCommentApi(projectId, commentId, data);
-        return response;
+        // This will be handled by individual hooks now
+        throw new Error('Use useUpdateComment hook instead');
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Failed to update comment'
@@ -178,35 +222,32 @@ export const useCommentManagement = (projectId: string) => {
         setLoading(false);
       }
     },
-    [projectId]
+    []
   );
 
-  const deleteComment = useCallback(
-    async (commentId: string) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await deleteCommentApi(projectId, commentId);
-        return response;
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to delete comment'
-        );
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [projectId]
-  );
+  const deleteComment = useCallback(async (commentId: string) => {
+    console.log('deleteComment', commentId);
+    setLoading(true);
+    setError(null);
+    try {
+      // This will be handled by individual hooks now
+      throw new Error('Use useDeleteComment hook instead');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete comment');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const reportComment = useCallback(
     async (commentId: string, data: ReportCommentRequest) => {
+      console.log('reportComment', commentId, data);
       setLoading(true);
       setError(null);
       try {
-        const response = await reportCommentApi(projectId, commentId, data);
-        return response;
+        // This will be handled by individual hooks now
+        throw new Error('Use useReportComment hook instead');
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Failed to report comment'
@@ -216,7 +257,7 @@ export const useCommentManagement = (projectId: string) => {
         setLoading(false);
       }
     },
-    [projectId]
+    []
   );
 
   return {

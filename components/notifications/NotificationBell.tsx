@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Bell } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { NotificationDropdown } from './NotificationDropdown';
-import { useNotifications } from '@/hooks/use-notifications';
-import { useNotificationPolling } from '@/hooks/use-notification-polling';
+import { useNotifications } from '@/hooks/useNotifications';
+import { authClient } from '@/lib/auth-client';
+import { Notification } from '@/types/notifications';
 import { cn } from '@/lib/utils';
 
 interface NotificationBellProps {
@@ -16,25 +17,44 @@ interface NotificationBellProps {
   limit?: number;
 }
 
-export const NotificationBell = ({
-  className,
-  limit = 10,
-}: NotificationBellProps) => {
+export const NotificationBell = ({ className }: NotificationBellProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const notificationsHook = useNotifications({
-    page: 1,
-    limit,
-    autoFetch: true,
-  });
 
-  const { notifications, unreadCount, loading, markAllAsRead } =
-    notificationsHook;
+  // Get userId from auth session
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
 
-  // Enable polling when dropdown is open or when there are unread notifications
-  useNotificationPolling(notificationsHook, {
-    interval: 30000, // 30 seconds
-    enabled: isOpen || unreadCount > 0,
-  });
+  // Use WebSocket-based notifications hook (only connect if userId is available)
+  const {
+    notifications: wsNotifications,
+    unreadCount,
+    isConnected,
+    markAllAsRead: wsMarkAllAsRead,
+  } = useNotifications(userId || undefined);
+
+  // Map WebSocket notifications to match NotificationDropdown expected structure
+  const notifications = useMemo<Notification[]>(() => {
+    return wsNotifications.map(wsNotif => ({
+      _id: wsNotif.id,
+      userId: {
+        type: 'string',
+      },
+      type: wsNotif.type as any, // Map to NotificationType enum
+      title: wsNotif.title,
+      message: wsNotif.message,
+      data: (wsNotif.data || {}) as Notification['data'],
+      read: false, // WebSocket notifications are typically unread when received
+      readAt: null,
+      emailSent: false,
+      emailSentAt: null,
+      createdAt: wsNotif.timestamp || new Date().toISOString(),
+    }));
+  }, [wsNotifications]);
+
+  // Wrapper for markAllAsRead that uses WebSocket
+  const handleMarkAllAsRead = async () => {
+    wsMarkAllAsRead();
+  };
 
   const handleNotificationClick = () => {
     // Notification click is handled in NotificationDropdown
@@ -49,6 +69,11 @@ export const NotificationBell = ({
             className
           )}
           aria-label='Notifications'
+          title={
+            isConnected
+              ? 'Notifications connected'
+              : 'Notifications disconnected'
+          }
         >
           <Bell className='h-4 w-4' />
           {unreadCount > 0 && (
@@ -56,14 +81,17 @@ export const NotificationBell = ({
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
+          {!isConnected && userId && (
+            <span className='absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full border border-zinc-900 bg-red-500' />
+          )}
         </button>
       </DropdownMenuTrigger>
       <NotificationDropdown
         notifications={notifications}
         unreadCount={unreadCount}
-        loading={loading}
+        loading={false}
         onNotificationClick={handleNotificationClick}
-        onMarkAllAsRead={markAllAsRead}
+        onMarkAllAsRead={handleMarkAllAsRead}
         onClose={() => setIsOpen(false)}
       />
     </DropdownMenu>

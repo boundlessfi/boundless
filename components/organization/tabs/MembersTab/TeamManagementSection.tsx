@@ -9,6 +9,7 @@ interface Member {
   name: string;
   email: string;
   avatar?: string;
+  image?: string;
   role: 'owner' | 'admin' | 'member';
   joinedAt: string;
   status: 'active' | 'pending' | 'suspended';
@@ -25,11 +26,10 @@ export default function TeamManagementSection({
   members,
   onRoleChange,
   onRemoveMember,
-  activeOrg,
 }: TeamManagementSectionProps) {
   const activeMembers = members.filter(member => member.status === 'active');
   const pendingMembers = members.filter(member => member.status === 'pending');
-  const orgOwner = members.find(member => member.email === activeOrg?.owner);
+  const orgOwner = members.find(member => member.role === 'owner');
 
   return (
     <div className='space-y-6 rounded-[12px] border border-gray-900 bg-[#101010] p-4'>
@@ -46,8 +46,8 @@ export default function TeamManagementSection({
         {orgOwner && (
           <div className='flex gap-3'>
             <Avatar className='h-12 w-12'>
-              <AvatarImage src={orgOwner.avatar} alt={orgOwner.name} />
-              <AvatarFallback>
+              <AvatarImage src={orgOwner.image} alt={orgOwner.name} />
+              <AvatarFallback className='bg-gray-500 text-white'>
                 {orgOwner.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -60,12 +60,16 @@ export default function TeamManagementSection({
             </div>
           </div>
         )}
-
-        {activeMembers.filter(member => member.email !== activeOrg?.owner)
-          .length > 0 && (
+        {/* <pre>{JSON.stringify(activeMembers, null, 2)}</pre> */}
+        {/* <pre>{JSON.stringify(activeOrg, null, 2)}</pre> */}
+        {activeMembers.filter(
+          member => member.role === 'admin' || member.role === 'member'
+        ).length > 0 && (
           <div className='space-y-3'>
             {activeMembers
-              .filter(member => member.email !== activeOrg?.owner)
+              .filter(
+                member => member.role === 'admin' || member.role === 'member'
+              )
               .map(member => (
                 <MemberCard
                   key={member.id}
@@ -83,10 +87,10 @@ export default function TeamManagementSection({
             {pendingMembers.map(member => (
               <div key={member.id} className='flex gap-3'>
                 <Avatar className='h-12 w-12'>
-                  <AvatarImage src={member.avatar} alt={member.name} />
+                  {/* <AvatarImage src={member.avatar} alt={member.name} />
                   <AvatarFallback>
                     {member.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
+                  </AvatarFallback> */}
                 </Avatar>
                 <div className='flex flex-col gap-0'>
                   <h4 className='text-white'>{member.name}</h4>

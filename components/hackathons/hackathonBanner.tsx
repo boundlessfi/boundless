@@ -30,9 +30,9 @@ interface HackathonBannerProps {
   isEnded?: boolean;
   isTeamFormationEnabled?: boolean;
   registrationDeadlinePolicy?:
-    | 'before_start'
-    | 'before_submission_deadline'
-    | 'custom';
+    | 'BEFORE_START'
+    | 'BEFORE_SUBMISSION_DEADLINE'
+    | 'CUSTOM';
   registrationDeadline?: string;
   onJoinClick?: () => void;
   onSubmitClick?: () => void;
@@ -73,20 +73,20 @@ export function HackathonBanner({
   // Determine if registration is allowed
   const canRegister = useMemo(() => {
     const now = new Date();
-    const policy = registrationDeadlinePolicy || 'before_submission_deadline';
+    const policy = registrationDeadlinePolicy || 'BEFORE_SUBMISSION_DEADLINE';
 
     switch (policy) {
-      case 'before_start':
+      case 'BEFORE_START':
         if (startDate) {
           return now < new Date(startDate);
         }
         return false;
-      case 'before_submission_deadline':
+      case 'BEFORE_SUBMISSION_DEADLINE':
         if (deadline) {
           return now < new Date(deadline);
         }
         return false;
-      case 'custom':
+      case 'CUSTOM':
         if (registrationDeadline) {
           return now < new Date(registrationDeadline);
         }
@@ -103,12 +103,12 @@ export function HackathonBanner({
     const now = new Date();
     const isBeforeStart = startDate && now < new Date(startDate);
 
-    switch (registrationDeadlinePolicy || 'before_submission_deadline') {
-      case 'before_start':
+    switch (registrationDeadlinePolicy || 'BEFORE_SUBMISSION_DEADLINE') {
+      case 'BEFORE_START':
         return 'Register Before Start';
-      case 'before_submission_deadline':
+      case 'BEFORE_SUBMISSION_DEADLINE':
         return isBeforeStart ? 'Early Register' : 'Join Hackathon';
-      case 'custom':
+      case 'CUSTOM':
         if (registrationDeadline) {
           const customDeadline = new Date(registrationDeadline);
           const isBeforeCustomDeadline = now < customDeadline;
@@ -235,7 +235,7 @@ export function HackathonBanner({
 
   return (
     <div className='mb-6 w-full'>
-      <div className='relative overflow-hidden rounded-xl border border-[#a7f950]/30 bg-gradient-to-br from-[#a7f950]/10 to-transparent'>
+      <div className='relative overflow-hidden rounded-xl border border-[#a7f950]/30 bg-linear-to-br from-[#a7f950]/10 to-transparent'>
         {/* Wave Background */}
         <div className='absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-xl opacity-5'>
           <Image
@@ -248,7 +248,7 @@ export function HackathonBanner({
         </div>
 
         {/* Gradient overlay */}
-        <div className='absolute inset-0 bg-gradient-to-br from-[#a7f950]/5 via-transparent to-[#a7f950]/5' />
+        <div className='absolute inset-0 bg-linear-to-br from-[#a7f950]/5 via-transparent to-[#a7f950]/5' />
 
         <div className='relative z-10 p-5 lg:p-6'>
           {/* Status Badge */}

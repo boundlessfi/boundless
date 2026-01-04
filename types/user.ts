@@ -1,0 +1,249 @@
+export type UserRole = 'user' | 'admin' | 'moderator';
+
+export type LoginMethod = 'email' | 'google' | 'github' | 'discord';
+
+export type Theme = 'light' | 'dark' | 'system';
+
+export type ProjectStatus =
+  | 'IDEA'
+  | 'DRAFT'
+  | 'PROPOSED'
+  | 'APPROVED'
+  | 'FUNDED'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
+export type ActivityType =
+  | 'PROFILE_UPDATED'
+  | 'AVATAR_CHANGED'
+  | 'PROJECT_FOLLOWED'
+  | 'PROJECT_CREATED'
+  | 'COMMENT_ADDED'
+  | 'VOTE_CAST'
+  | 'GRANT_APPLIED';
+
+export type OrganizationMemberRole = 'owner' | 'admin' | 'member' | 'moderator';
+
+export interface SocialLinks {
+  github?: string;
+  discord?: string;
+  twitter?: string;
+  linkedin?: string;
+  website?: string;
+  [key: string]: string | undefined;
+}
+
+export interface UserPreferences {
+  theme: Theme;
+  skills: string[];
+  language: string;
+  timezone: string;
+  categories: string[];
+  pushNotifications: boolean;
+  emailNotifications: boolean;
+}
+
+export interface UserProfileData {
+  bio?: string;
+  website?: string;
+  location?: string;
+  company?: string;
+  skills?: string[];
+  socialLinks?: SocialLinks;
+}
+
+export interface MetadataProfile {
+  stats: Record<string, any>;
+  privacy: Record<string, any>;
+  profile: UserProfileData;
+  preferences: UserPreferences;
+}
+
+export interface UserMetadata {
+  stats: Record<string, any>;
+  privacy: Record<string, any>;
+  profile: UserProfileData;
+  preferences: UserPreferences;
+}
+
+export interface Project {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  status: ProjectStatus;
+  banner: string | null;
+  logo: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ActivityMetadata {
+  fields?: string[];
+  newAvatar?: string;
+  oldAvatar?: string;
+  entityId?: string;
+  entityType?: string;
+  [key: string]: any;
+}
+
+export interface Activity {
+  id: string;
+  type: ActivityType;
+  userId: string;
+  projectId: string | null;
+  organizationId: string | null;
+  metadata: ActivityMetadata;
+  createdAt: string;
+  updatedAt: string;
+  project: Project | null;
+}
+
+export interface UserBadge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earnedAt: string;
+  category: string;
+}
+
+export interface GrantApplication {
+  id: string;
+  grantId: string;
+  grantTitle: string;
+  status: string;
+  submittedAt: string;
+  amount?: number;
+  [key: string]: any;
+}
+
+export interface HackathonSubmission {
+  id: string;
+  hackathonId: string;
+  hackathonTitle: string;
+  status: string;
+  submittedAt: string;
+  [key: string]: any;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string;
+  createdAt: string;
+}
+
+export interface OrganizationMembership {
+  id: string;
+  organizationId: string;
+  userId: string;
+  role: OrganizationMemberRole;
+  createdAt: string;
+  organization: Organization;
+}
+export interface Stats {
+  followers: number;
+  following: number;
+}
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  image: string;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginMethod: LoginMethod;
+  role: UserRole;
+  banned: boolean;
+  banReason: string | null;
+  banExpires: string | null;
+  username: string;
+  displayUsername: string;
+  twoFactorEnabled: boolean;
+  members: OrganizationMembership[];
+  // organizations: Organization[];
+  stats: Stats;
+  profile: UserProfileData;
+  projects: Project[];
+  activities: Activity[];
+  badges: UserBadge[];
+  grantApplicationsAsApplicant: GrantApplication[];
+  hackathonSubmissionsAsParticipant: HackathonSubmission[];
+}
+
+export interface SessionUser extends User {}
+
+export interface GetUserResponse {
+  success: boolean;
+  data: User;
+  message?: string;
+}
+
+export interface GetUsersResponse {
+  success: boolean;
+  data: User[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  message?: string;
+}
+
+export interface UserSettings {
+  notifications?: {
+    email: boolean;
+    push: boolean;
+    inApp: boolean;
+  };
+  privacy?: {
+    profileVisibility: 'PUBLIC' | 'PRIVATE';
+    showWalletAddress: boolean;
+    showContributions: boolean;
+  };
+  preferences?: UserPreferences;
+}
+
+export interface UpdateUserProfileRequest {
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  bio?: string;
+  avatar?: string;
+  website?: string;
+  socialLinks?: SocialLinks;
+}
+
+export interface UpdateUserSettingsRequest extends UserSettings {}
+
+export interface UpdateUserSecurityRequest {
+  currentPassword?: string;
+  newPassword?: string;
+  twoFactorEnabled?: boolean;
+  twoFactorCode?: string;
+}
+
+export type UserWithoutSensitiveData = Omit<
+  User,
+  'banReason' | 'banExpires' | 'metadata'
+>;
+
+export type PublicUserProfile = Pick<
+  User,
+  | 'id'
+  | 'name'
+  | 'username'
+  | 'displayUsername'
+  | 'image'
+  | 'projects'
+  | 'badges'
+> & {
+  metadata: {
+    profile: UserProfileData;
+  };
+};

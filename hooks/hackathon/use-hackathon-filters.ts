@@ -57,7 +57,7 @@ export const mapStatusToAPI = (
       // since published typically means not started yet
       return 'upcoming';
     case 'ongoing':
-      return 'ongoing';
+      return 'active';
     case 'completed':
       return 'ended';
     case 'cancelled':

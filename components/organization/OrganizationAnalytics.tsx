@@ -34,12 +34,8 @@ const OrganizationAnalytics = () => {
   const stats = useOrganizationStats();
   const { isComplete, percentage, missingFields } =
     useOrganizationProfileCompletion();
-  const { analytics, isLoading: isLoadingAnalytics } = useOrganizationAnalytics(
-    {
-      organizationId: activeOrg?._id,
-      enabled: !!activeOrg?._id,
-    }
-  );
+  const { analytics, isLoading: isLoadingAnalytics } =
+    useOrganizationAnalytics();
 
   const chartData = useMemo(() => {
     if (!analytics?.timeSeries?.hackathons) return [];
@@ -96,28 +92,28 @@ const OrganizationAnalytics = () => {
       title: 'Members',
       value: stats.memberCount,
       icon: Users,
-      href: `/organizations/${activeOrg._id}/settings?tab=members`,
+      href: `/organizations/${activeOrg?.id}/settings?tab=members`,
       trend: trends.members,
     },
     {
       title: 'Hackathons',
       value: stats.hackathonCount,
       icon: Trophy,
-      href: `/organizations/${activeOrg._id}/hackathons`,
+      href: `/organizations/${activeOrg?.id}/hackathons`,
       trend: trends.hackathons,
     },
     {
       title: 'Grants',
       value: stats.grantCount,
       icon: HandCoins,
-      href: `/organizations/${activeOrg._id}/grants`,
+      href: `/organizations/${activeOrg?.id}/grants`,
       trend: trends.grants,
     },
     {
       title: 'Invites',
       value: stats.pendingInviteCount,
       icon: UserPlus,
-      href: `/organizations/${activeOrg._id}/settings?tab=members`,
+      href: `/organizations/${activeOrg?.id}/settings?tab=members`,
     },
   ];
 
@@ -213,7 +209,7 @@ const OrganizationAnalytics = () => {
             )}
 
             <Link
-              href={`/organizations/${activeOrg._id}/settings?tab=profile`}
+              href={`/organizations/${activeOrg?.id}/settings?tab=profile`}
               className='inline-flex items-center gap-2 text-sm font-medium text-amber-500 transition-colors hover:text-amber-400'
             >
               Complete now
@@ -234,7 +230,7 @@ const OrganizationAnalytics = () => {
               </p>
             </div>
             <Link
-              href={`/organizations/${activeOrg._id}/hackathons`}
+              href={`/organizations/${activeOrg?.id}/hackathons`}
               className='flex items-center gap-2 text-sm text-zinc-400 transition-colors hover:text-white'
             >
               View all
@@ -286,7 +282,7 @@ const OrganizationAnalytics = () => {
         <div>
           <h2 className='mb-4 text-lg font-medium text-white'>Quick Actions</h2>
           <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
-            <Link href={`/organizations/${activeOrg._id}/hackathons/new`}>
+            <Link href={`/organizations/${activeOrg?.id}/hackathons/new`}>
               <div className='group flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
                 <div className='bg-primary/10 flex h-12 w-12 items-center justify-center rounded-lg'>
                   <Trophy className='text-primary h-6 w-6' />
@@ -299,11 +295,11 @@ const OrganizationAnalytics = () => {
                     Create a new event
                   </p>
                 </div>
-                <ArrowRight className='h-5 w-5 flex-shrink-0 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-zinc-400' />
+                <ArrowRight className='h-5 w-5 shrink-0 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-zinc-400' />
               </div>
             </Link>
 
-            <Link href={`/organizations/${activeOrg._id}/settings?tab=members`}>
+            <Link href={`/organizations/${activeOrg?.id}/settings?tab=members`}>
               <div className='group flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
                 <div className='flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10'>
                   <Users className='h-6 w-6 text-blue-400' />
@@ -314,11 +310,11 @@ const OrganizationAnalytics = () => {
                     Add or remove members
                   </p>
                 </div>
-                <ArrowRight className='h-5 w-5 flex-shrink-0 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-zinc-400' />
+                <ArrowRight className='h-5 w-5 shrink-0 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-zinc-400' />
               </div>
             </Link>
 
-            <Link href={`/organizations/${activeOrg._id}/settings`}>
+            <Link href={`/organizations/${activeOrg?.id}/settings`}>
               <div className='group flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
                 <div className='flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-800'>
                   <CheckCircle2 className='h-6 w-6 text-zinc-400' />
@@ -329,7 +325,7 @@ const OrganizationAnalytics = () => {
                     Configure organization
                   </p>
                 </div>
-                <ArrowRight className='h-5 w-5 flex-shrink-0 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-zinc-400' />
+                <ArrowRight className='h-5 w-5 shrink-0 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-zinc-400' />
               </div>
             </Link>
           </div>

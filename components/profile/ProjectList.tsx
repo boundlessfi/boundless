@@ -1,10 +1,10 @@
 'use client';
 
-import { Project } from '@/types/project';
+import { CrowdfundingProject } from '@/types/project';
 import ProjectCard from '../landing-page/project/ProjectCard';
 
 interface ProjectListProps {
-  projects: Project[];
+  projects: CrowdfundingProject[];
   activeTab: string;
 }
 
@@ -43,19 +43,18 @@ export function ProjectList({ projects, activeTab }: ProjectListProps) {
         <ProjectCard
           key={project.id}
           projectId={project.id}
-          creatorName={project.ownerName || 'Creator'}
-          creatorLogo={project.ownerAvatar || '/avatar.png'}
-          projectImage={project.image || '/bitmed.png'}
-          projectTitle={project.name}
+          creatorName={project.creator.name || 'Creator'}
+          creatorLogo={project.creator.image || '/avatar.png'}
+          projectImage={project.banner || '/bitmed.png'}
+          projectTitle={project.title}
           projectDescription={project.description}
           status={getProjectStatus(project.status)}
           deadlineInDays={30}
-          milestoneRejected={false}
           isFullWidth={true}
           funding={{
-            current: 0,
-            goal: project.amount || 10000,
-            currency: 'USDC',
+            current: project.funding?.raised || 0,
+            goal: project.funding?.goal || 10000,
+            currency: project.funding?.currency || 'USDC',
           }}
         />
       ))}

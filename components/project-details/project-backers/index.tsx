@@ -1,42 +1,32 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Empty from './Empty';
 import Image from 'next/image';
-import { CrowdfundingProject } from '@/lib/api/types';
+import { Contributor, Crowdfunding } from '@/types/project';
 
-interface Backer {
-  _id: string;
-  user: {
-    _id: string;
-    email: string;
-    profile: {
-      firstName: string;
-      lastName: string;
-      username: string;
-      avatar?: string;
-    };
-  };
-  amount: number;
-  date: string;
-  transactionHash: string;
-}
-
-const ProjectBackers = ({ project }: { project: CrowdfundingProject }) => {
-  const [backers] = useState<Backer[]>(
-    project.funding.contributors as Backer[]
+const ProjectBackers = ({ crowdfund }: { crowdfund: Crowdfunding }) => {
+  const [backers] = useState<Contributor[]>(
+    crowdfund.contributors as Contributor[]
   );
-
-  const handleBackerClick = (backer: Backer) => {
-    window.open(`/profile/${backer.user.profile.username}`, '_blank');
+  const handleBackerClick = (backer: Contributor) => {
+    window.open(`/profile/${backer.userId}`, '_blank');
   };
 
   if (backers.length === 0) {
-    return <Empty />;
+    return (
+      <Empty
+        campaignId={crowdfund.id}
+        escrowAddress={crowdfund.escrowAddress}
+        fundingGoal={crowdfund.fundingGoal}
+        fundingRaised={crowdfund.fundingRaised}
+        projectTitle={crowdfund.project.title}
+      />
+    );
   }
   return (
     <div>
       {backers.map(backer => (
         <div
-          key={backer._id}
+          key={backer.userId}
           className='flex cursor-pointer items-center justify-between rounded px-3 py-2 transition-colors hover:bg-gray-900/30'
           onClick={() => handleBackerClick(backer)}
         >
@@ -44,12 +34,12 @@ const ProjectBackers = ({ project }: { project: CrowdfundingProject }) => {
             {/* Avatar */}
             <div className='relative'>
               <div className='h-12 w-12 overflow-hidden rounded-full border-[0.5px] border-[#2B2B2B]'>
-                {backer.user.profile.avatar ? (
+                {backer.userId ? (
                   <Image
                     width={48}
                     height={48}
-                    src={backer.user.profile.avatar}
-                    alt={backer.user.profile.firstName}
+                    src={backer.image || '/avatar.png'}
+                    alt={backer.name || 'Default avatar'}
                     className='h-full w-full object-cover'
                   />
                 ) : (
@@ -67,7 +57,10 @@ const ProjectBackers = ({ project }: { project: CrowdfundingProject }) => {
             {/* Backer Info */}
             <div className='flex flex-col space-y-0.5'>
               <span className='text-base font-normal text-white'>
-                {backer.user.profile.firstName} {backer.user.profile.lastName}
+                {backer.name}{' '}
+                <span className='text-xs text-gray-500 italic'>
+                  @{backer.username}
+                </span>
               </span>
               <span className={`truncate text-sm text-gray-500`}>
                 ${backer.amount}

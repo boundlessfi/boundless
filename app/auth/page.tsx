@@ -15,18 +15,16 @@ export default function AuthPage() {
   const modeParam = searchParams.get('mode');
   const invitation = searchParams.get('invitation');
 
-  // Determine initial mode from query parameter, default to 'signin'
   const getModeFromQuery = (mode: string | null): 'signin' | 'signup' => {
     if (mode === 'signup') return 'signup';
     if (mode === 'signin') return 'signin';
-    return 'signin'; // default
+    return 'signin';
   };
 
   const [currentMode, setCurrentMode] = useState<'signin' | 'signup'>(
     getModeFromQuery(modeParam)
   );
 
-  // Sync state with query parameter changes
   useEffect(() => {
     const mode = getModeFromQuery(modeParam);
     setCurrentMode(mode);
@@ -35,7 +33,6 @@ export default function AuthPage() {
   const handleModeChange = (newMode: 'signin' | 'signup') => {
     setCurrentMode(newMode);
 
-    // Update URL with new mode, preserving other query parameters
     const params = new URLSearchParams(searchParams.toString());
     params.set('mode', newMode);
     router.replace(`/auth?${params.toString()}`, { scroll: false });
