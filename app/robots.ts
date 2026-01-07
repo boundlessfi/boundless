@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/auth/', '/dashboard/', '/user/'],
     },
-    sitemap: 'https://boundlessfi.xyz/sitemap.xml',
+    sitemap: 'https://www.boundlessfi.xyz/sitemap.xml',
   };
 }

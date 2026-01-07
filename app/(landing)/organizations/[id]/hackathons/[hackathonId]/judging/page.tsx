@@ -11,6 +11,8 @@ import {
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import Loading from '@/components/Loading';
 
 export default function JudgingPage() {
   const params = useParams();
@@ -75,75 +77,79 @@ export default function JudgingPage() {
   ).size;
 
   return (
-    <div className='bg-background min-h-screen space-y-4 p-8 text-white'>
-      <div className='flex gap-4'>
-        <MetricsCard
-          title='Shortlisted Submissions'
-          value={totalSubmissions}
-          subtitle={`${submissions.length} displayed`}
-        />
-        <MetricsCard
-          title='Average Score'
-          value={averageScore > 0 ? averageScore.toFixed(2) : 'N/A'}
-          subtitle={
-            submissions.length > 0 ? 'Across all submissions' : undefined
-          }
-        />
-        <MetricsCard
-          title='Active Judges'
-          value={totalJudges}
-          subtitle='Judges who have graded'
-        />
-      </div>
+    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
+      <div className='bg-background min-h-screen space-y-4 p-8 text-white'>
+        <div className='flex gap-4'>
+          <MetricsCard
+            title='Shortlisted Submissions'
+            value={totalSubmissions}
+            subtitle={`${submissions.length} displayed`}
+          />
+          <MetricsCard
+            title='Average Score'
+            value={averageScore > 0 ? averageScore.toFixed(2) : 'N/A'}
+            subtitle={
+              submissions.length > 0 ? 'Across all submissions' : undefined
+            }
+          />
+          <MetricsCard
+            title='Active Judges'
+            value={totalJudges}
+            subtitle='Judges who have graded'
+          />
+        </div>
 
-      {isLoading ? (
-        <div className='flex items-center justify-center py-12'>
-          <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
-        </div>
-      ) : submissions.length === 0 ? (
-        <div className='bg-background/8 rounded-lg border border-gray-900 p-8 text-center text-gray-400'>
-          No shortlisted submissions found
-        </div>
-      ) : (
-        <>
-          <div className='flex flex-col gap-4'>
-            {submissions.map(submission => (
-              <JudgingParticipant
-                key={submission.participant.id}
-                submission={submission}
-                organizationId={organizationId}
-                hackathonId={hackathonId}
-                onSuccess={handleSuccess}
-              />
-            ))}
+        {isLoading ? (
+          <div className='flex items-center justify-center py-12'>
+            <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
           </div>
-
-          {/* Pagination */}
-          {pagination.totalPages > 1 && (
-            <div className='flex items-center justify-center gap-2 pt-4'>
-              <Button
-                variant='outline'
-                onClick={() => fetchSubmissions(page - 1)}
-                disabled={pagination.page <= 1 || isLoading}
-                className='border-gray-700 text-gray-400 hover:bg-gray-800'
-              >
-                Previous
-              </Button>
-              <span className='text-sm text-gray-400'>
-                Page {pagination.page} of {pagination.totalPages}
-              </span>
-              <Button
-                variant='outline'
-                onClick={() => fetchSubmissions(page + 1)}
-                disabled={pagination.page >= pagination.totalPages || isLoading}
-                className='border-gray-700 text-gray-400 hover:bg-gray-800'
-              >
-                Next
-              </Button>
+        ) : submissions.length === 0 ? (
+          <div className='bg-background/8 rounded-lg border border-gray-900 p-8 text-center text-gray-400'>
+            No shortlisted submissions found
+          </div>
+        ) : (
+          <>
+            <div className='flex flex-col gap-4'>
+              {submissions.map(submission => (
+                <JudgingParticipant
+                  key={submission.participant.id}
+                  submission={submission}
+                  organizationId={organizationId}
+                  hackathonId={hackathonId}
+                  onSuccess={handleSuccess}
+                />
+              ))}
             </div>
-          )}
-        </>
-      )}
-    </div>
+
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <div className='flex items-center justify-center gap-2 pt-4'>
+                <Button
+                  variant='outline'
+                  onClick={() => fetchSubmissions(page - 1)}
+                  disabled={pagination.page <= 1 || isLoading}
+                  className='border-gray-700 text-gray-400 hover:bg-gray-800'
+                >
+                  Previous
+                </Button>
+                <span className='text-sm text-gray-400'>
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <Button
+                  variant='outline'
+                  onClick={() => fetchSubmissions(page + 1)}
+                  disabled={
+                    pagination.page >= pagination.totalPages || isLoading
+                  }
+                  className='border-gray-700 text-gray-400 hover:bg-gray-800'
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </AuthGuard>
   );
 }

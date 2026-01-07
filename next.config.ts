@@ -2,11 +2,13 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: __dirname,
-  async rewrites() {
+  async redirects() {
     return [
       {
-        source: '/api/:path*',
-        destination: process.env.NEXT_PUBLIC_API_URL + '/api/:path*', // Proxy to Backend
+        source: '/:path*',
+        has: [{ type: 'host', value: 'boundlessfi.xyz' }],
+        destination: 'https://www.boundlessfi.xyz/:path*',
+        permanent: true,
       },
     ];
   },
@@ -53,6 +55,19 @@ const nextConfig: NextConfig = {
         hostname: 'lh3.googleusercontent.com',
       },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: '/sitemap.xml',
+        headers: [
+          {
+            key: 'Content-Encoding',
+            value: 'identity',
+          },
+        ],
+      },
+    ];
   },
 };
 

@@ -1,11 +1,15 @@
+import { AuthGuard } from '@/components/auth';
+import Loading from '@/components/Loading';
 import OrganizationPage from '@/components/organization/OrganizationPage';
 import React from 'react';
 
 const page = () => {
   return (
-    <div>
-      <OrganizationPage />
-    </div>
+    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
+      <div>
+        <OrganizationPage />
+      </div>
+    </AuthGuard>
   );
 };
 

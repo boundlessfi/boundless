@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { BoundlessButton } from '@/components/buttons';
+import { AuthGuard } from '@/components/auth';
+import Loading from '@/components/loading/Loading';
 
 export default function AcceptInvitationPage() {
   const params = useParams();
@@ -65,38 +67,39 @@ export default function AcceptInvitationPage() {
   }, [invitationId, router]);
 
   return (
-    <div className='relative z-9999999 flex min-h-screen flex-col items-center justify-center gap-4 backdrop-blur-lg'>
-      {status === 'loading' && (
-        <>
-          <LoadingSpinner variant='spinner' size='xl' color='primary' />
-          <p className='text-sm text-white'>Accepting invitation...</p>
-        </>
-      )}
-      {status === 'success' && (
-        <>
-          <CheckCircle2 className='mx-auto h-12 w-12 text-green-500' />
-          <p className='text-sm text-white'>
-            Invitation accepted! Redirecting...
-          </p>
-        </>
-      )}
-      {status === 'error' && (
-        <>
-          <XCircle className='mx-auto h-12 w-12 text-red-500' />
-          <p className='text-sm text-white'>
-            Failed to accept invitation. It may be expired or invalid.
-          </p>
-          <BoundlessButton
-            onClick={() => router.push('/')}
-            size='xl'
-            className='bg-primary hover:bg-primary/90 text-black'
-          >
-            Go to Home
-          </BoundlessButton>
-        </>
-      )}
-      {/* <div className='w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center backdrop-blur-sm'> */}
-      {/* {status === 'loading' && (
+    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
+      <div className='relative z-9999999 flex min-h-screen flex-col items-center justify-center gap-4 backdrop-blur-lg'>
+        {status === 'loading' && (
+          <>
+            <LoadingSpinner variant='spinner' size='xl' color='primary' />
+            <p className='text-sm text-white'>Accepting invitation...</p>
+          </>
+        )}
+        {status === 'success' && (
+          <>
+            <CheckCircle2 className='mx-auto h-12 w-12 text-green-500' />
+            <p className='text-sm text-white'>
+              Invitation accepted! Redirecting...
+            </p>
+          </>
+        )}
+        {status === 'error' && (
+          <>
+            <XCircle className='mx-auto h-12 w-12 text-red-500' />
+            <p className='text-sm text-white'>
+              Failed to accept invitation. It may be expired or invalid.
+            </p>
+            <BoundlessButton
+              onClick={() => router.push('/')}
+              size='xl'
+              className='bg-primary hover:bg-primary/90 text-black'
+            >
+              Go to Home
+            </BoundlessButton>
+          </>
+        )}
+        {/* <div className='w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center backdrop-blur-sm'> */}
+        {/* {status === 'loading' && (
           <div className='space-y-4'>
             <Loader2 className='text-primary mx-auto h-12 w-12 animate-spin' />
             <h1 className='text-2xl font-semibold text-white'>
@@ -138,7 +141,8 @@ export default function AcceptInvitationPage() {
             </button>
           </div>
         )} */}
-      {/* </div> */}
-    </div>
+        {/* </div> */}
+      </div>
+    </AuthGuard>
   );
 }

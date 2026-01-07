@@ -1,5 +1,7 @@
 import React from 'react';
 import NewHackathonTab from '@/components/organization/hackathons/new/NewHackathonTab';
+import { AuthGuard } from '@/components/auth';
+import Loading from '@/components/Loading';
 
 interface DraftPageProps {
   params: Promise<{
@@ -12,9 +14,11 @@ const DraftPage = async ({ params }: DraftPageProps) => {
   const { id, draftId } = await params;
 
   return (
-    <div>
-      <NewHackathonTab organizationId={id} draftId={draftId} />
-    </div>
+    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
+      <div>
+        <NewHackathonTab organizationId={id} draftId={draftId} />
+      </div>
+    </AuthGuard>
   );
 };
 

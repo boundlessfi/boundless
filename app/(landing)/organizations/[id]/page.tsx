@@ -4,6 +4,8 @@ import OrganizationAnalytics from '@/components/organization/OrganizationAnalyti
 import React, { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useOrganization } from '@/lib/providers/OrganizationProvider';
+import Loading from '@/components/Loading';
+import { AuthGuard } from '@/components/auth';
 
 const OrganizationPage = () => {
   const params = useParams();
@@ -17,9 +19,11 @@ const OrganizationPage = () => {
   }, [organizationId, setActiveOrg]);
 
   return (
-    <div className='bg-background-main-bg min-h-screen text-white'>
-      <OrganizationAnalytics />
-    </div>
+    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
+      <div className='bg-background-main-bg min-h-screen text-white'>
+        <OrganizationAnalytics />
+      </div>
+    </AuthGuard>
   );
 };
 

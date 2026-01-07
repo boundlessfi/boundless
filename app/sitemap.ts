@@ -7,7 +7,7 @@ import type { Hackathon } from '@/types/hackathon/core';
 import type { Crowdfunding } from '@/types/project';
 
 // Constants
-const SITE_URL = 'https://boundlessfi.xyz';
+const SITE_URL = 'https://www.boundlessfi.xyz';
 const MAX_ITEMS = 100;
 
 /**

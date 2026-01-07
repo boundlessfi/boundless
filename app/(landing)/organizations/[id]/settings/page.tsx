@@ -4,6 +4,8 @@ import { useParams } from 'next/navigation';
 import OrganizationSettings from '@/components/organization/OrganizationSettings';
 import { useEffect } from 'react';
 import { useOrganization } from '@/lib/providers';
+import { AuthGuard } from '@/components/auth';
+import Loading from '@/components/Loading';
 
 export default function OrganizationSettingsPage() {
   const params = useParams();
@@ -16,10 +18,12 @@ export default function OrganizationSettingsPage() {
     }
   }, [organizationId, setActiveOrg]);
   return (
-    <div className='min-h-screen bg-black text-white'>
-      <div className='flex'>
-        <OrganizationSettings organizationId={organizationId} />
+    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
+      <div className='min-h-screen bg-black text-white'>
+        <div className='flex'>
+          <OrganizationSettings organizationId={organizationId} />
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }

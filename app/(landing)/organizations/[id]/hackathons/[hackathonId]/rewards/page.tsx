@@ -9,6 +9,8 @@ import { RewardsPageContent } from '@/components/organization/hackathons/rewards
 import { useHackathonRewards } from '@/hooks/use-hackathon-rewards';
 import { useRankAssignment } from '@/hooks/use-rank-assignment';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AuthGuard } from '@/components/auth';
+import Loading from '@/components/Loading';
 
 export default function RewardsPage() {
   const params = useParams();
@@ -57,54 +59,56 @@ export default function RewardsPage() {
   };
 
   return (
-    <div className='bg-background min-h-screen p-4 text-white sm:p-6 md:p-8'>
-      <RewardsPageHeader />
+    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
+      <div className='bg-background min-h-screen p-4 text-white sm:p-6 md:p-8'>
+        <RewardsPageHeader />
 
-      {isLoading && (
-        <div className='flex items-center justify-center py-16'>
-          <div className='flex flex-col items-center gap-4'>
-            <Loader2 className='text-primary h-10 w-10 animate-spin' />
-            <p className='text-base font-medium text-gray-300'>
-              Loading rewards data...
-            </p>
-            <p className='text-sm text-gray-500'>
-              Please wait while we fetch the information
-            </p>
+        {isLoading && (
+          <div className='flex items-center justify-center py-16'>
+            <div className='flex flex-col items-center gap-4'>
+              <Loader2 className='text-primary h-10 w-10 animate-spin' />
+              <p className='text-base font-medium text-gray-300'>
+                Loading rewards data...
+              </p>
+              <p className='text-sm text-gray-500'>
+                Please wait while we fetch the information
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {!isLoading && error && (
-        <Alert variant='destructive' className='mb-8'>
-          <AlertCircle className='h-4 w-4' />
-          <AlertTitle>Error Loading Data</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+        {!isLoading && error && (
+          <Alert variant='destructive' className='mb-8'>
+            <AlertCircle className='h-4 w-4' />
+            <AlertTitle>Error Loading Data</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {!isLoading && !error && (
-        <RewardsPageContent
+        {!isLoading && !error && (
+          <RewardsPageContent
+            submissions={submissions}
+            escrow={escrow}
+            isLoadingEscrow={isLoadingEscrow}
+            isLoadingSubmissions={isLoadingSubmissions}
+            maxRank={maxRank}
+            hasWinners={hasWinners}
+            onPublishClick={() => setIsPublishWizardOpen(true)}
+            onRankChange={handleRankChangeWrapper}
+          />
+        )}
+
+        <PublishWinnersWizard
+          open={isPublishWizardOpen}
+          onOpenChange={setIsPublishWizardOpen}
           submissions={submissions}
+          prizeTiers={prizeTiers}
           escrow={escrow}
-          isLoadingEscrow={isLoadingEscrow}
-          isLoadingSubmissions={isLoadingSubmissions}
-          maxRank={maxRank}
-          hasWinners={hasWinners}
-          onPublishClick={() => setIsPublishWizardOpen(true)}
-          onRankChange={handleRankChangeWrapper}
+          organizationId={organizationId}
+          hackathonId={hackathonId}
+          onSuccess={handlePublishSuccess}
         />
-      )}
-
-      <PublishWinnersWizard
-        open={isPublishWizardOpen}
-        onOpenChange={setIsPublishWizardOpen}
-        submissions={submissions}
-        prizeTiers={prizeTiers}
-        escrow={escrow}
-        organizationId={organizationId}
-        hackathonId={hackathonId}
-        onSuccess={handlePublishSuccess}
-      />
-    </div>
+      </div>
+    </AuthGuard>
   );
 }

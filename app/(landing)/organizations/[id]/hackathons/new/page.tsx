@@ -1,10 +1,14 @@
 import React from 'react';
 import NewHackathonTab from '@/components/organization/hackathons/new/NewHackathonTab';
+import Loading from '@/components/Loading';
+import { AuthGuard } from '@/components/auth';
 const page = () => {
   return (
-    <div>
-      <NewHackathonTab />
-    </div>
+    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
+      <div>
+        <NewHackathonTab />
+      </div>
+    </AuthGuard>
   );
 };
 

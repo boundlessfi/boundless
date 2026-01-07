@@ -30,6 +30,8 @@ import type { Hackathon, HackathonDraft } from '@/lib/api/hackathons';
 import { toast } from 'sonner';
 import DeleteHackathonDialog from '@/components/organization/DeleteHackathonDialog';
 import { Badge } from '@/components/ui/badge';
+import { AuthGuard } from '@/components/auth';
+import Loading from '@/components/Loading';
 
 const calculateDraftCompletion = (draft: HackathonDraft): number => {
   const fields = [
@@ -205,403 +207,407 @@ export default function HackathonsPage() {
   };
 
   return (
-    <div className='min-h-screen bg-black'>
-      {/* Header */}
-      <div className='border-b border-zinc-900'>
-        <div className='mx-auto max-w-6xl px-6 py-8'>
-          <div className='mb-8 flex items-center justify-between'>
-            <div>
-              <h1 className='mb-2 text-2xl font-medium text-white'>
-                Hackathons
-              </h1>
-              <div className='flex items-center gap-6 text-sm text-zinc-500'>
-                <span>{stats.total} total</span>
-                <span>•</span>
-                <span>{stats.published} published</span>
-                <span>•</span>
-                <span>{stats.drafts} drafts</span>
+    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
+      <div className='min-h-screen bg-black'>
+        {/* Header */}
+        <div className='border-b border-zinc-900'>
+          <div className='mx-auto max-w-6xl px-6 py-8'>
+            <div className='mb-8 flex items-center justify-between'>
+              <div>
+                <h1 className='mb-2 text-2xl font-medium text-white'>
+                  Hackathons
+                </h1>
+                <div className='flex items-center gap-6 text-sm text-zinc-500'>
+                  <span>{stats.total} total</span>
+                  <span>•</span>
+                  <span>{stats.published} published</span>
+                  <span>•</span>
+                  <span>{stats.drafts} drafts</span>
+                </div>
               </div>
-            </div>
-            <Link href={`/organizations/${organizationId}/hackathons/new`}>
-              <BoundlessButton className='gap-2'>
-                <Plus className='h-4 w-4' />
-                Host Hackathon
-              </BoundlessButton>
-            </Link>
-          </div>
-
-          {/* Filters */}
-          <div className='flex items-center gap-3'>
-            <div className='relative flex-1'>
-              <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500' />
-              <Input
-                type='search'
-                placeholder='Search hackathons...'
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className='focus:border-primary focus:ring-primary/20 h-10 border-zinc-800/50 bg-zinc-900/30 pl-10 text-sm text-white transition-all placeholder:text-zinc-500 hover:border-zinc-700 hover:bg-zinc-900/50'
-              />
+              <Link href={`/organizations/${organizationId}/hackathons/new`}>
+                <BoundlessButton className='gap-2'>
+                  <Plus className='h-4 w-4' />
+                  Host Hackathon
+                </BoundlessButton>
+              </Link>
             </div>
 
-            <Select
-              value={sortBy}
-              onValueChange={value => setSortBy(value as 'newest' | 'oldest')}
-            >
-              <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-32 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
-                <SelectItem
-                  value='newest'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  Newest
-                </SelectItem>
-                <SelectItem
-                  value='oldest'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  Oldest
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Filters */}
+            <div className='flex items-center gap-3'>
+              <div className='relative flex-1'>
+                <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500' />
+                <Input
+                  type='search'
+                  placeholder='Search hackathons...'
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className='focus:border-primary focus:ring-primary/20 h-10 border-zinc-800/50 bg-zinc-900/30 pl-10 text-sm text-white transition-all placeholder:text-zinc-500 hover:border-zinc-700 hover:bg-zinc-900/50'
+                />
+              </div>
 
-            <Select
-              value={statusFilter}
-              onValueChange={value =>
-                setStatusFilter(value as 'all' | 'open' | 'draft')
-              }
-            >
-              <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-32 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
-                <SelectItem
-                  value='all'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  All Status
-                </SelectItem>
-                <SelectItem
-                  value='open'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  Published
-                </SelectItem>
-                <SelectItem
-                  value='draft'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  Draft
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              <Select
+                value={sortBy}
+                onValueChange={value => setSortBy(value as 'newest' | 'oldest')}
+              >
+                <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-32 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
+                  <SelectItem
+                    value='newest'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    Newest
+                  </SelectItem>
+                  <SelectItem
+                    value='oldest'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    Oldest
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-36 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
-                <SelectItem
-                  value='all'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  All Categories
-                </SelectItem>
-                <SelectItem
-                  value='defi'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  DeFi
-                </SelectItem>
-                <SelectItem
-                  value='nfts'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  NFTs
-                </SelectItem>
-                <SelectItem
-                  value='daos'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  DAOs
-                </SelectItem>
-                <SelectItem
-                  value='layer 2'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  Layer 2
-                </SelectItem>
-                <SelectItem
-                  value='cross-chain'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  Cross-chain
-                </SelectItem>
-                <SelectItem
-                  value='web3 gaming'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  Web3 Gaming
-                </SelectItem>
-                <SelectItem
-                  value='infrastructure'
-                  className='text-white focus:bg-zinc-900/50 focus:text-white'
-                >
-                  Infrastructure
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              <Select
+                value={statusFilter}
+                onValueChange={value =>
+                  setStatusFilter(value as 'all' | 'open' | 'draft')
+                }
+              >
+                <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-32 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
+                  <SelectItem
+                    value='all'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    All Status
+                  </SelectItem>
+                  <SelectItem
+                    value='open'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    Published
+                  </SelectItem>
+                  <SelectItem
+                    value='draft'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    Draft
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-36 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
+                  <SelectItem
+                    value='all'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    All Categories
+                  </SelectItem>
+                  <SelectItem
+                    value='defi'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    DeFi
+                  </SelectItem>
+                  <SelectItem
+                    value='nfts'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    NFTs
+                  </SelectItem>
+                  <SelectItem
+                    value='daos'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    DAOs
+                  </SelectItem>
+                  <SelectItem
+                    value='layer 2'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    Layer 2
+                  </SelectItem>
+                  <SelectItem
+                    value='cross-chain'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    Cross-chain
+                  </SelectItem>
+                  <SelectItem
+                    value='web3 gaming'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    Web3 Gaming
+                  </SelectItem>
+                  <SelectItem
+                    value='infrastructure'
+                    className='text-white focus:bg-zinc-900/50 focus:text-white'
+                  >
+                    Infrastructure
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className='mx-auto max-w-6xl px-6 py-8'>
-        {isLoading ? (
-          <div className='flex flex-col items-center justify-center py-24'>
-            <div className='border-primary mb-4 h-8 w-8 animate-spin rounded-full border-2 border-t-transparent' />
-            <span className='text-sm text-zinc-500'>Loading hackathons...</span>
-          </div>
-        ) : allHackathons.length === 0 ? (
-          <div className='flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 py-24'>
-            <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-900'>
-              <FileText className='h-8 w-8 text-zinc-600' />
+        {/* Content */}
+        <div className='mx-auto max-w-6xl px-6 py-8'>
+          {isLoading ? (
+            <div className='flex flex-col items-center justify-center py-24'>
+              <div className='border-primary mb-4 h-8 w-8 animate-spin rounded-full border-2 border-t-transparent' />
+              <span className='text-sm text-zinc-500'>
+                Loading hackathons...
+              </span>
             </div>
-            <h3 className='mb-2 text-lg font-medium text-white'>
-              No hackathons yet
-            </h3>
-            <p className='mb-6 text-sm text-zinc-500'>
-              Get started by hosting your first hackathon
-            </p>
-            <Link href={`/organizations/${organizationId}/hackathons/new`}>
-              <BoundlessButton className='gap-2'>
-                <Plus className='h-4 w-4' />
-                Host Hackathon
-              </BoundlessButton>
-            </Link>
-          </div>
-        ) : (
-          <div className='space-y-3'>
-            {allHackathons.map(item => {
-              const isDraft = item.type === 'draft';
-              const hackathon = item.data;
-              const title = isDraft
-                ? (hackathon as HackathonDraft).data.information?.name ||
-                  'Untitled Hackathon'
-                : (hackathon as Hackathon).name || 'Untitled Hackathon';
-              const completion = isDraft
-                ? calculateDraftCompletion(hackathon as HackathonDraft)
-                : 0;
-              const endDate = isDraft
-                ? (hackathon as HackathonDraft).data.timeline
-                    ?.submissionDeadline ||
-                  (hackathon as HackathonDraft).data.timeline
-                    ?.winnerAnnouncementDate
-                : (hackathon as Hackathon).submissionDeadline ||
-                  (hackathon as Hackathon).endDate;
-              const totalPrize = isDraft
-                ? (
-                    hackathon as HackathonDraft
-                  ).data.rewards?.prizeTiers?.reduce(
-                    (sum: number, tier: any) => sum + (tier.amount || 0),
-                    0
-                  ) || 0
-                : (hackathon as Hackathon).prizeTiers?.reduce(
-                    (sum: number, tier: any) => sum + (tier.amount || 0),
-                    0
-                  ) || 0;
+          ) : allHackathons.length === 0 ? (
+            <div className='flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 py-24'>
+              <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-900'>
+                <FileText className='h-8 w-8 text-zinc-600' />
+              </div>
+              <h3 className='mb-2 text-lg font-medium text-white'>
+                No hackathons yet
+              </h3>
+              <p className='mb-6 text-sm text-zinc-500'>
+                Get started by hosting your first hackathon
+              </p>
+              <Link href={`/organizations/${organizationId}/hackathons/new`}>
+                <BoundlessButton className='gap-2'>
+                  <Plus className='h-4 w-4' />
+                  Host Hackathon
+                </BoundlessButton>
+              </Link>
+            </div>
+          ) : (
+            <div className='space-y-3'>
+              {allHackathons.map(item => {
+                const isDraft = item.type === 'draft';
+                const hackathon = item.data;
+                const title = isDraft
+                  ? (hackathon as HackathonDraft).data.information?.name ||
+                    'Untitled Hackathon'
+                  : (hackathon as Hackathon).name || 'Untitled Hackathon';
+                const completion = isDraft
+                  ? calculateDraftCompletion(hackathon as HackathonDraft)
+                  : 0;
+                const endDate = isDraft
+                  ? (hackathon as HackathonDraft).data.timeline
+                      ?.submissionDeadline ||
+                    (hackathon as HackathonDraft).data.timeline
+                      ?.winnerAnnouncementDate
+                  : (hackathon as Hackathon).submissionDeadline ||
+                    (hackathon as Hackathon).endDate;
+                const totalPrize = isDraft
+                  ? (
+                      hackathon as HackathonDraft
+                    ).data.rewards?.prizeTiers?.reduce(
+                      (sum: number, tier: any) => sum + (tier.amount || 0),
+                      0
+                    ) || 0
+                  : (hackathon as Hackathon).prizeTiers?.reduce(
+                      (sum: number, tier: any) => sum + (tier.amount || 0),
+                      0
+                    ) || 0;
 
-              if (isDraft) {
-                return (
-                  <div
-                    key={`draft-${hackathon.id}`}
-                    onClick={() =>
-                      router.push(
-                        `/organizations/${organizationId}/hackathons/drafts/${hackathon.id}`
-                      )
-                    }
-                    className='group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'
-                  >
-                    <div className='mb-4 flex items-center justify-between'>
-                      <div className='flex items-center gap-3'>
-                        <Badge
-                          variant='outline'
-                          className='rounded-full bg-zinc-500 px-3 py-1 text-xs font-medium text-zinc-100'
-                        >
-                          Draft
-                        </Badge>
-                        <span className='text-sm text-white'>
-                          {completion}% complete
-                        </span>
+                if (isDraft) {
+                  return (
+                    <div
+                      key={`draft-${hackathon.id}`}
+                      onClick={() =>
+                        router.push(
+                          `/organizations/${organizationId}/hackathons/drafts/${hackathon.id}`
+                        )
+                      }
+                      className='group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'
+                    >
+                      <div className='mb-4 flex items-center justify-between'>
+                        <div className='flex items-center gap-3'>
+                          <Badge
+                            variant='outline'
+                            className='rounded-full bg-zinc-500 px-3 py-1 text-xs font-medium text-zinc-100'
+                          >
+                            Draft
+                          </Badge>
+                          <span className='text-sm text-white'>
+                            {completion}% complete
+                          </span>
+                        </div>
+                        <div className='flex items-center gap-2'>
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              router.push(
+                                `/hackathons/preview/${organizationId}/${hackathon.id}`
+                              );
+                            }}
+                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 opacity-0 transition-all group-hover:opacity-100 hover:border-zinc-700 hover:text-white'
+                            title='Preview'
+                          >
+                            <Eye className='h-4 w-4' />
+                          </button>
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleDeleteClick(hackathon.id);
+                            }}
+                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 opacity-0 transition-all group-hover:opacity-100 hover:border-red-600 hover:text-red-500'
+                            title='Delete Draft'
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className='h-4 w-4' />
+                          </button>
+                          <BoundlessButton
+                            size='sm'
+                            variant='outline'
+                            className='opacity-0 transition-opacity group-hover:opacity-100'
+                            onClick={e => {
+                              e.stopPropagation();
+                              router.push(
+                                `/organizations/${organizationId}/hackathons/drafts/${hackathon.id}`
+                              );
+                            }}
+                          >
+                            Continue
+                          </BoundlessButton>
+                        </div>
                       </div>
-                      <div className='flex items-center gap-2'>
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            router.push(
-                              `/hackathons/preview/${organizationId}/${hackathon.id}`
-                            );
-                          }}
-                          className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 opacity-0 transition-all group-hover:opacity-100 hover:border-zinc-700 hover:text-white'
-                          title='Preview'
-                        >
-                          <Eye className='h-4 w-4' />
-                        </button>
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleDeleteClick(hackathon.id);
-                          }}
-                          className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 opacity-0 transition-all group-hover:opacity-100 hover:border-red-600 hover:text-red-500'
-                          title='Delete Draft'
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className='h-4 w-4' />
-                        </button>
-                        <BoundlessButton
-                          size='sm'
-                          variant='outline'
-                          className='opacity-0 transition-opacity group-hover:opacity-100'
-                          onClick={e => {
-                            e.stopPropagation();
-                            router.push(
-                              `/organizations/${organizationId}/hackathons/drafts/${hackathon.id}`
-                            );
-                          }}
-                        >
-                          Continue
-                        </BoundlessButton>
+
+                      <h3 className='mb-3 text-lg font-medium text-white'>
+                        {title}
+                      </h3>
+
+                      <div className='h-1.5 overflow-hidden rounded-full bg-zinc-800'>
+                        <div
+                          className='bg-primary h-full rounded-full transition-all'
+                          style={{ width: `${completion}%` }}
+                        />
                       </div>
                     </div>
+                  );
+                }
 
-                    <h3 className='mb-3 text-lg font-medium text-white'>
-                      {title}
-                    </h3>
+                return (
+                  <div
+                    key={`hackathon-${hackathon.id}`}
+                    className='group rounded-xl border border-zinc-800 bg-zinc-900/30 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'
+                  >
+                    <div className='p-6'>
+                      <div className='mb-4 flex items-start justify-between'>
+                        <div className='flex-1'>
+                          <div className='mb-3 flex items-center gap-3'>
+                            <Badge
+                              variant='outline'
+                              className={`rounded-full border-none px-3 py-1 text-xs font-medium ${
+                                hackathon.status === 'PUBLISHED' ||
+                                hackathon.status === 'ONGOING'
+                                  ? 'bg-green-500/10 text-green-500'
+                                  : 'bg-secondary-500/10 text-secondary-500'
+                              }`}
+                            >
+                              {hackathon.status === 'PUBLISHED'
+                                ? 'Live'
+                                : hackathon.status}
+                            </Badge>
+                            {endDate && (
+                              <div className='flex items-center gap-1.5 text-sm text-zinc-500'>
+                                <Calendar className='h-3.5 w-3.5' />
+                                {getTimeRemaining(endDate)}
+                              </div>
+                            )}
+                          </div>
 
-                    <div className='h-1.5 overflow-hidden rounded-full bg-zinc-800'>
-                      <div
-                        className='bg-primary h-full rounded-full transition-all'
-                        style={{ width: `${completion}%` }}
-                      />
+                          <h3 className='mb-4 text-lg font-medium text-white'>
+                            {title}
+                          </h3>
+
+                          <div className='flex items-center gap-6 text-sm text-zinc-500'>
+                            <div className='flex items-center gap-2'>
+                              <Users className='h-4 w-4' />
+                              <span>0 participants</span>
+                            </div>
+                            <div className='flex items-center gap-2'>
+                              <FileText className='h-4 w-4' />
+                              <span>0 submissions</span>
+                            </div>
+                            {totalPrize > 0 && (
+                              <>
+                                <div className='h-4 w-px bg-zinc-800' />
+                                <div className='flex items-center gap-2'>
+                                  <Image
+                                    src='/trophy.svg'
+                                    alt='Prize'
+                                    width={16}
+                                    height={16}
+                                  />
+                                  <span className='text-primary font-medium'>
+                                    ${totalPrize.toLocaleString()} USDC
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className='flex items-center gap-2'>
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/organizations/${organizationId}/hackathons/${hackathon.id}`
+                              )
+                            }
+                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-zinc-700 hover:text-white'
+                            title='Preview'
+                          >
+                            <ExternalLink className='h-4 w-4' />
+                          </button>
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/organizations/${organizationId}/hackathons/${hackathon.id}/settings`
+                              )
+                            }
+                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-zinc-700 hover:text-white'
+                            title='Settings'
+                          >
+                            <Settings className='h-4 w-4' />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(hackathon.id)}
+                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-red-600 hover:text-red-500'
+                            title='Delete Hackathon'
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className='h-4 w-4' />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
-              }
+              })}
+            </div>
+          )}
+        </div>
 
-              return (
-                <div
-                  key={`hackathon-${hackathon.id}`}
-                  className='group rounded-xl border border-zinc-800 bg-zinc-900/30 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'
-                >
-                  <div className='p-6'>
-                    <div className='mb-4 flex items-start justify-between'>
-                      <div className='flex-1'>
-                        <div className='mb-3 flex items-center gap-3'>
-                          <Badge
-                            variant='outline'
-                            className={`rounded-full border-none px-3 py-1 text-xs font-medium ${
-                              hackathon.status === 'PUBLISHED' ||
-                              hackathon.status === 'ONGOING'
-                                ? 'bg-green-500/10 text-green-500'
-                                : 'bg-secondary-500/10 text-secondary-500'
-                            }`}
-                          >
-                            {hackathon.status === 'PUBLISHED'
-                              ? 'Live'
-                              : hackathon.status}
-                          </Badge>
-                          {endDate && (
-                            <div className='flex items-center gap-1.5 text-sm text-zinc-500'>
-                              <Calendar className='h-3.5 w-3.5' />
-                              {getTimeRemaining(endDate)}
-                            </div>
-                          )}
-                        </div>
-
-                        <h3 className='mb-4 text-lg font-medium text-white'>
-                          {title}
-                        </h3>
-
-                        <div className='flex items-center gap-6 text-sm text-zinc-500'>
-                          <div className='flex items-center gap-2'>
-                            <Users className='h-4 w-4' />
-                            <span>0 participants</span>
-                          </div>
-                          <div className='flex items-center gap-2'>
-                            <FileText className='h-4 w-4' />
-                            <span>0 submissions</span>
-                          </div>
-                          {totalPrize > 0 && (
-                            <>
-                              <div className='h-4 w-px bg-zinc-800' />
-                              <div className='flex items-center gap-2'>
-                                <Image
-                                  src='/trophy.svg'
-                                  alt='Prize'
-                                  width={16}
-                                  height={16}
-                                />
-                                <span className='text-primary font-medium'>
-                                  ${totalPrize.toLocaleString()} USDC
-                                </span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className='flex items-center gap-2'>
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/organizations/${organizationId}/hackathons/${hackathon.id}`
-                            )
-                          }
-                          className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-zinc-700 hover:text-white'
-                          title='Preview'
-                        >
-                          <ExternalLink className='h-4 w-4' />
-                        </button>
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/organizations/${organizationId}/hackathons/${hackathon.id}/settings`
-                            )
-                          }
-                          className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-zinc-700 hover:text-white'
-                          title='Settings'
-                        >
-                          <Settings className='h-4 w-4' />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(hackathon.id)}
-                          className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-red-600 hover:text-red-500'
-                          title='Delete Hackathon'
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className='h-4 w-4' />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {/* Delete Hackathon Dialog */}
+        {hackathonToDelete && (
+          <DeleteHackathonDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            hackathonTitle={hackathonToDelete.title}
+            onConfirm={handleDeleteConfirm}
+            isDeleting={isDeleting}
+          />
         )}
       </div>
-
-      {/* Delete Hackathon Dialog */}
-      {hackathonToDelete && (
-        <DeleteHackathonDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          hackathonTitle={hackathonToDelete.title}
-          onConfirm={handleDeleteConfirm}
-          isDeleting={isDeleting}
-        />
-      )}
-    </div>
+    </AuthGuard>
   );
 }

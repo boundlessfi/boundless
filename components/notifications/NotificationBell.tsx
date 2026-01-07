@@ -50,6 +50,7 @@ export const NotificationBell = ({ className }: NotificationBellProps) => {
       createdAt: wsNotif.timestamp || new Date().toISOString(),
     }));
   }, [wsNotifications]);
+  console.log('Notifications:', notifications);
 
   // Wrapper for markAllAsRead that uses WebSocket
   const handleMarkAllAsRead = async () => {
