@@ -35,33 +35,26 @@ const roleSchema = z.object({
   skills: z.array(z.string()).optional(),
 });
 
-const teamPostSchema = z
-  .object({
-    projectName: z
-      .string()
-      .min(3, 'Project name must be at least 3 characters'),
-    projectDescription: z
-      .string()
-      .min(50, 'Description must be at least 50 characters'),
-    lookingFor: z
-      .array(roleSchema)
-      .min(1, 'At least one role is required')
-      .max(10, 'Maximum 10 roles allowed'),
-    currentTeamSize: z
-      .number()
-      .min(1, 'Current team size must be at least 1')
-      .max(50, 'Current team size cannot exceed 50'),
-    maxTeamSize: z
-      .number()
-      .min(2, 'Max team size must be at least 2')
-      .max(50, 'Max team size cannot exceed 50'),
-    contactMethod: z.enum(['email', 'telegram', 'discord', 'github', 'other']),
-    contactInfo: z.string().min(1, 'Contact info is required'),
-  })
-  .refine(data => data.maxTeamSize > data.currentTeamSize, {
-    message: 'Max team size must be greater than current team size',
-    path: ['maxTeamSize'],
-  });
+const teamPostSchema = z.object({
+  teamName: z
+    .string()
+    .min(3, 'Team name must be at least 3 characters')
+    .max(100, 'Team name cannot exceed 100 characters'),
+  description: z
+    .string()
+    .min(10, 'Description must be at least 10 characters')
+    .max(500, 'Description cannot exceed 500 characters'),
+  lookingFor: z
+    .array(roleSchema)
+    .min(1, 'At least one role is required')
+    .max(10, 'Maximum 10 roles allowed'),
+  maxSize: z
+    .number()
+    .min(2, 'Max team size must be at least 2')
+    .max(50, 'Max team size cannot exceed 50'),
+  contactMethod: z.enum(['email', 'telegram', 'discord', 'github', 'other']),
+  contactInfo: z.string().min(1, 'Contact info is required'),
+});
 
 type TeamPostFormData = z.infer<typeof teamPostSchema>;
 
@@ -95,11 +88,13 @@ export function CreateTeamPostModal({
   const form = useForm<TeamPostFormData>({
     resolver: zodResolver(teamPostSchema),
     defaultValues: {
-      projectName: initialData?.projectName || '',
-      projectDescription: initialData?.projectDescription || '',
-      lookingFor: initialData?.lookingFor || [{ role: '', skills: [] }],
-      currentTeamSize: initialData?.currentTeamSize || 1,
-      maxTeamSize: initialData?.maxTeamSize || 2,
+      teamName: initialData?.teamName || '',
+      description: initialData?.description || '',
+      lookingFor: initialData?.lookingFor.map(role => ({
+        role,
+        skills: [],
+      })) || [{ role: '', skills: [] }],
+      maxSize: initialData?.maxSize || 5,
       contactMethod: initialData?.contactMethod || 'email',
       contactInfo: initialData?.contactInfo || '',
     },
@@ -111,12 +106,11 @@ export function CreateTeamPostModal({
   useEffect(() => {
     if (open && initialData) {
       form.reset({
-        projectName: initialData.projectName,
-        projectDescription: initialData.projectDescription,
-        lookingFor: initialData.lookingFor,
-        currentTeamSize: initialData.currentTeamSize,
-        maxTeamSize: initialData.maxTeamSize,
-        contactMethod: initialData.contactMethod,
+        teamName: initialData.teamName,
+        description: initialData.description,
+        lookingFor: initialData.lookingFor.map(role => ({ role, skills: [] })),
+        maxSize: initialData.maxSize,
+        contactMethod: initialData.contactMethod || 'email',
         contactInfo: initialData.contactInfo,
       });
     } else if (!open) {
@@ -204,11 +198,17 @@ export function CreateTeamPostModal({
         return;
       }
 
+      const payload = {
+        ...data,
+        lookingFor: data.lookingFor.map(r => r.role),
+        maxSize: data.maxSize,
+      };
+
       if (isEditMode && initialData) {
-        await updatePost(initialData.id, data);
+        await updatePost(initialData.id, payload);
         toast.success('Team post updated successfully');
       } else {
-        await createPost(data);
+        await createPost(payload);
         toast.success('Team post created successfully');
       }
 
@@ -238,43 +238,46 @@ export function CreateTeamPostModal({
         <div className='flex-1 overflow-y-auto p-6'>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-              {/* Project Name */}
+              {/* Team Name */}
               <FormField
                 control={form.control}
-                name='projectName'
+                name='teamName'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Project Name</FormLabel>
+                    <FormLabel>Team Name</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='My Awesome Project'
+                        placeholder='My Awesome Team'
                         className='border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
                         {...field}
                       />
                     </FormControl>
+                    <FormDescription className='text-gray-400'>
+                      3-100 characters.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Project Description */}
+              {/* Description */}
               <FormField
                 control={form.control}
-                name='projectDescription'
+                name='description'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Project Description</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe your project and what you're building..."
+                        placeholder='Describe your project and team...'
                         className='resize-y border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
                         rows={5}
                         {...field}
                       />
                     </FormControl>
+
                     <FormDescription className='text-gray-400'>
-                      Minimum 50 characters. Describe your project idea and
-                      goals.
+                      10-500 characters. Describe your project idea and goals.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -395,33 +398,10 @@ export function CreateTeamPostModal({
               </div>
 
               {/* Team Size */}
-              <div className='grid grid-cols-2 gap-4'>
+              <div className='grid grid-cols-1 gap-4'>
                 <FormField
                   control={form.control}
-                  name='currentTeamSize'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Current Team Size</FormLabel>
-                      <FormControl>
-                        <Input
-                          type='number'
-                          min={1}
-                          max={50}
-                          className='border-gray-700 bg-gray-800/50 text-white'
-                          {...field}
-                          onChange={e =>
-                            field.onChange(parseInt(e.target.value) || 1)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name='maxTeamSize'
+                  name='maxSize'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Max Team Size</FormLabel>

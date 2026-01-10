@@ -37,11 +37,12 @@ export function TeamFormationTab({
   organizationId,
 }: TeamFormationTabProps) {
   const params = useParams();
-  const { isAuthenticated } = useAuthStatus();
+  const { isAuthenticated, user } = useAuthStatus();
   const hackathonId = hackathonSlugOrId || (params.slug as string) || '';
 
   const {
     posts,
+    myTeam,
     myPosts,
     isLoading,
     isDeleting,
@@ -65,15 +66,14 @@ export function TeamFormationTab({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<
-    'all' | 'active' | 'filled' | 'closed'
+    'all' | 'open' | 'closed'
   >('all');
-
   // Extract all unique roles from posts
   const allRoles = useMemo(() => {
     const roles = new Set<string>();
     posts.forEach(post => {
       post.lookingFor.forEach(role => {
-        roles.add(role.role);
+        roles.add(role);
       });
     });
     return Array.from(roles).sort();
@@ -88,42 +88,27 @@ export function TeamFormationTab({
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(
         post =>
-          post.projectName?.toLowerCase().includes(searchLower) ||
-          post.projectDescription?.toLowerCase().includes(searchLower) ||
-          post.lookingFor.some(role =>
-            role.role.toLowerCase().includes(searchLower)
-          )
+          post.teamName?.toLowerCase().includes(searchLower) ||
+          post.description?.toLowerCase().includes(searchLower) ||
+          post.lookingFor.some(role => role.toLowerCase().includes(searchLower))
       );
     }
 
     // Filter by role
     if (selectedRole !== 'all') {
       filtered = filtered.filter(post =>
-        post.lookingFor.some(role => role.role === selectedRole)
+        post.lookingFor.some(role => role === selectedRole)
       );
     }
 
     // Filter by status
     if (selectedStatus !== 'all') {
-      filtered = filtered.filter(post => post.status === selectedStatus);
+      const isOpen = selectedStatus === 'open';
+      filtered = filtered.filter(post => post.isOpen === isOpen);
     }
 
     return filtered;
   }, [posts, searchTerm, selectedRole, selectedStatus]);
-
-  // Filter my posts
-  const filteredMyPosts = useMemo(() => {
-    return myPosts.filter(post => {
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        return (
-          post.projectName?.toLowerCase().includes(searchLower) ||
-          post.projectDescription?.toLowerCase().includes(searchLower)
-        );
-      }
-      return true;
-    });
-  }, [myPosts, searchTerm]);
 
   const handleCreateSuccess = () => {
     fetchPosts();
@@ -153,7 +138,7 @@ export function TeamFormationTab({
     trackContact(post.id);
   };
 
-  const activePostsCount = posts.filter(p => p.status === 'active').length;
+  const activePostsCount = posts.filter(p => p.isOpen).length;
 
   if (isLoading && posts.length === 0) {
     return (
@@ -207,26 +192,6 @@ export function TeamFormationTab({
           </Button>
         )}
       </div>
-
-      {/* My Posts Section */}
-      {isAuthenticated && filteredMyPosts.length > 0 && (
-        <div className='mb-8'>
-          <h3 className='mb-4 text-lg font-semibold text-white'>My Posts</h3>
-          <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-            {filteredMyPosts.map(post => (
-              <TeamRecruitmentPostCard
-                key={post.id}
-                post={post}
-                isMyPost={true}
-                onContactClick={handleContactClick}
-                onEditClick={handleEditClick}
-                onDeleteClick={handleDeleteClick}
-                onTrackContact={trackContact}
-              />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Filters */}
       <div className='mb-8 flex flex-col items-start gap-4 md:flex-row md:items-center'>
@@ -293,16 +258,10 @@ export function TeamFormationTab({
                 All Status
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => setSelectedStatus('active')}
+                onClick={() => setSelectedStatus('open')}
                 className='cursor-pointer hover:bg-gray-800'
               >
-                Active
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setSelectedStatus('filled')}
-                className='cursor-pointer hover:bg-gray-800'
-              >
-                Filled
+                Open
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setSelectedStatus('closed')}
@@ -328,19 +287,36 @@ export function TeamFormationTab({
       </div>
 
       {/* Posts Grid */}
-      {filteredPosts.length > 0 ? (
+      {filteredPosts.length > 0 || (isAuthenticated && myTeam) ? (
         <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-          {filteredPosts.map(post => (
+          {/* Pinned Team Card - Only show if authenticated and exists */}
+          {isAuthenticated && myTeam && (
             <TeamRecruitmentPostCard
-              key={post.id}
-              post={post}
-              isMyPost={myPosts.some(p => p.id === post.id)}
+              key={myTeam.id}
+              post={myTeam}
+              isMyPost={myTeam.leaderId === user?.id}
               onContactClick={handleContactClick}
               onEditClick={handleEditClick}
               onDeleteClick={handleDeleteClick}
               onTrackContact={trackContact}
+              isPinned={true}
             />
-          ))}
+          )}
+
+          {/* Other Posts - Filter out myTeam to avoid duplication */}
+          {filteredPosts
+            .filter(post => !myTeam || post.id !== myTeam.id)
+            .map(post => (
+              <TeamRecruitmentPostCard
+                key={post.id}
+                post={post}
+                isMyPost={myPosts.some(p => p.id === post.id)}
+                onContactClick={handleContactClick}
+                onEditClick={handleEditClick}
+                onDeleteClick={handleDeleteClick}
+                onTrackContact={trackContact}
+              />
+            ))}
         </div>
       ) : (
         <div className='flex min-h-[400px] items-center justify-center'>

@@ -292,9 +292,12 @@ export type Hackathon = {
     description: string;
   }>;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sponsorsPartners: any[];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   submissions: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   followers: any[];
 
   requireGithub: boolean;
@@ -953,6 +956,7 @@ export const updateDraftStep = async (
   organizationId: string,
   draftId: string,
   step: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any,
   autoSave?: boolean
 ) => {
@@ -1624,20 +1628,25 @@ export interface ReportDiscussionRequest {
 }
 
 // @deprecated Use GetCommentsResponse from @/types/comment instead
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface GetHackathonDiscussionsResponse extends PaginatedResponse<any> {
   success: true;
 }
 
 // @deprecated Use CreateCommentResponse from @/types/comment instead
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface CreateDiscussionResponse extends ApiResponse<any> {
   success: true;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   message: string;
 }
 
 // @deprecated Use UpdateCommentResponse from @/types/comment instead
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface UpdateDiscussionResponse extends ApiResponse<any> {
   success: true;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   message: string;
 }
@@ -1650,8 +1659,10 @@ export interface DeleteDiscussionResponse extends ApiResponse<null> {
 }
 
 // @deprecated Use CreateCommentResponse from @/types/comment instead
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ReplyToDiscussionResponse extends ApiResponse<any> {
   success: true;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   message: string;
 }
@@ -1847,27 +1858,29 @@ export const getHackathonResources = async (
 // Team Formation API Types and Functions
 // ============================================
 
+export interface TeamMember {
+  userId: string;
+  username: string;
+  name: string;
+  role: string;
+  image?: string;
+  joinedAt: string;
+}
+
 export interface TeamRecruitmentPost {
   id: string;
   hackathonId: string;
   organizationId: string;
-  createdBy: {
-    userId: string;
-    name: string;
-    avatar?: string;
-    username: string;
-  };
-  projectName: string;
-  projectDescription: string;
-  lookingFor: Array<{
-    role: string;
-    skills?: string[];
-  }>;
-  currentTeamSize: number;
-  maxTeamSize: number;
-  contactMethod: 'email' | 'telegram' | 'discord' | 'github' | 'other';
+  teamName: string;
+  description: string;
+  lookingFor: string[];
+  isOpen: boolean;
+  leaderId: string;
+  maxSize: number;
+  memberCount: number;
+  members: TeamMember[];
+  contactMethod?: 'email' | 'telegram' | 'discord' | 'github' | 'other';
   contactInfo: string;
-  status: 'active' | 'filled' | 'closed';
   createdAt: string;
   updatedAt: string;
   views?: number;
@@ -1875,20 +1888,16 @@ export interface TeamRecruitmentPost {
 }
 
 export interface CreateTeamPostRequest {
-  projectName: string;
-  projectDescription: string;
-  lookingFor: Array<{
-    role: string;
-    skills?: string[];
-  }>;
-  currentTeamSize: number;
-  maxTeamSize: number;
+  teamName: string;
+  description: string;
+  lookingFor: string[];
+  maxSize: number;
   contactMethod: 'email' | 'telegram' | 'discord' | 'github' | 'other';
   contactInfo: string;
 }
 
 export interface UpdateTeamPostRequest extends Partial<CreateTeamPostRequest> {
-  status?: 'active' | 'filled' | 'closed';
+  isOpen?: boolean;
 }
 
 export interface GetTeamPostsOptions {
@@ -1956,9 +1965,9 @@ export const createTeamPost = async (
 ): Promise<CreateTeamPostResponse> => {
   let url: string;
   if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts`;
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams`;
   } else {
-    url = `/hackathons/${hackathonSlugOrId}/team-posts`;
+    url = `/hackathons/${hackathonSlugOrId}/teams`;
   }
 
   const res = await api.post(url, data);
@@ -2086,6 +2095,50 @@ export const trackContactClick = async (
 
   const res = await api.post(url);
   return res.data;
+};
+
+export const getMyTeam = async (
+  hackathonSlugOrId: string,
+  organizationId?: string
+): Promise<ApiResponse<TeamRecruitmentPost | null>> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/my-team`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/my-team`;
+  }
+
+  const res = await api.get(url);
+
+  if (res.data.success && res.data.data) {
+    let teamData: TeamRecruitmentPost | null = null;
+
+    // Check if data is array (based on user feedback) or object
+    if (Array.isArray(res.data.data)) {
+      if (res.data.data.length > 0) {
+        teamData = res.data.data[0] as TeamRecruitmentPost;
+      }
+    } else {
+      teamData = res.data.data as TeamRecruitmentPost;
+    }
+
+    if (teamData) {
+      // Ensure organizationId is present if missing
+      if (!teamData.organizationId && organizationId) {
+        teamData.organizationId = organizationId;
+      }
+
+      return {
+        ...res.data,
+        data: teamData,
+      };
+    }
+  }
+
+  return {
+    ...res.data,
+    data: null,
+  };
 };
 
 // export const GetHackathonBySlug = async (slug): Promise<Hackathon> => {

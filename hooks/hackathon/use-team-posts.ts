@@ -9,6 +9,7 @@ import {
   createTeamPost,
   updateTeamPost,
   deleteTeamPost,
+  getMyTeam,
   trackContactClick,
   type TeamRecruitmentPost,
   type CreateTeamPostRequest,
@@ -31,6 +32,7 @@ export function useTeamPosts({
   const { user } = useAuthStore();
   const currentUserId = user?.id;
   const [posts, setPosts] = useState<TeamRecruitmentPost[]>([]);
+  const [myTeam, setMyTeam] = useState<TeamRecruitmentPost | null>(null);
   const [myPosts, setMyPosts] = useState<TeamRecruitmentPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -61,7 +63,7 @@ export function useTeamPosts({
           // Separate user's posts if authenticated
           if (isAuthenticated && currentUserId) {
             const userPosts = teams.filter(
-              post => post.createdBy.userId === currentUserId
+              post => post.leaderId === currentUserId
             );
             setMyPosts(userPosts);
           } else {
@@ -100,9 +102,7 @@ export function useTeamPosts({
       if (response.success && response.data && currentUserId) {
         // Filter posts created by current user
         const teams = response.data.teams || [];
-        const userPosts = teams.filter(
-          post => post.createdBy.userId === currentUserId
-        );
+        const userPosts = teams.filter(post => post.leaderId === currentUserId);
         setMyPosts(userPosts);
       } else {
         setMyPosts([]);
@@ -113,6 +113,25 @@ export function useTeamPosts({
       setError(errorMessage);
     }
   }, [hackathonSlugOrId, organizationId, isAuthenticated, currentUserId]);
+
+  const fetchMyTeam = useCallback(async () => {
+    if (!hackathonSlugOrId || !isAuthenticated) {
+      setMyTeam(null);
+      return;
+    }
+
+    try {
+      const response = await getMyTeam(hackathonSlugOrId, organizationId);
+      if (response.success && response.data) {
+        setMyTeam(response.data);
+      } else {
+        setMyTeam(null);
+      }
+    } catch {
+      // Siletly fail
+      setMyTeam(null);
+    }
+  }, [hackathonSlugOrId, organizationId, isAuthenticated]);
 
   const createPost = useCallback(
     async (data: CreateTeamPostRequest) => {
@@ -253,14 +272,17 @@ export function useTeamPosts({
   useEffect(() => {
     if (isAuthenticated && hackathonSlugOrId) {
       fetchMyPosts();
+      fetchMyTeam();
     } else {
       setMyPosts([]);
+      setMyTeam(null);
     }
-  }, [isAuthenticated, hackathonSlugOrId, fetchMyPosts]);
+  }, [isAuthenticated, hackathonSlugOrId, fetchMyPosts, fetchMyTeam]);
 
   return {
     posts,
     myPosts,
+    myTeam,
     isLoading,
     isCreating,
     isUpdating,
@@ -268,6 +290,7 @@ export function useTeamPosts({
     error,
     fetchPosts,
     fetchMyPosts,
+    fetchMyTeam,
     createPost,
     updatePost,
     deletePost,
