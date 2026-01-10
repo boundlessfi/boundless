@@ -55,11 +55,12 @@ export function useTeamPosts({
         );
 
         if (response.success && response.data) {
-          setPosts(response.data);
+          const teams = response.data.teams || [];
+          setPosts(teams);
 
           // Separate user's posts if authenticated
           if (isAuthenticated && currentUserId) {
-            const userPosts = response.data.filter(
+            const userPosts = teams.filter(
               post => post.createdBy.userId === currentUserId
             );
             setMyPosts(userPosts);
@@ -98,7 +99,8 @@ export function useTeamPosts({
 
       if (response.success && response.data && currentUserId) {
         // Filter posts created by current user
-        const userPosts = response.data.filter(
+        const teams = response.data.teams || [];
+        const userPosts = teams.filter(
           post => post.createdBy.userId === currentUserId
         );
         setMyPosts(userPosts);

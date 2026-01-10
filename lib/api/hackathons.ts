@@ -1902,7 +1902,17 @@ export interface GetTeamPostsOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
-export interface GetTeamPostsResponse extends PaginatedResponse<TeamRecruitmentPost> {
+export interface GetTeamPostsResponse extends ApiResponse<{
+  teams: TeamRecruitmentPost[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}> {
   success: true;
 }
 
@@ -1992,9 +2002,9 @@ export const getTeamPosts = async (
 
   let url: string;
   if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts?${params.toString()}`;
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams?${params.toString()}`;
   } else {
-    url = `/hackathons/${hackathonSlugOrId}/team-posts?${params.toString()}`;
+    url = `/hackathons/${hackathonSlugOrId}/teams?${params.toString()}`;
   }
 
   const res = await api.get(url);
