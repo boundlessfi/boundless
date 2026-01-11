@@ -1896,8 +1896,13 @@ export interface CreateTeamPostRequest {
   contactInfo: string;
 }
 
-export interface UpdateTeamPostRequest extends Partial<CreateTeamPostRequest> {
+export interface UpdateTeamPostRequest {
+  teamName?: string;
+  description?: string;
+  lookingFor?: string[];
   isOpen?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  contactInfo?: any;
 }
 
 export interface GetTeamPostsOptions {
@@ -2030,9 +2035,9 @@ export const getTeamPostDetails = async (
 ): Promise<GetTeamPostDetailsResponse> => {
   let url: string;
   if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams/${postId}`;
   } else {
-    url = `/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+    url = `/hackathons/${hackathonSlugOrId}/teams/${postId}`;
   }
 
   const res = await api.get(url);
@@ -2050,12 +2055,12 @@ export const updateTeamPost = async (
 ): Promise<UpdateTeamPostResponse> => {
   let url: string;
   if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams/${postId}`;
   } else {
-    url = `/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+    url = `/hackathons/${hackathonSlugOrId}/teams/${postId}`;
   }
 
-  const res = await api.put(url, data);
+  const res = await api.patch(url, data);
   return res.data;
 };
 

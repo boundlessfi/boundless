@@ -6,7 +6,6 @@ import {
   MessageCircle,
   Users,
   Edit,
-  X,
   Eye,
   ExternalLink,
   Pin,
@@ -28,6 +27,7 @@ interface TeamRecruitmentPostCardProps {
   onContactClick?: (post: TeamRecruitmentPost) => void;
   onEditClick?: (post: TeamRecruitmentPost) => void;
   onDeleteClick?: (post: TeamRecruitmentPost) => void;
+  onClick?: (post: TeamRecruitmentPost) => void;
   isMyPost?: boolean;
   onTrackContact?: (postId: string) => void;
   isPinned?: boolean;
@@ -60,34 +60,6 @@ const getContactMethodIcon = (
   return Mail;
 };
 
-const getContactMethodLabel = (
-  method?: TeamRecruitmentPost['contactMethod'],
-  contactInfo?: string
-) => {
-  if (method) {
-    switch (method) {
-      case 'email':
-        return 'Email';
-      case 'telegram':
-        return 'Telegram';
-      case 'discord':
-        return 'Discord';
-      case 'github':
-        return 'GitHub';
-      default:
-        return 'Contact';
-    }
-  }
-
-  // Infer from contact info
-  if (contactInfo?.includes('@') && !contactInfo.startsWith('@'))
-    return 'Email';
-  if (contactInfo?.includes('t.me/') || contactInfo?.startsWith('@'))
-    return 'Telegram';
-  if (contactInfo?.includes('github.com')) return 'GitHub';
-  return 'Contact';
-};
-
 const handleContact = (
   contactInfo: string,
   method?: TeamRecruitmentPost['contactMethod'],
@@ -98,8 +70,23 @@ const handleContact = (
     onTrackContact(postId);
   }
 
-  // Clean contact info (remove quotes if present)
-  const cleanContact = contactInfo.replace(/^"|"$/g, '');
+  let cleanContact = contactInfo;
+
+  // Try to parse as JSON if it looks like one
+  if (contactInfo.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(contactInfo);
+      if (parsed.value) {
+        cleanContact = parsed.value;
+      }
+    } catch {
+      // Ignore parse error
+    }
+  }
+
+  // Clean contact info
+  cleanContact = cleanContact.replace(/^"|"$/g, '');
+  cleanContact = cleanContact.replace(/\\"/g, '');
 
   // If method is provided, use it
   if (method) {
@@ -163,12 +150,39 @@ const handleContact = (
   }
 };
 
+const getTimeAgo = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return 'posted a few secs ago';
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60)
+    return `posted ${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `posted ${hours} hour${hours > 1 ? 's' : ''} ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `posted ${days} day${days > 1 ? 's' : ''} ago`;
+
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `posted ${weeks} week${weeks > 1 ? 's' : ''} ago`;
+
+  const months = Math.floor(days / 30);
+  if (months < 12) return `posted ${months} month${months > 1 ? 's' : ''} ago`;
+
+  const years = Math.floor(days / 365);
+  return `posted ${years} year${years > 1 ? 's' : ''} ago`;
+};
+
 export function TeamRecruitmentPostCard({
   post,
   onContactClick,
   onEditClick,
-  onDeleteClick,
-  isMyPost = false,
+  onClick,
+  isMyPost,
   onTrackContact,
   isPinned = false,
 }: TeamRecruitmentPostCardProps) {
@@ -177,35 +191,15 @@ export function TeamRecruitmentPostCard({
     post.contactInfo
   );
 
-  // ... (existing helper functions inside component)
-
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (seconds < 60) return 'posted a few secs ago';
-
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60)
-      return `posted ${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `posted ${hours} hour${hours > 1 ? 's' : ''} ago`;
-
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `posted ${days} day${days > 1 ? 's' : ''} ago`;
-
-    const weeks = Math.floor(days / 7);
-    if (weeks < 4) return `posted ${weeks} week${weeks > 1 ? 's' : ''} ago`;
-
-    const months = Math.floor(days / 30);
-    if (months < 12)
-      return `posted ${months} month${months > 1 ? 's' : ''} ago`;
-
-    const years = Math.floor(days / 365);
-    return `posted ${years} year${years > 1 ? 's' : ''} ago`;
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEditClick?.(post);
   };
+
+  // const handleDeleteClick = (e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  //   onDeleteClick?.(post);
+  // };
 
   const handleContactClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -222,28 +216,19 @@ export function TeamRecruitmentPostCard({
     }
   };
 
+  const handleCardClick = () => {
+    onClick?.(post);
+  };
+
   // Find leader
   const leader =
     post.members.find(m => m.role === 'leader' || m.userId === post.leaderId) ||
     post.members[0];
 
-  const handleEditClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onEditClick) {
-      onEditClick(post);
-    }
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onDeleteClick) {
-      onDeleteClick(post);
-    }
-  };
-
   return (
     <div
-      className={`group hover:border-primary/45 mx-auto w-full max-w-[397px] overflow-hidden rounded-lg border ${isPinned ? 'border-[#A7F950]/50 bg-[#030303] shadow-[0_0_15px_-5px_#A7F950]' : 'border-[#2B2B2B] bg-[#030303]'} p-4 transition-all sm:p-5`}
+      onClick={handleCardClick}
+      className={`group hover:border-primary/45 mx-auto w-full max-w-[397px] overflow-hidden rounded-lg border border-[#2B2B2B] bg-[#030303] p-4 transition-all sm:p-5 ${onClick ? 'cursor-pointer hover:border-[#A7F950]/50' : ''}`}
     >
       {isPinned && (
         <div className='mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#A7F950]'>
@@ -309,13 +294,13 @@ export function TeamRecruitmentPostCard({
                   <Edit className='mr-2 h-4 w-4' />
                   Edit Post
                 </DropdownMenuItem>
-                <DropdownMenuItem
+                {/* <DropdownMenuItem
                   onClick={handleDeleteClick}
                   className='cursor-pointer text-red-400 focus:bg-red-500/20 focus:text-red-400'
                 >
                   <X className='mr-2 h-4 w-4' />
                   Close Post
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -369,20 +354,21 @@ export function TeamRecruitmentPostCard({
       )}
 
       {/* Footer - Contact Button and Date */}
-      <div className='flex flex-col gap-3'>
-        <div className='flex items-center justify-between text-xs text-gray-400'>
-          <span>{getTimeAgo(post.createdAt)}</span>
+      <div className='mt-5 flex items-center justify-between gap-3 border-t border-[#2B2B2B] pt-4'>
+        <div className='flex flex-col'>
+          <span className='text-xs text-gray-500'>Posted</span>
+          <span className='text-xs font-medium text-gray-300'>
+            {getTimeAgo(post.createdAt)}
+          </span>
         </div>
 
         <Button
           onClick={handleContactClick}
-          className='flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#A7F950] text-base font-semibold text-black shadow-lg transition-all duration-200 hover:bg-[#8fd93f] hover:shadow-xl'
+          variant='ghost'
+          size='icon'
+          className='text-[#A7F950] hover:bg-[#A7F950]/10 hover:text-[#8fd93f]'
         >
-          <ContactIcon className='h-5 w-5' />
-          <span>
-            Contact via{' '}
-            {getContactMethodLabel(post.contactMethod, post.contactInfo)}
-          </span>
+          <ContactIcon className='h-6 w-6' />
         </Button>
       </div>
     </div>

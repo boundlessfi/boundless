@@ -198,17 +198,26 @@ export function CreateTeamPostModal({
         return;
       }
 
-      const payload = {
-        ...data,
-        lookingFor: data.lookingFor.map(r => r.role),
-        maxSize: data.maxSize,
-      };
-
       if (isEditMode && initialData) {
-        await updatePost(initialData.id, payload);
+        const updatePayload = {
+          teamName: data.teamName,
+          description: data.description,
+          lookingFor: data.lookingFor.map(r => r.role),
+          isOpen: data.lookingFor.length > 0,
+          contactInfo: {
+            method: data.contactMethod,
+            value: data.contactInfo,
+          },
+        };
+        await updatePost(initialData.id, updatePayload);
         toast.success('Team post updated successfully');
       } else {
-        await createPost(payload);
+        const createPayload = {
+          ...data,
+          lookingFor: data.lookingFor.map(r => r.role),
+          maxSize: data.maxSize,
+        };
+        await createPost(createPayload);
         toast.success('Team post created successfully');
       }
 

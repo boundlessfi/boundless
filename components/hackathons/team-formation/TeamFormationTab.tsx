@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { TeamRecruitmentPostCard } from './TeamRecruitmentPostCard';
 import { CreateTeamPostModal } from './CreateTeamPostModal';
+import { TeamDetailsSheet } from './TeamDetailsSheet';
 import { useTeamPosts } from '@/hooks/hackathon/use-team-posts';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useParams } from 'next/navigation';
@@ -61,6 +62,9 @@ export function TeamFormationTab({
     null
   );
   const [deletingPost, setDeletingPost] = useState<TeamRecruitmentPost | null>(
+    null
+  );
+  const [viewingPost, setViewingPost] = useState<TeamRecruitmentPost | null>(
     null
   );
   const [searchTerm, setSearchTerm] = useState('');
@@ -138,6 +142,10 @@ export function TeamFormationTab({
     trackContact(post.id);
   };
 
+  const handlePostClick = (post: TeamRecruitmentPost) => {
+    setViewingPost(post);
+  };
+
   const activePostsCount = posts.filter(p => p.isOpen).length;
 
   if (isLoading && posts.length === 0) {
@@ -179,7 +187,7 @@ export function TeamFormationTab({
             active
           </span>
         </div>
-        {isAuthenticated && hackathonId && (
+        {/* {isAuthenticated && hackathonId && (
           <Button
             onClick={() => {
               setEditingPost(null);
@@ -190,7 +198,7 @@ export function TeamFormationTab({
             <Plus className='mr-2 h-4 w-4' />
             Create Post
           </Button>
-        )}
+        )} */}
       </div>
 
       {/* Filters */}
@@ -298,6 +306,7 @@ export function TeamFormationTab({
               onContactClick={handleContactClick}
               onEditClick={handleEditClick}
               onDeleteClick={handleDeleteClick}
+              onClick={handlePostClick}
               onTrackContact={trackContact}
               isPinned={true}
             />
@@ -314,6 +323,7 @@ export function TeamFormationTab({
                 onContactClick={handleContactClick}
                 onEditClick={handleEditClick}
                 onDeleteClick={handleDeleteClick}
+                onClick={handlePostClick}
                 onTrackContact={trackContact}
               />
             ))}
@@ -358,6 +368,19 @@ export function TeamFormationTab({
           organizationId={organizationId}
           initialData={editingPost || undefined}
           onSuccess={handleCreateSuccess}
+        />
+      )}
+
+      {/* Team Details Sheet */}
+      {hackathonId && viewingPost && (
+        <TeamDetailsSheet
+          open={!!viewingPost}
+          onOpenChange={open => !open && setViewingPost(null)}
+          post={viewingPost}
+          hackathonSlugOrId={hackathonId}
+          organizationId={organizationId}
+          onEditClick={handleEditClick}
+          onContactClick={handleContactClick}
         />
       )}
 
