@@ -14,6 +14,7 @@ export function ProjectSidebar({
   project,
   crowdfund,
   isMobile = false,
+  hideProgress = false,
 }: ProjectSidebarProps) {
   const [isVoting, setIsVoting] = useState(false);
   const [userVote, setUserVote] = useState<1 | -1 | null>(null);
@@ -47,13 +48,15 @@ export function ProjectSidebar({
         </div>
       )}
 
-      <div className='rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 backdrop-blur-sm'>
-        <ProjectSidebarProgress
-          project={project}
-          crowdfund={crowdfund}
-          projectStatus={projectStatus}
-        />
-      </div>
+      {!hideProgress && (
+        <div className='rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 backdrop-blur-sm'>
+          <ProjectSidebarProgress
+            project={project}
+            crowdfund={crowdfund}
+            projectStatus={projectStatus}
+          />
+        </div>
+      )}
 
       <ProjectSidebarActions
         project={project}

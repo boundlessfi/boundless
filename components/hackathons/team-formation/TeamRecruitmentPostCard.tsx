@@ -265,8 +265,8 @@ export function TeamRecruitmentPostCard({
           <Badge
             className={`flex-shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
               post.isOpen
-                ? 'border-[#A7F950] bg-[#A7F950]/10 text-[#A7F950]'
-                : 'border-gray-500 bg-gray-500/10 text-gray-500'
+                ? 'border-[#A7F950] bg-[#E5FFE5] text-[#4E9E00]'
+                : 'border-[#FF5757] bg-[#FFEAEA] text-[#D33]'
             }`}
           >
             {post.isOpen ? 'Open' : 'Closed'}

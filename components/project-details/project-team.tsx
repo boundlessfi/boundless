@@ -24,9 +24,15 @@ export function ProjectTeam({ crowdfund }: ProjectTeamProps) {
 
     if (crowdfund.team && crowdfund.team.length > 0) {
       crowdfund.team.forEach(member => {
-        if (member.email !== crowdfund.project.creator.email) {
+        // Only filter out if email matches and is present, OR if id matches
+        const isCreator =
+          (member.email && member.email === crowdfund.project.creator.email) ||
+          (member.username &&
+            member.username === crowdfund.project.creator.username);
+
+        if (!isCreator) {
           members.push({
-            id: member.email,
+            id: member.email || member.username || Math.random().toString(),
             name: member.name,
             role: member.role === 'OWNER' ? 'OWNER' : 'MEMBER',
             avatar: member?.image,

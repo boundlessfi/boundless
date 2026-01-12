@@ -26,7 +26,13 @@ export function ProjectSidebarCreator({ project }: ProjectSidebarCreatorProps) {
           <p className='text-sm leading-tight font-medium text-white'>
             {creatorName}
           </p>
-          <p className='text-xs font-medium tracking-wide text-[#DBF936] uppercase'>
+          <p className='text-xs font-medium tracking-wide text-gray-400'>
+            @
+            {project.creator.username ||
+              project.creator.displayUsername ||
+              'username'}
+          </p>
+          <p className='mt-0.5 text-xs font-medium tracking-wide text-[#DBF936] uppercase'>
             {project.creator.role || 'CREATOR'}
           </p>
         </div>

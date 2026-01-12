@@ -18,16 +18,19 @@ import { Crowdfunding, CrowdfundingProject } from '@/types/project';
 export function ProjectLayout({
   project,
   crowdfund,
+  hiddenTabs = [],
+  hideProgress = false,
 }: {
   project: CrowdfundingProject;
   crowdfund: Crowdfunding;
+  hiddenTabs?: string[];
+  hideProgress?: boolean;
 }) {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('details'); // Start with about tab on mobile
   const [isLeftScrollable, setIsLeftScrollable] = useState(true);
   const [isRightScrollable, setIsRightScrollable] = useState(true);
   const tabsListRef = useRef<HTMLDivElement>(null);
-  console.log('Rendering ProjectLayout with project:', project);
   const handleScroll = () => {
     if (tabsListRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = tabsListRef.current;
@@ -98,6 +101,7 @@ export function ProjectLayout({
               project={project}
               crowdfund={crowdfund}
               isMobile={true}
+              hideProgress={hideProgress}
             />
           </div>
 
@@ -136,20 +140,22 @@ export function ProjectLayout({
                     { value: 'milestones', label: 'Milestones' },
                     { value: 'voters', label: 'Voters' },
                     { value: 'comments', label: 'Comments' },
-                  ].map(tab => (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className={cn(
-                        'relative rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
-                        'text-gray-400 hover:text-gray-300',
-                        'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
-                        'data-[state=active]:border data-[state=active]:border-[#a7f950]/30'
-                      )}
-                    >
-                      {tab.label}
-                    </TabsTrigger>
-                  ))}
+                  ]
+                    .filter(tab => !hiddenTabs.includes(tab.value))
+                    .map(tab => (
+                      <TabsTrigger
+                        key={tab.value}
+                        value={tab.value}
+                        className={cn(
+                          'relative rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
+                          'text-gray-400 hover:text-gray-300',
+                          'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
+                          'data-[state=active]:border data-[state=active]:border-[#a7f950]/30'
+                        )}
+                      >
+                        {tab.label}
+                      </TabsTrigger>
+                    ))}
                 </div>
               </TabsList>
             </Tabs>
@@ -198,6 +204,7 @@ export function ProjectLayout({
                 project={project}
                 crowdfund={crowdfund}
                 isMobile={false}
+                hideProgress={hideProgress}
               />
             </div>
           </div>
@@ -219,22 +226,24 @@ export function ProjectLayout({
                     { value: 'voters', label: 'Voters' },
                     { value: 'backers', label: 'Backers' },
                     { value: 'comments', label: 'Comments' },
-                  ].map(tab => (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className={cn(
-                        'relative rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200',
-                        'text-gray-400 hover:bg-gray-800/30 hover:text-gray-300',
-                        'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
-                        'data-[state=active]:border data-[state=active]:border-[#a7f950]/30',
-                        'focus-visible:ring-2 focus-visible:ring-[#a7f950]/20',
-                        'rounded-t-2xl rounded-b-none'
-                      )}
-                    >
-                      {tab.label}
-                    </TabsTrigger>
-                  ))}
+                  ]
+                    .filter(tab => !hiddenTabs.includes(tab.value))
+                    .map(tab => (
+                      <TabsTrigger
+                        key={tab.value}
+                        value={tab.value}
+                        className={cn(
+                          'relative rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200',
+                          'text-gray-400 hover:bg-gray-800/30 hover:text-gray-300',
+                          'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
+                          'data-[state=active]:border data-[state=active]:border-[#a7f950]/30',
+                          'focus-visible:ring-2 focus-visible:ring-[#a7f950]/20',
+                          'rounded-t-2xl rounded-b-none'
+                        )}
+                      >
+                        {tab.label}
+                      </TabsTrigger>
+                    ))}
                 </TabsList>
               </div>
 

@@ -7,6 +7,7 @@ import {
   Users,
   BarChartBig,
   Megaphone,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -204,6 +205,16 @@ export default function HackathonSidebar({
           ? `${basePath}/participants`
           : '#',
       description: 'Manage registrations',
+      disabled: hackathonId?.startsWith('draft-'),
+    },
+    {
+      icon: FileText,
+      label: 'Submissions',
+      href:
+        basePath !== '#' && !hackathonId?.startsWith('draft-')
+          ? `${basePath}/submissions`
+          : '#',
+      description: 'View all submissions',
       disabled: hackathonId?.startsWith('draft-'),
     },
     {

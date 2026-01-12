@@ -157,6 +157,67 @@ export interface HackathonResources {
   resources: HackathonResourceItem[];
 }
 
+export type SubmissionStatus =
+  | 'SUBMITTED'
+  | 'SHORTLISTED'
+  | 'DISQUALIFIED'
+  | 'WITHDRAWN';
+
+export interface HackathonSubmission {
+  id: string;
+  hackathonId: string;
+  organizationId: string;
+
+  projectId: string;
+  projectName: string;
+  project?: {
+    id: string;
+    title: string;
+    banner: string | null;
+    logo: string | null;
+  };
+
+  category: string | null;
+  description: string;
+  introduction: string;
+
+  logo: string | null;
+  videoUrl: string | null;
+
+  participationType: ParticipantType;
+  teamId: string | null;
+  teamName: string | null;
+  teamMembers: unknown[];
+
+  participantId: string;
+  participant: {
+    id: string;
+    name: string;
+    username: string;
+    image: string | null;
+  };
+
+  status: SubmissionStatus;
+  disqualificationReason: string | null;
+  rank: number | null;
+  comments: number;
+
+  links: Array<{
+    label: string;
+    url: string;
+  }>;
+
+  socialLinks: Record<string, string>;
+
+  submittedAt: string;
+  submissionDate: string;
+  registeredAt: string;
+  reviewedById: string | null;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Draft Data Structure
 export interface HackathonDraftData {
   information?: HackathonInformation;
@@ -1323,6 +1384,53 @@ export const getParticipants = async (
 };
 
 /**
+ * Get all submissions for a hackathon (organizer view)
+ */
+export const getHackathonSubmissions = async (
+  hackathonId: string,
+  page = 1,
+  limit = 10,
+  filters?: {
+    status?: 'SUBMITTED' | 'SHORTLISTED' | 'DISQUALIFIED' | 'WITHDRAWN';
+    type?: 'INDIVIDUAL' | 'TEAM';
+    search?: string;
+  }
+): Promise<
+  ApiResponse<{
+    submissions: ParticipantSubmission[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }>
+> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+
+  if (filters?.status) {
+    params.append('status', filters.status);
+  }
+
+  if (filters?.type) {
+    params.append('type', filters.type);
+  }
+
+  if (filters?.search) {
+    params.append('search', filters.search);
+  }
+
+  const res = await api.get(
+    `/hackathons/${hackathonId}/submissions?${params.toString()}`
+  );
+
+  return res.data;
+};
+
+/**
  * Register for a hackathon
  * Supports both slug-based (public) and organization/hackathon ID (authenticated) endpoints
  */
@@ -1420,6 +1528,17 @@ export const updateSubmission = async (
   // Backend uses /hackathons/submissions/:submissionId with PATCH
   const res = await api.patch(`/hackathons/submissions/${submissionId}`, data);
   return res.data;
+};
+
+export interface DeleteSubmissionResponse extends ApiResponse<null> {
+  success: true;
+  data: null;
+  message: string;
+}
+
+export const deleteSubmission = async (submissionId: string) => {
+  const res = await api.delete(`/hackathons/submissions/${submissionId}`);
+  return res.data as DeleteSubmissionResponse;
 };
 
 /**

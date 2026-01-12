@@ -20,8 +20,11 @@ export function ProjectSidebarHeader({
         return 'bg-warning-75 border-warning-600 text-warning-600';
       case 'idea':
         return 'bg-warning-75 border-warning-600 text-warning-600';
+      case 'pending':
+      case 'SUBMITTED':
+        return 'bg-gray-800 border-gray-700 text-white';
       default:
-        return '';
+        return 'text-white border-gray-700';
     }
   };
 

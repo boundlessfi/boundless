@@ -63,15 +63,30 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
           <Card className='overflow-hidden border border-gray-800/50 bg-gradient-to-br from-gray-900/50 to-gray-950/50 shadow-xl backdrop-blur-sm'>
             <CardContent className='p-0'>
               <div className='relative aspect-video overflow-hidden bg-black'>
-                <video
-                  className='h-full w-full object-cover'
-                  controls
-                  preload='metadata'
-                >
-                  <source src={project.demoVideo} type='video/mp4' />
-                  Your browser does not support the video tag.
-                </video>
-                <div className='pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent' />
+                {project.demoVideo.includes('youtube.com') ||
+                project.demoVideo.includes('youtu.be') ? (
+                  <iframe
+                    className='h-full w-full'
+                    src={project.demoVideo
+                      .replace('watch?v=', 'embed/')
+                      .replace('youtu.be/', 'youtube.com/embed/')}
+                    title='Project Demonstration'
+                    allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                    allowFullScreen
+                  />
+                ) : (
+                  <>
+                    <video
+                      className='h-full w-full object-cover'
+                      controls
+                      preload='metadata'
+                    >
+                      <source src={project.demoVideo} type='video/mp4' />
+                      Your browser does not support the video tag.
+                    </video>
+                    <div className='pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent' />
+                  </>
+                )}
               </div>
               <div className='border-t border-gray-800/50 bg-gray-900/30 p-4'>
                 <p className='text-center text-sm text-gray-400'>

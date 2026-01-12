@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, ChevronDown, Plus, Edit } from 'lucide-react';
+import { Search, ChevronDown, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,7 +17,18 @@ import { useSubmissions } from '@/hooks/hackathon/use-submissions';
 import { useSubmission } from '@/hooks/hackathon/use-submission';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useAuthStatus } from '@/hooks/use-auth';
-// import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Loader2 } from 'lucide-react';
 
 interface SubmissionTabProps {
   // hackathonSlugOrId?: string;
@@ -35,6 +46,7 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
   const { currentHackathon } = useHackathonData();
   const hackathonId = currentHackathon?.id || '';
   const orgId = organizationId || undefined;
+  const router = useRouter();
 
   const {
     submissions,
@@ -53,10 +65,15 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
     string | null
   >(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [submissionToDelete, setSubmissionToDelete] = useState<string | null>(
+    null
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     submission: mySubmission,
     isFetching: isLoadingMySubmission,
     fetchMySubmission,
+    remove: removeSubmission,
   } = useSubmission({
     hackathonSlugOrId: hackathonId,
     organizationId: orgId,
@@ -65,8 +82,7 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
 
   const handleViewSubmission = (submissionId?: string) => {
     if (submissionId) {
-      setSelectedSubmissionId(submissionId);
-      setShowDetailModal(true);
+      router.push(`/projects/${submissionId}?type=submission`);
     }
   };
 
@@ -84,6 +100,23 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
     }
   };
 
+  const handleDeleteClick = (submissionId: string) => {
+    setSubmissionToDelete(submissionId);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (submissionToDelete) {
+      setIsDeleting(true);
+      try {
+        await removeSubmission(submissionToDelete);
+        setSubmissionToDelete(null);
+      } catch (error) {
+        console.error('Failed to delete submission:', error);
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
   return (
     <div className='w-full'>
       {/* Stats Section */}
@@ -114,70 +147,7 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
         )} */}
       </div>
 
-      {/* My Submission Section */}
-      {isAuthenticated && hackathonId && isRegistered && (
-        <div className='mb-6'>
-          {isLoadingMySubmission ? (
-            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center'>
-              <p className='text-gray-400'>Loading your submission...</p>
-            </div>
-          ) : mySubmission ? (
-            <div className='mb-6 rounded-lg border border-[#a7f950]/30 bg-gray-800/50 p-4'>
-              <div className='mb-2 flex items-center justify-between'>
-                <h3 className='text-lg font-semibold text-white'>
-                  Your Submission
-                </h3>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => setShowCreateModal(true)}
-                  className='border-gray-700 text-white hover:bg-gray-800'
-                >
-                  <Edit className='mr-2 h-4 w-4' />
-                  Edit
-                </Button>
-              </div>
-              <SubmissionCard
-                title={mySubmission.projectName}
-                description={mySubmission.description}
-                submitterName='You'
-                category={mySubmission.category}
-                status={
-                  mySubmission.status === 'submitted' ? 'Pending' : 'Approved'
-                }
-                upvotes={
-                  typeof mySubmission.votes === 'number'
-                    ? mySubmission.votes
-                    : 0
-                }
-                comments={
-                  typeof mySubmission.comments === 'number'
-                    ? mySubmission.comments
-                    : 0
-                }
-                submittedDate={mySubmission.submissionDate}
-                image={mySubmission.logo || '/placeholder.svg'}
-                onViewClick={() => setShowCreateModal(true)}
-                onUpvoteClick={() => {}}
-                onCommentClick={() => {}}
-              />
-            </div>
-          ) : (
-            <div className='mb-6 rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center'>
-              <p className='mb-4 text-gray-400'>
-                You haven't submitted a project yet.
-              </p>
-              <Button
-                onClick={() => setShowCreateModal(true)}
-                className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
-              >
-                <Plus className='mr-2 h-4 w-4' />
-                Create Your Submission
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      {/* My Submission Section Removed - Integrated into Grid */}
 
       {/* Filters */}
       <div className='mb-8 flex flex-col items-start gap-4 md:flex-row md:items-center'>
@@ -250,11 +220,66 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
         </div>
       </div>
 
+      {/* Submissions Grid with Create Button if no submission */}
+      {!isLoadingMySubmission &&
+        !mySubmission &&
+        isAuthenticated &&
+        isRegistered && (
+          <div className='mb-8 rounded-lg border border-dashed border-gray-700 bg-gray-800/20 p-8 text-center'>
+            <p className='mb-4 text-gray-400'>
+              You haven't submitted a project yet.
+            </p>
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
+            >
+              <Plus className='mr-2 h-4 w-4' />
+              Create Your Submission
+            </Button>
+          </div>
+        )}
+
       {/* Submissions Grid */}
-      {submissions.length > 0 ? (
+      {submissions.length > 0 || mySubmission ? (
         <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
+          {/* Pinned User Submission */}
+          {mySubmission && (
+            <SubmissionCard
+              key='my-submission'
+              title={mySubmission.projectName}
+              description={mySubmission.description}
+              submitterName='You'
+              category={mySubmission.category}
+              status={
+                mySubmission.status === 'submitted' ? 'Pending' : 'Approved'
+              }
+              upvotes={
+                typeof mySubmission.votes === 'number' ? mySubmission.votes : 0
+              }
+              comments={
+                typeof mySubmission.comments === 'number'
+                  ? mySubmission.comments
+                  : 0
+              }
+              submittedDate={mySubmission.submissionDate}
+              image={mySubmission.logo || '/placeholder.svg'}
+              isPinned={true}
+              isMySubmission={true}
+              onViewClick={() => handleViewSubmission(mySubmission.id)}
+              onEditClick={() => setShowCreateModal(true)}
+              onDeleteClick={() => handleDeleteClick(mySubmission.id)}
+              onUpvoteClick={() => {}}
+              onCommentClick={() => {}}
+            />
+          )}
+
           {submissions
-            .filter(submission => submission.status === 'Approved')
+            .filter(
+              submission =>
+                // Filter out approved submissions, and optionally filter out my own submission if it's already shown as pinned
+                submission.status === 'Approved' &&
+                (mySubmission ? submission._id !== mySubmission.id : true)
+            )
             .map((submission, index) => (
               <SubmissionCard
                 key={submission._id || index}
@@ -265,14 +290,12 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
                 }
                 onUpvoteClick={() => {
                   if (!isAuthenticated) {
-                    // Authentication check is handled in the hook, but we can show a message
                     return;
                   }
                   handleUpvoteSubmission((submission as { _id?: string })?._id);
                 }}
                 onCommentClick={() => {
                   if (!isAuthenticated) {
-                    // Authentication check is handled in the hook, but we can show a message
                     return;
                   }
                   handleCommentSubmission(
@@ -334,6 +357,44 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
           )}
         </>
       )}
+
+      <AlertDialog
+        open={!!submissionToDelete}
+        onOpenChange={open => {
+          if (!open) {
+            setSubmissionToDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent className='border-gray-800 bg-[#030303] text-white'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Submission</AlertDialogTitle>
+            <AlertDialogDescription className='text-gray-400'>
+              Are you sure you want to delete this submission? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className='border-gray-700 text-white hover:bg-gray-800'>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className='bg-red-600 text-white hover:bg-red-700 disabled:opacity-50'
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

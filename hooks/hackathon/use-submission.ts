@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   createSubmission,
   updateSubmission,
+  deleteSubmission,
   getMySubmission,
   type CreateSubmissionRequest,
   type ParticipantSubmission,
@@ -149,6 +150,34 @@ export function useSubmission({
     [hackathonSlugOrId, isAuthenticated]
   );
 
+  const remove = useCallback(
+    async (submissionId: string) => {
+      if (!isAuthenticated || !hackathonSlugOrId) {
+        toast.error('Unable to delete submission');
+        return;
+      }
+
+      setIsSubmitting(true);
+      setError(null);
+
+      try {
+        await deleteSubmission(submissionId);
+        setSubmission(null);
+        toast.success('Submission deleted successfully');
+        return true;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to delete submission';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        throw err;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [hackathonSlugOrId, isAuthenticated]
+  );
+
   // Auto-fetch submission on mount and when dependencies change
   useEffect(() => {
     if (autoFetch && isAuthenticated && hackathonSlugOrId) {
@@ -165,6 +194,7 @@ export function useSubmission({
     error,
     create,
     update,
+    remove,
     fetchMySubmission,
     hasSubmission: !!submission,
   };

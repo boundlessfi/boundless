@@ -1,11 +1,26 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowUp, ThumbsUp, MessageCircle } from 'lucide-react';
+import {
+  ArrowUp,
+  ThumbsUp,
+  MessageCircle,
+  Pin,
+  MoreHorizontal,
+  Edit,
+  Trash,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BoundlessButton } from '@/components/buttons';
 import Image from 'next/image';
+import { formatDistanceToNow } from 'date-fns';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface SubmissionCardProps {
   title: string;
@@ -26,7 +41,11 @@ interface SubmissionCardProps {
   onViewClick?: () => void;
   onUpvoteClick?: () => void;
   onCommentClick?: () => void;
+  onEditClick?: () => void;
+  onDeleteClick?: () => void;
   hasUserUpvoted?: boolean;
+  isPinned?: boolean;
+  isMySubmission?: boolean;
 }
 
 const SubmissionCard = ({
@@ -45,7 +64,11 @@ const SubmissionCard = ({
   onViewClick,
   onUpvoteClick,
   onCommentClick,
+  onEditClick,
+  onDeleteClick,
   hasUserUpvoted = false,
+  isPinned = false,
+  isMySubmission = false,
 }: SubmissionCardProps) => {
   const [isVoting, setIsVoting] = useState(false);
   const [userVote, setUserVote] = useState(hasUserUpvoted ? 1 : 0);
@@ -81,75 +104,93 @@ const SubmissionCard = ({
     onCommentClick?.();
   };
 
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEditClick?.();
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDeleteClick?.();
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Recently';
-
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   };
 
   return (
     <div
       onClick={onViewClick}
-      className='group hover:border-primary/45 mx-auto w-full max-w-[397px] cursor-pointer overflow-hidden rounded-lg border border-[#2B2B2B] bg-[#030303] p-4 transition-all sm:p-5'
+      className={`group hover:border-primary/45 mx-auto w-full max-w-[397px] cursor-pointer overflow-hidden rounded-lg border border-[#2B2B2B] bg-[#030303] p-4 transition-all sm:p-5 ${onViewClick ? 'hover:border-[#A7F950]/50' : ''}`}
     >
+      {isPinned && (
+        <div className='mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#A7F950]'>
+          <Pin className='h-3.5 w-3.5 fill-[#A7F950]' />
+          <span>Your Submission</span>
+        </div>
+      )}
+
       {/* Header with Avatar and Status */}
       <div className='mb-3 flex items-center justify-between sm:mb-4'>
         <div className='flex items-center gap-2'>
           <div
             style={{ backgroundImage: `url(${submitterAvatar})` }}
-            className='size-6 rounded-full bg-white bg-cover bg-center'
+            className={`size-8 rounded-full border-2 bg-white bg-cover bg-center ${isPinned ? 'border-[#A7F950]' : 'border-[#2B2B2B]'}`}
           ></div>
-          <h4 className='text-sm font-normal text-gray-500'>{submitterName}</h4>
+          <div className='flex flex-col'>
+            <h4 className='text-sm font-medium text-white'>{submitterName}</h4>
+            {/* We can add username here if we had it available in props */}
+          </div>
         </div>
-        {/* <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className='group/avatar inline-flex cursor-pointer items-center gap-2'>
-                <div className='relative flex-shrink-0'>
-                  <Avatar className='h-10 w-10 border-2 border-[#2B2B2B] transition-all duration-300 group-hover/avatar:scale-110 group-hover/avatar:border-[#A7F950] sm:h-12 sm:w-12'>
-                    <AvatarImage
-                      src={submitterAvatar}
-                      alt={submitterName}
-                      className='object-cover'
-                    />
-                    <AvatarFallback className='bg-gray-700 text-white'>
-                      {submitterName.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-                <span className='max-w-24 truncate text-xs font-medium text-gray-300 transition-colors group-hover/avatar:text-[#A7F950] sm:max-w-none sm:text-sm'>
-                  {submitterName}
-                </span>
-              </div>
-            </TooltipTrigger>
-          </Tooltip>
-        </TooltipProvider> */}
 
-        <Badge
-          className={`flex-shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
-            status === 'Approved'
-              ? 'border-[#A7F950] bg-[#E5FFE5] text-[#4E9E00]'
-              : status === 'Rejected'
-                ? 'border-[#FF5757] bg-[#FFEAEA] text-[#D33]'
-                : 'border-[#645D5D] bg-[#E4DBDB] text-[#645D5D]'
-          }`}
-        >
-          {status}
-        </Badge>
+        <div className='flex items-center gap-2'>
+          <Badge
+            className={`flex-shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
+              status === 'Approved'
+                ? 'border-[#A7F950] bg-[#E5FFE5] text-[#4E9E00]'
+                : status === 'Rejected'
+                  ? 'border-[#FF5757] bg-[#FFEAEA] text-[#D33]'
+                  : 'border-[#645D5D] bg-[#E4DBDB] text-[#645D5D]'
+            }`}
+          >
+            {status}
+          </Badge>
+
+          {isMySubmission && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  className='h-8 w-8 p-0 text-gray-400 hover:text-white'
+                  onClick={e => e.stopPropagation()}
+                >
+                  <MoreHorizontal className='h-4 w-4' />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align='end'
+                className='border-gray-800 bg-black text-white'
+              >
+                <DropdownMenuItem
+                  onClick={handleEditClick}
+                  className='cursor-pointer text-gray-300 focus:bg-gray-800 focus:text-white'
+                >
+                  <Edit className='mr-2 h-4 w-4' />
+                  Edit Submission
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleDeleteClick}
+                  className='cursor-pointer text-red-500 focus:bg-red-900/20 focus:text-red-400'
+                >
+                  <Trash className='mr-2 h-4 w-4' />
+                  Delete Submission
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {/* Categories */}
