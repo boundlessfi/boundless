@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  ArrowUp,
   ThumbsUp,
   MessageCircle,
   Pin,
@@ -10,11 +9,13 @@ import {
   Edit,
   Trash,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BoundlessButton } from '@/components/buttons';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
+import { useSubmissionVote } from '@/hooks/hackathon/use-submission-vote';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,6 +62,7 @@ const SubmissionCard = ({
   comments = 0,
   submittedDate,
   image = '/placeholder.svg',
+  submissionId,
   onViewClick,
   onUpvoteClick,
   onCommentClick,
@@ -70,37 +72,40 @@ const SubmissionCard = ({
   isPinned = false,
   isMySubmission = false,
 }: SubmissionCardProps) => {
-  const [isVoting, setIsVoting] = useState(false);
-  const [userVote, setUserVote] = useState(hasUserUpvoted ? 1 : 0);
-  const [currentUpvotes, setCurrentUpvotes] = useState(
-    votes?.current || upvotes
-  );
+  const router = useRouter();
+
+  // Use custom hook for vote management
+  const {
+    voteCount,
+    hasVoted,
+    isLoading: isVoting,
+    toggleVote,
+  } = useSubmissionVote(submissionId || '');
+
+  // Use hook data if submissionId is provided, otherwise fall back to props
+  const currentUpvotes = submissionId ? voteCount : votes?.current || upvotes;
+  const userHasVoted = submissionId ? hasVoted : hasUserUpvoted;
 
   // Combine category and categories
   const allCategories = category ? [category, ...categories] : categories;
 
   const handleUpvote = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isVoting) return;
+    if (isVoting || !submissionId) return;
 
-    setIsVoting(true);
-
-    if (userVote === 1) {
-      setUserVote(0);
-      setCurrentUpvotes(prev => prev - 1);
-    } else {
-      setUserVote(1);
-      setCurrentUpvotes(prev => prev + 1);
+    try {
+      await toggleVote();
+      onUpvoteClick?.();
+    } catch (error) {
+      console.error('Error voting:', error);
     }
-
-    await new Promise(resolve => setTimeout(resolve, 300));
-    setIsVoting(false);
-
-    onUpvoteClick?.();
   };
 
   const handleCommentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (submissionId) {
+      router.push(`/projects/${submissionId}?type=submission&tab=comments`);
+    }
     onCommentClick?.();
   };
 
@@ -244,18 +249,17 @@ const SubmissionCard = ({
             onClick={handleUpvote}
             disabled={isVoting}
             className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-lg text-base font-semibold shadow-lg transition-all duration-200 hover:shadow-xl ${
-              userVote === 1
+              userHasVoted
                 ? 'border-primary/20 bg-primary/10 text-primary border'
                 : 'bg-[#A7F950] text-black hover:bg-[#A7F950]'
             }`}
           >
-            {userVote === 1 ? (
-              <ThumbsUp className='h-5 w-5' fill='currentColor' />
-            ) : (
-              <ArrowUp className='h-5 w-5' />
-            )}
+            <ThumbsUp
+              className='h-5 w-5'
+              fill={userHasVoted ? 'currentColor' : 'none'}
+            />
             <span>
-              {isVoting ? 'Voting...' : userVote === 1 ? 'Upvoted' : 'Upvote'}
+              {isVoting ? 'Voting...' : userHasVoted ? 'Upvoted' : 'Upvote'}
             </span>
             <span className='ml-1 text-sm font-bold'>{currentUpvotes}</span>
           </BoundlessButton>

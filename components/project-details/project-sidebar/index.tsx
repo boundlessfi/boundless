@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ProjectSidebarHeader } from './ProjectSidebarHeader';
 import { ProjectSidebarProgress } from './ProjectSidebarProgress';
 import { ProjectSidebarActions } from './ProjectSidebarActions';
 import { ProjectSidebarCreator } from './ProjectSidebarCreator';
 import { ProjectSidebarLinks } from './ProjectSidebarLinks';
-import { voteProject } from '@/lib/api/project';
+import { createVote, deleteVote } from '@/lib/api/votes';
+import { VoteEntityType, VoteType } from '@/types/votes';
 import { getProjectStatus } from './utils';
 import { ProjectSidebarProps } from './types';
 
@@ -16,6 +18,12 @@ export function ProjectSidebar({
   isMobile = false,
   hideProgress = false,
 }: ProjectSidebarProps) {
+  const searchParams = useSearchParams();
+  const isSubmission = searchParams.get('type') === 'submission';
+  const entityType = isSubmission
+    ? VoteEntityType.HACKATHON_SUBMISSION
+    : VoteEntityType.CROWDFUNDING_CAMPAIGN;
+
   const [isVoting, setIsVoting] = useState(false);
   const [userVote, setUserVote] = useState<1 | -1 | null>(null);
 
@@ -26,8 +34,19 @@ export function ProjectSidebar({
 
     setIsVoting(true);
     try {
-      await voteProject(project.id, value);
-      setUserVote(value);
+      if (userVote === value) {
+        // Remove vote if clicking the same vote
+        await deleteVote(project.id, entityType);
+        setUserVote(null);
+      } else {
+        // Add/update vote
+        await createVote({
+          projectId: project.id,
+          entityType: entityType,
+          voteType: value === 1 ? VoteType.UPVOTE : VoteType.DOWNVOTE,
+        });
+        setUserVote(value);
+      }
     } catch {
       // Handle error silently or show user-friendly message
       // You can add toast notifications here if needed

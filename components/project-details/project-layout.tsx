@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectDetails } from './project-details';
 import { ProjectAbout } from './project-about';
@@ -27,7 +28,9 @@ export function ProjectLayout({
   hideProgress?: boolean;
 }) {
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState('details'); // Start with about tab on mobile
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'details';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [isLeftScrollable, setIsLeftScrollable] = useState(true);
   const [isRightScrollable, setIsRightScrollable] = useState(true);
   const tabsListRef = useRef<HTMLDivElement>(null);
