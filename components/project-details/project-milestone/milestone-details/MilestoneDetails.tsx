@@ -3,18 +3,16 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMarkdown } from '@/hooks/use-markdown';
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject, Milestone } from '@/types/project';
+import TaskList from './TaskList';
 
 interface MilestoneDetailsProps {
   milestoneId: string;
   project?: CrowdfundingProject | null;
-  milestone?: {
+  milestone?: Milestone & {
     _id: string;
-    title: string;
-    description: string;
-    status: string;
-    dueDate: string;
-    amount: number;
+    title?: string;
+    dueDate?: string;
   };
 }
 
@@ -65,6 +63,13 @@ const MilestoneDetails = ({
           styledContent
         )}
       </div>
+
+      {/* Tasks & Deliverables */}
+      {milestone && (milestone.tasks || milestone.deliverables) && (
+        <section>
+          <TaskList tasks={milestone.tasks} deliverables={milestone.deliverables} />
+        </section>
+      )}
 
       {/* Video Media Showcase */}
       {project?.demoVideo && (

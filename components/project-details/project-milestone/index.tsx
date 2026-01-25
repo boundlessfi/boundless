@@ -91,6 +91,22 @@ const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
 
       const mappedStatus = mapStatus(milestone.status);
 
+      // Calculate task progress
+      const taskProgress =
+        milestone.tasks && milestone.tasks.length > 0
+          ? {
+              completed: milestone.tasks.filter(
+                task => task.status === 'completed'
+              ).length,
+              total: milestone.tasks.length,
+            }
+          : milestone.deliverables && milestone.deliverables.length > 0
+            ? {
+                completed: 0, // Legacy deliverables don't have status
+                total: milestone.deliverables.length,
+              }
+            : undefined;
+
       return {
         id: milestone.name,
         title: milestone.name,
@@ -99,6 +115,7 @@ const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
         amount: milestone.amount,
         percentage,
         status: mappedStatus,
+        taskProgress,
         ...(milestone.status === 'in-review' && { feedbackDays: 3 }),
         ...(milestone.status === 'rejected' && { deadline: dueDate }),
         ...(milestone.status === 'approved' && { isUnlocked: true }),

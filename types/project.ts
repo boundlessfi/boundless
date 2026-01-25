@@ -1,4 +1,6 @@
 // Crowdfunding types
+import { Task } from './milestone';
+
 export interface Contributor {
   date: string;
   amount: number;
@@ -35,6 +37,8 @@ export interface Milestone {
   endDate: string;
   startDate: string;
   description: string;
+  deliverables?: string[]; // Legacy field for backward compatibility
+  tasks?: Task[];
 }
 
 export interface User {

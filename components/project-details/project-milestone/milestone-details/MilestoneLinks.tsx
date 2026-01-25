@@ -2,17 +2,14 @@ import React from 'react';
 import Link from 'next/link';
 import { Github } from 'lucide-react';
 import Image from 'next/image';
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject, Milestone } from '@/types/project';
 
 interface MilestoneLinksProps {
   project?: CrowdfundingProject | null;
-  milestone?: {
+  milestone?: Milestone & {
     _id: string;
-    title: string;
-    description: string;
-    status: string;
-    dueDate: string;
-    amount: number;
+    title?: string;
+    dueDate?: string;
   };
 }
 

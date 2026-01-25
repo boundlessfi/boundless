@@ -20,6 +20,10 @@ export interface TimelineItem {
   deadline?: string;
   feedbackDays?: number;
   isUnlocked?: boolean;
+  taskProgress?: {
+    completed: number;
+    total: number;
+  };
 }
 
 export interface TimelineProps {

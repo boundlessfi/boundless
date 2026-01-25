@@ -4,13 +4,25 @@ import MilestoneDetails from '@/components/project-details/project-milestone/mil
 import MilestoneLinks from '@/components/project-details/project-milestone/milestone-details/MilestoneLinks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getCrowdfundingProject } from '@/lib/api/project';
-import { Crowdfunding } from '@/types/project';
+import { Crowdfunding, Milestone } from '@/types/project';
 
 interface MilestonePageProps {
   params: Promise<{
     id: string; // Project ID
     milestoneId: string; // Milestone ID
   }>;
+}
+
+// Helper function to transform milestone data for the component
+function transformMilestoneForDisplay(
+  foundMilestone: Milestone
+): Milestone & { _id: string; title?: string; dueDate?: string } {
+  return {
+    ...foundMilestone,
+    _id: foundMilestone.id || foundMilestone.name,
+    title: foundMilestone.name,
+    dueDate: foundMilestone.endDate,
+  };
 }
 
 const MilestonePage = async ({ params }: MilestonePageProps) => {
@@ -30,16 +42,7 @@ const MilestonePage = async ({ params }: MilestonePageProps) => {
     );
 
     // Transform milestone to match component expectations
-    milestone = foundMilestone
-      ? {
-          _id: foundMilestone.id || foundMilestone.name,
-          title: foundMilestone.name,
-          description: foundMilestone.description,
-          status: foundMilestone.status,
-          dueDate: foundMilestone.endDate,
-          amount: foundMilestone.amount,
-        }
-      : null;
+    milestone = foundMilestone ? transformMilestoneForDisplay(foundMilestone) : null;
   } catch {
     // Handle error silently
   }

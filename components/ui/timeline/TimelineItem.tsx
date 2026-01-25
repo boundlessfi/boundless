@@ -66,6 +66,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
           isUnlocked={item.isUnlocked}
           onClick={handleMilestoneClick}
           isClickable={isClickable}
+          taskProgress={item.taskProgress}
         />
       </div>
     </li>

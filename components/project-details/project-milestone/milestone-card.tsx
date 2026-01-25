@@ -24,6 +24,10 @@ interface MilestoneCardProps {
   isUnlocked?: boolean;
   onClick?: () => void;
   isClickable?: boolean;
+  taskProgress?: {
+    completed: number;
+    total: number;
+  };
 }
 
 //status badge colors
@@ -60,6 +64,7 @@ const MilestoneCard = ({
   feedbackDays,
   onClick,
   isClickable = false,
+  taskProgress,
 }: MilestoneCardProps) => {
   // Generate dynamic header text based on status
   const getHeaderText = () => {
@@ -126,6 +131,24 @@ const MilestoneCard = ({
           </Badge>
         </div>
         <p className='text-sm leading-relaxed text-gray-400'>{description}</p>
+        
+        {/* Task Progress */}
+        {taskProgress && taskProgress.total > 0 && (
+          <div className='flex w-full items-center gap-2'>
+            <div className='h-1.5 flex-1 overflow-hidden rounded-full bg-gray-800'>
+              <div
+                className='h-full bg-green-500 transition-all duration-300'
+                style={{
+                  width: `${(taskProgress.completed / taskProgress.total) * 100}%`,
+                }}
+              />
+            </div>
+            <span className='text-xs text-gray-500'>
+              {taskProgress.completed}/{taskProgress.total} tasks
+            </span>
+          </div>
+        )}
+        
         <div className='flex items-center justify-start gap-2 text-gray-400'>
           <span>
             <svg

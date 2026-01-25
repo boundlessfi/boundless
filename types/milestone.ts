@@ -1,3 +1,15 @@
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'todo' | 'in_progress' | 'completed';
+  priority?: 'low' | 'medium' | 'high';
+  assignee?: string;
+  dueDate?: string;
+  completedAt?: string;
+  order: number;
+}
+
 export interface Milestone {
   id: string;
   title: string;
@@ -7,7 +19,8 @@ export interface Milestone {
   endDate: string;
   budget: number;
   currency: string;
-  deliverables: string[];
+  deliverables?: string[]; // Legacy field, kept for backward compatibility
+  tasks?: Task[]; // New structured task list
   demoVideo?: string;
   attachments?: Array<{
     name: string;
@@ -29,3 +42,7 @@ export type MilestoneStatus =
   | 'in_progress'
   | 'completed'
   | 'cancelled';
+
+export type TaskStatus = 'todo' | 'in_progress' | 'completed';
+
+export type TaskPriority = 'low' | 'medium' | 'high';
