@@ -232,7 +232,7 @@ export function CreateTeamPostModal({
 
   return (
     <BoundlessSheet open={open} setOpen={onOpenChange}>
-      <div className='flex h-full flex-col bg-[#030303] text-white'>
+      <div className='flex-colbg-background-main-bg flex h-full text-white'>
         <div className='border-b border-gray-800 p-6'>
           <h2 className='text-2xl font-bold'>
             {isEditMode ? 'Edit Team Post' : 'Create Team Post'}

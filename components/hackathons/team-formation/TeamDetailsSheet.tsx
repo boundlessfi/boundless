@@ -192,7 +192,7 @@ export function TeamDetailsSheet({
 
   return (
     <BoundlessSheet open={open} setOpen={onOpenChange}>
-      <div className='flex h-full flex-col bg-[#030303] text-white'>
+      <div className='bg-background-main-bg flex h-full flex-col text-white'>
         <ScrollArea className='flex-1'>
           <div className='p-6'>
             {/* Header */}

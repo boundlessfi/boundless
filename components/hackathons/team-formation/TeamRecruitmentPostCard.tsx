@@ -228,7 +228,7 @@ export function TeamRecruitmentPostCard({
   return (
     <div
       onClick={handleCardClick}
-      className={`group hover:border-primary/45 mx-auto w-full max-w-[397px] overflow-hidden rounded-lg border border-[#2B2B2B] bg-[#030303] p-4 transition-all sm:p-5 ${onClick ? 'cursor-pointer hover:border-[#A7F950]/50' : ''}`}
+      className={`group hover:border-primary/45 bg-background-main-bg mx-auto w-full max-w-[397px] overflow-hidden rounded-lg border border-[#2B2B2B] p-4 transition-all sm:p-5 ${onClick ? 'cursor-pointer hover:border-[#A7F950]/50' : ''}`}
     >
       {isPinned && (
         <div className='mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#A7F950]'>
@@ -263,7 +263,7 @@ export function TeamRecruitmentPostCard({
 
         <div className='flex items-center gap-2'>
           <Badge
-            className={`flex-shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
+            className={`shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
               post.isOpen
                 ? 'border-[#A7F950] bg-[#E5FFE5] text-[#4E9E00]'
                 : 'border-[#FF5757] bg-[#FFEAEA] text-[#D33]'
