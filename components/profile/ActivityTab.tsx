@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/chart';
 import { Line, LineChart, XAxis } from 'recharts';
 import { TrendingUp, Award, Zap, DollarSign } from 'lucide-react';
-import { PublicUserProfile } from '@/types/project';
+import { PublicUserProfile } from '@/features/projects/types';
 
 interface ActivityTabProps {
   user: PublicUserProfile;

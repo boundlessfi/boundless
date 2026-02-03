@@ -9,7 +9,7 @@ import { useHackathonsList } from '@/hooks/hackathon/use-hackathons-list';
 import { useHackathonTransform } from '@/hooks/hackathon/use-hackathon-transform';
 import { BoundlessButton } from '../buttons';
 import { ArrowDownIcon, XIcon } from 'lucide-react';
-import LoadingScreen from '../landing-page/project/CreateProjectModal/LoadingScreen';
+import LoadingScreen from '@/features/projects/components/CreateProjectModal/LoadingScreen';
 
 interface HackathonsPageProps {
   className?: string;

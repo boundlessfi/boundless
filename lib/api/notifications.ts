@@ -14,30 +14,27 @@ export const getNotifications = async (
   page: number = 1,
   limit: number = 10
 ): Promise<NotificationsResponse> => {
-  console.log('getNotifications', page, limit);
-  // const params = new URLSearchParams({
-  //   page: page.toString(),
-  //   limit: limit.toString(),
-  // });
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
 
-  // const res = await api.get<NotificationsResponse>(
-  //   `/notifications?${params.toString()}`
-  // );
+  const res = await api.get<{ data: NotificationsResponse }>(
+    `/notifications?${params.toString()}`
+  );
 
-  // // Backend returns { data, total, page, limit } directly
-  // // The api.get wrapper returns ApiResponse<T>, so res.data is the actual response
-  // if (res.data && 'data' in res.data) {
-  //   return res.data as NotificationsResponse;
-  // }
+  // Backend returns { success, message, data: { notifications: [], ... } }
+  if (res.data && res.data.data) {
+    return res.data.data;
+  }
 
-  // // Fallback: if the response structure is different, return as-is
-  // return res.data as NotificationsResponse;
+  // Fallback
   return {
-    data: [],
+    notifications: [],
     total: 0,
-    page: 1,
-    limit: 10,
-  } as NotificationsResponse;
+    limit,
+    offset: 0,
+  };
 };
 
 /**

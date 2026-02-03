@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { UseNotificationsReturn } from './use-notifications';
+import type { UseNotificationsReturn } from './useNotifications';
 
 interface UseNotificationPollingOptions {
   interval?: number;

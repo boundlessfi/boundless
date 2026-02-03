@@ -2,7 +2,8 @@ import api from './api';
 import { ApiResponse } from '@/lib/api/types';
 import { authClient } from '@/lib/auth-client';
 import { User } from '@/types/user';
-import { PublicUserProfile } from '@/types/project';
+import { PublicUserProfile } from '@/features/projects/types';
+import { GetMeResponse } from '@/lib/api/types';
 
 /**
  * Get current user profile from backend API
@@ -11,11 +12,9 @@ import { PublicUserProfile } from '@/types/project';
  * For client-side usage, cookies are automatically sent via withCredentials
  * For server-side usage, use getMeServer() from '@/lib/api/auth-server' instead
  */
-export const getMe = async (): Promise<User> => {
-  console.trace('getMe called from:');
-
-  const res = await api.get<ApiResponse<User>>('/users/me');
-  return res.data.data as User;
+export const getMe = async (): Promise<GetMeResponse> => {
+  const res = await api.get<ApiResponse<GetMeResponse>>('/users/me');
+  return res.data.data as GetMeResponse;
 };
 
 /**

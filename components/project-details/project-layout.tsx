@@ -14,7 +14,8 @@ import ProjectVoters from './project-voters';
 import ProjectBackers from './project-backers';
 import { ProjectSidebar } from './project-sidebar';
 import { cn } from '@/lib/utils';
-import { Crowdfunding, CrowdfundingProject } from '@/types/project';
+import { Crowdfunding, CrowdfundingProject } from '@/features/projects/types';
+import { getProjectStatus } from './project-sidebar/utils';
 
 export function ProjectLayout({
   project,
@@ -34,6 +35,36 @@ export function ProjectLayout({
   const [isLeftScrollable, setIsLeftScrollable] = useState(true);
   const [isRightScrollable, setIsRightScrollable] = useState(true);
   const tabsListRef = useRef<HTMLDivElement>(null);
+  const projectStatus = getProjectStatus(project, crowdfund);
+
+  const getVisibleTabs = () => {
+    const baseTabs = [
+      { value: 'details', label: 'Details' },
+      { value: 'team', label: 'Team' },
+      { value: 'milestones', label: 'Milestones' },
+      { value: 'comments', label: 'Comments' },
+    ];
+
+    if (isMobile) {
+      baseTabs.unshift({ value: 'about', label: 'About' });
+    }
+
+    if (projectStatus === 'Validation') {
+      baseTabs.splice(4, 0, { value: 'voters', label: 'Voters' });
+    } else if (projectStatus === 'Funding') {
+      baseTabs.splice(4, 0, { value: 'voters', label: 'Voters' });
+      baseTabs.splice(5, 0, { value: 'backers', label: 'Backers' });
+    } else {
+      // Funded, Completed, etc.
+      baseTabs.splice(4, 0, { value: 'voters', label: 'Voters' });
+      baseTabs.splice(5, 0, { value: 'backers', label: 'Backers' });
+    }
+
+    return baseTabs;
+  };
+
+  const visibleTabs = getVisibleTabs();
+
   const handleScroll = () => {
     if (tabsListRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = tabsListRef.current;
@@ -96,10 +127,10 @@ export function ProjectLayout({
 
   if (isMobile) {
     return (
-      <div className='min-h-screen overflow-x-hidden bg-gradient-to-b from-[#030303] via-[#0a0a0a] to-[#030303]'>
+      <div className='from-background-main-bg to-background-main-bg min-h-screen overflow-x-hidden bg-linear-to-b via-[#0a0a0a]'>
         <div className='w-full'>
           {/* Mobile Header with Sidebar */}
-          <div className='border-b border-gray-800/50 bg-gradient-to-b from-[#030303] to-[#0a0a0a] px-4 py-6 backdrop-blur-sm'>
+          <div className='from-background-main-bg border-b border-gray-800/50 bg-linear-to-b to-[#0a0a0a] px-4 py-6 backdrop-blur-sm'>
             <ProjectSidebar
               project={project}
               crowdfund={crowdfund}
@@ -109,7 +140,7 @@ export function ProjectLayout({
           </div>
 
           {/* Enhanced Tab Navigation */}
-          <div className='sticky top-0 z-40 w-full border-b border-gray-800/50 bg-[#030303]/80 backdrop-blur-md'>
+          <div className='bg-background-main-bg/80 sticky top-0 z-40 w-full border-b border-gray-800/50 backdrop-blur-md'>
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
@@ -136,29 +167,20 @@ export function ProjectLayout({
                     />
                   )}
 
-                  {[
-                    { value: 'about', label: 'About' },
-                    { value: 'details', label: 'Details' },
-                    { value: 'team', label: 'Team' },
-                    { value: 'milestones', label: 'Milestones' },
-                    { value: 'voters', label: 'Voters' },
-                    { value: 'comments', label: 'Comments' },
-                  ]
-                    .filter(tab => !hiddenTabs.includes(tab.value))
-                    .map(tab => (
-                      <TabsTrigger
-                        key={tab.value}
-                        value={tab.value}
-                        className={cn(
-                          'relative rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
-                          'text-gray-400 hover:text-gray-300',
-                          'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
-                          'data-[state=active]:border data-[state=active]:border-[#a7f950]/30'
-                        )}
-                      >
-                        {tab.label}
-                      </TabsTrigger>
-                    ))}
+                  {visibleTabs.map(tab => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className={cn(
+                        'relative rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
+                        'text-gray-400 hover:text-gray-300',
+                        'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
+                        'data-[state=active]:border data-[state=active]:border-[#a7f950]/30'
+                      )}
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
                 </div>
               </TabsList>
             </Tabs>
@@ -197,12 +219,12 @@ export function ProjectLayout({
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-b from-[#030303] via-[#0a0a0a] to-[#030303]'>
+    <div className='min-h-screen bg-linear-to-b'>
       <div className='mx-auto max-w-7xl'>
         <div className='flex gap-8 lg:gap-12'>
           {/* Sidebar - Sticky */}
           <div className='sticky top-8 h-fit w-full max-w-[420px] shrink-0'>
-            <div className='rounded-2xl border border-gray-800/50 bg-gradient-to-b from-gray-900/50 to-gray-950/50 p-6 shadow-xl backdrop-blur-sm'>
+            <div className='rounded-2xl border border-gray-800/50 bg-linear-to-b from-gray-900/50 to-gray-950/50 p-6 shadow-xl backdrop-blur-sm'>
               <ProjectSidebar
                 project={project}
                 crowdfund={crowdfund}
@@ -220,33 +242,24 @@ export function ProjectLayout({
               className='w-full'
             >
               {/* Enhanced Tab Navigation */}
-              <div className='sticky top-0 z-30 mb-8 border-b border-gray-800/50 bg-[#030303]/80 py-0 backdrop-blur-md'>
+              <div className='bg-background-main-bg/80 sticky top-0 z-30 mb-8 border-b border-gray-800/50 py-0 backdrop-blur-md'>
                 <TabsList className='h-auto w-fit justify-start gap-2 rounded-none bg-transparent p-0'>
-                  {[
-                    { value: 'details', label: 'Details' },
-                    { value: 'team', label: 'Team' },
-                    { value: 'milestones', label: 'Milestones' },
-                    { value: 'voters', label: 'Voters' },
-                    { value: 'backers', label: 'Backers' },
-                    { value: 'comments', label: 'Comments' },
-                  ]
-                    .filter(tab => !hiddenTabs.includes(tab.value))
-                    .map(tab => (
-                      <TabsTrigger
-                        key={tab.value}
-                        value={tab.value}
-                        className={cn(
-                          'relative rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200',
-                          'text-gray-400 hover:bg-gray-800/30 hover:text-gray-300',
-                          'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
-                          'data-[state=active]:border data-[state=active]:border-[#a7f950]/30',
-                          'focus-visible:ring-2 focus-visible:ring-[#a7f950]/20',
-                          'rounded-t-2xl rounded-b-none'
-                        )}
-                      >
-                        {tab.label}
-                      </TabsTrigger>
-                    ))}
+                  {visibleTabs.map(tab => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className={cn(
+                        'relative rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200',
+                        'text-gray-400 hover:bg-gray-800/30 hover:text-gray-300',
+                        'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
+                        'data-[state=active]:border data-[state=active]:border-[#a7f950]/30',
+                        'focus-visible:ring-2 focus-visible:ring-[#a7f950]/20',
+                        'rounded-t-2xl rounded-b-none'
+                      )}
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
                 </TabsList>
               </div>
 

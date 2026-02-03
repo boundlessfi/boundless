@@ -17,10 +17,10 @@ import { Button } from '../ui/button';
 import ActivityHeatmap from './ActivityHeatMap';
 import { FutureFeature } from '../FeatureFuture';
 import { authClient } from '@/lib/auth-client';
-import { User } from '@/types/user';
+import { GetMeResponse } from '@/lib/api/types';
 
 interface ProfileDataClientProps {
-  user: User;
+  user: GetMeResponse;
 }
 
 const FILTER_OPTIONS = [
@@ -39,10 +39,13 @@ export default function ProfileDataClient({ user }: ProfileDataClientProps) {
   const { data: session } = authClient.useSession();
   const currentUser = session?.user;
 
+  // Extract the user data from the response
+  const userData = user.user;
+
   // Determine if it's the user's own profile by comparing IDs
-  const isOwnProfile = user.id === currentUser?.id;
+  const isOwnProfile = userData.id === currentUser?.id;
   const organizationsData =
-    user.members?.map(org => ({
+    userData.members?.map(org => ({
       name: org.organization.name,
       avatarUrl: org.organization.logo || '/blog1.jpg',
     })) || [];
@@ -50,8 +53,8 @@ export default function ProfileDataClient({ user }: ProfileDataClientProps) {
   return (
     <div className='mt-14 flex flex-col gap-8 lg:flex-row lg:gap-16'>
       <ProfileOverview
-        username={user.username}
-        user={user}
+        username={userData.username}
+        user={userData}
         isAuthenticated={!!currentUser}
         isOwnProfile={isOwnProfile}
       />
@@ -117,7 +120,7 @@ export default function ProfileDataClient({ user }: ProfileDataClientProps) {
 
               <ActivityFeed filter={selectedFilter} user={user} />
               <FutureFeature className='w-full'>
-                <ActivityHeatmap activities={user.activities} />
+                <ActivityHeatmap activities={user.user.activities} />
               </FutureFeature>
             </TabsContent>
 

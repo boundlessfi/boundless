@@ -1,31 +1,16 @@
 'use client';
 
 import React from 'react';
-import ProjectCard from '../landing-page/project/ProjectCard';
-import { PublicUserProfile } from '@/types/project';
+import { PublicUserProfile } from '@/features/projects/types';
 import Link from 'next/link';
+import ProjectCard from '@/features/projects/components/ProjectCard';
+import { mapProjectToCardData } from '@/features/projects/utils/card-mappers';
 
 interface ProjectsTabProps {
   user: PublicUserProfile;
 }
 
 export default function ProjectsTabPublic({ user }: ProjectsTabProps) {
-  // Map project status to ProjectCard expected status
-  const getProjectStatus = (
-    status: string
-  ): 'Validation' | 'Funding' | 'Funded' | 'Completed' => {
-    switch (status) {
-      case 'IDEA':
-        return 'Validation';
-      case 'ACTIVE':
-        return 'Funding';
-      case 'COMPLETED':
-        return 'Completed';
-      default:
-        return 'Validation';
-    }
-  };
-
   if (user.projects.length === 0) {
     return (
       <div className='py-8 text-center'>
@@ -52,15 +37,11 @@ export default function ProjectsTabPublic({ user }: ProjectsTabProps) {
         {user.projects.map(project => (
           <Link key={project.id} href={`/projects/${project.id}`}>
             <ProjectCard
-              projectId={project.id}
-              creatorName={user.name}
-              creatorLogo={user.image}
-              projectImage={project.logo}
-              projectTitle={project.title}
-              projectDescription={project.description}
-              status={getProjectStatus(project.status)}
-              deadlineInDays={0}
               isFullWidth={true}
+              data={mapProjectToCardData(project, {
+                name: user.name,
+                image: user.image,
+              })}
             />
           </Link>
         ))}

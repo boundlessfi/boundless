@@ -27,11 +27,11 @@ import {
 import { UserMenu } from '../user/UserMenu';
 import { cn } from '@/lib/utils';
 import { BoundlessButton } from '../buttons';
-import CreateProjectModal from './project/CreateProjectModal';
 import { useProtectedAction } from '@/hooks/use-protected-action';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 import { WalletButton } from '../wallet/WalletButton';
 import { NotificationBell } from '../notifications/NotificationBell';
+import CreateProjectModal from '@/features/projects/components/CreateProjectModal';
 
 // Constants
 const BRAND_COLOR = '#a7f950';

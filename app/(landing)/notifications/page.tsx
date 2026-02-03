@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useNotifications } from '@/hooks/use-notifications';
+import { useNotifications } from '@/hooks/useNotifications';
 import { useNotificationPolling } from '@/hooks/use-notification-polling';
 import { NotificationList } from '@/components/notifications/NotificationList';
 import { Button } from '@/components/ui/button';
@@ -81,7 +81,7 @@ export default function NotificationsPage() {
         <div className='mb-6 flex items-center justify-between'>
           <div>
             <h1 className='text-3xl font-bold text-white'>Notifications</h1>
-            <p className='mt-1 text-sm text-zinc-400'>
+            <div className='mt-1 text-sm text-zinc-400'>
               {loading ? (
                 <Skeleton className='h-4 w-48' />
               ) : (
@@ -89,7 +89,7 @@ export default function NotificationsPage() {
                   {unreadCount} unread of {total} total
                 </>
               )}
-            </p>
+            </div>
           </div>
           {unreadCount > 0 && !loading && (
             <Button
@@ -107,7 +107,7 @@ export default function NotificationsPage() {
           loading={loading}
           onNotificationClick={notification => {
             if (!notification.read) {
-              markNotificationAsRead([notification._id]).catch(() => {
+              markNotificationAsRead([notification.id]).catch(() => {
                 // Silently handle error - user feedback already provided
               });
             }

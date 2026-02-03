@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Timeline, TimelineItemType } from '@/components/ui/timeline';
 import {
   DropdownMenu,
@@ -11,7 +11,9 @@ import { ListFilter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Status } from './milestone-card';
 import EmptyState from '@/components/EmptyState';
-import { Crowdfunding } from '@/types/project';
+import { Crowdfunding, Milestone } from '@/features/projects/types';
+import Link from 'next/link';
+import { getCrowdfundingMilestones } from '@/features/projects/api';
 
 const filterOptions = [
   { value: 'all', label: 'All Milestones', count: 0 },
@@ -30,23 +32,32 @@ interface ProjectMilestoneProps {
 
 const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
   const [selectedFilter, setSelectedFilter] = useState<Status | 'all'>('all');
+  const [fetchedMilestones, setFetchedMilestones] = useState<Milestone[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchMilestones = async () => {
+      try {
+        setLoading(true);
+        const data = await getCrowdfundingMilestones(crowdfund.slug);
+        setFetchedMilestones(data || []);
+      } catch {
+        // Failed to fetch milestones
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (crowdfund.slug) {
+      fetchMilestones();
+    }
+  }, [crowdfund.slug]);
   const milestones: TimelineItemType[] = useMemo(() => {
-    if (!crowdfund.milestones || crowdfund.milestones.length === 0) {
+    if (!fetchedMilestones || fetchedMilestones.length === 0) {
       return [];
     }
 
-    const totalAmount = crowdfund.milestones.reduce(
-      (sum, milestone) => sum + milestone.amount,
-      0
-    );
-
-    return crowdfund.milestones.map(milestone => {
-      const percentage =
-        totalAmount > 0
-          ? Math.round((milestone.amount / totalAmount) * 100)
-          : 0;
-
+    return fetchedMilestones.map((milestone, index) => {
       let dueDate = 'TBD';
       try {
         if (milestone.endDate) {
@@ -60,8 +71,8 @@ const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
         // Invalid date format, use TBD
       }
 
-      const mapStatus = (status: string): Status => {
-        const normalizedStatus = status.toLowerCase();
+      const mapStatus = (status?: string): Status => {
+        const normalizedStatus = (status || 'pending').toLowerCase();
 
         switch (normalizedStatus) {
           case 'completed':
@@ -89,22 +100,22 @@ const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
         }
       };
 
-      const mappedStatus = mapStatus(milestone.status);
+      const mappedStatus = mapStatus(milestone.reviewStatus);
 
       return {
-        id: milestone.name,
-        title: milestone.name,
+        id: milestone.id || `milestone-${index}`,
+        title: milestone.title,
         description: milestone.description,
         dueDate,
         amount: milestone.amount,
-        percentage,
+        percentage: milestone.fundingPercentage,
         status: mappedStatus,
-        ...(milestone.status === 'in-review' && { feedbackDays: 3 }),
-        ...(milestone.status === 'rejected' && { deadline: dueDate }),
-        ...(milestone.status === 'approved' && { isUnlocked: true }),
+        ...(milestone.reviewStatus === 'in-review' && { feedbackDays: 3 }),
+        ...(milestone.reviewStatus === 'rejected' && { deadline: dueDate }),
+        ...(milestone.reviewStatus === 'approved' && { isUnlocked: true }),
       };
     });
-  }, [crowdfund.milestones]);
+  }, [fetchedMilestones]);
 
   const filterOptionsWithCounts = useMemo(() => {
     return filterOptions.map(option => {
@@ -128,6 +139,14 @@ const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
   const currentFilterLabel =
     filterOptionsWithCounts.find(option => option.value === selectedFilter)
       ?.label || 'All Milestones';
+
+  if (loading) {
+    return (
+      <div className='flex w-full items-center justify-center py-12'>
+        <div className='border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent' />
+      </div>
+    );
+  }
 
   return (
     <div className='w-full'>
@@ -169,6 +188,11 @@ const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+        <Link href={`/projects/${crowdfund.slug}/milestones`}>
+          <Button variant='ghost' className='text-white underline'>
+            View All Milestones
+          </Button>
+        </Link>
       </div>
 
       <Timeline
@@ -176,7 +200,7 @@ const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
         showConnector={true}
         variant='default'
         className='w-full'
-        projectId={crowdfund.project.id}
+        projectSlug={crowdfund.slug}
       />
 
       {filteredMilestones.length === 0 && (

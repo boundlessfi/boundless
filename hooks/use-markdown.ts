@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { marked } from 'marked';
 import React from 'react';

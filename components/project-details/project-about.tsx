@@ -1,6 +1,6 @@
 import { Github, Globe, Youtube, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject } from '@/features/projects/types';
 
 interface ProjectAboutProps {
   project: CrowdfundingProject & {

@@ -1,3 +1,5 @@
+import React from 'react';
+
 export interface TimelineItem {
   id: string;
   title: string;
@@ -20,6 +22,7 @@ export interface TimelineItem {
   deadline?: string;
   feedbackDays?: number;
   isUnlocked?: boolean;
+  campaignId?: string;
 }
 
 export interface TimelineProps {
@@ -28,12 +31,12 @@ export interface TimelineProps {
   showConnector?: boolean;
   orientation?: 'vertical' | 'horizontal';
   variant?: 'default' | 'compact' | 'detailed';
-  projectId?: string;
+  projectSlug?: string;
 }
 
 export interface TimelineItemProps {
   item: TimelineItem;
   isLast: boolean;
   showConnector: boolean;
-  projectId?: string;
+  projectSlug?: string;
 }

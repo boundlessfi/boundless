@@ -98,13 +98,13 @@ export async function getServerUser(): Promise<ServerUser | null> {
     const user = await getMeServer();
 
     return {
-      id: (user._id || user.id) as string,
-      email: user.email as string,
-      name: (user.profile?.firstName || user.name) as string | null,
-      image: (user.profile?.avatar || user.image) as string | null,
-      role: user.roles?.[0] === 'ADMIN' ? 'ADMIN' : 'USER',
-      isVerified: user.isVerified,
-      profile: user.profile,
+      id: user.user.id as string,
+      email: user.user.email as string,
+      name: user.user.name as string | null,
+      image: user.user.image as string | null,
+      role: user.user.role === 'super_admin' ? 'ADMIN' : 'USER',
+      isVerified: user.user.emailVerified,
+      profile: user.user.profile,
     };
   } catch {
     // Silently handle auth errors

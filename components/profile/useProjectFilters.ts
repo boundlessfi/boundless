@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject } from '@/features/projects/types';
 
 export function useProjectFilters(projects: CrowdfundingProject[]) {
   const [activeTab, setActiveTab] = useState('Projects');

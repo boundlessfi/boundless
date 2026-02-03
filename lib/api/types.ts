@@ -1,4 +1,4 @@
-import { CrowdfundingProject, Crowdfunding } from '@/types/project';
+import { CrowdfundingProject, Crowdfunding } from '@/features/projects/types';
 
 // Backend API Response Structure
 export interface ApiResponse<T = unknown> {
@@ -49,13 +49,74 @@ export interface UserProfile {
 }
 
 export interface User {
-  _id: string;
+  id: string;
+  name: string;
   email: string;
-  profile: UserProfile;
-  isVerified: boolean;
-  roles: string[];
-  lastLogin?: string;
-  [key: string]: unknown;
+  emailVerified: boolean;
+  image?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginMethod?: string;
+  role: string;
+  banned: boolean;
+  banReason?: string | null;
+  banExpires?: string | null;
+  username: string;
+  displayUsername: string;
+  metadata?: Record<string, unknown>;
+  twoFactorEnabled: boolean;
+  members?: Array<{
+    id: string;
+    organizationId: string;
+    userId: string;
+    role: string;
+    createdAt: string;
+    organization: {
+      id: string;
+      name: string;
+      slug: string;
+      logo: string;
+      createdAt: string;
+      _count: {
+        hackathons: number;
+        members: number;
+      };
+    };
+  }>;
+  projects?: Array<{
+    id: string;
+    title: string;
+    vision: string;
+    category: string;
+    status: string;
+    banner?: string | null;
+    logo?: string | null;
+    createdAt: string;
+  }>;
+  activities?: Array<{
+    id: string;
+    type: string;
+    userId: string;
+    projectId?: string | null;
+    organizationId?: string | null;
+    metadata?: any;
+    createdAt: string;
+    updatedAt: string;
+    project?: Record<string, unknown>;
+  }>;
+  userBadges?: unknown[];
+  grantApplicationsAsApplicant?: unknown[];
+  hackathonSubmissionsAsParticipant?: Array<{
+    id: string;
+    status: string;
+    rank?: number | null;
+    submittedAt: string;
+  }>;
+  profile?: Record<string, unknown>;
+  stats?: {
+    followers: number;
+    following: number;
+  };
 }
 export interface OrganizationLinks {
   website: string;
@@ -101,8 +162,8 @@ export interface Organization {
   members?: string[]; // Array of user emails
   admins?: string[]; // Array of admin emails
   owner?: string; // Owner email or userId
-  hackathons?: any[]; // Full hackathon objects instead of just IDs
-  grants?: any[]; // Full grant objects instead of just IDs
+  hackathons?: unknown[]; // Full hackathon objects instead of just IDs
+  grants?: unknown[]; // Full grant objects instead of just IDs
   isProfileComplete: boolean;
   pendingInvites?: string[]; // Array of emails invited but not yet accepted
   betterAuthOrgId?: string; // Better Auth organization ID for organizations using Better Auth integration
@@ -162,29 +223,36 @@ export interface GoogleAuthRequest {
 export type GoogleAuthResponse = AuthTokens;
 
 // GetMe
-export type GetMeResponse = User & {
-  organizations: Organization[];
-  projects: CrowdfundingProject[];
-  following: User[];
-  followers: User[];
+export interface GetMeResponse {
+  user: User;
   stats: {
-    votes: number;
-    grants: number;
-    hackathons: number;
-    donations: number;
     projectsCreated: number;
     projectsFunded: number;
     totalContributed: number;
-    reputation: number;
-    communityScore: number;
     commentsPosted: number;
-    organizations: number;
+    votes: number;
+    grants: number;
+    hackathons: number;
     followers: number;
     following: number;
+    reputation: number;
+    communityScore: number;
   };
-  activities: unknown[];
-  contributedProjects: unknown[];
-};
+  chart: Array<{ date: string; count: number }>;
+  activitiesGraph: Array<{ date: string; count: number }>;
+  recentActivities: Array<{
+    id: string;
+    type: string;
+    userId: string;
+    projectId?: string | null;
+    organizationId?: string | null;
+    metadata?: any;
+    createdAt: string;
+    updatedAt: string;
+    project?: Record<string, unknown>;
+    organization?: Record<string, unknown>;
+  }>;
+}
 
 // Logout
 export interface LogoutResponse {
@@ -327,7 +395,7 @@ export interface MilestoneInit {
   description: string;
   deliveryDate: string; // YYYY-MM-DD
   fundPercentage: number; // 0-100
-  fundAmount: number; // derived: fundAmount * fundPercentage / 100
+  amount: number; // derived: fundAmount * fundPercentage / 100
 }
 
 export interface ProjectInitRequest {
@@ -336,7 +404,7 @@ export interface ProjectInitRequest {
   tagline: string;
   type: 'crowdfund' | 'grant';
   category: string;
-  fundAmount: number;
+  amount: number;
   tags: string[];
   // Optional assets until upload integration is wired
   thumbnail?: string;
@@ -360,7 +428,7 @@ export interface CampaignDetails {
   tagline: string;
   description: string;
   category: string;
-  fundAmount: number;
+  amount: number;
   raisedAmount: number;
   tags: string[];
   thumbnail: string;
@@ -413,8 +481,8 @@ export interface ShareLinkResponse {
 export interface CrowdfundingMilestone {
   name: string;
   description: string;
-  startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
+  startDate: string;
+  endDate: string;
   amount: number;
 }
 
@@ -439,6 +507,7 @@ export interface CrowdfundingSocialLink {
 export interface CreateCrowdfundingProjectRequest {
   title: string;
   logo: string;
+  banner?: string;
   vision: string;
   category: string;
   details: string;
@@ -448,14 +517,32 @@ export interface CreateCrowdfundingProjectRequest {
   bitbucketUrl?: string;
   projectWebsite?: string;
   demoVideo?: string;
-  milestones: CrowdfundingMilestone[];
-  team: CrowdfundingTeamMember[];
-  contact: CrowdfundingContact;
-  socialLinks?: CrowdfundingSocialLink[];
-  // Blockchain transaction data (handled by frontend)
+  milestones: Array<{
+    title: string;
+    description: string;
+    deliverable: string;
+    expectedDeliveryDate: string;
+    fundingPercentage: number;
+    orderIndex: number;
+    amount: number;
+  }>;
+  team: Array<{
+    name: string;
+    role: string;
+    email: string;
+    linkedin?: string;
+    twitter?: string;
+  }>;
+  contact: {
+    primary: string;
+    backup: string;
+  };
+  socialLinks: Array<{
+    platform: string;
+    url: string;
+  }>;
   escrowId: string;
   transactionHash: string;
-  validateMilestones?: boolean;
 }
 
 // Step 1: Prepare Project Response
@@ -768,6 +855,8 @@ export interface DeleteCrowdfundingProjectResponse {
 export interface FundCrowdfundingProjectRequest {
   amount: number;
   transactionHash: string;
+  anonymous?: boolean;
+  message?: string;
 }
 
 export interface FundCrowdfundingProjectResponse {
@@ -890,3 +979,6 @@ export interface RemoveVoteResponse {
   };
   message: string;
 }
+
+// Alias for backward compatibility
+// export type CrowdfundingCampaign = CreateCrowdfundingProjectResponse;

@@ -84,7 +84,7 @@ export enum NotificationType {
  * Notification data structure matching backend API response
  */
 export interface Notification {
-  _id: string;
+  id: string;
   userId: {
     type: string;
   };
@@ -135,10 +135,10 @@ export interface Notification {
  * Paginated notifications response
  */
 export interface NotificationsResponse {
-  data: Notification[];
+  notifications: Notification[];
   total: number;
-  page: number;
   limit: number;
+  offset: number;
 }
 
 /**

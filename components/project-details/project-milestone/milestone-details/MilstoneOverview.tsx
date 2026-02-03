@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Github } from 'lucide-react';
 import Image from 'next/image';
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject } from '@/features/projects/types';
 
 interface MilstoneOverviewProps {
   project?: CrowdfundingProject | null;
@@ -131,7 +131,7 @@ const MilstoneOverview = ({ project, milestone }: MilstoneOverviewProps) => {
                 <span className='text-sm'>🌐</span> {project.projectWebsite}
               </Link>
             )}
-            {project?.socialLinks?.map((link, index) => (
+            {/* {project?.socialLinks?.map((link, index) => (
               <Link
                 key={index}
                 className='hover:text-primary flex items-center gap-2 text-sm text-white'
@@ -141,7 +141,7 @@ const MilstoneOverview = ({ project, milestone }: MilstoneOverviewProps) => {
               >
                 <span className='text-sm'>🔗</span> {link.platform}: {link.url}
               </Link>
-            ))}
+            ))} */}
           </div>
         </div>
         <Separator className='my-6 bg-[#2B2B2B]' />

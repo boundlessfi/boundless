@@ -7,7 +7,7 @@ const Timeline: React.FC<TimelineProps> = ({
   className = '',
   showConnector = true,
   orientation = 'vertical',
-  projectId,
+  projectSlug,
 }) => {
   const getOrientationStyles = () => {
     switch (orientation) {
@@ -35,7 +35,7 @@ const Timeline: React.FC<TimelineProps> = ({
           item={item}
           isLast={index === items.length - 1}
           showConnector={showConnector}
-          projectId={projectId}
+          projectSlug={projectSlug}
         />
       ))}
     </ul>

@@ -4,31 +4,14 @@ import { cn } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import ProjectCard from './project/ProjectCard';
 import HackathonCard from './hackathon/HackathonCard';
 import Link from 'next/link';
 import { getPublicHackathonsList } from '@/lib/api/hackathons';
 import type { Hackathon } from '@/lib/api/hackathons';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useProjects } from '@/hooks/project/use-project';
-
-const mapCrowdfundingStatus = (
-  status: string
-): 'Validation' | 'Funding' | 'Funded' | 'Completed' => {
-  switch (status?.toLowerCase()) {
-    case 'validation':
-      return 'Validation';
-    case 'campaigning':
-    case 'funding':
-      return 'Funding';
-    case 'funded':
-      return 'Funded';
-    case 'completed':
-      return 'Completed';
-    default:
-      return 'Validation';
-  }
-};
+import { useProjects } from '@/features/projects/hooks/use-project';
+import ProjectCard from '@/features/projects/components/ProjectCard';
+import { mapCrowdfundingToCardData } from '@/features/projects/utils/card-mappers';
 
 const ProjectCardSkeleton = () => (
   <div className='font-inter flex w-full max-w-full flex-col gap-4 rounded-[8px] border border-gray-900 bg-[#030303] p-4 sm:p-5'>
@@ -222,32 +205,13 @@ export default function Explore() {
                 No projects available at the moment.
               </div>
             ) : (
-              projects.map(project => {
-                const daysToDeadline = project.fundingEndDate
-                  ? Math.ceil(
-                      (new Date(project.fundingEndDate).getTime() -
-                        Date.now()) /
-                        (1000 * 60 * 60 * 24)
-                    )
-                  : 30;
-
-                return (
-                  <ProjectCard
-                    isFullWidth={true}
-                    key={project.id}
-                    projectId={project.id}
-                    deadlineInDays={Math.max(0, daysToDeadline)}
-                    status={mapCrowdfundingStatus(project.project.status)}
-                    creatorName={project.project.creator?.name || 'Anonymous'}
-                    creatorLogo={
-                      project.project.creator?.image || '/avatar.png'
-                    }
-                    projectImage={project.project.logo || '/banner.png'}
-                    projectTitle={project.project.title}
-                    projectDescription={project.project.vision ?? undefined}
-                  />
-                );
-              })
+              projects.map(project => (
+                <ProjectCard
+                  isFullWidth={true}
+                  key={project.id}
+                  data={mapCrowdfundingToCardData(project)}
+                />
+              ))
             )}
           </>
         )}

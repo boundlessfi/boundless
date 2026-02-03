@@ -85,7 +85,7 @@ export const NotificationDropdown = ({
     // Auto-mark as read on click
     if (!notification.read) {
       try {
-        await markAsRead({ ids: [notification._id] });
+        await markAsRead({ ids: [notification.id] });
       } catch {
         // Silently handle error - user feedback already provided
       }
@@ -187,7 +187,7 @@ export const NotificationDropdown = ({
                     <div className='space-y-1'>
                       {groupNotifications.map(notification => (
                         <NotificationItem
-                          key={notification._id}
+                          key={notification.id}
                           notification={notification}
                           onMarkAsRead={() =>
                             handleNotificationClick(notification)

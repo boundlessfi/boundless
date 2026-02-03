@@ -4,7 +4,7 @@ import { User } from '@/lib/api/types';
  * Safely extracts role from user data, defaulting to 'USER'
  */
 export function safeRole(val: unknown): 'USER' | 'ADMIN' {
-  return val === 'ADMIN' ? 'ADMIN' : 'USER';
+  return val === 'ADMIN' || val === 'super_admin' ? 'ADMIN' : 'USER';
 }
 
 /**
@@ -38,9 +38,7 @@ export function safeStringOrNull(value: unknown): string | null {
 export function extractUserInfo(user: User) {
   // Extract role with proper fallback logic
   let role: 'USER' | 'ADMIN' = 'USER';
-  if (Array.isArray(user.roles) && user.roles.length > 0) {
-    role = safeRole(user.roles[0]);
-  } else if (typeof user.role === 'string') {
+  if (typeof user.role === 'string') {
     role = safeRole(user.role);
   }
 
@@ -49,11 +47,12 @@ export function extractUserInfo(user: User) {
     user.profile && typeof user.profile === 'object' ? user.profile : {};
 
   const firstName = safeStringOrNull(
-    (profile as Record<string, unknown>).firstName || user.firstName
+    (profile as Record<string, unknown>).firstName || user.name?.split(' ')[0]
   );
 
   const lastName = safeStringOrNull(
-    (profile as Record<string, unknown>).lastName || user.lastName
+    (profile as Record<string, unknown>).lastName ||
+      user.name?.split(' ').slice(1).join(' ')
   );
 
   const image = safeStringOrNull(
@@ -61,11 +60,11 @@ export function extractUserInfo(user: User) {
   );
 
   const username = safeStringOrNull(
-    (profile as Record<string, unknown>).username
+    (profile as Record<string, unknown>).username || user.username
   );
 
   return {
-    id: getId(user._id, user.id),
+    id: getId(user.id, user.id),
     email: safeString(user.email),
     firstName,
     lastName,

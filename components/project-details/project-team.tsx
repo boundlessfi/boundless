@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TeamList, TeamMember } from '@/components/ui/TeamList';
-import { Crowdfunding } from '@/types/project';
+import { Crowdfunding } from '@/features/projects/types';
 
 interface ProjectTeamProps {
   crowdfund: Crowdfunding;

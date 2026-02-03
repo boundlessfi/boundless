@@ -4,12 +4,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ChevronDown, Activity as ActivityIcon } from 'lucide-react';
 import Image from 'next/image';
-import { Activity, User } from '@/types/user';
+import { Activity } from '@/types/user';
+import { GetMeResponse } from '@/lib/api/types';
 import { getActivityDescription } from '@/lib/activities-description';
 
 interface ActivityFeedProps {
   filter: string;
-  user: User;
+  user: GetMeResponse;
 }
 
 export default function ActivityFeed({ filter, user }: ActivityFeedProps) {
@@ -21,8 +22,8 @@ export default function ActivityFeed({ filter, user }: ActivityFeedProps) {
   }, [filter]);
 
   const activities = useMemo(
-    () => (user.activities || []) as Activity[],
-    [user.activities]
+    () => (user.user.activities || []) as Activity[],
+    [user.user.activities]
   );
 
   const filteredActivities = useMemo(() => {

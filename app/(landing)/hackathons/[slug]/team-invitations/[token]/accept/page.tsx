@@ -72,8 +72,6 @@ const AcceptTeamInvitationPage = () => {
         }, 2000);
       }
     } catch (err: any) {
-      console.error('Failed to accept invitation:', err);
-
       const errorMessage = err?.message || 'Failed to accept invitation';
       setError(errorMessage);
 

@@ -1,77 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Progress } from '@/components/ui/progress';
 import { ProjectSidebarProgressProps } from './types';
-import { getVoteCounts } from '@/lib/api/votes';
-import { VoteEntityType } from '@/types/votes';
-import { VoteCountResponse } from '@/types/votes';
-import { useVoteRealtime } from '@/hooks/use-vote-realtime';
+import { Progress } from '@/components/ui/progress';
 
 export function ProjectSidebarProgress({
   project,
+  crowdfund,
   projectStatus,
+  voteCounts,
 }: ProjectSidebarProgressProps) {
-  const [voteCounts, setVoteCounts] = useState<VoteCountResponse | null>(null);
+  const fundingRaised =
+    crowdfund?.fundingRaised ?? project.funding?.raised ?? 0;
+  const fundingGoal = crowdfund?.fundingGoal ?? project.funding?.goal ?? 0;
+  const voteGoal = crowdfund?.voteGoal ?? crowdfund?.thresholdVotes ?? 50;
 
-  const projectId = project?.id;
-
-  // Real-time vote updates
-  useVoteRealtime(
-    {
-      entityType: VoteEntityType.CROWDFUNDING_CAMPAIGN,
-      entityId: projectId || '',
-      enabled: !!projectId,
-    },
-    {
-      onVoteUpdated: data => {
-        setVoteCounts({
-          upvotes: data.voteCounts.upvotes,
-          downvotes: data.voteCounts.downvotes,
-          totalVotes: data.voteCounts.totalVotes,
-          userVote: data.voteCounts.userVote || null,
-        });
-      },
-      onVoteCreated: data => {
-        setVoteCounts({
-          upvotes: data.voteCounts.upvotes,
-          downvotes: data.voteCounts.downvotes,
-          totalVotes: data.voteCounts.totalVotes,
-          userVote: data.voteCounts.userVote || null,
-        });
-      },
-      onVoteDeleted: data => {
-        setVoteCounts({
-          upvotes: data.voteCounts.upvotes,
-          downvotes: data.voteCounts.downvotes,
-          totalVotes: data.voteCounts.totalVotes,
-          userVote: data.voteCounts.userVote || null,
-        });
-      },
-    }
-  );
-
-  useEffect(() => {
-    if (!projectId) return;
-
-    const fetchVoteCounts = async () => {
-      try {
-        const response = await getVoteCounts(
-          projectId,
-          VoteEntityType.CROWDFUNDING_CAMPAIGN
-        );
-        setVoteCounts(response);
-      } catch {
-        // Silently fail - voting data is not critical
-      }
-    };
-
-    fetchVoteCounts();
-  }, [projectId]);
-
-  const fundingPercentage = project.funding
-    ? (project.funding.raised / project.funding.goal) * 100
-    : 0;
+  const fundingPercentage =
+    fundingGoal > 0 ? (fundingRaised / fundingGoal) * 100 : 0;
 
   const milestonePercentage = project.milestones
     ? (project.milestones.filter(m => m.status === 'completed').length /
@@ -87,8 +31,8 @@ export function ProjectSidebarProgress({
           <div className='space-y-3'>
             <div className='flex items-center justify-between text-sm'>
               <span className='font-medium text-white'>
-                ${project.funding?.raised?.toLocaleString() || 0}/ $
-                {project.funding?.goal?.toLocaleString() || 0}{' '}
+                ${fundingRaised.toLocaleString()}/ $
+                {fundingGoal.toLocaleString()}{' '}
                 <span className='font-normal text-zinc-400'>Raised</span>
               </span>
             </div>
@@ -98,14 +42,14 @@ export function ProjectSidebarProgress({
 
       case 'Validation': {
         const validationProgress = Math.min(
-          ((voteCounts?.upvotes || 0) / 50) * 100,
+          ((voteCounts?.upvotes || 0) / voteGoal) * 100,
           100
         );
         return (
           <div className='space-y-3'>
             <div className='flex items-center justify-between text-sm'>
               <span className='font-medium text-white'>
-                {voteCounts?.upvotes || 0}/50{' '}
+                {voteCounts?.upvotes || 0}/{voteGoal}{' '}
                 <span className='font-normal text-zinc-400'>Upvotes</span>
               </span>
               <span className='font-medium text-zinc-400'>
@@ -117,12 +61,15 @@ export function ProjectSidebarProgress({
         );
       }
 
-      case 'Completed': {
+      case 'Completed':
+      case 'Funded': {
         const completedMilestones =
-          project.milestones?.filter(m => m.status === 'completed').length || 0;
-        const totalMilestones = project.milestones?.length || 0;
+          crowdfund?.milestones?.filter(m => m.reviewStatus === 'completed')
+            .length || 0;
+        const totalMilestones = crowdfund?.milestones?.length || 0;
         const rejectedMilestones =
-          project.milestones?.filter(m => m.status === 'rejected').length || 0;
+          crowdfund?.milestones?.filter(m => m.reviewStatus === 'rejected')
+            .length || 0;
 
         return (
           <div className='space-y-3'>
@@ -144,17 +91,18 @@ export function ProjectSidebarProgress({
 
       default: {
         const defaultProgress = Math.min(
-          ((voteCounts?.totalVotes || 0) / 50) * 100,
+          ((voteCounts?.totalVotes || 0) / voteGoal) * 100,
           100
         );
         return (
           <div className='space-y-3'>
             <div className='flex items-center justify-between text-sm'>
               <span className='font-medium text-white'>
-                {voteCounts?.totalVotes || 0}/50{' '}
+                {voteCounts?.totalVotes || 0}/{voteGoal}{' '}
                 <span className='font-normal text-zinc-400'>Votes</span>
               </span>
             </div>
+
             <Progress value={defaultProgress} className='h-2 bg-zinc-800' />
           </div>
         );

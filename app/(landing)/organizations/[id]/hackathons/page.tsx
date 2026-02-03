@@ -95,7 +95,7 @@ export default function HackathonsPage() {
       organizationId,
       autoFetch: true,
     });
-  console.log('hackathons', hackathons);
+
   // Use the separate delete hook
   const { isDeleting, deleteHackathon } = useDeleteHackathon({
     organizationId,
@@ -119,7 +119,7 @@ export default function HackathonsPage() {
       type: 'draft' | 'hackathon';
       data: HackathonDraft | Hackathon;
     }> = [];
-    console.log({ drafts });
+
     drafts.forEach(draft => {
       if (statusFilter === 'all' || statusFilter === 'draft') {
         items.push({ type: 'draft', data: draft });
@@ -199,8 +199,8 @@ export default function HackathonsPage() {
 
     try {
       await deleteHackathon();
-    } catch (error) {
-      console.error(error);
+    } catch {
+      // Error handled by toast in deleteHackathon hook
     } finally {
       setHackathonToDelete(null);
     }

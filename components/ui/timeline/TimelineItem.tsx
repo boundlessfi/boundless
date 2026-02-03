@@ -7,7 +7,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
   item,
   isLast,
   showConnector,
-  projectId,
+  projectSlug,
 }) => {
   // Map timeline status to milestone card status
 
@@ -19,10 +19,30 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
     item.status === 'awaiting' ||
     item.status === 'rejected';
 
+  // Get status-based colors
+  const getStatusColor = () => {
+    switch (item.status) {
+      case 'approved':
+        return '#99FF2D'; // Primary green - approved
+      case 'submission':
+      case 'in-review':
+        return '#FFA500'; // Orange - in review
+      case 'rejected':
+        return '#EF4444'; // Red - rejected
+      case 'awaiting':
+        return '#3B82F6'; // Blue - awaiting
+      case 'pending':
+      default:
+        return '#B5B5B5'; // Gray - pending/default
+    }
+  };
+
   // Handle milestone click - open in new tab
   const handleMilestoneClick = () => {
-    if (isClickable && projectId) {
-      const milestoneUrl = `/projects/${projectId}/milestone/${item.id}`;
+    // eslint-disable-next-line no-console
+    console.log('Milestone clicked:', item.id);
+    if (isClickable && projectSlug) {
+      const milestoneUrl = `/projects/${projectSlug}/milestone/${item.id}`;
       window.open(milestoneUrl, '_blank');
     }
   };
@@ -30,7 +50,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
   return (
     <li className={`relative flex items-start gap-6 pb-5`}>
       <div
-        className={`${showConnector && !isLast ? 'before:absolute before:top-[0.4px] before:left-[12px] before:h-full before:border-l before:border-dashed before:border-[#FFFFFF4D]' : ''}`}
+        className={`${showConnector && !isLast ? 'before:absolute before:top-[0.4px] before:left-3 before:h-full before:border-l before:border-dashed before:border-[#FFFFFF4D]' : ''}`}
       >
         {item.icon ? (
           <div className='relative z-10'>{item.icon}</div>
@@ -47,7 +67,12 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
               d='M0.869629 11.1304C0.869629 4.98327 5.8529 0 12.0001 0C18.1472 0 23.1305 4.98327 23.1305 11.1304C23.1305 17.2776 18.1472 22.2609 12.0001 22.2609C5.8529 22.2609 0.869629 17.2776 0.869629 11.1304Z'
               fill='#2B2B2B'
             />
-            <circle cx='12.0003' cy='11.1297' r='5.56522' fill='#B5B5B5' />
+            <circle
+              cx='12.0003'
+              cy='11.1297'
+              r='5.56522'
+              fill={getStatusColor()}
+            />
           </svg>
         )}
       </div>

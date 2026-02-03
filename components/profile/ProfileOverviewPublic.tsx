@@ -1,7 +1,7 @@
 'use client';
 
 import OrganizationsList from './OrganizationsList';
-import { PublicUserProfile } from '@/types/project';
+import { PublicUserProfile } from '@/features/projects/types';
 import ProfileHeaderPublic from './ProfileHeaderPublic';
 
 interface ProfileOverviewProps {

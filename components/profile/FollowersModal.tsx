@@ -5,7 +5,7 @@ import { TeamMember } from '@/components/ui/TeamList';
 import { ModalTabs } from './ModalTabs';
 import { FollowersContent } from './FollowersContent';
 import { useProjectFilters } from './useProjectFilters';
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject } from '@/features/projects/types';
 
 interface FollowersModalProps {
   open: boolean;

@@ -8,7 +8,7 @@ import Amount, { AmountFormData, AmountHandle } from './Amount';
 import Confirm, { ConfirmHandle, ConfirmFormData } from './Confirm';
 import Success from '../Success';
 import Loading from '../Loading';
-import { fundCrowdfundingProject } from '@/lib/api/project';
+import { fundCrowdfundingProject } from '@/features/projects/api';
 import { useWalletContext } from '@/components/providers/wallet-provider';
 import { useWalletProtection } from '@/hooks/use-wallet-protection';
 import { signTransaction } from '@/lib/config/wallet-kit';

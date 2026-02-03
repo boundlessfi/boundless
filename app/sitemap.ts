@@ -1,10 +1,10 @@
 import { MetadataRoute } from 'next';
 import { getBlogPosts } from '@/lib/api/blog';
 import { getHackathons } from '@/lib/api/hackathons';
-import { getCrowdfundingProjects } from '@/lib/api/project';
+import { getCrowdfundingProjects } from '@/features/projects/api';
 import type { BlogPost } from '@/types/blog';
 import type { Hackathon } from '@/types/hackathon/core';
-import type { Crowdfunding } from '@/types/project';
+import type { Crowdfunding } from '@/features/projects/types';
 
 // Constants
 const SITE_URL = 'https://www.boundlessfi.xyz';

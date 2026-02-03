@@ -317,7 +317,7 @@ function Profile({ user }: ProfileDataProps) {
                 />
               ) : (
                 <Image
-                  src={user.image}
+                  src={user.image || '/avatar.png'}
                   alt='Avatar'
                   fill
                   className='object-cover'

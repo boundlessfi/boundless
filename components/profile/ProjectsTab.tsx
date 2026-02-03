@@ -1,15 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import ProjectCard from '../landing-page/project/ProjectCard';
+// import ProjectCard from '../landing-page/project/ProjectCard';
 import { Project } from '@/types/user';
 import { useWindowSize } from '@/hooks/use-window-size';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
-import { User } from '@/types/user';
+import { GetMeResponse } from '@/lib/api/types';
+import { mapProjectToCardData } from '@/features/projects/utils/card-mappers';
+import ProjectCard from '@/features/projects/components/ProjectCard';
 
 interface ProjectsTabProps {
-  user: User;
+  user: GetMeResponse;
 }
 
 export default function ProjectsTab({ user }: ProjectsTabProps) {
@@ -18,26 +20,6 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
   const [page, setPage] = useState(1);
   const { height: windowHeight } = useWindowSize();
   const itemsPerPage = 6;
-
-  // Map project status to ProjectCard expected status
-  const getProjectStatus = (
-    status: string
-  ): 'Validation' | 'Funding' | 'Funded' | 'Completed' => {
-    switch (status) {
-      case 'under_review':
-        return 'Validation';
-      case 'funding':
-        return 'Funding';
-      case 'funded':
-        return 'Funded';
-      case 'completed':
-        return 'Completed';
-      case 'in_progress':
-        return 'Funding';
-      default:
-        return 'Validation';
-    }
-  };
 
   const calculateScrollHeight = () => {
     if (!windowHeight) return '400px';
@@ -62,7 +44,7 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
       const endIndex = startIndex + itemsPerPage;
 
       // Use real projects data from API
-      const allProjects = user.projects || [];
+      const allProjects = user.user.projects || [];
       const newProjects = allProjects.slice(startIndex, endIndex);
 
       if (pageNum === 1) {
@@ -73,7 +55,7 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
 
       setHasMore(endIndex < allProjects.length);
     },
-    [user.projects]
+    [user.user.projects]
   );
 
   useEffect(() => {
@@ -109,7 +91,7 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
       <div className='flex items-center justify-between'>
         <h3 className='text-lg font-medium text-gray-300'>Your Projects</h3>
         <span className='text-sm text-gray-500'>
-          {user.projects?.length || 0} projects
+          {user.user.projects?.length || 0} projects
         </span>
       </div>
 
@@ -127,20 +109,12 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
             >
               <ProjectCard
                 newTab={true}
-                projectId={project.id}
-                creatorName={``}
-                creatorLogo={user.image || '/avatar.png'}
-                projectImage={project.logo || '/bitmed.png'}
-                projectTitle={project.title}
-                projectDescription={project.description}
-                status={getProjectStatus(project.status)}
-                deadlineInDays={30}
                 isFullWidth={true}
-                funding={{
-                  current: 0,
-                  goal: 10000,
-                  currency: 'USDC',
-                }}
+                data={mapProjectToCardData(project, {
+                  // Yes, `ProjectsTab` is for "Your Projects", so creator is the user.
+                  name: user.user.name || 'User',
+                  image: user.user.image || '/avatar.png',
+                })}
               />
             </Link>
           ))}

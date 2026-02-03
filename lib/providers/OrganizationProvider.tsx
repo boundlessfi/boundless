@@ -390,7 +390,7 @@ export function OrganizationProvider({
         throw new Error('Invalid response from getMe API');
       }
 
-      const organizations = response.members || [];
+      const organizations = response.user.members || [];
       logger.info({
         eventType: 'org.fetchOrganizations.organizations_loaded',
         count: Array.isArray(organizations) ? organizations.length : 0,
@@ -1139,7 +1139,7 @@ export function OrganizationProvider({
       try {
         // Get current user info from getMe API
         const userResponse = await getMe();
-        const userId = userResponse.id;
+        const userId = userResponse.user.id;
         if (!userId) return false;
 
         // List members from Better Auth

@@ -13,7 +13,7 @@ import { HackathonResources } from '@/components/hackathons/resources/resources'
 import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
 import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
 import { TeamFormationTab } from '@/components/hackathons/team-formation/TeamFormationTab';
-import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/LoadingScreen';
+import LoadingScreen from '@/features/projects/components/CreateProjectModal/LoadingScreen';
 import { useTimelineEvents } from '@/hooks/hackathon/use-timeline-events';
 import { toast } from 'sonner';
 import type { Participant } from '@/lib/api/hackathons';

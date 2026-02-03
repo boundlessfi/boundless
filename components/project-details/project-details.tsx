@@ -3,7 +3,21 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMarkdown } from '@/hooks/use-markdown';
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject } from '@/features/projects/types';
+import {
+  MediaPlayer,
+  MediaPlayerVideo,
+  MediaPlayerControls,
+  MediaPlayerControlsOverlay,
+  MediaPlayerPlay,
+  MediaPlayerSeek,
+  MediaPlayerSeekBackward,
+  MediaPlayerSeekForward,
+  MediaPlayerVolume,
+  MediaPlayerTime,
+  MediaPlayerFullscreen,
+  MediaPlayerLoading,
+} from '@/components/ui/media-player';
 
 interface ProjectDetailsProps {
   project: CrowdfundingProject & {
@@ -29,6 +43,8 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
     pedantic: true,
     loadingDelay: 100,
   });
+
+  console.log(project.demoVideo);
 
   return (
     <div className='space-y-10 text-white'>
@@ -63,30 +79,72 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
           <Card className='overflow-hidden border border-gray-800/50 bg-gradient-to-br from-gray-900/50 to-gray-950/50 shadow-xl backdrop-blur-sm'>
             <CardContent className='p-0'>
               <div className='relative aspect-video overflow-hidden bg-black'>
-                {project.demoVideo.includes('youtube.com') ||
-                project.demoVideo.includes('youtu.be') ? (
-                  <iframe
-                    className='h-full w-full'
-                    src={project.demoVideo
-                      .replace('watch?v=', 'embed/')
-                      .replace('youtu.be/', 'youtube.com/embed/')}
-                    title='Project Demonstration'
-                    allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-                    allowFullScreen
-                  />
-                ) : (
-                  <>
-                    <video
-                      className='h-full w-full object-cover'
-                      controls
-                      preload='metadata'
-                    >
-                      <source src={project.demoVideo} type='video/mp4' />
-                      Your browser does not support the video tag.
-                    </video>
-                    <div className='pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent' />
-                  </>
-                )}
+                {(() => {
+                  const getYouTubeEmbedUrl = (url: string) => {
+                    try {
+                      if (
+                        url.includes('youtube.com') ||
+                        url.includes('youtu.be')
+                      ) {
+                        let videoId = '';
+                        if (url.includes('youtu.be')) {
+                          videoId = url.split('/').pop()?.split('?')[0] || '';
+                        } else if (url.includes('youtube.com/watch')) {
+                          const urlParams = new URLSearchParams(
+                            new URL(url).search
+                          );
+                          videoId = urlParams.get('v') || '';
+                        }
+                        if (videoId) {
+                          return `https://www.youtube.com/embed/${videoId}`;
+                        }
+                      }
+                      return null;
+                    } catch {
+                      return null;
+                    }
+                  };
+
+                  const youtubeEmbedUrl = getYouTubeEmbedUrl(project.demoVideo);
+
+                  if (youtubeEmbedUrl) {
+                    return (
+                      <iframe
+                        src={youtubeEmbedUrl}
+                        title='Project Video'
+                        className='h-full w-full'
+                        allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                        allowFullScreen
+                      />
+                    );
+                  }
+
+                  return (
+                    <MediaPlayer className='h-full w-full'>
+                      <MediaPlayerVideo
+                        className='h-full w-full object-cover'
+                        src={project.demoVideo}
+                      />
+                      <MediaPlayerLoading />
+                      <MediaPlayerControlsOverlay />
+                      <MediaPlayerControls className='flex-col items-stretch justify-end gap-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12 pb-4'>
+                        <MediaPlayerSeek />
+                        <div className='flex items-center justify-between gap-4'>
+                          <div className='flex items-center gap-2'>
+                            <MediaPlayerPlay />
+                            <MediaPlayerSeekBackward />
+                            <MediaPlayerSeekForward />
+                            <MediaPlayerVolume />
+                            <MediaPlayerTime />
+                          </div>
+                          <div className='flex items-center gap-2'>
+                            <MediaPlayerFullscreen />
+                          </div>
+                        </div>
+                      </MediaPlayerControls>
+                    </MediaPlayer>
+                  );
+                })()}
               </div>
               <div className='border-t border-gray-800/50 bg-gray-900/30 p-4'>
                 <p className='text-center text-sm text-gray-400'>

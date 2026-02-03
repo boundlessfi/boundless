@@ -11,7 +11,7 @@ import {
 import Image from 'next/image';
 import { BoundlessButton } from '../buttons';
 import HackathonCard from '@/components/landing-page/hackathon/HackathonCard';
-import ProjectCard from './project/ProjectCard';
+import ProjectCard from '@/features/projects/components/ProjectCard';
 
 const BRAND_COLOR = '#a7f950';
 
@@ -217,30 +217,54 @@ export default function Hero2() {
 
           <div className='absolute top-0 left-1/2 z-20 w-80 -translate-x-1/2 transform cursor-pointer rounded-2xl shadow-xl transition-transform duration-300 hover:scale-105'>
             <ProjectCard
-              projectId='project-1'
-              creatorName='Green Energy Team'
-              creatorLogo='/bitmed.png'
-              projectImage='/banner.png'
-              projectTitle='Solar Power Initiative'
-              projectDescription='Revolutionary solar energy solution for rural communities'
-              status='Funding'
-              deadlineInDays={15}
-              funding={{ current: 25000, goal: 100000, currency: 'USD' }}
-              votes={{ current: 450, goal: 500 }}
+              data={{
+                id: 'project-1',
+                slug: 'solar-power-initiative',
+                title: 'Solar Power Initiative',
+                vision:
+                  'Revolutionary solar energy solution for rural communities',
+                banner: '/banner.png',
+                logo: '/bitmed.png',
+                category: 'Sustainability',
+                creator: {
+                  name: 'Green Energy Team',
+                  image: '/bitmed.png',
+                },
+                status: 'Funding',
+                stats: {
+                  funding: {
+                    raised: 25000,
+                    goal: 100000,
+                    currency: 'USD',
+                  },
+                  votes: { current: 450, goal: 500 },
+                  daysLeft: 15,
+                },
+              }}
             />
           </div>
 
           <div className='absolute top-20 right-0 z-10 w-72 rotate-3 transform cursor-pointer rounded-2xl shadow-xl transition-transform duration-300 hover:rotate-0'>
             <ProjectCard
-              projectId='project-2'
-              creatorName='AI Research Lab'
-              creatorLogo='/bitmed.png'
-              projectImage='/banner.png'
-              projectTitle='AI Learning Platform'
-              projectDescription='Democratizing AI education through interactive learning'
-              status='Validation'
-              deadlineInDays={8}
-              votes={{ current: 320, goal: 500 }}
+              data={{
+                id: 'project-2',
+                slug: 'ai-learning-platform',
+                title: 'AI Learning Platform',
+                vision:
+                  'Democratizing AI education through interactive learning',
+                banner: '/banner.png',
+                logo: '/bitmed.png',
+                category: 'Education',
+                creator: {
+                  name: 'AI Research Lab',
+                  image: '/bitmed.png',
+                },
+                status: 'Validation',
+                stats: {
+                  votes: { current: 320, goal: 500 },
+                  daysLeft: 8,
+                },
+              }}
             />
           </div>
 

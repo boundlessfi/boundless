@@ -81,11 +81,11 @@ export const NotificationList = ({
           <div className='space-y-2'>
             {dateNotifications.map(notification => (
               <NotificationItem
-                key={notification._id}
+                key={notification.id}
                 notification={notification}
                 onMarkAsRead={() => {
                   if (onMarkAsRead) {
-                    onMarkAsRead(notification._id);
+                    onMarkAsRead(notification.id);
                   }
                   if (onNotificationClick) {
                     onNotificationClick(notification);

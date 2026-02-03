@@ -1,19 +1,38 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSocket } from './useSocket';
+import { getNotifications } from '@/lib/api/notifications';
+import { Notification } from '@/types/notifications';
 
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  data?: Record<string, unknown>;
-  timestamp?: string;
-  [key: string]: unknown;
+interface UseNotificationsOptions {
+  page?: number;
+  limit?: number;
+  autoFetch?: boolean;
 }
 
-export function useNotifications(userId?: string) {
+export interface UseNotificationsReturn {
+  notifications: Notification[];
+  unreadCount: number;
+  isConnected: boolean;
+  loading: boolean;
+  error: Error | null;
+  total: number;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  markAsRead: (notificationId: string) => void;
+  markAllAsRead: () => Promise<void>;
+  markNotificationAsRead: (ids: string[]) => Promise<void>;
+  fetchNotifications: () => Promise<void>;
+  refetch: () => Promise<void>;
+}
+
+export function useNotifications(
+  input?: string | UseNotificationsOptions
+): UseNotificationsReturn {
+  // Handle overloaded arguments
+  const userId = typeof input === 'string' ? input : undefined;
+  const options = typeof input === 'object' ? input : {};
+  const { page: initialPage = 1, limit = 10, autoFetch = true } = options;
+
   const { socket, isConnected } = useSocket({
     namespace: '/notifications',
     userId,
@@ -21,12 +40,47 @@ export function useNotifications(userId?: string) {
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(autoFetch);
+  const [error, setError] = useState<Error | null>(null);
+  const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+
+  // Fetch notifications with pagination
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getNotifications(currentPage, limit);
+
+      if (response && Array.isArray(response.notifications)) {
+        // Sort notifications by createdAt desc to ensure correct order
+        const sorted = [...response.notifications].sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setNotifications(sorted);
+        setTotal(response.total || 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+      setError(
+        err instanceof Error ? err : new Error('Failed to fetch notifications')
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, limit]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (autoFetch) {
+      fetchNotifications();
+    }
+  }, [fetchNotifications, autoFetch]);
 
   // Request initial unread count when socket connects
   useEffect(() => {
     if (socket && isConnected) {
-      console.log('Socket connected, requesting unread count');
-      // Request initial unread count from server
       socket.emit('get-unread-count');
     }
   }, [socket, isConnected]);
@@ -38,14 +92,30 @@ export function useNotifications(userId?: string) {
     }
 
     // Listen for new notifications
-    const handleNotification = (notification: Notification) => {
+    const handleNotification = (notification: any) => {
+      const normalizedNotification: Notification = {
+        ...notification,
+        id: notification.id || notification._id,
+        createdAt:
+          notification.createdAt ||
+          notification.timestamp ||
+          new Date().toISOString(),
+      };
+
       setNotifications(prev => {
         // Avoid duplicates
-        const exists = prev.some(n => n.id === notification.id);
+        const exists = prev.some(n => n.id === normalizedNotification.id);
         if (exists) {
           return prev;
         }
-        return [notification, ...prev];
+
+        // Add new notification and resort
+        // Note: For pagination, real-time updates might be tricky.
+        // We typically add it to the top if we are on page 1.
+        if (currentPage === 1) {
+          return [normalizedNotification, ...prev];
+        }
+        return prev;
       });
       setUnreadCount(prev => prev + 1);
     };
@@ -57,12 +127,10 @@ export function useNotifications(userId?: string) {
 
     // Listen for notification updates
     const handleNotificationUpdated = (data: any) => {
-      // Update notification if it exists
-      if (data.notificationId) {
+      const id = data.notificationId || data.id || data._id;
+      if (id) {
         setNotifications(prev =>
-          prev.map(notif =>
-            notif.id === data.notificationId ? { ...notif, ...data } : notif
-          )
+          prev.map(notif => (notif.id === id ? { ...notif, ...data } : notif))
         );
       }
     };
@@ -73,12 +141,10 @@ export function useNotifications(userId?: string) {
       setUnreadCount(0);
     };
 
-    // Error handling
     const handleError = (error: { message: string }) => {
       console.error('WebSocket error:', error);
     };
 
-    // Register all listeners
     socket.on('notification', handleNotification);
     socket.on('unread-count', handleUnreadCount);
     socket.on('notification-updated', handleNotificationUpdated);
@@ -92,21 +158,37 @@ export function useNotifications(userId?: string) {
       socket.off('all-notifications-read', handleAllRead);
       socket.off('error', handleError);
     };
-  }, [socket]);
+  }, [socket, currentPage]);
 
   const markAsRead = (notificationId: string) => {
+    setNotifications(prev =>
+      prev.map(n => (n.id === notificationId ? { ...n, read: true } : n))
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
+
     if (socket && isConnected) {
       socket.emit('mark-read', { notificationId });
-    } else {
-      console.warn('Cannot mark as read: socket not connected');
     }
   };
 
-  const markAllAsRead = () => {
+  const markNotificationAsRead = async (ids: string[]) => {
+    // Optimistic
+    setNotifications(prev =>
+      prev.map(n => (ids.includes(n.id) ? { ...n, read: true } : n))
+    );
+    // Note: unread count update is approximate here, ideally we wait for socket update
+
+    if (socket && isConnected) {
+      ids.forEach(id => socket.emit('mark-read', { notificationId: id }));
+    }
+  };
+
+  const markAllAsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setUnreadCount(0);
+
     if (socket && isConnected) {
       socket.emit('mark-all-read');
-    } else {
-      console.warn('Cannot mark all as read: socket not connected');
     }
   };
 
@@ -114,7 +196,15 @@ export function useNotifications(userId?: string) {
     notifications,
     unreadCount,
     isConnected,
+    loading,
+    error,
+    total,
+    currentPage,
+    setCurrentPage,
     markAsRead,
     markAllAsRead,
+    markNotificationAsRead,
+    fetchNotifications,
+    refetch: fetchNotifications,
   };
 }

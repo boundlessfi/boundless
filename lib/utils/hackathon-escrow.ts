@@ -24,7 +24,7 @@ const PLACEHOLDER_MILESTONE_AMOUNT = 1;
  */
 const BOUNDLESS_PLATFORM_ADDRESS =
   process.env.NEXT_PUBLIC_BOUNDLESS_PLATFORM_ADDRESS ||
-  'GA4XJQJTKVQZXYW5CYM77CD5E7CX7FJLVDSIWZAV6FEIBFZNRKSWWTFN'; // Fallback to empty string if not configured
+  'GB56E64MBDKI43NLRKOGXDENXHEEYSSHALOJ4Q5YDLW3TMTLUCHCIJWC'; // Fallback to empty string if not configured
 
 /**
  * Get Boundless platform wallet address

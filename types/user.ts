@@ -70,11 +70,11 @@ export interface UserMetadata {
 export interface Project {
   id: string;
   title: string;
-  description: string;
+  vision: string;
   category: string;
-  status: ProjectStatus;
-  banner: string | null;
-  logo: string;
+  status: string; // Changed from ProjectStatus to string
+  banner?: string | null;
+  logo?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -90,14 +90,15 @@ export interface ActivityMetadata {
 
 export interface Activity {
   id: string;
-  type: ActivityType;
+  type: string; // Changed from ActivityType to string to match API
   userId: string;
-  projectId: string | null;
-  organizationId: string | null;
-  metadata: ActivityMetadata;
+  projectId?: string | null;
+  organizationId?: string | null;
+  metadata?: any;
   createdAt: string;
   updatedAt: string;
-  project: Project | null;
+  project?: any;
+  organization?: any;
 }
 
 export interface UserBadge {
@@ -153,26 +154,70 @@ export interface User {
   name: string;
   email: string;
   emailVerified: boolean;
-  image: string;
+  image?: string;
   createdAt: string;
   updatedAt: string;
-  lastLoginMethod: LoginMethod;
-  role: UserRole;
+  lastLoginMethod?: string;
+  role: string;
   banned: boolean;
-  banReason: string | null;
-  banExpires: string | null;
+  banReason?: string | null;
+  banExpires?: string | null;
   username: string;
   displayUsername: string;
+  metadata?: any;
   twoFactorEnabled: boolean;
-  members: OrganizationMembership[];
-  // organizations: Organization[];
-  stats: Stats;
-  profile: UserProfileData;
-  projects: Project[];
-  activities: Activity[];
-  badges: UserBadge[];
-  grantApplicationsAsApplicant: GrantApplication[];
-  hackathonSubmissionsAsParticipant: HackathonSubmission[];
+  members?: Array<{
+    id: string;
+    organizationId: string;
+    userId: string;
+    role: string;
+    createdAt: string;
+    organization: {
+      id: string;
+      name: string;
+      slug: string;
+      logo: string;
+      createdAt: string;
+      _count: {
+        hackathons: number;
+        members: number;
+      };
+    };
+  }>;
+  projects?: Array<{
+    id: string;
+    title: string;
+    vision: string;
+    category: string;
+    status: string;
+    banner?: string | null;
+    logo?: string | null;
+    createdAt: string;
+  }>;
+  activities?: Array<{
+    id: string;
+    type: string;
+    userId: string;
+    projectId?: string | null;
+    organizationId?: string | null;
+    metadata?: any;
+    createdAt: string;
+    updatedAt: string;
+    project?: any;
+  }>;
+  userBadges?: any[];
+  grantApplicationsAsApplicant?: any[];
+  hackathonSubmissionsAsParticipant?: Array<{
+    id: string;
+    status: string;
+    rank?: number | null;
+    submittedAt: string;
+  }>;
+  profile?: any;
+  stats?: {
+    followers: number;
+    following: number;
+  };
 }
 
 export interface SessionUser extends User {}
@@ -235,13 +280,7 @@ export type UserWithoutSensitiveData = Omit<
 
 export type PublicUserProfile = Pick<
   User,
-  | 'id'
-  | 'name'
-  | 'username'
-  | 'displayUsername'
-  | 'image'
-  | 'projects'
-  | 'badges'
+  'id' | 'name' | 'username' | 'displayUsername' | 'image' | 'projects'
 > & {
   metadata: {
     profile: UserProfileData;

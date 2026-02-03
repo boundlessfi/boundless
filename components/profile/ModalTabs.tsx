@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TeamList, TeamMember } from '@/components/ui/TeamList';
 import { ProjectList } from './ProjectList';
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject } from '@/features/projects/types';
 
 interface ModalTabsProps {
   activeTab: string;

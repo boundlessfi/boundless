@@ -1,6 +1,6 @@
 'use client';
 import React, { useRef, useCallback, memo } from 'react';
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject } from '@/features/projects/types';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
 import gsap from 'gsap';

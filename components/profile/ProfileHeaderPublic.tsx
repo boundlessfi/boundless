@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { PublicUserProfile } from '@/types/project';
+import { PublicUserProfile } from '@/features/projects/types';
 import { BoundlessButton } from '@/components/buttons';
 import { BellPlus, Settings } from 'lucide-react';
 import UserStats from './UserStats';

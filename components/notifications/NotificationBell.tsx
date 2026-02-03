@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Bell } from 'lucide-react';
 import {
   DropdownMenu,
@@ -9,7 +9,6 @@ import {
 import { NotificationDropdown } from './NotificationDropdown';
 import { useNotifications } from '@/hooks/useNotifications';
 import { authClient } from '@/lib/auth-client';
-import { Notification } from '@/types/notifications';
 import { cn } from '@/lib/utils';
 
 interface NotificationBellProps {
@@ -25,36 +24,12 @@ export const NotificationBell = ({ className }: NotificationBellProps) => {
   const userId = session?.user?.id;
 
   // Use WebSocket-based notifications hook (only connect if userId is available)
-  const {
-    notifications: wsNotifications,
-    unreadCount,
-    isConnected,
-    markAllAsRead: wsMarkAllAsRead,
-  } = useNotifications(userId || undefined);
-
-  // Map WebSocket notifications to match NotificationDropdown expected structure
-  const notifications = useMemo<Notification[]>(() => {
-    return wsNotifications.map(wsNotif => ({
-      _id: wsNotif.id,
-      userId: {
-        type: 'string',
-      },
-      type: wsNotif.type as any, // Map to NotificationType enum
-      title: wsNotif.title,
-      message: wsNotif.message,
-      data: (wsNotif.data || {}) as Notification['data'],
-      read: false, // WebSocket notifications are typically unread when received
-      readAt: null,
-      emailSent: false,
-      emailSentAt: null,
-      createdAt: wsNotif.timestamp || new Date().toISOString(),
-    }));
-  }, [wsNotifications]);
-  console.log('Notifications:', notifications);
+  const { notifications, unreadCount, isConnected, loading, markAllAsRead } =
+    useNotifications(userId || undefined);
 
   // Wrapper for markAllAsRead that uses WebSocket
   const handleMarkAllAsRead = async () => {
-    wsMarkAllAsRead();
+    markAllAsRead();
   };
 
   const handleNotificationClick = () => {
@@ -90,7 +65,7 @@ export const NotificationBell = ({ className }: NotificationBellProps) => {
       <NotificationDropdown
         notifications={notifications}
         unreadCount={unreadCount}
-        loading={false}
+        loading={loading}
         onNotificationClick={handleNotificationClick}
         onMarkAllAsRead={handleMarkAllAsRead}
         onClose={() => setIsOpen(false)}

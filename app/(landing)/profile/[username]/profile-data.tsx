@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getUserProfileByUsername } from '@/lib/api/auth';
-import { PublicUserProfile } from '@/types/project';
+import { PublicUserProfile } from '@/features/projects/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ActivityTab from '@/components/profile/ActivityTab';
 import {

@@ -1,6 +1,6 @@
 'use client';
 
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject } from '@/features/projects/types';
 import { create } from 'zustand';
 
 type ProjectSheetMode = 'initialize' | 'validate';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Empty from './Empty';
 import Image from 'next/image';
-import { CrowdfundingProject } from '@/types/project';
+import { CrowdfundingProject } from '@/features/projects/types';
 import { VoteType, VoteEntityType, VoterDto } from '@/types/votes';
 import {
   getVoteCounts as apiGetVoteCounts,

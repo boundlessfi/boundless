@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Empty from './Empty';
 import Image from 'next/image';
-import { Contributor, Crowdfunding } from '@/types/project';
+import { Contributor, Crowdfunding } from '@/features/projects/types';
 
 const ProjectBackers = ({ crowdfund }: { crowdfund: Crowdfunding }) => {
   const [backers] = useState<Contributor[]>(

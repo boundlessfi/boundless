@@ -8,7 +8,7 @@ import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
 import { HackathonResources } from '@/components/hackathons/resources/resources';
-import LoadingScreen from '@/components/landing-page/project/CreateProjectModal/LoadingScreen';
+import LoadingScreen from '@/features/projects/components/CreateProjectModal/LoadingScreen';
 import { Badge } from '@/components/ui/badge';
 import { BoundlessButton } from '@/components/buttons';
 import type { Hackathon } from '@/lib/api/hackathons';

@@ -1,6 +1,4 @@
-import { ActivityType } from '@/types/user';
-
-export const getActivityDescription = (activityType: ActivityType) => {
+export const getActivityDescription = (activityType: string) => {
   switch (activityType) {
     case 'AVATAR_CHANGED':
       return 'You changed your avatar';

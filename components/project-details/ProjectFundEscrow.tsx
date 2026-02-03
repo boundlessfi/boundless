@@ -33,7 +33,7 @@ type MultiReleaseEscrowWithBalance = MultiReleaseEscrow & {
   balance?: number;
 };
 import { Loader2, CheckCircle2, DollarSign, AlertCircle } from 'lucide-react';
-import { fundCrowdfundingProject } from '@/lib/api/project';
+import { fundCrowdfundingProject } from '@/features/projects/api';
 
 interface ProjectFundEscrowProps {
   projectId: string;

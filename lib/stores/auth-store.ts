@@ -165,14 +165,14 @@ export const useAuthStore = create<AuthState>()(
           const user = await getMe();
 
           const transformedUser: User = {
-            id: user.id as string,
-            email: user.email as string,
-            name: user.name as string | null,
-            image: user.image as string | null,
-            username: user.username as string | null,
-            role: user.role as 'USER' | 'ADMIN',
-            isVerified: user.emailVerified as boolean | undefined,
-            profile: user.profile as User['profile'],
+            id: user.user.id as string,
+            email: user.user.email as string,
+            name: user.user.name as string | null,
+            image: user.user.image as string | null,
+            username: user.user.username as string | null,
+            role: user.user.role as 'USER' | 'ADMIN',
+            isVerified: user.user.emailVerified as boolean | undefined,
+            profile: user.user.profile as User['profile'],
           } as User;
 
           set({
@@ -234,14 +234,14 @@ export const useAuthStore = create<AuthState>()(
               const user = await getMe();
 
               const transformedUser: User = {
-                id: user.id as string,
-                email: user.email as string,
-                name: user.name as string | null,
-                image: user.image as string | null,
-                username: user.username as string | null,
-                role: user.role as 'USER' | 'ADMIN',
-                isVerified: user.emailVerified as boolean | undefined,
-                profile: user.profile as User['profile'],
+                id: user.user.id as string,
+                email: user.user.email as string,
+                name: user.user.name as string | null,
+                image: user.user.image as string | null,
+                username: user.user.username as string | null,
+                role: user.user.role as 'USER' | 'ADMIN',
+                isVerified: user.user.emailVerified as boolean | undefined,
+                profile: user.user.profile as User['profile'],
               } as User;
 
               set({
@@ -314,14 +314,14 @@ export const useAuthStore = create<AuthState>()(
             const user = await getMe();
 
             const transformedUser: User = {
-              id: user.id as string,
-              email: user.email as string,
-              name: user.name as string | null,
-              image: user.image as string | null,
-              username: user.username as string | null,
-              role: user.role as 'USER' | 'ADMIN',
-              isVerified: user.emailVerified as boolean | undefined,
-              profile: user.profile as User['profile'],
+              id: user.user.id as string,
+              email: user.user.email as string,
+              name: user.user.name as string | null,
+              image: user.user.image as string | null,
+              username: user.user.username as string | null,
+              role: user.user.role as 'USER' | 'ADMIN',
+              isVerified: user.user.emailVerified as boolean | undefined,
+              profile: user.user.profile as User['profile'],
             } as User;
 
             set({

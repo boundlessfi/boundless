@@ -155,7 +155,7 @@ const Confirm = forwardRef<ConfirmHandle, ConfirmProps>(
             showConnector={true}
             variant='default'
             className='w-full'
-            projectId='bitmed-health-protocol'
+            projectSlug='bitmed-health-protocol'
           />
         </div>
 

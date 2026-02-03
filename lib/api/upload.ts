@@ -458,4 +458,18 @@ export const uploadProjectGallery = async (
   });
 };
 
+/**
+ * Upload milestone evidence documents
+ */
+export const uploadMilestoneDocuments = async (
+  files: File[],
+  campaignId: string,
+  milestoneIndex: number
+) => {
+  return uploadService.uploadMultiple(files, {
+    folder: `boundless/campaigns/${campaignId}/milestones/${milestoneIndex}`,
+    tags: ['milestone', 'evidence', 'document'],
+  });
+};
+
 export default uploadService;

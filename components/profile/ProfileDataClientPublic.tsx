@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Filter } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PublicUserProfile } from '@/types/project';
+import { PublicUserProfile } from '@/features/projects/types';
 import ProjectsTabPublic from './ProjectsTabPublic';
 import OrganizationsTab from './OrganizationsTab';
 import {
