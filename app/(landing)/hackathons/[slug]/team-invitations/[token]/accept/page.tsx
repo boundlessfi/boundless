@@ -60,13 +60,14 @@ const AcceptTeamInvitationPage = () => {
     setError(null);
 
     try {
-      const response = await acceptTeamInvitation(hackathonSlug, {
-        token: invitationToken,
-      });
+      const response = await acceptTeamInvitation(
+        hackathonSlug,
+        invitationToken
+      );
 
       if (response.success) {
-        setSuccessTeamName(response.data.teamName);
-        toast.success(`Successfully joined ${response.data.teamName}!`);
+        setSuccessTeamName(response.data?.teamId || 'the team');
+        toast.success('Successfully joined the team!');
         setTimeout(() => {
           router.push(`/hackathons/${hackathonSlug}`);
         }, 2000);

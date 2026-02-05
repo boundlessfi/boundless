@@ -3,6 +3,7 @@
 // Display/UI Participant interface (for UI components)
 export interface ParticipantDisplay {
   id: string | number;
+  userId: string;
   name: string;
   username: string;
   avatar: string;

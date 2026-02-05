@@ -1,28 +1,32 @@
 import api from '../api';
 import { ApiResponse, PaginatedResponse } from '../types';
+import { Hackathon, Participant } from '@/types/hackathon';
+
+// Team Member Type
+export interface TeamMember {
+  userId: string;
+  username: string;
+  name: string;
+  role: string;
+  image?: string;
+  joinedAt: string;
+}
 
 // Team Recruitment Post Types
 export interface TeamRecruitmentPost {
   id: string;
   hackathonId: string;
   organizationId: string;
-  createdBy: {
-    userId: string;
-    name: string;
-    avatar?: string;
-    username: string;
-  };
-  projectName: string;
-  projectDescription: string;
-  lookingFor: Array<{
-    role: string;
-    skills?: string[];
-  }>;
-  currentTeamSize: number;
-  maxTeamSize: number;
-  contactMethod: 'email' | 'telegram' | 'discord' | 'github' | 'other';
+  teamName: string;
+  description: string;
+  lookingFor: string[];
+  isOpen: boolean;
+  leaderId: string;
+  maxSize: number;
+  memberCount: number;
+  members: TeamMember[];
+  contactMethod?: 'email' | 'telegram' | 'discord' | 'github' | 'other';
   contactInfo: string;
-  status: 'active' | 'filled' | 'closed' | 'open';
   createdAt: string;
   updatedAt: string;
   views?: number;
@@ -30,20 +34,16 @@ export interface TeamRecruitmentPost {
 }
 
 export interface CreateTeamPostRequest {
-  projectName: string;
-  projectDescription: string;
-  lookingFor: Array<{
-    role: string;
-    skills?: string[];
-  }>;
-  currentTeamSize: number;
-  maxTeamSize: number;
+  teamName: string;
+  description: string;
+  lookingFor: string[];
+  maxSize: number;
   contactMethod: 'email' | 'telegram' | 'discord' | 'github' | 'other';
   contactInfo: string;
 }
 
 export interface UpdateTeamPostRequest extends Partial<CreateTeamPostRequest> {
-  status?: 'active' | 'filled' | 'closed' | 'open';
+  isOpen?: boolean;
 }
 
 export interface GetTeamPostsOptions {
@@ -51,13 +51,29 @@ export interface GetTeamPostsOptions {
   limit?: number;
   role?: string;
   skill?: string;
-  status?: 'active' | 'filled' | 'closed' | 'all' | 'open';
+  status?: 'active' | 'filled' | 'closed' | 'open' | 'all';
   search?: string;
   sortBy?: 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }
 
 export interface GetTeamPostsResponse extends PaginatedResponse<TeamRecruitmentPost> {
+  success: true;
+  data: TeamRecruitmentPost[]; // Overriding base to match backend structure if needed, but PaginatedResponse handles T[]
+}
+
+// Re-defining for clarity as PaginatedResponse<T> is ApiResponse<T[]>
+export interface GetTeamsResponse extends ApiResponse<{
+  teams: TeamRecruitmentPost[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}> {
   success: true;
 }
 
@@ -108,32 +124,13 @@ export interface AcceptTeamInvitationResponse extends ApiResponse<{
 }
 
 /**
- * Create a team recruitment post
- */
-export const createTeamPost = async (
-  hackathonSlugOrId: string,
-  data: CreateTeamPostRequest,
-  organizationId?: string
-): Promise<CreateTeamPostResponse> => {
-  let url: string;
-  if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts`;
-  } else {
-    url = `/hackathons/${hackathonSlugOrId}/team-posts`;
-  }
-
-  const res = await api.post(url, data);
-  return res.data;
-};
-
-/**
  * Get team recruitment posts with filters
  */
 export const getTeamPosts = async (
   hackathonSlugOrId: string,
   options?: GetTeamPostsOptions,
   organizationId?: string
-): Promise<GetTeamPostsResponse> => {
+): Promise<GetTeamsResponse> => {
   const params = new URLSearchParams();
 
   if (options?.page) {
@@ -163,12 +160,31 @@ export const getTeamPosts = async (
 
   let url: string;
   if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts?${params.toString()}`;
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams?${params.toString()}`;
   } else {
-    url = `/hackathons/${hackathonSlugOrId}/team-posts?${params.toString()}`;
+    url = `/hackathons/${hackathonSlugOrId}/teams?${params.toString()}`;
   }
 
   const res = await api.get(url);
+  return res.data;
+};
+
+/**
+ * Create a team recruitment post
+ */
+export const createTeamPost = async (
+  hackathonSlugOrId: string,
+  data: CreateTeamPostRequest,
+  organizationId?: string
+): Promise<CreateTeamPostResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/teams`;
+  }
+
+  const res = await api.post(url, data);
   return res.data;
 };
 
@@ -182,9 +198,9 @@ export const getTeamPostDetails = async (
 ): Promise<GetTeamPostDetailsResponse> => {
   let url: string;
   if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams/${postId}`;
   } else {
-    url = `/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+    url = `/hackathons/${hackathonSlugOrId}/teams/${postId}`;
   }
 
   const res = await api.get(url);
@@ -202,9 +218,9 @@ export const updateTeamPost = async (
 ): Promise<UpdateTeamPostResponse> => {
   let url: string;
   if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams/${postId}`;
   } else {
-    url = `/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+    url = `/hackathons/${hackathonSlugOrId}/teams/${postId}`;
   }
 
   const res = await api.put(url, data);
@@ -221,13 +237,52 @@ export const deleteTeamPost = async (
 ): Promise<DeleteTeamPostResponse> => {
   let url: string;
   if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams/${postId}`;
   } else {
-    url = `/hackathons/${hackathonSlugOrId}/team-posts/${postId}`;
+    url = `/hackathons/${hackathonSlugOrId}/teams/${postId}`;
   }
 
   const res = await api.delete(url);
   return res.data;
+};
+
+/**
+ * Get current user's team for a hackathon
+ */
+export const getMyTeam = async (
+  hackathonSlugOrId: string,
+  organizationId?: string
+): Promise<ApiResponse<TeamRecruitmentPost | null>> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/my-team`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/my-team`;
+  }
+
+  const res = await api.get(url);
+
+  if (res.data.success && res.data.data) {
+    let teamData: TeamRecruitmentPost | null = null;
+
+    if (Array.isArray(res.data.data)) {
+      if (res.data.data.length > 0) {
+        teamData = res.data.data[0] as TeamRecruitmentPost;
+      }
+    } else {
+      teamData = res.data.data as TeamRecruitmentPost;
+    }
+
+    return {
+      ...res.data,
+      data: teamData,
+    };
+  }
+
+  return {
+    ...res.data,
+    data: null,
+  };
 };
 
 /**
@@ -240,9 +295,9 @@ export const trackContactClick = async (
 ): Promise<TrackContactClickResponse> => {
   let url: string;
   if (organizationId) {
-    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team-posts/${postId}/contact`;
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams/${postId}/contact`;
   } else {
-    url = `/hackathons/${hackathonSlugOrId}/team-posts/${postId}/contact`;
+    url = `/hackathons/${hackathonSlugOrId}/teams/${postId}/contact`;
   }
 
   const res = await api.post(url);
@@ -250,20 +305,18 @@ export const trackContactClick = async (
 };
 
 /**
- * Accept team invitation
+ * Accept team invitation (Legacy Token-based)
  */
-export const acceptTeamInvitation = async (
+export const acceptTeamInvitationToken = async (
   hackathonSlugOrId: string,
   data: AcceptTeamInvitationRequest,
   organizationId?: string
 ): Promise<AcceptTeamInvitationResponse> => {
   let url: string;
 
-  // If organizationId is provided, use authenticated endpoint
   if (organizationId) {
     url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/team/accept`;
   } else {
-    // Otherwise, use public slug-based endpoint
     url = `hackathons/${hackathonSlugOrId}/team/accept`;
   }
 

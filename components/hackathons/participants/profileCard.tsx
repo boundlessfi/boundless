@@ -7,14 +7,19 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import type { ParticipantDisplay } from '@/lib/api/hackathons/index';
 import Image from 'next/image';
-import { MessageCircle, Users, CheckCircle2 } from 'lucide-react';
+import { MessageCircle, Users, CheckCircle2, UserPlus } from 'lucide-react';
 import { useParticipants } from '@/hooks/hackathon/use-participants';
 import Link from 'next/link';
+import { useAuthStatus } from '@/hooks/use-auth';
+import { useRegisterHackathon } from '@/hooks/hackathon/use-register-hackathon';
+import { useHackathonData } from '@/lib/providers/hackathonProvider';
+import { InviteUserModal } from '../team-formation/InviteUserModal';
 
 const BRAND_COLOR = '#a7f950';
 
 interface ProfileCardProps {
   participant: ParticipantDisplay;
+  onInviteClick?: () => void;
 }
 
 // Simple date formatter
@@ -37,9 +42,9 @@ const formatJoinDate = (dateString: string) => {
   return `${months[date.getMonth()]} ${date.getFullYear()}`;
 };
 
-export function ProfileCard({ participant }: ProfileCardProps) {
+export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
   const [isFollowing, setIsFollowing] = useState(false);
-  const { participants } = useParticipants();
+  const { participants, allParticipants, teams } = useParticipants();
   const teamMembers = useMemo(() => {
     if (participant.role === 'leader' && participant.teamId) {
       return participants.filter(
@@ -50,6 +55,66 @@ export function ProfileCard({ participant }: ProfileCardProps) {
   }, [participant, participants]);
 
   const isTeamLeader = participant.role === 'leader' && participant.teamId;
+
+  const { user } = useAuthStatus();
+  const { currentHackathon } = useHackathonData();
+
+  const currentUserParticipant = useMemo(() => {
+    if (!user) return null;
+    const currentUsername = user.username || (user.profile as any)?.username;
+    const currentUserId = user.id || (user as any).userId;
+
+    // Use allParticipants to find current user even if search filtering is active
+    return allParticipants.find(
+      p =>
+        (currentUsername && p.username === currentUsername) ||
+        (currentUserId && p.userId === currentUserId)
+    );
+  }, [user, allParticipants]);
+
+  // Check if current user can invite this participant
+  const canInvite = useMemo(() => {
+    if (!user || !currentUserParticipant || !currentHackathon) {
+      console.log('[DEBUG] canInvite: missing prerequisites', {
+        user: !!user,
+        currentUserParticipant: !!currentUserParticipant,
+        currentHackathon: !!currentHackathon,
+      });
+      return false;
+    }
+
+    const currentUsername = user.username || (user.profile as any)?.username;
+    const currentUserId = user.id || (user as any).userId;
+
+    // Don't invite yourself
+    if (
+      participant.id === currentUserParticipant.id ||
+      (currentUsername && participant.username === currentUsername) ||
+      (currentUserId && participant.userId === currentUserId)
+    ) {
+      return false;
+    }
+
+    // 1. Check leadership from participants list (enriched)
+    const isEnrichedLeader =
+      currentUserParticipant.role?.toLowerCase() === 'leader';
+
+    // 2. Check leadership directly from teams list (fallback/backup)
+    const isDirectLeader = teams.some(t => t.leaderId === currentUserId);
+
+    const isLeader = isEnrichedLeader || isDirectLeader;
+
+    console.log('[DEBUG] ProfileCard canInvite check:', {
+      target: participant.username,
+      isLeader,
+      isEnrichedLeader,
+      isDirectLeader,
+      currentUserRole: currentUserParticipant.role,
+      currentUserId,
+    });
+
+    return isLeader;
+  }, [user, currentUserParticipant, participant, currentHackathon, teams]);
 
   return (
     <Card className='w-80 overflow-hidden border-zinc-800 bg-zinc-900 p-0 shadow-2xl'>
@@ -158,6 +223,19 @@ export function ProfileCard({ participant }: ProfileCardProps) {
           >
             <MessageCircle className='h-4 w-4' />
           </Button>
+          {canInvite && (
+            <Button
+              className='bg-zinc-800 text-white transition-colors hover:bg-zinc-700'
+              size='icon'
+              onClick={e => {
+                e.stopPropagation();
+                onInviteClick?.();
+              }}
+              title='Invite to Team'
+            >
+              <UserPlus className='h-4 w-4' />
+            </Button>
+          )}
         </div>
 
         {/* Team Members */}

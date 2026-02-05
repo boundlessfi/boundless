@@ -32,7 +32,7 @@ const SettingsContent = () => {
     );
   }
   return (
-    <div className=''>
+    <div className='p-10'>
       <div className=''>
         {/* Header */}
         <div className='mb-8'>

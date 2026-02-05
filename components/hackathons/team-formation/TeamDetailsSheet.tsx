@@ -23,6 +23,8 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { toast } from 'sonner';
+import { TeamInvitationsList } from './TeamInvitationsList';
+import { Separator } from '@/components/ui/separator';
 
 interface TeamDetailsSheetProps {
   open: boolean;
@@ -337,6 +339,19 @@ export function TeamDetailsSheet({
                   ))}
                 </div>
               </section>
+
+              {/* Team Invitations (Visible to Leader) */}
+              {isLeader && (
+                <>
+                  <Separator className='bg-gray-800' />
+                  <section>
+                    <TeamInvitationsList
+                      hackathonId={hackathonSlugOrId}
+                      teamId={post.id}
+                    />
+                  </section>
+                </>
+              )}
             </div>
           </div>
         </ScrollArea>

@@ -1081,8 +1081,8 @@ export const getDrafts = async (
   return res.data as GetDraftsResponse;
 };
 
-// Accpet invitition function
-export const acceptTeamInvitation = async (
+// Accpet invitation function (Legacy Token-based)
+export const acceptTeamInvitationToken = async (
   hackathonSlugOrId: string,
   data: AcceptTeamInvitationRequest,
   organizationId?: string
@@ -2079,6 +2079,46 @@ export interface TrackContactClickResponse extends ApiResponse<null> {
   message: string;
 }
 
+// ============================================
+// Team Invitation API Types and Functions
+// ============================================
+
+export type InvitationStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
+
+export interface TeamInvitation {
+  id: string;
+  teamId: string;
+  hackathon: Partial<Hackathon>;
+  invitee: Partial<Participant>;
+  inviter: Partial<Participant>;
+  status: InvitationStatus;
+  message: string;
+  role: string;
+  expiresAt: string;
+  createdAt: string;
+  respondedAt: string | null;
+}
+
+export interface InviteUserToTeamRequest {
+  inviteeIdentifier: string;
+  message?: string;
+}
+
+export interface GetInvitationsResponse extends ApiResponse<{
+  invitations: TeamInvitation[];
+  total: number;
+}> {
+  success: true;
+}
+
+export interface InvitationResponse extends ApiResponse<{
+  message: string;
+  teamId: string;
+  invitation: TeamInvitation;
+}> {
+  success: true;
+}
+
 /**
  * Create a team recruitment post
  */
@@ -2263,6 +2303,95 @@ export const getMyTeam = async (
     ...res.data,
     data: null,
   };
+};
+
+/**
+ * Invite a user to join a team
+ */
+export const inviteUserToTeam = async (
+  hackathonId: string,
+  teamId: string,
+  data: InviteUserToTeamRequest
+): Promise<ApiResponse<TeamInvitation>> => {
+  const res = await api.post(
+    `/hackathons/${hackathonId}/teams/${teamId}/invite`,
+    data
+  );
+  return res.data;
+};
+
+/**
+ * Get all team invitations received by the current user
+ */
+export const getMyTeamInvitations = async (
+  hackathonId: string,
+  status?: InvitationStatus
+): Promise<GetInvitationsResponse> => {
+  const params = new URLSearchParams();
+  if (status) {
+    params.append('status', status);
+  }
+  const queryString = params.toString();
+  const url = `/hackathons/${hackathonId}/my-invitations${queryString ? `?${queryString}` : ''}`;
+  const res = await api.get(url);
+  return res.data;
+};
+
+/**
+ * Accept a pending team invitation
+ */
+export const acceptTeamInvitation = async (
+  hackathonId: string,
+  inviteId: string
+): Promise<InvitationResponse> => {
+  const res = await api.post(
+    `/hackathons/${hackathonId}/invitations/${inviteId}/accept`
+  );
+  return res.data;
+};
+
+/**
+ * Reject a pending team invitation
+ */
+export const rejectTeamInvitation = async (
+  hackathonId: string,
+  inviteId: string
+): Promise<InvitationResponse> => {
+  const res = await api.post(
+    `/hackathons/${hackathonId}/invitations/${inviteId}/reject`
+  );
+  return res.data;
+};
+
+/**
+ * Cancel a pending invitation (Team leader only)
+ */
+export const cancelTeamInvitation = async (
+  hackathonId: string,
+  inviteId: string
+): Promise<ApiResponse<null>> => {
+  const res = await api.delete(
+    `/hackathons/${hackathonId}/invitations/${inviteId}`
+  );
+  return res.data;
+};
+
+/**
+ * Get all invitations sent by the team (Team leader only)
+ */
+export const getTeamInvitations = async (
+  hackathonId: string,
+  teamId: string,
+  status?: InvitationStatus
+): Promise<GetInvitationsResponse> => {
+  const params = new URLSearchParams();
+  if (status) {
+    params.append('status', status);
+  }
+  const queryString = params.toString();
+  const url = `/hackathons/${hackathonId}/teams/${teamId}/invitations${queryString ? `?${queryString}` : ''}`;
+  const res = await api.get(url);
+  return res.data;
 };
 
 // export const GetHackathonBySlug = async (slug): Promise<Hackathon> => {
