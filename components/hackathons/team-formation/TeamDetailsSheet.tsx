@@ -10,15 +10,18 @@ import {
   ExternalLink,
   Edit,
   Pin,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 import BoundlessSheet from '@/components/sheet/boundless-sheet';
 import {
   type TeamRecruitmentPost,
   getTeamPostDetails,
+  toggleRoleHired,
 } from '@/lib/api/hackathons';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuthStatus } from '@/hooks/use-auth';
@@ -132,12 +135,22 @@ export function TeamDetailsSheet({
   const [isLoading, setIsLoading] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const [error, setError] = useState<string | null>(null);
+  const [hiredRoles, setHiredRoles] = useState<Set<string>>(new Set());
+  const [togglingRole, setTogglingRole] = useState<string | null>(null);
 
   const isLeader = post.leaderId === user?.id;
 
   useEffect(() => {
     if (open && initialPost) {
       setPost(initialPost);
+
+      // Initialize hired roles from rolesStatus
+      if (initialPost.rolesStatus) {
+        const hired = new Set(
+          initialPost.rolesStatus.filter(r => r.hired).map(r => r.skill)
+        );
+        setHiredRoles(hired);
+      }
 
       // Fetch fresh details
       const loadDetails = async () => {
@@ -151,6 +164,13 @@ export function TeamDetailsSheet({
           );
           if (response.success && response.data) {
             setPost(response.data);
+            // Update hired roles from fresh data
+            if (response.data.rolesStatus) {
+              const hired = new Set(
+                response.data.rolesStatus.filter(r => r.hired).map(r => r.skill)
+              );
+              setHiredRoles(hired);
+            }
           }
         } catch {
           setError('Failed to load latest team details');
@@ -189,6 +209,57 @@ export function TeamDetailsSheet({
     onContactClick(post);
     if (post.contactInfo) {
       handleContact(post.contactInfo, post.contactMethod);
+    }
+  };
+
+  const handleToggleRoleHired = async (skill: string) => {
+    if (!isLeader || togglingRole) return;
+
+    setTogglingRole(skill);
+    const wasHired = hiredRoles.has(skill);
+
+    // Optimistic update
+    setHiredRoles(prev => {
+      const next = new Set(prev);
+      if (wasHired) {
+        next.delete(skill);
+      } else {
+        next.add(skill);
+      }
+      return next;
+    });
+
+    try {
+      const response = await toggleRoleHired(
+        hackathonSlugOrId,
+        post.id,
+        { skill },
+        organizationId
+      );
+
+      if (response.success) {
+        toast.success(
+          response.data.hired
+            ? `Marked "${skill}" as filled`
+            : `Marked "${skill}" as open`
+        );
+      }
+    } catch (err: any) {
+      // Rollback on error
+      setHiredRoles(prev => {
+        const next = new Set(prev);
+        if (wasHired) {
+          next.add(skill);
+        } else {
+          next.delete(skill);
+        }
+        return next;
+      });
+
+      const errorMessage = err?.message || 'Failed to update role status';
+      toast.error(errorMessage);
+    } finally {
+      setTogglingRole(null);
     }
   };
 
@@ -279,15 +350,50 @@ export function TeamDetailsSheet({
                     <Briefcase className='h-5 w-5 text-[#A7F950]' />
                     Looking For
                   </h3>
-                  <div className='flex flex-wrap gap-2'>
-                    {post.lookingFor.map((role, index) => (
-                      <Badge
-                        key={index}
-                        className='bg-gray-800 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-700'
-                      >
-                        {role}
-                      </Badge>
-                    ))}
+                  <div className='space-y-2'>
+                    {post.lookingFor.map((role, index) => {
+                      const roleSkill = typeof role === 'string' ? role : role;
+                      const isHired = hiredRoles.has(roleSkill);
+                      const isToggling = togglingRole === roleSkill;
+
+                      return (
+                        <div
+                          key={index}
+                          className='flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-900/30 p-3'
+                        >
+                          <Badge
+                            className={`flex-1 px-3 py-1.5 text-sm ${
+                              isHired
+                                ? 'bg-gray-700/50 text-gray-400 line-through'
+                                : 'bg-gray-800 text-gray-200'
+                            }`}
+                          >
+                            {roleSkill}
+                          </Badge>
+                          {isHired && (
+                            <Badge className='border-[#A7F950] bg-[#A7F950]/10 text-xs text-[#A7F950]'>
+                              <Check className='mr-1 h-3 w-3' />
+                              Filled
+                            </Badge>
+                          )}
+                          {isLeader && (
+                            <div className='flex items-center gap-2'>
+                              <span className='text-xs text-gray-400'>
+                                {isHired ? 'Filled' : 'Open'}
+                              </span>
+                              <Switch
+                                checked={isHired}
+                                onCheckedChange={() =>
+                                  handleToggleRoleHired(roleSkill)
+                                }
+                                disabled={isToggling}
+                                className='data-[state=checked]:bg-[#A7F950]'
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </section>
               )}

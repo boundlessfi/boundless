@@ -2,17 +2,27 @@
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import {
-  Mail,
   Users,
   Shield,
   AlertCircle,
   Loader2,
   CheckCircle2,
   ArrowRight,
+  Mail,
 } from 'lucide-react';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { acceptTeamInvitation } from '@/lib/api/hackathons';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const AcceptTeamInvitationPage = () => {
   const params = useParams();
@@ -20,19 +30,19 @@ const AcceptTeamInvitationPage = () => {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuthStatus();
 
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successTeamName, setSuccessTeamName] = useState<string>('');
-  const [showAcceptButton, setShowAcceptButton] = useState(false);
-
   const hackathonSlug = params.slug as string;
   const token = params.token as string;
   const redirectToken = searchParams.get('token');
   const invitationToken = token || redirectToken;
 
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successTeamName, setSuccessTeamName] = useState<string>('');
+  const [showAcceptButton, setShowAcceptButton] = useState(false);
+
   useEffect(() => {
     if (!invitationToken) {
-      router.push(`/hackathons/${hackathonSlug}`);
+      router.push('/hackathons');
       return;
     }
 
@@ -45,7 +55,7 @@ const AcceptTeamInvitationPage = () => {
     if (!isAuthenticated && !authLoading) {
       redirectToAuth();
     }
-  }, [isAuthenticated, authLoading, invitationToken, hackathonSlug]);
+  }, [isAuthenticated, authLoading, invitationToken]);
 
   const redirectToAuth = () => {
     const redirectUrl = `/hackathons/${hackathonSlug}/team-invitations/${invitationToken}/accept`;
@@ -67,16 +77,21 @@ const AcceptTeamInvitationPage = () => {
 
       if (response.success) {
         setSuccessTeamName(response.data?.teamId || 'the team');
+        // Use the slug from the response if available, otherwise go to hackathons list
+        const finalSlug = response.data?.invitation?.hackathon?.slug;
         toast.success('Successfully joined the team!');
         setTimeout(() => {
-          router.push(`/hackathons/${hackathonSlug}`);
+          if (finalSlug) {
+            router.push(`/hackathons/${finalSlug}?tab=team-formation`);
+          } else {
+            router.push('/hackathons');
+          }
         }, 2000);
       }
     } catch (err: any) {
       const errorMessage = err?.message || 'Failed to accept invitation';
       setError(errorMessage);
 
-      // Handle specific error cases
       if (err?.status === 403) {
         if (errorMessage.includes('different email address')) {
           toast.error('This invitation was sent to a different email address');
@@ -96,253 +111,167 @@ const AcceptTeamInvitationPage = () => {
     }
   };
 
-  // Loading authentication state
   if (authLoading) {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4'>
-        <div className='w-full max-w-md'>
-          <div className='rounded-2xl border border-white/10 bg-gray-800/50 p-8 shadow-2xl backdrop-blur-sm'>
-            <div className='mb-6 flex justify-center'>
-              <div className='relative'>
-                <div className='flex h-20 w-20 items-center justify-center rounded-full border border-[#a7f950]/20 bg-[#a7f950]/10'>
-                  <Users className='h-10 w-10 text-[#a7f950]' />
-                </div>
-                <div className='absolute -top-1 -right-1'>
-                  <Loader2 className='h-6 w-6 animate-spin text-[#a7f950]' />
-                </div>
-              </div>
+      <div className='bg-background flex min-h-screen items-center justify-center p-4'>
+        <Card className='border-border bg-card w-full max-w-md'>
+          <CardHeader className='text-center'>
+            <div className='bg-primary/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full'>
+              <Loader2 className='text-primary h-8 w-8 animate-spin' />
             </div>
-
-            <h1 className='mb-2 text-center text-2xl font-bold text-white'>
-              Verifying Invitation
-            </h1>
-
-            <p className='mb-6 text-center text-white/70'>
+            <CardTitle>Verifying Invitation</CardTitle>
+            <CardDescription>
               Please wait while we verify your invitation...
-            </p>
-
-            <div className='space-y-3'>
-              <div className='flex items-center gap-3 text-sm'>
-                <div className='h-2 w-2 animate-pulse rounded-full bg-[#a7f950]' />
-                <span className='text-white/70'>Checking authentication</span>
-              </div>
-            </div>
-          </div>
-        </div>
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
 
-  // Show accept button (user is authenticated and ready to accept)
   if (showAcceptButton && !error && !successTeamName) {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4'>
-        <div className='w-full max-w-md'>
-          <div className='rounded-2xl border border-white/10 bg-gray-800/50 p-8 shadow-2xl backdrop-blur-sm'>
-            {/* Icon */}
-            <div className='mb-6 flex justify-center'>
-              <div className='flex h-20 w-20 items-center justify-center rounded-full border border-[#a7f950]/20 bg-[#a7f950]/10'>
-                <Users className='h-10 w-10 text-[#a7f950]' />
-              </div>
+      <div className='bg-background flex min-h-screen items-center justify-center p-4'>
+        <Card className='border-border bg-card w-full max-w-md shadow-lg'>
+          <CardHeader className='text-center'>
+            <div className='bg-primary/10 mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full'>
+              <Users className='text-primary h-10 w-10' />
             </div>
-
-            {/* Title */}
-            <h1 className='mb-2 text-center text-2xl font-bold text-white'>
-              Team Invitation
-            </h1>
-
-            {/* Description */}
-            <p className='mb-6 text-center text-white/70'>
-              You've been invited to join a team for this hackathon. Click below
-              to accept the invitation and become a team member.
-            </p>
-
-            {/* Info box */}
-            <div className='mb-6 rounded-lg border border-[#a7f950]/20 bg-[#a7f950]/10 p-4'>
-              <div className='flex items-start gap-3'>
-                <Shield className='mt-0.5 h-5 w-5 flex-shrink-0 text-[#a7f950]' />
-                <div className='text-sm'>
-                  <p className='mb-1 font-medium text-[#a7f950]'>
-                    Ready to join?
-                  </p>
-                  <p className='text-white/70'>
-                    By accepting this invitation, you'll be added to the team
-                    and can start collaborating immediately.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className='space-y-3'>
-              <button
-                onClick={handleAcceptInvitation}
-                disabled={isProcessing}
-                className='flex w-full items-center justify-center gap-2 rounded-lg bg-[#a7f950] px-6 py-3 font-medium text-black transition-colors hover:bg-[#8ae63a] disabled:cursor-not-allowed disabled:opacity-50'
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className='h-4 w-4 animate-spin' />
-                    Accepting Invitation...
-                  </>
-                ) : (
-                  <>
-                    Accept Invitation
-                    <ArrowRight className='h-4 w-4' />
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => router.push(`/hackathons/${hackathonSlug}`)}
-                disabled={isProcessing}
-                className='w-full rounded-lg border border-white/10 bg-white/5 px-6 py-3 font-medium text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50'
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+            <CardTitle className='text-2xl'>Team Invitation</CardTitle>
+            <CardDescription>
+              You've been invited to join a team for this hackathon.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            <Alert className='border-primary/20 bg-primary/5'>
+              <Shield className='text-primary h-4 w-4' />
+              <AlertTitle className='text-primary'>Ready to join?</AlertTitle>
+              <AlertDescription>
+                By accepting this invitation, you'll be added to the team and
+                can start collaborating immediately.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+          <CardFooter className='flex flex-col gap-3'>
+            <Button
+              className='w-full gap-2'
+              size='lg'
+              onClick={handleAcceptInvitation}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                  Accepting...
+                </>
+              ) : (
+                <>
+                  Accept Invitation
+                  <ArrowRight className='h-4 w-4' />
+                </>
+              )}
+            </Button>
+            <Button
+              variant='outline'
+              className='w-full'
+              onClick={() => router.push('/hackathons')}
+              disabled={isProcessing}
+            >
+              Cancel
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
-  // Error state
   if (error && !isProcessing) {
     const isWrongEmail = error.includes('different email address');
-    const isExpired = error.includes('expired') || error.includes('not found');
     const isAlreadyMember = error.includes('already a member');
 
     return (
-      <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4'>
-        <div className='w-full max-w-md'>
-          <div className='rounded-2xl border border-white/10 bg-gray-800/50 p-8 shadow-2xl backdrop-blur-sm'>
-            {/* Icon */}
-            <div className='mb-6 flex justify-center'>
-              <div className='flex h-20 w-20 items-center justify-center rounded-full border border-[#a7f950]/20 bg-[#a7f950]/10'>
-                {isAlreadyMember ? (
-                  <CheckCircle2 className='h-10 w-10 text-[#a7f950]' />
-                ) : (
-                  <AlertCircle className='h-10 w-10 text-[#a7f950]' />
-                )}
-              </div>
-            </div>
-
-            {/* Title */}
-            <h1 className='mb-2 text-center text-2xl font-bold text-white'>
-              {isAlreadyMember
-                ? 'Already a Team Member'
-                : isWrongEmail
-                  ? 'Wrong Account'
-                  : isExpired
-                    ? 'Invitation Expired'
-                    : 'Invitation Error'}
-            </h1>
-
-            {/* Description */}
-            <p className='mb-6 text-center text-white/70'>{error}</p>
-
-            {/* Additional info for wrong email */}
-            {isWrongEmail && (
-              <div className='mb-6 rounded-lg border border-[#a7f950]/20 bg-[#a7f950]/10 p-4'>
-                <div className='flex items-start gap-3'>
-                  <Mail className='mt-0.5 h-5 w-5 flex-shrink-0 text-[#a7f950]' />
-                  <div className='text-sm'>
-                    <p className='mb-1 font-medium text-[#a7f950]'>
-                      Sign up with the correct email
-                    </p>
-                    <p className='text-white/70'>
-                      Create an account with the email this invitation was sent
-                      to.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Additional info for already member */}
-            {isAlreadyMember && (
-              <div className='mb-6 rounded-lg border border-[#a7f950]/20 bg-[#a7f950]/10 p-4'>
-                <div className='flex items-start gap-3'>
-                  <Shield className='mt-0.5 h-5 w-5 flex-shrink-0 text-[#a7f950]' />
-                  <div className='text-sm'>
-                    <p className='mb-1 font-medium text-[#a7f950]'>
-                      You're all set!
-                    </p>
-                    <p className='text-white/70'>
-                      You're already part of this team. Head back to the
-                      hackathon page.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className='space-y-3'>
-              {isWrongEmail ? (
-                <>
-                  <button
-                    onClick={() => {
-                      const redirectUrl = `/hackathons/${hackathonSlug}/team-invitations/${invitationToken}/accept`;
-                      router.push(
-                        `/auth?mode=signup&redirect=${encodeURIComponent(redirectUrl)}`
-                      );
-                    }}
-                    className='flex w-full items-center justify-center gap-2 rounded-lg bg-[#a7f950] px-6 py-3 font-medium text-black transition-colors hover:bg-[#8ae63a]'
-                  >
-                    Create Account
-                  </button>
-                  <button
-                    onClick={() => router.push(`/hackathons/${hackathonSlug}`)}
-                    className='w-full rounded-lg border border-white/10 bg-white/5 px-6 py-3 font-medium text-white transition-colors hover:bg-white/10'
-                  >
-                    Visit Hackathon
-                  </button>
-                </>
+      <div className='bg-background flex min-h-screen items-center justify-center p-4'>
+        <Card className='border-border bg-card w-full max-w-md shadow-lg'>
+          <CardHeader className='text-center'>
+            <div className='bg-destructive/10 mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full'>
+              {isAlreadyMember ? (
+                <CheckCircle2 className='text-primary h-10 w-10' />
               ) : (
-                <button
-                  onClick={() => router.push(`/hackathons/${hackathonSlug}`)}
-                  className='w-full rounded-lg bg-[#a7f950] px-6 py-3 font-medium text-black transition-colors hover:bg-[#8ae63a]'
-                >
-                  Go to Hackathon
-                </button>
+                <AlertCircle className='text-destructive h-10 w-10' />
               )}
             </div>
-          </div>
-        </div>
+            <CardTitle className='text-2xl'>
+              {isAlreadyMember ? 'Already a Member' : 'Unable to Join'}
+            </CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isWrongEmail && (
+              <Alert variant='destructive'>
+                <Mail className='h-4 w-4' />
+                <AlertTitle>Wrong Account</AlertTitle>
+                <AlertDescription>
+                  Please sign in with the email address this invitation was sent
+                  to.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+          <CardFooter className='flex flex-col gap-3'>
+            {isWrongEmail ? (
+              <>
+                <Button
+                  className='w-full'
+                  onClick={() => {
+                    const redirectUrl = `/hackathons/${hackathonSlug}/team-invitations/${invitationToken}/accept`;
+                    router.push(
+                      `/auth?mode=signup&redirect=${encodeURIComponent(redirectUrl)}`
+                    );
+                  }}
+                >
+                  Switch Account
+                </Button>
+                <Button
+                  variant='outline'
+                  className='w-full'
+                  onClick={() => router.push('/hackathons')}
+                >
+                  Back to Hackathons
+                </Button>
+              </>
+            ) : (
+              <Button
+                className='w-full'
+                onClick={() => router.push('/hackathons')}
+              >
+                Back to Hackathons
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
-  // Success state (brief moment before redirect)
   if (successTeamName) {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4'>
-        <div className='w-full max-w-md'>
-          <div className='rounded-2xl border border-white/10 bg-gray-800/50 p-8 shadow-2xl backdrop-blur-sm'>
-            {/* Icon */}
-            <div className='mb-6 flex justify-center'>
-              <div className='flex h-20 w-20 items-center justify-center rounded-full border border-[#a7f950]/20 bg-[#a7f950]/10'>
-                <CheckCircle2 className='h-10 w-10 text-[#a7f950]' />
-              </div>
+      <div className='bg-background flex min-h-screen items-center justify-center p-4'>
+        <Card className='border-border bg-card w-full max-w-md shadow-lg'>
+          <CardHeader className='text-center'>
+            <div className='bg-primary/10 mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full'>
+              <CheckCircle2 className='text-primary h-10 w-10' />
             </div>
-
-            {/* Title */}
-            <h1 className='mb-2 text-center text-2xl font-bold text-white'>
-              Successfully Joined!
-            </h1>
-
-            {/* Description */}
-            <p className='mb-6 text-center text-white/70'>
-              Welcome to {successTeamName}! Redirecting to hackathon page...
-            </p>
-
-            {/* Progress bar */}
-            <div className='h-1 overflow-hidden rounded-full bg-white/10'>
-              <div className='h-full animate-[loading_2s_ease-in-out] bg-[#a7f950]' />
+            <CardTitle className='text-2xl'>Welcome!</CardTitle>
+            <CardDescription>
+              You've successfully joined {successTeamName}. Redirecting...
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className='bg-secondary h-1 w-full overflow-hidden rounded-full'>
+              <div className='bg-primary h-full w-full animate-[loading_2s_ease-in-out]' />
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

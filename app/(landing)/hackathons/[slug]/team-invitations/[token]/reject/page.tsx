@@ -5,6 +5,15 @@ import { Users, AlertCircle, Loader2, XCircle } from 'lucide-react';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { rejectTeamInvitation } from '@/lib/api/hackathons';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
 const RejectTeamInvitationPage = () => {
   const params = useParams();
@@ -12,25 +21,25 @@ const RejectTeamInvitationPage = () => {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuthStatus();
 
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
   const hackathonSlug = params.slug as string;
   const token = params.token as string;
   const redirectToken = searchParams.get('token');
   const invitationToken = token || redirectToken;
 
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
   useEffect(() => {
     if (!invitationToken) {
-      router.push(`/hackathons/${hackathonSlug}`);
+      router.push('/hackathons');
       return;
     }
 
     if (!isAuthenticated && !authLoading) {
       redirectToAuth();
     }
-  }, [isAuthenticated, authLoading, invitationToken, hackathonSlug]);
+  }, [isAuthenticated, authLoading, invitationToken]);
 
   const redirectToAuth = () => {
     const currentUrl = window.location.href;
@@ -52,9 +61,15 @@ const RejectTeamInvitationPage = () => {
 
       if (response.success) {
         setSuccess(true);
+        // Use the slug from the response if available, otherwise go to hackathons list
+        const finalSlug = response.data?.invitation?.hackathon?.slug;
         toast.success('Invitation declined');
         setTimeout(() => {
-          router.push(`/hackathons/${hackathonSlug}`);
+          if (finalSlug) {
+            router.push(`/hackathons/${finalSlug}`);
+          } else {
+            router.push('/hackathons');
+          }
         }, 2000);
       }
     } catch (err: any) {
@@ -74,147 +89,115 @@ const RejectTeamInvitationPage = () => {
     }
   };
 
-  // Loading authentication state
   if (authLoading) {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-linear-to-br from-gray-900 via-gray-800 to-black p-4'>
-        <div className='w-full max-w-md'>
-          <div className='rounded-2xl border border-white/10 bg-gray-800/50 p-8 shadow-2xl backdrop-blur-sm'>
-            <div className='mb-6 flex justify-center'>
-              <div className='relative'>
-                <div className='flex h-20 w-20 items-center justify-center rounded-full border border-[#a7f950]/20 bg-[#a7f950]/10'>
-                  <Users className='h-10 w-10 text-[#a7f950]' />
-                </div>
-                <div className='absolute -top-1 -right-1'>
-                  <Loader2 className='h-6 w-6 animate-spin text-[#a7f950]' />
-                </div>
-              </div>
+      <div className='bg-background flex min-h-screen items-center justify-center p-4'>
+        <Card className='border-border bg-card w-full max-w-md'>
+          <CardHeader className='text-center'>
+            <div className='bg-primary/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full'>
+              <Loader2 className='text-primary h-8 w-8 animate-spin' />
             </div>
-
-            <h1 className='mb-2 text-center text-2xl font-bold text-white'>
-              Verifying Invitation
-            </h1>
-
-            <p className='mb-6 text-center text-white/70'>
+            <CardTitle>Verifying Invitation</CardTitle>
+            <CardDescription>
               Please wait while we verify your invitation...
-            </p>
-
-            <div className='flex justify-center'>
-              <Loader2 className='h-6 w-6 animate-spin text-[#a7f950]' />
-            </div>
-          </div>
-        </div>
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
 
-  // Error state
   if (error && !success) {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-linear-to-br from-gray-900 via-gray-800 to-black p-4'>
-        <div className='w-full max-w-md'>
-          <div className='rounded-2xl border border-red-500/20 bg-gray-800/50 p-8 shadow-2xl backdrop-blur-sm'>
-            <div className='mb-6 flex justify-center'>
-              <div className='flex h-20 w-20 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10'>
-                <AlertCircle className='h-10 w-10 text-red-500' />
-              </div>
+      <div className='bg-background flex min-h-screen items-center justify-center p-4'>
+        <Card className='border-border bg-card w-full max-w-md shadow-lg'>
+          <CardHeader className='text-center'>
+            <div className='bg-destructive/10 mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full'>
+              <AlertCircle className='text-destructive h-10 w-10' />
             </div>
-
-            <h1 className='mb-2 text-center text-2xl font-bold text-white'>
-              Unable to Process Invitation
-            </h1>
-
-            <p className='mb-6 text-center text-white/70'>{error}</p>
-
-            <button
-              onClick={() => router.push(`/hackathons/${hackathonSlug}`)}
-              className='w-full rounded-lg bg-[#a7f950] px-6 py-3 font-semibold text-black transition-all hover:bg-[#8fd93f]'
+            <CardTitle className='text-destructive text-2xl'>
+              Unable to Process
+            </CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button
+              className='w-full'
+              onClick={() => router.push('/hackathons')}
             >
-              Return to Hackathon
-            </button>
-          </div>
-        </div>
+              Return to Hackathons
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
-  // Success state
   if (success) {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-linear-to-br from-gray-900 via-gray-800 to-black p-4'>
-        <div className='w-full max-w-md'>
-          <div className='rounded-2xl border border-white/10 bg-gray-800/50 p-8 shadow-2xl backdrop-blur-sm'>
-            <div className='mb-6 flex justify-center'>
-              <div className='flex h-20 w-20 items-center justify-center rounded-full border border-gray-500/20 bg-gray-500/10'>
-                <XCircle className='h-10 w-10 text-gray-400' />
-              </div>
+      <div className='bg-background flex min-h-screen items-center justify-center p-4'>
+        <Card className='border-border bg-card w-full max-w-md shadow-lg'>
+          <CardHeader className='text-center'>
+            <div className='bg-muted mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full'>
+              <XCircle className='text-muted-foreground h-10 w-10' />
             </div>
-
-            <h1 className='mb-2 text-center text-2xl font-bold text-white'>
-              Invitation Declined
-            </h1>
-
-            <p className='mb-6 text-center text-white/70'>
+            <CardTitle className='text-2xl'>Invitation Declined</CardTitle>
+            <CardDescription>
               You've declined this team invitation. Redirecting...
-            </p>
-
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className='flex justify-center'>
-              <Loader2 className='h-6 w-6 animate-spin text-[#a7f950]' />
+              <Loader2 className='text-primary h-6 w-6 animate-spin' />
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  // Main decline confirmation
   return (
-    <div className='flex min-h-screen items-center justify-center bg-linear-to-br from-gray-900 via-gray-800 to-black p-4'>
-      <div className='w-full max-w-md'>
-        <div className='rounded-2xl border border-white/10 bg-gray-800/50 p-8 shadow-2xl backdrop-blur-sm'>
-          <div className='mb-6 flex justify-center'>
-            <div className='flex h-20 w-20 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10'>
-              <XCircle className='h-10 w-10 text-red-500' />
-            </div>
+    <div className='bg-background flex min-h-screen items-center justify-center p-4'>
+      <Card className='border-border bg-card w-full max-w-md shadow-lg'>
+        <CardHeader className='text-center'>
+          <div className='bg-destructive/10 mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full'>
+            <XCircle className='text-destructive h-10 w-10' />
           </div>
-
-          <h1 className='mb-2 text-center text-2xl font-bold text-white'>
-            Decline Team Invitation
-          </h1>
-
-          <p className='mb-8 text-center text-white/70'>
+          <CardTitle className='text-2xl'>Decline Team Invitation</CardTitle>
+          <CardDescription>
             Are you sure you want to decline this team invitation? This action
             cannot be undone.
-          </p>
-
-          <div className='space-y-3'>
-            <button
-              onClick={handleReject}
-              disabled={isProcessing}
-              className='w-full rounded-lg bg-red-500 px-6 py-3 font-semibold text-white transition-all hover:bg-red-600 disabled:opacity-50'
-            >
-              {isProcessing ? (
-                <span className='flex items-center justify-center gap-2'>
-                  <Loader2 className='h-5 w-5 animate-spin' />
-                  Declining...
-                </span>
-              ) : (
-                <span className='flex items-center justify-center gap-2'>
-                  <XCircle className='h-5 w-5' />
-                  Decline Invitation
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => router.push(`/hackathons/${hackathonSlug}`)}
-              className='w-full rounded-lg border border-white/10 bg-transparent px-6 py-3 font-semibold text-white transition-all hover:bg-white/5'
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
+          </CardDescription>
+        </CardHeader>
+        <CardFooter className='flex flex-col gap-3'>
+          <Button
+            variant='destructive'
+            className='w-full gap-2'
+            onClick={handleReject}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className='h-4 w-4 animate-spin' />
+                Declining...
+              </>
+            ) : (
+              <>
+                <XCircle className='h-4 w-4' />
+                Decline Invitation
+              </>
+            )}
+          </Button>
+          <Button
+            variant='ghost'
+            className='w-full'
+            onClick={() => router.push('/hackathons')}
+            disabled={isProcessing}
+          >
+            Cancel
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

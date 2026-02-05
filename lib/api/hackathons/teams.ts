@@ -12,6 +12,12 @@ export interface TeamMember {
   joinedAt: string;
 }
 
+// Team Role Type (for tracking hired status)
+export interface TeamRole {
+  skill: string;
+  hired: boolean;
+}
+
 // Team Recruitment Post Types
 export interface TeamRecruitmentPost {
   id: string;
@@ -20,6 +26,7 @@ export interface TeamRecruitmentPost {
   teamName: string;
   description: string;
   lookingFor: string[];
+  rolesStatus?: TeamRole[]; // Track hired status for each role
   isOpen: boolean;
   leaderId: string;
   maxSize: number;
@@ -321,5 +328,43 @@ export const acceptTeamInvitationToken = async (
   }
 
   const res = await api.post(url, data);
+  return res.data;
+};
+
+// Toggle Role Hired Status Types
+export interface ToggleRoleHiredRequest {
+  skill: string;
+}
+
+export interface ToggleRoleHiredResponse extends ApiResponse<{
+  role: string;
+  hired: boolean;
+}> {
+  success: true;
+  data: {
+    role: string;
+    hired: boolean;
+  };
+  message: string;
+}
+
+/**
+ * Toggle whether a role has been filled (hired) or is still open
+ * Only team leaders can toggle role status
+ */
+export const toggleRoleHired = async (
+  hackathonSlugOrId: string,
+  teamId: string,
+  data: ToggleRoleHiredRequest,
+  organizationId?: string
+): Promise<ToggleRoleHiredResponse> => {
+  let url: string;
+  if (organizationId) {
+    url = `/organizations/${organizationId}/hackathons/${hackathonSlugOrId}/teams/${teamId}/roles/toggle-hired`;
+  } else {
+    url = `/hackathons/${hackathonSlugOrId}/teams/${teamId}/roles/toggle-hired`;
+  }
+
+  const res = await api.patch(url, data);
   return res.data;
 };

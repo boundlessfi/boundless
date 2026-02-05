@@ -21,6 +21,19 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { type TeamRecruitmentPost } from '@/lib/api/hackathons';
 import { toast } from 'sonner';
+import { useAuthStatus } from '@/hooks/use-auth';
+import { useLeaveTeam } from '@/hooks/hackathon/use-leave-team';
+import { LogOut, Loader2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface TeamRecruitmentPostCardProps {
   post: TeamRecruitmentPost;
@@ -31,6 +44,7 @@ interface TeamRecruitmentPostCardProps {
   isMyPost?: boolean;
   onTrackContact?: (postId: string) => void;
   isPinned?: boolean;
+  onLeaveSuccess?: () => void;
 }
 
 const getContactMethodIcon = (
@@ -185,11 +199,43 @@ export function TeamRecruitmentPostCard({
   isMyPost,
   onTrackContact,
   isPinned = false,
+  onLeaveSuccess,
 }: TeamRecruitmentPostCardProps) {
   const ContactIcon = getContactMethodIcon(
     post.contactMethod,
     post.contactInfo
   );
+
+  const { user } = useAuthStatus();
+  const [showLeaveDialog, setShowLeaveDialog] = React.useState(false);
+
+  const isMember = user ? post.members.some(m => m.userId === user.id) : false;
+  // Leader is also a member, so isMember is true for leader. Check specifically for leader capability
+  const isLeader = user ? post.leaderId === user.id : false;
+
+  const { leaveTeam, isLeaving } = useLeaveTeam({
+    hackathonSlugOrId: post.hackathonId,
+    teamId: post.id,
+    organizationId: post.organizationId,
+    onSuccess: onLeaveSuccess,
+  });
+
+  const handleLeaveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    // Check leader restrictions
+    if (isLeader && post.members.length > 1) {
+      toast.error('You must transfer leadership before leaving the team.');
+      return;
+    }
+
+    setShowLeaveDialog(true);
+  };
+
+  const confirmLeave = async () => {
+    await leaveTeam();
+    setShowLeaveDialog(false);
+  };
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -271,7 +317,8 @@ export function TeamRecruitmentPostCard({
           >
             {post.isOpen ? 'Open' : 'Closed'}
           </Badge>
-          {isMyPost && (
+
+          {(isMyPost || isMember) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -287,25 +334,61 @@ export function TeamRecruitmentPostCard({
                 align='end'
                 className='border-gray-800 bg-black text-white'
               >
+                {isMyPost && (
+                  <DropdownMenuItem
+                    onClick={handleEditClick}
+                    className='cursor-pointer text-gray-300 focus:bg-gray-800 focus:text-white'
+                  >
+                    <Edit className='mr-2 h-4 w-4' />
+                    Edit Post
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem
-                  onClick={handleEditClick}
-                  className='cursor-pointer text-gray-300 focus:bg-gray-800 focus:text-white'
-                >
-                  <Edit className='mr-2 h-4 w-4' />
-                  Edit Post
-                </DropdownMenuItem>
-                {/* <DropdownMenuItem
-                  onClick={handleDeleteClick}
+                  onClick={handleLeaveClick}
                   className='cursor-pointer text-red-400 focus:bg-red-500/20 focus:text-red-400'
                 >
-                  <X className='mr-2 h-4 w-4' />
-                  Close Post
-                </DropdownMenuItem> */}
+                  <LogOut className='mr-2 h-4 w-4' />
+                  Leave Team
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
         </div>
       </div>
+
+      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <AlertDialogContent className='border-gray-800 bg-[#030303] text-white'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave Team</AlertDialogTitle>
+            <AlertDialogDescription className='text-gray-400'>
+              Are you sure you want to leave this team?
+              {isLeader &&
+                post.members.length === 1 &&
+                " Since you're the only member, the team might be dissolved."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className='border-gray-700 text-white hover:bg-gray-800'>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmLeave}
+              disabled={isLeaving}
+              className='bg-red-600 text-white hover:bg-red-700 disabled:opacity-50'
+            >
+              {isLeaving ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Leaving...
+                </>
+              ) : (
+                'Leave Team'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Project Name */}
       <h3 className='mb-2 line-clamp-1 text-lg font-bold text-white sm:text-xl'>

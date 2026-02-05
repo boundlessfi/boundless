@@ -19,6 +19,9 @@ import { toast } from 'sonner';
 import type { Participant } from '@/lib/api/hackathons';
 import { HackathonStickyCard } from '@/components/hackathons/hackathonStickyCard';
 import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
+import { useCommentSystem } from '@/hooks/use-comment-system';
+import { CommentEntityType } from '@/types/comment';
+import { useTeamPosts } from '@/hooks/hackathon/use-team-posts';
 
 export default function HackathonPage() {
   const router = useRouter();
@@ -36,6 +39,26 @@ export default function HackathonPage() {
   const timeline_Events = useTimelineEvents(currentHackathon, {
     includeEndDate: false,
     dateFormat: { month: 'short', day: 'numeric', year: 'numeric' },
+  });
+
+  const hackathonId = params.slug as string;
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+
+  // Fetch discussion comments for count
+  const { comments: discussionComments } = useCommentSystem({
+    entityType: CommentEntityType.HACKATHON,
+    entityId: hackathonId,
+    page: 1,
+    limit: 1000,
+    enabled: !!hackathonId,
+  });
+
+  // Fetch team posts for count
+  const { posts: teamPosts } = useTeamPosts({
+    hackathonSlugOrId: hackathonId,
+    organizationId: currentHackathon?.organizationId,
+    autoFetch: !!hackathonId,
   });
 
   const hackathonTabs = useMemo(() => {
@@ -77,11 +100,19 @@ export default function HackathonPage() {
         label: 'Submissions',
         badge: submissions.filter(p => p.status === 'Approved').length,
       },
-      { id: 'discussions', label: 'Discussions' },
+      {
+        id: 'discussions',
+        label: 'Discussions',
+        badge: discussionComments.comments.length,
+      },
     ];
 
     if (isTeamHackathon && isTabEnabled) {
-      tabs.push({ id: 'team-formation', label: 'Find Team' });
+      tabs.push({
+        id: 'team-formation',
+        label: 'Find Team',
+        badge: teamPosts.length,
+      });
     }
 
     return tabs;
@@ -90,12 +121,12 @@ export default function HackathonPage() {
     currentHackathon?.resources,
     currentHackathon?.participantType,
     currentHackathon?.enabledTabs,
+    currentHackathon?.organizationId,
     submissions,
+    discussionComments.comments.length,
+    teamPosts.length,
+    hackathonId,
   ]);
-
-  const hackathonId = params.slug as string;
-  const [activeTab, setActiveTab] = useState('overview');
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   // Refresh hackathon data
   const refreshHackathonData = useCallback(async () => {

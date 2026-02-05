@@ -57,6 +57,8 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
     isProcessing: isProcessingReceived,
     acceptInvite,
     rejectInvite,
+    error: receivedError,
+    fetchMyInvitations,
   } = useMyTeamInvitations(hackathonId);
 
   // Sent Invitations (only if leader)
@@ -65,6 +67,8 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
     isLoading: isLoadingSent,
     cancelInvite,
     isInviting: isProcessingSent,
+    error: sentError,
+    fetchInvitations,
   } = useTeamInvitations({
     hackathonId,
     teamId: teamId || '',
@@ -76,6 +80,7 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
     activeTab === 'received' ? isLoadingReceived : isLoadingSent;
   const invitations =
     activeTab === 'received' ? receivedInvitations : sentInvitations;
+  const error = activeTab === 'received' ? receivedError : sentError;
 
   const getStatusVariant = (status: string) => {
     switch (status.toLowerCase()) {
@@ -155,6 +160,26 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
         <div className='flex justify-center py-12'>
           <Loader2 className='h-10 w-10 animate-spin text-[#a7f950]' />
         </div>
+      ) : error ? (
+        <Card className='border border-red-500/20 bg-red-500/10'>
+          <CardContent className='flex flex-col items-center justify-center py-8 text-center text-red-400'>
+            <AlertCircle className='mb-2 h-8 w-8' />
+            <p className='font-medium'>Failed to load invitations</p>
+            <p className='text-sm opacity-80'>{error}</p>
+            <Button
+              variant='outline'
+              size='sm'
+              className='mt-4 border-red-500/30 hover:bg-red-500/10'
+              onClick={() =>
+                activeTab === 'received'
+                  ? fetchMyInvitations()
+                  : fetchInvitations()
+              }
+            >
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
       ) : invitations.length === 0 ? (
         <Card className='border border-dashed border-zinc-800 bg-transparent'>
           <CardContent className='flex flex-col items-center justify-center py-12 text-center text-zinc-500'>

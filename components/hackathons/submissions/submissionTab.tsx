@@ -123,7 +123,13 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
       <div className='mb-6 flex items-center justify-between text-left text-sm'>
         <span className='text-gray-400'>
           <span className='font-semibold text-[#a7f950]'>
-            {submissions.filter(p => p.status === 'Approved').length}
+            {
+              submissions.filter(
+                p =>
+                  p.status?.toLowerCase() === 'shortlisted' ||
+                  p.status === 'Approved'
+              ).length
+            }
           </span>{' '}
           total approved submissions
         </span>
@@ -215,7 +221,7 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
             placeholder='Search by project name or participant...'
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className='w-full rounded-lg border-gray-900 bg-[#030303] py-3 pr-4 pl-10 text-base text-white placeholder-gray-400 focus:border-gray-400 focus:ring-1 focus:ring-gray-400'
+            className='bg-backgound-main-bg w-full rounded-lg border-gray-900 py-3 pr-4 pl-10 text-base text-white placeholder-gray-400 focus:border-gray-400 focus:ring-1 focus:ring-gray-400'
           />
         </div>
       </div>
@@ -251,7 +257,11 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
               submitterName='You'
               category={mySubmission.category}
               status={
-                mySubmission.status === 'submitted' ? 'Pending' : 'Approved'
+                mySubmission.status?.toLowerCase() === 'shortlisted'
+                  ? 'Approved'
+                  : mySubmission.status?.toLowerCase() === 'disqualified'
+                    ? 'Rejected'
+                    : 'Pending'
               }
               upvotes={
                 typeof mySubmission.votes === 'number' ? mySubmission.votes : 0
@@ -274,36 +284,46 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
           )}
 
           {submissions
-            .filter(
-              submission =>
-                // Filter out approved submissions, and optionally filter out my own submission if it's already shown as pinned
-                submission.status === 'Approved' &&
-                (mySubmission ? submission._id !== mySubmission.id : true)
+            .filter(submission =>
+              // Filter out my own submission if it's already shown as pinned
+              mySubmission ? submission._id !== mySubmission.id : true
             )
-            .map((submission, index) => (
-              <SubmissionCard
-                key={submission._id || index}
-                {...submission}
-                submissionId={(submission as { _id?: string })?._id}
-                onViewClick={() =>
-                  handleViewSubmission((submission as { _id?: string })?._id)
-                }
-                onUpvoteClick={() => {
-                  if (!isAuthenticated) {
-                    return;
+            .map((submission, index) => {
+              const status =
+                submission.status?.toLowerCase() === 'shortlisted'
+                  ? 'Approved'
+                  : submission.status?.toLowerCase() === 'disqualified'
+                    ? 'Rejected'
+                    : 'Pending';
+
+              return (
+                <SubmissionCard
+                  key={submission._id || index}
+                  {...submission}
+                  status={status}
+                  submissionId={(submission as { _id?: string })?._id}
+                  onViewClick={() =>
+                    handleViewSubmission((submission as { _id?: string })?._id)
                   }
-                  handleUpvoteSubmission((submission as { _id?: string })?._id);
-                }}
-                onCommentClick={() => {
-                  if (!isAuthenticated) {
-                    return;
-                  }
-                  handleCommentSubmission(
-                    (submission as { _id?: string })?._id
-                  );
-                }}
-              />
-            ))}
+                  onUpvoteClick={() => {
+                    if (!isAuthenticated) {
+                      return;
+                    }
+                    handleUpvoteSubmission(
+                      (submission as { _id?: string })?._id
+                    );
+                  }}
+                  onCommentClick={() => {
+                    if (!isAuthenticated) {
+                      return;
+                    }
+                    handleCommentSubmission(
+                      (submission as { _id?: string })?._id
+                    );
+                  }}
+                />
+              );
+            })}
         </div>
       ) : (
         <div className='flex min-h-[400px] items-center justify-center'>
@@ -366,7 +386,7 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
           }
         }}
       >
-        <AlertDialogContent className='border-gray-800 bg-[#030303] text-white'>
+        <AlertDialogContent className='bg-background-main-bg border-gray-800 text-white'>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Submission</AlertDialogTitle>
             <AlertDialogDescription className='text-gray-400'>

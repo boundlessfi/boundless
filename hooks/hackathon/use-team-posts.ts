@@ -76,7 +76,7 @@ export function useTeamPosts({
         const errorMessage =
           err instanceof Error ? err.message : 'Failed to fetch team posts';
         setError(errorMessage);
-        toast.error('Error', { description: errorMessage });
+        // Removed toast.error to avoid false positive error messages on page load
       } finally {
         setIsLoading(false);
       }

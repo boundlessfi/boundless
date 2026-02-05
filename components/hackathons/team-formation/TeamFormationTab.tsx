@@ -52,6 +52,8 @@ export function TeamFormationTab({
     fetchPosts,
     deletePost,
     trackContact,
+    fetchMyTeam,
+    fetchMyPosts,
   } = useTeamPosts({
     hackathonSlugOrId: hackathonId,
     organizationId,
@@ -316,6 +318,11 @@ export function TeamFormationTab({
                 onClick={handlePostClick}
                 onTrackContact={trackContact}
                 isPinned={true}
+                onLeaveSuccess={() => {
+                  fetchMyTeam();
+                  fetchPosts();
+                  fetchMyPosts(); // Refresh my posts too
+                }}
               />
             )}
 
@@ -332,6 +339,11 @@ export function TeamFormationTab({
                   onDeleteClick={handleDeleteClick}
                   onClick={handlePostClick}
                   onTrackContact={trackContact}
+                  onLeaveSuccess={() => {
+                    fetchMyTeam();
+                    fetchPosts();
+                    fetchMyPosts();
+                  }}
                 />
               ))}
           </div>

@@ -44,8 +44,12 @@ export function useTeamInvitations({
       setError(null);
       try {
         const response = await getTeamInvitations(hackathonId, teamId, status);
-        if (response.success && response.data) {
-          setInvitations(response.data.invitations);
+        // Handle both flat and wrapped response structures
+        const data = (response as any).invitations
+          ? response
+          : (response as any).data;
+        if (data && Array.isArray(data.invitations)) {
+          setInvitations(data.invitations);
         }
       } catch (err: any) {
         setError(err?.message || 'Failed to fetch team invitations');
@@ -137,8 +141,16 @@ export function useMyTeamInvitations(hackathonId: string, autoFetch = true) {
       setError(null);
       try {
         const response = await getMyTeamInvitations(hackathonId, status);
-        if (response.success && response.data) {
-          setInvitations(response.data.invitations);
+
+        // Handle both flat and wrapped response structures
+        const data = (response as any).invitations
+          ? response
+          : (response as any).data;
+
+        if (data && Array.isArray(data.invitations)) {
+          setInvitations(data.invitations);
+        } else {
+          setInvitations([]);
         }
       } catch (err: any) {
         setError(err?.message || 'Failed to fetch your invitations');

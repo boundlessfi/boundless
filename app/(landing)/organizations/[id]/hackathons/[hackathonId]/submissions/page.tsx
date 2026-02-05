@@ -12,6 +12,7 @@ import { SubmissionsManagement } from '@/components/organization/hackathons/subm
 export default function SubmissionsPage() {
   const params = useParams();
   const hackathonId = params.hackathonId as string;
+  const organizationId = params.id as string;
 
   const {
     submissions,
@@ -81,6 +82,8 @@ export default function SubmissionsPage() {
               onFilterChange={updateFilters}
               onPageChange={goToPage}
               onRefresh={refresh}
+              organizationId={organizationId}
+              hackathonId={hackathonId}
             />
           )}
         </div>
