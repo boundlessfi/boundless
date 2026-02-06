@@ -1,8 +1,58 @@
 import { useState, useMemo } from 'react';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
+import { useOrganizationUtils } from '@/lib/providers/useOrganization';
+import {
+  SubmissionVisibility,
+  SubmissionStatusVisibility,
+} from '@/lib/api/hackathons';
 
 export function useSubmissions() {
-  const { submissions } = useHackathonData();
+  const {
+    currentHackathon,
+    submissions: privateSubmissions,
+    exploreSubmissions,
+  } = useHackathonData();
+  const { canManage } = useOrganizationUtils();
+
+  const isOrganizer = currentHackathon
+    ? canManage(currentHackathon.organizationId)
+    : false;
+  const isParticipant = currentHackathon?.isParticipant ?? false;
+
+  // For the public showcase, we prioritize the exploreSubmissions endpoint.
+  // If we're an organizer, we might want to see the full list of private submissions.
+  const allSubmissions =
+    exploreSubmissions.length > 0 ? exploreSubmissions : privateSubmissions;
+
+  const submissions = useMemo(() => {
+    if (isOrganizer) return allSubmissions;
+
+    let filtered = allSubmissions;
+
+    // Check who can view submissions
+    if (
+      currentHackathon?.submissionVisibility ===
+        SubmissionVisibility.PARTICIPANTS_ONLY &&
+      !isParticipant
+    ) {
+      return [];
+    }
+
+    // Check which submission statuses are visible
+    if (
+      currentHackathon?.submissionStatusVisibility ===
+      SubmissionStatusVisibility.ACCEPTED_SHORTLISTED
+    ) {
+      filtered = filtered.filter(
+        sub =>
+          sub.status?.toLowerCase() === 'shortlisted' ||
+          sub.status === 'Approved'
+      );
+    }
+
+    return filtered;
+  }, [allSubmissions, isOrganizer, isParticipant, currentHackathon]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSort, setSelectedSort] = useState('newest');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');

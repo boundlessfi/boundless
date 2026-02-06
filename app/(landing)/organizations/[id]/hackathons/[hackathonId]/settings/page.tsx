@@ -12,6 +12,7 @@ import {
   Trophy,
   Handshake,
   Sliders,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api/api';
@@ -21,6 +22,7 @@ import ParticipantSettingsTab from '@/components/organization/hackathons/setting
 import RewardsSettingsTab from '@/components/organization/hackathons/settings/RewardsSettingsTab';
 import CollaborationSettingsTab from '@/components/organization/hackathons/settings/CollaborationSettingsTab';
 import AdvancedSettingsTab from '@/components/organization/hackathons/settings/AdvancedSettingsTab';
+import SubmissionVisibilitySettingsTab from '@/components/organization/hackathons/settings/SubmissionVisibilitySettingsTab';
 import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
 
@@ -189,6 +191,13 @@ export default function SettingsPage() {
                       <Sliders className='h-4 w-4' />
                       Advanced
                     </TabsTrigger>
+                    <TabsTrigger
+                      value='submissions'
+                      className={tabTriggerClassName}
+                    >
+                      <Eye className='h-4 w-4' />
+                      Submissions
+                    </TabsTrigger>
                   </TabsList>
                 </div>
                 <ScrollBar orientation='horizontal' className='h-px' />
@@ -251,6 +260,13 @@ export default function SettingsPage() {
                 hackathonId={hackathonId}
                 onSave={data => handleSave('Advanced', data)}
                 isLoading={isSaving}
+              />
+            </TabsContent>
+
+            <TabsContent value='submissions' className='mt-0'>
+              <SubmissionVisibilitySettingsTab
+                organizationId={organizationId}
+                hackathonId={hackathonId}
               />
             </TabsContent>
           </Tabs>

@@ -1,6 +1,5 @@
 import { api } from './api';
 import { SubmissionCardProps, ParticipantsResponse } from '@/types/hackathon';
-// Discussion type removed - using generic Comment type from @/types/comment
 import { GetHackathonResponse, Hackathon } from '@/lib/api/hackathons';
 
 export interface HackathonListResponse {
@@ -46,13 +45,6 @@ export const getHackathons = async (): Promise<HackathonListResponse> => {
   return response.data;
 };
 
-// Get single hackathon by slug
-// export const getHackathon = async (
-//   slug: string
-// ): Promise<HackathonResponse> => {
-//   const response = await api.get<HackathonResponse>(`/hackathons/${slug}`);
-//   return response.data;
-// };
 export const getHackathon = async (
   slug: string
 ): Promise<GetHackathonResponse> => {
@@ -102,9 +94,3 @@ export const getHackathonSubmissions = async (
   );
   return response.data;
 };
-
-// Get discussions for a hackathon (you'll need to implement this endpoint)
-// export const getHackathonDiscussions = async (hackathonId: string): Promise<DiscussionsResponse> => {
-//   const response = await api.get(`/hackathons/${hackathonId}/discussions`);
-//   return response.data;
-// };

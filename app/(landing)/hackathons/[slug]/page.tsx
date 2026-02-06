@@ -363,7 +363,10 @@ export default function HackathonPage() {
             )}
 
             {activeTab === 'team-formation' && (
-              <TeamFormationTab hackathonSlugOrId={hackathonId} />
+              <TeamFormationTab
+                hackathonSlugOrId={hackathonId}
+                isRegistered={isRegistered}
+              />
             )}
 
             {activeTab === 'resources' && currentHackathon?.resources?.[0] && (

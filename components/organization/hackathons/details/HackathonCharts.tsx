@@ -29,7 +29,7 @@ export const HackathonCharts: React.FC<HackathonChartsProps> = ({
 }) => {
   const submissionsChartData = useMemo(() => {
     if (!timeSeriesData) return [];
-    const daily = timeSeriesData.submissions.daily;
+    const daily = timeSeriesData.submissions?.daily || [];
     return daily.map(point => ({
       month: new Date(point.date).toLocaleDateString('en-US', {
         month: 'short',
@@ -40,7 +40,7 @@ export const HackathonCharts: React.FC<HackathonChartsProps> = ({
 
   const participantsChartData = useMemo(() => {
     if (!timeSeriesData) return [];
-    const daily = timeSeriesData.participants.daily;
+    const daily = timeSeriesData.participants?.daily || [];
     return daily.map(point => ({
       month: new Date(point.date).toLocaleDateString('en-US', {
         month: 'short',
@@ -51,7 +51,7 @@ export const HackathonCharts: React.FC<HackathonChartsProps> = ({
 
   return (
     <div className='mt-6 flex w-full flex-col justify-between gap-4 text-gray-500 md:mt-8 lg:flex-row lg:gap-6'>
-      <div className='flex min-w-0 flex-1 flex-col gap-3 rounded-[6px] bg-[#101010] p-3 sm:p-4'>
+      <div className='bg-background-card flex min-w-0 flex-1 flex-col gap-3 rounded-[6px] p-3 sm:p-4'>
         <div className='text-xs font-medium text-white uppercase'>
           Submissions <span className='text-gray-500'>over</span> time
         </div>
@@ -99,7 +99,7 @@ export const HackathonCharts: React.FC<HackathonChartsProps> = ({
           </div>
         )}
       </div>
-      <div className='flex min-w-0 flex-1 flex-col gap-3 rounded-[6px] bg-[#101010] p-3 sm:p-4'>
+      <div className='bg-background-card flex min-w-0 flex-1 flex-col gap-3 rounded-[6px] p-3 sm:p-4'>
         <div className='text-xs font-medium text-white uppercase'>
           Participants sign-ups trend
         </div>

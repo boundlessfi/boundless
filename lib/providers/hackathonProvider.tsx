@@ -11,7 +11,12 @@ import React, {
 } from 'react';
 import { SubmissionCardProps } from '@/types/hackathon';
 import { Comment } from '@/types/comment';
-import { Hackathon, HackathonResourceItem } from '@/lib/api/hackathons';
+import {
+  Hackathon,
+  HackathonResourceItem,
+  getExploreSubmissions,
+  ExploreSubmissionsResponse,
+} from '@/lib/api/hackathons';
 import {
   getHackathons,
   getHackathon,
@@ -54,6 +59,7 @@ interface HackathonDataContextType {
   currentHackathon: Hackathon | null;
   discussions: Comment[]; // Using generic Comment type
   submissions: SubmissionCardProps[];
+  exploreSubmissions: SubmissionCardProps[];
   // content: string;
   timelineEvents: TimelineEvent[];
   prizes: Prize[];
@@ -108,6 +114,9 @@ export function HackathonDataProvider({
     string | null
   >(hackathonSlug || null);
   const [submissions, setSubmissions] = useState<SubmissionCardProps[]>([]);
+  const [exploreSubmissions, setExploreSubmissions] = useState<
+    SubmissionCardProps[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
 
@@ -204,6 +213,28 @@ export function HackathonDataProvider({
     }
   }, []);
 
+  const fetchExploreSubmissions = useCallback(async (hackathonId: string) => {
+    try {
+      const submissions = await getExploreSubmissions(hackathonId);
+      const mappedSubmissions: SubmissionCardProps[] = submissions.map(sub => ({
+        _id: sub.id,
+        title: sub.projectName,
+        description: sub.description,
+        submitterName:
+          sub.teamName || sub.teamMembers?.[0]?.name || 'Unknown Participant',
+        submitterAvatar: sub.teamMembers?.[0]?.avatar || sub.logo || '',
+        category: sub.category,
+        status: sub.status as SubmissionCardProps['status'],
+        upvotes: 0,
+        submittedDate: sub.submittedAt,
+        image: sub.logo || '/placeholder.svg',
+      }));
+      setExploreSubmissions(mappedSubmissions);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // --------------------------------
   // Computed lists
   // --------------------------------
@@ -239,10 +270,18 @@ export function HackathonDataProvider({
       const data = await fetchHackathonBySlug(slug);
 
       if (data) {
-        await Promise.all([fetchSubmissions(slug)]);
+        await Promise.all([
+          fetchSubmissions(slug),
+          fetchExploreSubmissions(data.id),
+        ]);
       }
     },
-    [currentHackathonSlug, fetchHackathonBySlug, fetchSubmissions]
+    [
+      currentHackathonSlug,
+      fetchHackathonBySlug,
+      fetchSubmissions,
+      fetchExploreSubmissions,
+    ]
   );
 
   const refreshHackathons = async () => {
@@ -378,6 +417,7 @@ export function HackathonDataProvider({
     currentHackathon,
     discussions: mockDiscussions,
     submissions,
+    exploreSubmissions,
     // content: mockContent,
     timelineEvents: mockTimelineEvents,
     prizes: mockPrizes,

@@ -264,15 +264,22 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
                     : 'Pending'
               }
               upvotes={
-                typeof mySubmission.votes === 'number' ? mySubmission.votes : 0
+                typeof mySubmission.votes === 'number'
+                  ? mySubmission.votes
+                  : Array.isArray(mySubmission.votes)
+                    ? mySubmission.votes.length
+                    : 0
               }
               comments={
                 typeof mySubmission.comments === 'number'
                   ? mySubmission.comments
-                  : 0
+                  : Array.isArray(mySubmission.comments)
+                    ? mySubmission.comments.length
+                    : 0
               }
               submittedDate={mySubmission.submissionDate}
               image={mySubmission.logo || '/placeholder.svg'}
+              submissionId={mySubmission.id}
               isPinned={true}
               isMySubmission={true}
               onViewClick={() => handleViewSubmission(mySubmission.id)}

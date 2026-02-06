@@ -1,4 +1,5 @@
 import { HackathonDataProvider } from '@/lib/providers/hackathonProvider';
+import { OrganizationProvider } from '@/lib/providers/OrganizationProvider';
 import { use } from 'react';
 
 interface HackathonLayoutProps {
@@ -15,8 +16,10 @@ export default function HackathonLayout({
   const resolvedParams = use(params);
 
   return (
-    <HackathonDataProvider hackathonSlug={resolvedParams.slug}>
-      {children}
-    </HackathonDataProvider>
+    <OrganizationProvider>
+      <HackathonDataProvider hackathonSlug={resolvedParams.slug}>
+        {children}
+      </HackathonDataProvider>
+    </OrganizationProvider>
   );
 }

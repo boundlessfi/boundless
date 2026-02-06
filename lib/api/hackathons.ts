@@ -29,6 +29,16 @@ export enum ParticipantType {
   TEAM_OR_INDIVIDUAL = 'team_or_individual',
 }
 
+export enum SubmissionVisibility {
+  PUBLIC = 'PUBLIC',
+  PARTICIPANTS_ONLY = 'PARTICIPANTS_ONLY',
+}
+
+export enum SubmissionStatusVisibility {
+  ALL = 'ALL',
+  ACCEPTED_SHORTLISTED = 'ACCEPTED_SHORTLISTED',
+}
+
 export enum VenueType {
   VIRTUAL = 'virtual',
   PHYSICAL = 'physical',
@@ -411,6 +421,9 @@ export type Hackathon = {
   telegram: string;
   socialLinks: string[];
 
+  submissionVisibility?: SubmissionVisibility;
+  submissionStatusVisibility?: SubmissionStatusVisibility;
+
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -628,6 +641,46 @@ export interface ParticipantSubmission {
     email: string;
   } | null;
   reviewedAt?: string | null;
+}
+
+export interface ExploreSubmissionsResponse {
+  id: string;
+  hackathonId: string;
+  projectId: string;
+  participantId: string;
+  organizationId: string;
+  participationType: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
+  teamId?: string;
+  teamName?: string;
+  teamMembers?: Array<{
+    userId: string;
+    name: string;
+    username: string;
+    role: string;
+    avatar?: string;
+  }>;
+  projectName: string;
+  category: string;
+  description: string;
+  logo?: string;
+  videoUrl?: string;
+  introduction?: string;
+  links: Array<{
+    type: string;
+    url: string;
+  }>;
+  socialLinks: {
+    github?: string;
+    telegram?: string;
+    twitter?: string;
+    email?: string;
+  };
+  status: string;
+  rank?: number;
+  registeredAt: string;
+  submittedAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Participant {
@@ -1143,6 +1196,24 @@ export const acceptTeamInvitationToken = async (
 };
 
 /**
+ * Update hackathon submission visibility settings
+ */
+export const updateSubmissionVisibility = async (
+  organizationId: string,
+  hackathonId: string,
+  data: {
+    submissionVisibility: SubmissionVisibility;
+    submissionStatusVisibility: SubmissionStatusVisibility;
+  }
+): Promise<ApiResponse<null>> => {
+  const res = await api.patch(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/visibility`,
+    data
+  );
+  return res.data;
+};
+
+/**
  * Update an existing published hackathon
  */
 export const updateHackathon = async (
@@ -1169,16 +1240,7 @@ export const getHackathon = async (
   hackathonId: string
 ): Promise<GetHackathonResponse> => {
   const res = await api.get(`/hackathons/${hackathonId}`);
-
-  return {
-    success: true,
-    data: res.data,
-    message: 'Hackathon retrieved successfully',
-    meta: {
-      timestamp: new Date().toISOString(),
-      requestId: '',
-    },
-  };
+  return res.data;
 };
 
 /**
@@ -1466,6 +1528,25 @@ export const getHackathonSubmissions = async (
 
   const res = await api.get(
     `/hackathons/${hackathonId}/submissions?${params.toString()}`
+  );
+
+  return res.data;
+};
+
+/**
+ * Explore hackathon submissions (Public showcase)
+ */
+export const getExploreSubmissions = async (
+  hackathonId: string,
+  page?: number,
+  limit?: number
+): Promise<ExploreSubmissionsResponse[]> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (limit) params.append('limit', limit.toString());
+
+  const res = await api.get(
+    `/hackathons/${hackathonId}/submissions/explore${params.toString() ? `?${params.toString()}` : ''}`
   );
 
   return res.data;

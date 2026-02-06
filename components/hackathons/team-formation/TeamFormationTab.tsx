@@ -32,11 +32,13 @@ import { MyInvitationsList } from './MyInvitationsList';
 interface TeamFormationTabProps {
   hackathonSlugOrId?: string;
   organizationId?: string;
+  isRegistered?: boolean;
 }
 
 export function TeamFormationTab({
   hackathonSlugOrId,
   organizationId,
+  isRegistered,
 }: TeamFormationTabProps) {
   const params = useParams();
   const { isAuthenticated, user } = useAuthStatus();
@@ -359,7 +361,7 @@ export function TeamFormationTab({
                   ? 'Try adjusting your filters or search term'
                   : 'Be the first to create a team post!'}
               </p>
-              {isAuthenticated && hackathonId && (
+              {isAuthenticated && isRegistered && hackathonId && (
                 <Button
                   onClick={() => {
                     setEditingPost(null);
