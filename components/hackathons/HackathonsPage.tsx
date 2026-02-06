@@ -10,6 +10,7 @@ import { useHackathonTransform } from '@/hooks/hackathon/use-hackathon-transform
 import { BoundlessButton } from '../buttons';
 import { ArrowDownIcon, XIcon } from 'lucide-react';
 import LoadingScreen from '@/features/projects/components/CreateProjectModal/LoadingScreen';
+import EmptyState from '@/components/EmptyState';
 
 interface HackathonsPageProps {
   className?: string;
@@ -123,8 +124,8 @@ export default function HackathonsPage({
         {!loading && !error && hackathons.length === 0 && (
           <div className='flex flex-col items-center justify-center py-16'>
             <div className='text-center'>
-              {/* <EmptyState
-                title='No hackathons found'
+              <EmptyState
+                title='No available hackathons'
                 description={
                   filters.search ||
                   filters.category ||
@@ -134,7 +135,7 @@ export default function HackathonsPage({
                     : 'No hackathons are available at the moment'
                 }
                 type='compact'
-              /> */}
+              />
 
               {(filters.search ||
                 filters.category ||
@@ -144,7 +145,7 @@ export default function HackathonsPage({
                   <BoundlessButton
                     onClick={clearAllFilters}
                     variant='outline'
-                    className='bg-primary hover:bg-primary/80 rounded-lg px-6 py-3 text-white transition-colors'
+                    className='bg-primary/10 border-primary text-primary hover:bg-primary/20 rounded-lg px-6 py-3 transition-colors'
                   >
                     Clear all filters
                   </BoundlessButton>

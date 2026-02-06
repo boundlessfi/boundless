@@ -157,7 +157,7 @@ export default function HackathonsPage() {
             ? (item.data as HackathonDraft).data.information?.categories
                 ?.join(',')
                 ?.toLowerCase() || ''
-            : ''; // Categories filtering only applies to drafts for now
+            : '';
         return category.includes(categoryFilter.toLowerCase());
       });
     }
@@ -494,9 +494,11 @@ export default function HackathonsPage() {
                   );
                 }
 
+                const publishedHackathon = hackathon as Hackathon;
+
                 return (
                   <div
-                    key={`hackathon-${hackathon.id}`}
+                    key={`hackathon-${publishedHackathon.id}`}
                     className='group rounded-xl border border-zinc-800 bg-zinc-900/30 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'
                   >
                     <div className='p-6'>
@@ -506,15 +508,15 @@ export default function HackathonsPage() {
                             <Badge
                               variant='outline'
                               className={`rounded-full border-none px-3 py-1 text-xs font-medium ${
-                                hackathon.status === 'PUBLISHED' ||
-                                hackathon.status === 'ONGOING'
+                                publishedHackathon.status === 'PUBLISHED' ||
+                                publishedHackathon.status === 'ONGOING'
                                   ? 'bg-green-500/10 text-green-500'
                                   : 'bg-secondary-500/10 text-secondary-500'
                               }`}
                             >
-                              {hackathon.status === 'PUBLISHED'
+                              {publishedHackathon.status === 'PUBLISHED'
                                 ? 'Live'
-                                : hackathon.status}
+                                : publishedHackathon.status}
                             </Badge>
                             {endDate && (
                               <div className='flex items-center gap-1.5 text-sm text-zinc-500'>
@@ -531,11 +533,19 @@ export default function HackathonsPage() {
                           <div className='flex items-center gap-6 text-sm text-zinc-500'>
                             <div className='flex items-center gap-2'>
                               <Users className='h-4 w-4' />
-                              <span>0 participants</span>
+                              <span>
+                                {publishedHackathon.participants?.length ||
+                                  publishedHackathon._count?.participants ||
+                                  0}{' '}
+                                participants
+                              </span>
                             </div>
                             <div className='flex items-center gap-2'>
                               <FileText className='h-4 w-4' />
-                              <span>0 submissions</span>
+                              <span>
+                                {publishedHackathon._count?.submissions || 0}{' '}
+                                submissions
+                              </span>
                             </div>
                             {totalPrize > 0 && (
                               <>
@@ -560,7 +570,7 @@ export default function HackathonsPage() {
                           <button
                             onClick={() =>
                               router.push(
-                                `/organizations/${organizationId}/hackathons/${hackathon.id}`
+                                `/organizations/${organizationId}/hackathons/${publishedHackathon.id}`
                               )
                             }
                             className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-zinc-700 hover:text-white'
@@ -571,7 +581,7 @@ export default function HackathonsPage() {
                           <button
                             onClick={() =>
                               router.push(
-                                `/organizations/${organizationId}/hackathons/${hackathon.id}/settings`
+                                `/organizations/${organizationId}/hackathons/${publishedHackathon.id}/settings`
                               )
                             }
                             className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-zinc-700 hover:text-white'
@@ -580,7 +590,9 @@ export default function HackathonsPage() {
                             <Settings className='h-4 w-4' />
                           </button>
                           <button
-                            onClick={() => handleDeleteClick(hackathon.id)}
+                            onClick={() =>
+                              handleDeleteClick(publishedHackathon.id)
+                            }
                             className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-red-600 hover:text-red-500'
                             title='Delete Hackathon'
                             disabled={isDeleting}

@@ -342,11 +342,9 @@ export default function HackathonPage() {
             )}
 
             {activeTab === 'resources' &&
-              currentHackathon.resources?.length > 0 && ( // Direct array check
-                <HackathonResources />
-              )}
+              currentHackathon.resources?.length > 0 && <HackathonResources />}
             {activeTab === 'participants' &&
-              currentHackathon.participants?.length > 0 && ( // Direct array check
+              currentHackathon.participants?.length > 0 && (
                 <HackathonParticipants />
               )}
 
