@@ -13,6 +13,7 @@ import { HackathonResources } from '@/components/hackathons/resources/resources'
 import SubmissionTab from '@/components/hackathons/submissions/submissionTab';
 import { HackathonDiscussions } from '@/components/hackathons/discussion/comment';
 import { TeamFormationTab } from '@/components/hackathons/team-formation/TeamFormationTab';
+import { WinnersTab } from '@/components/hackathons/winners/WinnersTab';
 import LoadingScreen from '@/features/projects/components/CreateProjectModal/LoadingScreen';
 import { useTimelineEvents } from '@/hooks/hackathon/use-timeline-events';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ import { HackathonParticipants } from '@/components/hackathons/participants/hack
 import { useCommentSystem } from '@/hooks/use-comment-system';
 import { CommentEntityType } from '@/types/comment';
 import { useTeamPosts } from '@/hooks/hackathon/use-team-posts';
+import { HackathonWinner } from '@/lib/api/hackathons';
 
 export default function HackathonPage() {
   const router = useRouter();
@@ -31,6 +33,7 @@ export default function HackathonPage() {
   const {
     currentHackathon,
     submissions,
+    winners,
     loading,
     setCurrentHackathon,
     refreshCurrentHackathon,
@@ -75,6 +78,19 @@ export default function HackathonPage() {
     const isTabEnabled =
       currentHackathon?.enabledTabs?.includes('joinATeamTab') !== false;
 
+    // For testing: Use mock winners if real winners are empty
+    // const displayWinners =
+    //   winners && winners.length > 0 ? winners : MOCK_WINNERS;
+    // const hasWinners = displayWinners.length > 0;
+    const hasWinners = winners && winners.length > 0;
+
+    // For testing: Force enable winners tab
+    // const isWinnersTabEnabled =
+    //   currentHackathon?.enabledTabs?.includes('winnersTab') !== false;
+    // const isWinnersTabEnabled = true;
+    const isWinnersTabEnabled =
+      currentHackathon?.enabledTabs?.includes('winnersTab') !== false;
+
     const tabs = [
       { id: 'overview', label: 'Overview' },
       ...(hasParticipants
@@ -115,6 +131,13 @@ export default function HackathonPage() {
       });
     }
 
+    if (hasWinners && isWinnersTabEnabled) {
+      tabs.push({
+        id: 'winners',
+        label: 'Winners',
+      });
+    }
+
     return tabs;
   }, [
     currentHackathon?.participants,
@@ -126,6 +149,7 @@ export default function HackathonPage() {
     discussionComments.comments.length,
     teamPosts.length,
     hackathonId,
+    winners,
   ]);
 
   // Refresh hackathon data
@@ -367,6 +391,10 @@ export default function HackathonPage() {
                 hackathonSlugOrId={hackathonId}
                 isRegistered={isRegistered}
               />
+            )}
+
+            {activeTab === 'winners' && (
+              <WinnersTab winners={winners} hackathonSlug={hackathonId} />
             )}
 
             {activeTab === 'resources' && currentHackathon?.resources?.[0] && (

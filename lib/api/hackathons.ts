@@ -2675,3 +2675,25 @@ export const toggleRoleHired = async (
   const res = await api.patch(url, data);
   return res.data;
 };
+
+export interface HackathonWinner {
+  rank: number;
+  projectName: string;
+  projectId?: string;
+  teamName: string | null;
+  participants: Array<{
+    userId?: string;
+    username: string;
+    avatar?: string;
+  }>;
+  prize: string;
+  submissionId: string;
+  slug?: string;
+}
+
+export interface GetHackathonWinnersResponse extends ApiResponse<{
+  hackathonId: string;
+  winners: HackathonWinner[];
+}> {
+  success: true;
+}

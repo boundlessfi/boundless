@@ -1,6 +1,11 @@
 import { api } from './api';
 import { SubmissionCardProps, ParticipantsResponse } from '@/types/hackathon';
-import { GetHackathonResponse, Hackathon } from '@/lib/api/hackathons';
+import {
+  GetHackathonResponse,
+  Hackathon,
+  GetHackathonWinnersResponse,
+  HackathonWinner,
+} from '@/lib/api/hackathons';
 
 export interface HackathonListResponse {
   success: boolean;
@@ -91,6 +96,16 @@ export const getHackathonSubmissions = async (
 
   const response = await api.get<SubmissionsResponse>(
     `/hackathons/${slug}/submissions?${queryParams.toString()}`
+  );
+  return response.data;
+};
+
+// Get winners for a hackathon
+export const getHackathonWinners = async (
+  idOrSlug: string
+): Promise<GetHackathonWinnersResponse> => {
+  const response = await api.get<GetHackathonWinnersResponse>(
+    `/hackathons/${idOrSlug}/winners`
   );
   return response.data;
 };

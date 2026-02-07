@@ -16,11 +16,13 @@ import {
   HackathonResourceItem,
   getExploreSubmissions,
   ExploreSubmissionsResponse,
+  HackathonWinner,
 } from '@/lib/api/hackathons';
 import {
   getHackathons,
   getHackathon,
   getHackathonSubmissions,
+  getHackathonWinners,
 } from '@/lib/api/hackathon';
 
 // -------------------
@@ -60,6 +62,7 @@ interface HackathonDataContextType {
   discussions: Comment[]; // Using generic Comment type
   submissions: SubmissionCardProps[];
   exploreSubmissions: SubmissionCardProps[];
+  winners: HackathonWinner[];
   // content: string;
   timelineEvents: TimelineEvent[];
   prizes: Prize[];
@@ -117,6 +120,7 @@ export function HackathonDataProvider({
   const [exploreSubmissions, setExploreSubmissions] = useState<
     SubmissionCardProps[]
   >([]);
+  const [winners, setWinners] = useState<HackathonWinner[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
 
@@ -236,6 +240,21 @@ export function HackathonDataProvider({
   }, []);
 
   // --------------------------------
+  // Fetch winners
+  // --------------------------------
+  const fetchWinners = useCallback(async (hackathonIdOrSlug: string) => {
+    try {
+      const response = await getHackathonWinners(hackathonIdOrSlug);
+      if (response.success && response.data) {
+        setWinners(response.data.winners);
+      }
+    } catch {
+      // If 404 or other error, simply don't show winners
+      setWinners([]);
+    }
+  }, []);
+
+  // --------------------------------
   // Computed lists
   // --------------------------------
 
@@ -273,6 +292,7 @@ export function HackathonDataProvider({
         await Promise.all([
           fetchSubmissions(slug),
           fetchExploreSubmissions(data.id),
+          fetchWinners(data.id), // Fetch by ID as per spec, but slug likely works too if API supports it
         ]);
       }
     },
@@ -418,6 +438,7 @@ export function HackathonDataProvider({
     discussions: mockDiscussions,
     submissions,
     exploreSubmissions,
+    winners,
     // content: mockContent,
     timelineEvents: mockTimelineEvents,
     prizes: mockPrizes,
