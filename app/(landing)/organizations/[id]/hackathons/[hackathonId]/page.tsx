@@ -29,10 +29,11 @@ export default function HackathonPage() {
       autoFetch: false,
     });
 
-  const { analytics, loading: analyticsLoading } = useHackathonAnalytics(
-    organizationId,
-    hackathonId
-  );
+  const {
+    analytics,
+    loading: analyticsLoading,
+    error: analyticsError,
+  } = useHackathonAnalytics(organizationId, hackathonId);
 
   useEffect(() => {
     if (organizationId && hackathonId) {
@@ -113,6 +114,18 @@ export default function HackathonPage() {
                 Analytics
               </h2>
             </div>
+            {analyticsError && (
+              <Alert
+                variant='destructive'
+                className='mb-6 border-red-900/20 bg-red-950/20'
+              >
+                <AlertCircle className='h-4 w-4' />
+                <AlertTitle>Unable to load analytics</AlertTitle>
+                <AlertDescription className='text-sm text-gray-400'>
+                  {analyticsError}
+                </AlertDescription>
+              </Alert>
+            )}
             <HackathonStatistics
               statistics={statistics}
               loading={analyticsLoading}
