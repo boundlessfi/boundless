@@ -532,6 +532,49 @@ export interface GetHackathonsResponse extends ApiResponse<HackathonsData> {
 }
 
 // Statistics and Analytics Types
+export interface HackathonAnalyticsSummary {
+  participantsCount: number;
+  submissionsCount: number;
+  activeJudges: number;
+  completedMilestones: number;
+}
+
+export interface AnalyticsTrendPoint {
+  date: string;
+  count: number;
+}
+
+export interface HackathonAnalyticsTrends {
+  submissionsOverTime: AnalyticsTrendPoint[];
+  participantSignupsOverTime: AnalyticsTrendPoint[];
+}
+
+export interface TimelineEvent {
+  phase: string;
+  description: string;
+  date: string;
+  status: 'completed' | 'ongoing' | 'upcoming';
+}
+
+export interface GetHackathonAnalyticsResponse extends ApiResponse<{
+  hackathonId: string;
+  summary: HackathonAnalyticsSummary;
+  trends: HackathonAnalyticsTrends;
+  timeline: TimelineEvent[];
+}> {
+  success: true;
+  data: {
+    hackathonId: string;
+    summary: HackathonAnalyticsSummary;
+    trends: HackathonAnalyticsTrends;
+    timeline: TimelineEvent[];
+  };
+}
+
+// Deprecated or legacy statistics types (keeping if still used elsewhere, otherwise replacing if identical)
+// Checking usage, it seems these might be used by existing hooks.
+// Given the request asks for a specific response structure, I will add the new ones.
+
 export interface HackathonStatistics {
   participantsCount: number;
   submissionsCount: number;

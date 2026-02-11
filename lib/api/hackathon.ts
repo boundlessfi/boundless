@@ -5,6 +5,7 @@ import {
   Hackathon,
   GetHackathonWinnersResponse,
   HackathonWinner,
+  GetHackathonAnalyticsResponse,
 } from '@/lib/api/hackathons';
 
 export interface HackathonListResponse {
@@ -81,6 +82,15 @@ export const getHackathonParticipants = async (
     `/hackathons/${slug}/participants?${queryParams.toString()}`
   );
   return response.data;
+};
+
+export const getHackathonAnalytics = async (
+  organizationId: string,
+  hackathonId: string
+): Promise<GetHackathonAnalyticsResponse> => {
+  const url = `/organizations/${organizationId}/hackathons/${hackathonId}/analytics`;
+  const res = await api.get<GetHackathonAnalyticsResponse>(url);
+  return res.data;
 };
 
 // Get submissions for a hackathon
