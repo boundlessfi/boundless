@@ -854,7 +854,7 @@ export interface DeleteCrowdfundingProjectResponse {
 // Funding Types
 export interface FundCrowdfundingProjectRequest {
   amount: number;
-  transactionHash: string;
+  transactionHash?: string;
   anonymous?: boolean;
   message?: string;
 }

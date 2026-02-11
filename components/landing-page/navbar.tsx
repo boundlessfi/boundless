@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { BoundlessButton } from '../buttons';
 import { useProtectedAction } from '@/hooks/use-protected-action';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
-import { WalletButton } from '../wallet/WalletButton';
+import { WalletTrigger } from '../wallet/WalletTrigger';
 import { NotificationBell } from '../notifications/NotificationBell';
 import CreateProjectModal from '@/features/projects/components/CreateProjectModal';
 
@@ -73,7 +73,7 @@ export function Navbar() {
 
   return (
     <nav className='sticky top-0 z-50 border-b border-white/10 bg-[#030303]/95 shadow-lg shadow-black/20 backdrop-blur-xl'>
-      <div className='mx-auto max-w-[1440px] px-5 md:px-[50px] lg:px-[100px]'>
+      <div className='mx-auto px-5 md:px-[50px]'>
         <div className='flex h-16 items-center justify-between gap-4'>
           {/* Logo */}
           <Logo />
@@ -209,7 +209,7 @@ function AuthenticatedActions() {
   return (
     <>
       <div className='flex items-center gap-2'>
-        <WalletButton />
+        <WalletTrigger variant='icon' drawerType='sheet' />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -448,7 +448,7 @@ const MobileMenu = ({
                   <LoadingSkeleton />
                 ) : (
                   <>
-                    <WalletButton />
+                    <WalletTrigger variant='icon' drawerType='family' />
                     {user?.username && (
                       <Link
                         href={`/profile/${user.username}`}

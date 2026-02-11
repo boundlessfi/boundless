@@ -7,7 +7,6 @@ import { useWindowSize } from '@/hooks/use-window-size';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
 import { GetMeResponse } from '@/lib/api/types';
-import { mapProjectToCardData } from '@/features/projects/utils/card-mappers';
 import ProjectCard from '@/features/projects/components/ProjectCard';
 
 interface ProjectsTabProps {
@@ -110,11 +109,26 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
               <ProjectCard
                 newTab={true}
                 isFullWidth={true}
-                data={mapProjectToCardData(project, {
-                  // Yes, `ProjectsTab` is for "Your Projects", so creator is the user.
-                  name: user.user.name || 'User',
-                  image: user.user.image || '/avatar.png',
-                })}
+                data={
+                  {
+                    id: project.id,
+                    slug: project.id,
+                    project: {
+                      ...project,
+                      creator: {
+                        name: user.user.name || 'User',
+                        image: user.user.image || '/avatar.png',
+                      },
+                    } as any,
+                    fundingGoal: 0,
+                    fundingRaised: 0,
+                    fundingCurrency: 'USDC',
+                    fundingEndDate: null,
+                    milestones: [],
+                    voteGoal: 0,
+                    voteProgress: 0,
+                  } as any
+                }
               />
             </Link>
           ))}

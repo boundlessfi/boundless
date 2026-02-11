@@ -31,14 +31,14 @@ export function ProjectSidebar({
   const [voteCounts, setVoteCounts] = useState<VoteCountResponse | null>(
     project.voting
       ? {
-          upvotes: project.voting.upvotes,
-          downvotes: project.voting.downvotes,
-          totalVotes: project.voting.totalVotes,
-          userVote: project.voting.userVote,
+          upvotes: project.voting.data?.upvotes ?? project.voting.upvotes,
+          downvotes: project.voting.data?.downvotes ?? project.voting.downvotes,
+          totalVotes:
+            project.voting.data?.totalVotes ?? project.voting.totalVotes,
+          userVote: project.voting.data?.userVote ?? project.voting.userVote,
         }
       : null
   );
-
   const projectStatus = getProjectStatus(project, crowdfund);
   const projectId = project?.id;
 
@@ -82,11 +82,12 @@ export function ProjectSidebar({
 
     const fetchVoteCounts = async () => {
       try {
-        const response = await getVoteCounts(
+        const response: any = await getVoteCounts(
           projectId,
           VoteEntityType.CROWDFUNDING_CAMPAIGN
         );
-        setVoteCounts(response);
+        // The API returns { success: true, message: '...', data: { ... } }
+        setVoteCounts(response.data || response);
       } catch {
         // Silently fail - voting data is not critical
       }

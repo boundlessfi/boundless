@@ -10,7 +10,6 @@ import Team from './Team';
 import Contact from './Contact';
 import LoadingScreen from './LoadingScreen';
 import SuccessScreen from './SuccessScreen';
-import TransactionSigningScreen from './TransactionSigningScreen';
 import { cn } from '@/lib/utils';
 import { useCreateProject } from './useCreateProject';
 
@@ -25,16 +24,12 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
     isSubmitting,
     submitErrors,
     showSuccess,
-    isLoading,
     flowStep,
     formData,
     stepRefs,
     contentRef,
-    isSigningTransaction,
     handleBack,
     handleContinue,
-    handleRetry,
-    handleSignTransaction,
     handleReset,
     handleTestData,
     handleDataChange,
@@ -46,32 +41,11 @@ const CreateProjectModal = ({ open, setOpen }: CreateProjectModalProps) => {
 
   const renderStepContent = () => {
     // Handle the flow states
-    if (flowStep === 'initializing' || (isLoading && flowStep !== 'signing')) {
+    if (flowStep === 'initializing') {
       return <LoadingScreen />;
     }
     if (flowStep === 'success' || showSuccess) {
       return <SuccessScreen onContinue={handleReset} />;
-    }
-    // Show loading screen during signing and confirming states
-    if (
-      flowStep === 'signing' ||
-      flowStep === 'confirming' ||
-      isSigningTransaction
-    ) {
-      return (
-        <TransactionSigningScreen
-          onSign={handleSignTransaction}
-          isSigning={true}
-          flowStep={
-            flowStep === 'signing' || flowStep === 'confirming'
-              ? flowStep
-              : 'confirming'
-          }
-          onRetry={handleRetry}
-          hasError={submitErrors.length > 0}
-          errorMessage={submitErrors[0]}
-        />
-      );
     }
 
     switch (currentStep) {

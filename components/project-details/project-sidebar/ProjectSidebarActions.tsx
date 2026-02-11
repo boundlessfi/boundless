@@ -69,7 +69,7 @@ export function ProjectSidebarActions({
         </div>
       )}
 
-      {projectStatus === 'Funding' && (
+      {projectStatus === 'CAMPAIGNING' && (
         <FundingModal
           campaignId={crowdfund?.id || ''}
           projectTitle={project.title}

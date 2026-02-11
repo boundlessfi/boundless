@@ -2,6 +2,7 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserMenu } from './user/UserMenu';
 import { SmartBreadcrumb } from './smart-breadcrumb';
+import { WalletTrigger } from './wallet/WalletTrigger';
 
 export function SiteHeader() {
   return (
@@ -16,6 +17,7 @@ export function SiteHeader() {
           <SmartBreadcrumb />
         </div>
         <div className='ml-auto flex items-center gap-2'>
+          <WalletTrigger variant='icon' />
           <UserMenu />
         </div>
       </div>

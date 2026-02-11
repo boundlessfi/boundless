@@ -8,7 +8,6 @@ import Timeline from '@/components/landing-page/about/timeline/Timeline';
 import TestimonialsSection from '@/components/testimonials/TestimonialsSection';
 import { testimonials } from '@/components/testimonials/data/testimonial';
 import AboutUsHero2 from './AboutUsHero2';
-// import OurTeam from './OurTeam';
 import Partners from './Partners';
 
 export const metadata: Metadata = generatePageMetadata('about');
@@ -21,7 +20,6 @@ const AboutPage = () => {
         <Missionpage />
         <AboutUsDifferent />
         <Timeline />
-        {/* <OurTeam /> */}
         <Partners />
       </div>
       <TestimonialsSection testimonials={testimonials} />

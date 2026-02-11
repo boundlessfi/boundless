@@ -4,7 +4,6 @@ import React from 'react';
 import { PublicUserProfile } from '@/features/projects/types';
 import Link from 'next/link';
 import ProjectCard from '@/features/projects/components/ProjectCard';
-import { mapProjectToCardData } from '@/features/projects/utils/card-mappers';
 
 interface ProjectsTabProps {
   user: PublicUserProfile;
@@ -38,10 +37,26 @@ export default function ProjectsTabPublic({ user }: ProjectsTabProps) {
           <Link key={project.id} href={`/projects/${project.id}`}>
             <ProjectCard
               isFullWidth={true}
-              data={mapProjectToCardData(project, {
-                name: user.name,
-                image: user.image,
-              })}
+              data={
+                {
+                  id: project.id,
+                  slug: project.id,
+                  project: {
+                    ...project,
+                    creator: {
+                      name: user.name,
+                      image: user.image,
+                    },
+                  },
+                  fundingGoal: 0,
+                  fundingRaised: 0,
+                  fundingCurrency: 'USDC',
+                  fundingEndDate: null,
+                  milestones: [],
+                  voteGoal: 0,
+                  voteProgress: 0,
+                } as any
+              }
             />
           </Link>
         ))}

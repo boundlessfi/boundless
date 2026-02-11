@@ -1,11 +1,12 @@
 import { Progress } from '@/components/ui/progress';
-import { formatNumber } from '@/lib/utils';
+import { formatNumber, cn } from '@/lib/utils';
 import { useRouter } from 'nextjs-toploader/app';
 import Image from 'next/image';
-import { ProjectCardData } from '@/features/projects/utils/card-mappers';
+import { CountdownTimer } from '@/components/ui/timer';
+import { Crowdfunding } from '@/features/projects/types';
 
 type ProjectCardProps = {
-  data: ProjectCardData;
+  data: Crowdfunding;
   newTab?: boolean;
   isFullWidth?: boolean;
   className?: string;
@@ -21,15 +22,26 @@ function ProjectCard({
 
   const {
     slug,
+    project,
+    fundingGoal,
+    fundingRaised,
+    fundingCurrency,
+    fundingEndDate,
+    milestones,
+    voteGoal,
+    voteProgress,
+  } = data;
+
+  const {
     title,
     vision,
     banner,
     logo,
     creator,
     category,
-    status,
-    stats,
-  } = data;
+    status: projectStatus,
+    _count,
+  } = project;
 
   const currentBanner =
     banner || '/images/placeholders/project-banner-placeholder.png';
@@ -37,6 +49,17 @@ function ProjectCard({
   const handleClick = () => {
     router.push(`/projects/${slug}`);
   };
+
+  // Determine display status
+  const getDisplayStatus = () => {
+    if (projectStatus === 'IDEA') return 'Validation';
+    if (projectStatus === 'ACTIVE') return 'Funding';
+    if (projectStatus === 'LIVE') return 'Funded';
+    if (projectStatus === 'COMPLETED') return 'Completed';
+    return projectStatus;
+  };
+
+  const status = getDisplayStatus();
 
   const getStatusStyles = () => {
     switch (status) {
@@ -53,14 +76,30 @@ function ProjectCard({
     }
   };
 
+  // Stats calculations
+  const totalVotes = _count?.votes || 0;
+  const currentVoteGoal = voteGoal || 1;
+  const fundingProgress = (fundingRaised / (fundingGoal || 1)) * 100;
+
+  const completedMilestones =
+    milestones?.filter(m => m.reviewStatus === 'completed')?.length || 0;
+  const totalMilestonesCount = milestones?.length || 0;
+  const milestonesProgress =
+    (completedMilestones / (totalMilestonesCount || 1)) * 100;
+
   const getDeadlineInfo = () => {
     if (status === 'Completed') {
-      // Check for rejected milestones if available to display warning,
-      // but simplistic approach for now:
       return { text: 'Completed', className: 'text-green-400' };
     }
 
-    const { daysLeft } = stats;
+    if (!fundingEndDate) {
+      return { text: 'No deadline', className: 'text-gray-400' };
+    }
+
+    const now = new Date();
+    const end = new Date(fundingEndDate);
+    const diffTime = end.getTime() - now.getTime();
+    const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
     if (daysLeft <= 3) {
       return {
@@ -88,9 +127,11 @@ function ProjectCard({
   return (
     <div
       onClick={!newTab ? handleClick : () => {}}
-      className={`group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-neutral-800 bg-[#0c0c0c] transition-all duration-300 hover:border-neutral-700 hover:shadow-lg hover:shadow-black/40 ${
-        isFullWidth ? 'w-full' : 'max-w-[400px]'
-      } ${className}`}
+      className={cn(
+        'group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-neutral-800 bg-[#0c0c0c] transition-all duration-300 hover:border-neutral-700 hover:shadow-lg hover:shadow-black/40',
+        isFullWidth ? 'w-full' : 'max-w-[400px]',
+        className
+      )}
     >
       {/* Banner / Image Section */}
       <div className='relative h-44 overflow-hidden sm:h-52'>
@@ -132,11 +173,15 @@ function ProjectCard({
         {/* Bottom Overlay: Creator Info */}
         <div className='absolute bottom-3 left-3 flex items-center gap-2'>
           <div
-            style={{ backgroundImage: `url(${creator.image})` }}
             className='size-7 rounded-full border border-white/20 bg-white bg-cover bg-center'
+            style={{
+              backgroundImage: creator?.image
+                ? `url(${creator.image})`
+                : undefined,
+            }}
           />
           <span className='text-xs font-medium text-white/90 drop-shadow-md'>
-            {creator.name}
+            {creator?.name || 'Unknown Creator'}
           </span>
         </div>
       </div>
@@ -157,81 +202,91 @@ function ProjectCard({
 
         {/* Stats / Progress Section */}
         <div className='flex flex-col gap-2 border-t border-neutral-800 px-4 pt-3 pb-1 sm:px-5'>
-          {status === 'Validation' && stats.votes && (
+          {status === 'Validation' && (
             <div className='flex flex-col gap-1'>
               <div className='flex items-baseline justify-between'>
                 <span className='text-sm text-gray-400'>Votes</span>
                 <span className='font-medium text-white'>
-                  {formatNumber(stats.votes.current)}
+                  {formatNumber(totalVotes)}
                   <span className='text-xs text-gray-500'>
                     {' '}
-                    / {formatNumber(stats.votes.goal)}
+                    / {formatNumber(currentVoteGoal)}
                   </span>
                 </span>
               </div>
               <Progress
-                value={(stats.votes.current / stats.votes.goal) * 100}
+                value={(totalVotes / currentVoteGoal) * 100}
                 className='h-1.5 w-full rounded-full bg-neutral-800'
                 indicatorClassName='bg-white'
               />
             </div>
           )}
 
-          {status === 'Funding' && stats.funding && (
+          {status === 'Funding' && (
             <div className='flex flex-col gap-1'>
               <div className='flex items-baseline justify-between'>
                 <span className='text-sm text-gray-400'>Raised</span>
                 <div className='flex items-baseline gap-1'>
                   <span className='text-primary text-base font-semibold'>
-                    {formatNumber(stats.funding.raised)}
+                    {formatNumber(fundingRaised)}
                   </span>
                   <span className='text-xs text-gray-500'>
-                    / {formatNumber(stats.funding.goal)}{' '}
-                    {stats.funding.currency}
+                    / {formatNumber(fundingGoal)} {fundingCurrency}
                   </span>
                 </div>
               </div>
               <Progress
-                value={(stats.funding.raised / stats.funding.goal) * 100}
+                value={fundingProgress}
                 className='h-1.5 w-full rounded-full bg-neutral-800'
-                // indicatorClassName='bg-primary'
               />
             </div>
           )}
 
-          {(status === 'Funded' || status === 'Completed') &&
-            stats.milestones && (
-              <div className='flex flex-col gap-1'>
-                <div className='flex items-baseline justify-between'>
-                  <span className='text-sm text-gray-400'>Milestones</span>
-                  <span className='font-medium text-white'>
-                    {stats.milestones.completed}
-                    <span className='text-xs text-gray-500'>
-                      {' '}
-                      / {stats.milestones.total}
-                    </span>
+          {(status === 'Funded' || status === 'Completed') && (
+            <div className='flex flex-col gap-1'>
+              <div className='flex items-baseline justify-between'>
+                <span className='text-sm text-gray-400'>Milestones</span>
+                <span className='font-medium text-white'>
+                  {completedMilestones}
+                  <span className='text-xs text-gray-500'>
+                    {' '}
+                    / {totalMilestonesCount}
                   </span>
-                </div>
-                <Progress
-                  value={
-                    (stats.milestones.completed /
-                      (stats.milestones.total || 1)) *
-                    100
-                  }
-                  className='h-1.5 w-full rounded-full bg-neutral-800'
-                  indicatorClassName='bg-green-500'
-                />
+                </span>
               </div>
-            )}
+              <Progress
+                value={milestonesProgress}
+                className='h-1.5 w-full rounded-full bg-neutral-800'
+                indicatorClassName='bg-green-500'
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer info: Deadline/Status Text */}
         <div className='flex items-center justify-between border-t border-neutral-800 px-4 py-3 sm:px-5'>
-          <span
-            className={`text-xs font-medium capitalize ${deadlineInfo.className}`}
-          >
-            {deadlineInfo.text}
-          </span>
+          {(status === 'Funding' || status === 'Validation') &&
+          fundingEndDate ? (
+            <div className='flex items-center gap-2'>
+              <span className='text-[10px] whitespace-nowrap text-gray-400 uppercase'>
+                Deadline in:
+              </span>
+              <CountdownTimer
+                targetDate={fundingEndDate}
+                size='sm'
+                className='border-neutral-700 bg-neutral-900/50 text-gray-300'
+              />
+            </div>
+          ) : (
+            <span
+              className={cn(
+                'text-xs font-medium capitalize',
+                deadlineInfo.className
+              )}
+            >
+              {deadlineInfo.text}
+            </span>
+          )}
         </div>
       </div>
     </div>

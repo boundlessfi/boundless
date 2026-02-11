@@ -11,7 +11,6 @@ import type { Hackathon } from '@/lib/api/hackathons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProjects } from '@/features/projects/hooks/use-project';
 import ProjectCard from '@/features/projects/components/ProjectCard';
-import { mapCrowdfundingToCardData } from '@/features/projects/utils/card-mappers';
 
 const ProjectCardSkeleton = () => (
   <div className='font-inter flex w-full max-w-full flex-col gap-4 rounded-[8px] border border-gray-900 bg-[#030303] p-4 sm:p-5'>
@@ -209,7 +208,7 @@ export default function Explore() {
                 <ProjectCard
                   isFullWidth={true}
                   key={project.id}
-                  data={mapCrowdfundingToCardData(project)}
+                  data={project}
                 />
               ))
             )}

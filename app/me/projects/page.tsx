@@ -8,7 +8,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Package, ArrowLeft } from 'lucide-react';
 import { useAuthStatus } from '@/hooks/use-auth';
-import { mapProjectToCardData } from '@/features/projects/utils/card-mappers';
 import ProjectCard from '@/features/projects/components/ProjectCard';
 
 // ... (existing imports)
@@ -106,10 +105,26 @@ export default function MyProjectsPage() {
             <ProjectCard
               isFullWidth
               key={project.id}
-              data={mapProjectToCardData(project, {
-                name: authUser?.name || 'You',
-                image: authUser?.image || '/user.png',
-              })}
+              data={
+                {
+                  id: project.id,
+                  slug: project.id,
+                  project: {
+                    ...project,
+                    creator: {
+                      name: authUser?.name || 'You',
+                      image: authUser?.image || '/user.png',
+                    },
+                  },
+                  fundingGoal: 0,
+                  fundingRaised: 0,
+                  fundingCurrency: 'USDC',
+                  fundingEndDate: null,
+                  milestones: [],
+                  voteGoal: 0,
+                  voteProgress: 0,
+                } as any
+              }
             />
           ))}
         </div>

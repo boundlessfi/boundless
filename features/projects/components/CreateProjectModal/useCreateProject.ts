@@ -1,20 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createCrowdfundingProject } from '@/features/projects/api';
 import { CreateCrowdfundingProjectRequest } from '@/lib/api/types';
-import { useWalletProtection } from '@/hooks/use-wallet-protection';
-import { useWalletContext } from '@/components/providers/wallet-provider';
-import { signTransaction } from '@/lib/config/wallet-kit';
-import {
-  useInitializeEscrow,
-  useSendTransaction,
-} from '@trustless-work/escrow';
-import {
-  InitializeMultiReleaseEscrowPayload,
-  EscrowType,
-  EscrowRequestResponse,
-  Status,
-  InitializeMultiReleaseEscrowResponse,
-} from '@trustless-work/escrow';
 import { projectSchema } from './schema';
 import { mapFormDataToApiRequest } from './utils';
 import { ProjectFormData } from './types';
@@ -33,23 +19,11 @@ export const useCreateProject = (
   const [submitErrors, setSubmitErrors] = useState<string[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [unsignedTransaction, setUnsignedTransaction] = useState<string | null>(
-    null
+
+  // Flow state
+  const [flowStep, setFlowStep] = useState<'form' | 'initializing' | 'success'>(
+    'form'
   );
-  const [isSigningTransaction, setIsSigningTransaction] = useState(false);
-
-  // Escrow hooks
-  const { deployEscrow } = useInitializeEscrow();
-  const { sendTransaction } = useSendTransaction();
-
-  // Flow state // Extract these types to types.ts later if reused elsewhere
-  const [flowStep, setFlowStep] = useState<
-    'form' | 'initializing' | 'signing' | 'confirming' | 'success'
-  >('form');
-
-  const { walletAddress } = useWalletContext() || {
-    walletAddress: '',
-  };
 
   // Form data state
   const [formData, setFormData] = useState<ProjectFormData>({
@@ -71,11 +45,6 @@ export const useCreateProject = (
 
   // Ref for the scrollable content container
   const contentRef = useRef<HTMLDivElement>(null);
-
-  // Wallet signing hooks
-  const { requireWallet } = useWalletProtection({
-    actionName: 'sign project creation transaction',
-  });
 
   // Reset scroll position when step changes with smooth transition
   useEffect(() => {
@@ -108,24 +77,6 @@ export const useCreateProject = (
 
     resetScroll();
   }, [currentStep]);
-
-  // Auto-trigger transaction signing when we reach the signing state
-  useEffect(() => {
-    if (
-      flowStep === 'signing' &&
-      unsignedTransaction &&
-      !isSigningTransaction &&
-      submitErrors.length === 0
-    ) {
-      handleSignTransaction();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    flowStep,
-    unsignedTransaction,
-    isSigningTransaction,
-    submitErrors.length,
-  ]);
 
   const handleBack = () => {
     if (currentStep > 1) {
@@ -171,29 +122,21 @@ export const useCreateProject = (
     await handleSubmit();
   };
 
-  const handleRetry = () => {
-    setSubmitErrors([]);
-    setFlowStep('signing');
-  };
-
-  const handleCreateProject = async (
-    contractId: string,
-    transactionHash: string
-  ) => {
+  const handleCreateProject = async () => {
     try {
+      setLoadingStateIndex(1); // Creating Project
       const apiRequest = mapFormDataToApiRequest(formData);
 
       const projectRequest: CreateCrowdfundingProjectRequest = {
         ...apiRequest,
-        escrowId: contractId,
-        transactionHash,
+        escrowId: '', // Handled by backend
+        transactionHash: '', // Handled by backend
       };
 
       await createCrowdfundingProject(projectRequest);
 
       setFlowStep('success');
       setShowSuccess(true);
-      setIsSigningTransaction(false);
       setIsSubmitting(false);
       setLoaderActive(false);
     } catch (error) {
@@ -204,85 +147,9 @@ export const useCreateProject = (
       }
 
       setSubmitErrors([errorMessage]);
-      setIsSigningTransaction(false);
-      setFlowStep('signing');
+      setFlowStep('form');
       setLoaderActive(false);
-    }
-  };
-
-  const handleSignTransaction = async () => {
-    if (!unsignedTransaction) {
-      setSubmitErrors(['No transaction to sign']);
-      return;
-    }
-
-    const walletValid = await requireWallet(async () => {
-      setIsSigningTransaction(true);
-      setFlowStep('confirming');
-      setLoaderActive(true); // Re-activate loader
-      setLoadingStateIndex(3); // Deploying Escrow (Signing & Sending)
-
-      try {
-        const signedXdr = await signTransaction({
-          unsignedTransaction,
-          address: walletAddress || '',
-        });
-
-        const sendResponse = await sendTransaction(signedXdr);
-
-        if (
-          'status' in sendResponse &&
-          sendResponse.status !== ('SUCCESS' as Status)
-        ) {
-          const errorMessage =
-            'message' in sendResponse &&
-            typeof sendResponse.message === 'string'
-              ? sendResponse.message
-              : 'Failed to send transaction';
-          throw new Error(errorMessage);
-        }
-
-        if (!('contractId' in sendResponse)) {
-          throw new Error('Response does not contain contractId');
-        }
-
-        const responseData =
-          sendResponse as InitializeMultiReleaseEscrowResponse;
-        const contractId = responseData.contractId;
-        const transactionHash = contractId;
-
-        setLoadingStateIndex(4); // Finalizing Project
-        await handleCreateProject(contractId, transactionHash);
-      } catch (error) {
-        setLoaderActive(false);
-        let errorMessage = 'Failed to sign transaction. Please try again.';
-
-        if (error instanceof Error) {
-          if (error.message.includes('User rejected')) {
-            errorMessage =
-              'Transaction signing was cancelled. Please try again.';
-          } else if (error.message.includes('Invalid transaction')) {
-            errorMessage =
-              'Invalid transaction format. Please contact support.';
-          } else if (error.message.includes('Network')) {
-            errorMessage =
-              'Network error. Please check your connection and try again.';
-          } else if (error.message.includes('Wallet not connected')) {
-            errorMessage =
-              'Wallet is not connected. Please reconnect your wallet.';
-          } else {
-            errorMessage = error.message;
-          }
-        }
-
-        setSubmitErrors([errorMessage]);
-        setIsSigningTransaction(false);
-        setFlowStep('signing');
-      }
-    });
-
-    if (!walletValid) {
-      return;
+      setIsSubmitting(false);
     }
   };
 
@@ -290,16 +157,13 @@ export const useCreateProject = (
   const [loaderActive, setLoaderActive] = useState(false);
   const [loadingStates] = useState([
     { text: 'Validating Project Details' },
-    { text: 'Preparing Smart Contract' },
-    { text: 'Waiting for Signature' },
-    { text: 'Deploying Escrow' },
-    { text: 'Finalizing Project' },
+    { text: 'Creating Project' },
+    { text: 'Finalizing' },
   ]);
   const [loadingStateIndex, setLoadingStateIndex] = useState(0);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // setIsLoading(true); // Handled by loaderActive now
     setSubmitErrors([]);
 
     try {
@@ -322,17 +186,12 @@ export const useCreateProject = (
         return;
       }
 
-      if (!walletAddress) {
-        throw new Error(
-          'Wallet not connected. Please connect your wallet first.'
-        );
-      }
-
       const apiRequest = mapFormDataToApiRequest(formData);
 
       // Step 1: Validate Project Data
       setLoaderActive(true);
       setLoadingStateIndex(0); // Validating Project Details
+      setFlowStep('initializing');
 
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -341,113 +200,26 @@ export const useCreateProject = (
         } = require('@/features/projects/api');
         await validateCrowdfundingProject(apiRequest);
       } catch (error: any) {
-        // If validation fails, stop everything
         setLoaderActive(false);
         const errorMessage =
           error.response?.data?.message || error.message || 'Validation failed';
         setSubmitErrors([errorMessage]);
         setIsSubmitting(false);
+        setFlowStep('form');
         return;
       }
 
-      setLoadingStateIndex(1); // Preparing Smart Contract
-
-      const milestones = payload.milestones || {
-        milestones: [],
-        fundingAmount: '0',
-      };
-      const totalFunding = parseFloat(milestones.fundingAmount || '0');
-      const milestoneCount = milestones.milestones?.length || 1;
-      const amountPerMilestone = Math.floor(totalFunding / milestoneCount);
-
-      const escrowPayload: InitializeMultiReleaseEscrowPayload = {
-        signer: walletAddress,
-        engagementId: `project-${Date.now()}`,
-        title: payload.basic?.projectName || 'Crowdfunding Project',
-        description: payload.basic?.vision || payload.details?.vision || '',
-        platformFee: 4,
-        trustline: {
-          address: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
-          symbol: 'USDC',
-        },
-        roles: {
-          approver: walletAddress,
-          serviceProvider: walletAddress,
-          platformAddress: walletAddress,
-          releaseSigner: walletAddress,
-          disputeResolver: walletAddress,
-        },
-        milestones: (milestones.milestones || []).map(milestone => ({
-          description: `${milestone.title}: ${milestone.description}`,
-          amount: amountPerMilestone,
-          receiver: walletAddress,
-        })),
-      };
-
-      setFlowStep('initializing'); // This might be redundant if we just use loader, but keeping for compatibility
-
-      setLoadingStateIndex(1); // Preparing Smart Contract (still)
-
-      const escrowResponse: EscrowRequestResponse = await deployEscrow(
-        escrowPayload,
-        'multi-release' as EscrowType
-      );
-
-      if (
-        escrowResponse.status !== ('SUCCESS' as Status) ||
-        !escrowResponse.unsignedTransaction
-      ) {
-        const errorMessage =
-          'message' in escrowResponse &&
-          typeof escrowResponse.message === 'string'
-            ? escrowResponse.message
-            : 'Failed to initialize escrow';
-        throw new Error(errorMessage);
-      }
-
-      const { unsignedTransaction } = escrowResponse;
-      setUnsignedTransaction(unsignedTransaction);
-
-      setLoadingStateIndex(2); // Waiting for Signature
-      // At this point we need user signature.
-      // We might want to pause the loader or update text?
-      // The original flow stopped here for user to click "Sign".
-      // But user wants "Cleanly written".
-      // If we auto-trigger sign, we can keep loader up.
-      // Let's rely on the useEffect that watches `flowStep === 'signing'`
-
-      setFlowStep('signing');
-      setLoaderActive(false); // Hide loader while waiting for user interaction/signature?
-      // Or keep it but maybe with a different state?
-      // User request implies a continuous flow.
-      // If `requireWallet` pops up a modal, we might want to keep the loader in background or hide it.
-      // Let's hide it for now because the signing step is manual in the current UI (button click or auto-trigger).
-      // Actually, let's keep it consistent with the previous flow but just add the validation step.
-
-      setIsLoading(false);
+      // Step 2: Create Project (Backend handles escrow and signing)
+      await handleCreateProject();
     } catch (error) {
       setLoaderActive(false);
       let errorMessage = 'Error preparing project. Please try again.';
 
       if (error instanceof Error) {
-        if (error.message.includes('Network')) {
-          errorMessage =
-            'Network error. Please check your connection and try again.';
-        } else if (error.message.includes('Validation')) {
-          errorMessage =
-            'Project validation failed. Please check your project details.';
-        } else if (error.message.includes('Unauthorized')) {
-          errorMessage =
-            'Authentication required. Please log in and try again.';
-        } else if (error.message.includes('Server')) {
-          errorMessage = 'Server error. Please try again in a few moments.';
-        } else {
-          errorMessage = error.message;
-        }
+        errorMessage = error.message;
       }
 
       setSubmitErrors([errorMessage]);
-      setIsLoading(false);
       setIsSubmitting(false);
       setFlowStep('form');
     }
@@ -493,8 +265,6 @@ export const useCreateProject = (
     setCurrentStep(1);
     setShowSuccess(false);
     setIsLoading(false);
-    setUnsignedTransaction(null);
-    setIsSigningTransaction(false);
     setSubmitErrors([]);
     setFlowStep('form');
     setOpen(false);
@@ -521,11 +291,8 @@ export const useCreateProject = (
     formData,
     stepRefs,
     contentRef,
-    isSigningTransaction,
     handleBack,
     handleContinue,
-    handleRetry,
-    handleSignTransaction,
     handleReset,
     handleTestData,
     handleDataChange,

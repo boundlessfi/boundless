@@ -42,6 +42,15 @@ export const authClient = createAuthClient({
         missingProfileFields: { type: 'string[]', required: false },
         profileCompletionPercentage: { type: 'number', required: false },
         roles: { type: 'json', required: true },
+        wallet: {
+          type: 'json',
+          required: false,
+          defaultValue: {
+            address: '',
+            balances: [],
+            transactions: [],
+          },
+        },
       },
     }),
     emailOTPClient(),

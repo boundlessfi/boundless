@@ -8,10 +8,17 @@ import { SiteHeader } from '@/components/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useAuthStatus } from '@/hooks/use-auth';
 import data from '../app/dashboard/data.json';
-import React from 'react';
+import React, { useState } from 'react';
+import { FamilyWalletButton } from '@/components/wallet/FamilyWalletButton';
+import {
+  FamilyWalletDrawer,
+  DrawerView,
+} from '@/components/wallet/FamilyWalletDrawer';
 
 export function DashboardContent() {
   const { user, isLoading } = useAuthStatus();
+  const [familyDrawerOpen, setFamilyDrawerOpen] = useState(false);
+  const [drawerView, setDrawerView] = useState<DrawerView>('main');
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -47,6 +54,19 @@ export function DashboardContent() {
             </div>
           </div>
         </div>
+
+        {/* Family Wallet Components */}
+        <FamilyWalletButton
+          onOpenDrawer={view => {
+            if (view) setDrawerView(view);
+            setFamilyDrawerOpen(true);
+          }}
+        />
+        <FamilyWalletDrawer
+          open={familyDrawerOpen}
+          initialView={drawerView}
+          onOpenChange={setFamilyDrawerOpen}
+        />
       </SidebarInset>
     </SidebarProvider>
   );

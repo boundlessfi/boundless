@@ -22,11 +22,10 @@ export function ProjectSidebarProgress({
         project.milestones.length) *
       100
     : 0;
-
   const renderProgressSection = () => {
     switch (projectStatus) {
       case 'Funding':
-      case 'campaigning':
+      case 'CAMPAIGNING':
         return (
           <div className='space-y-3'>
             <div className='flex items-center justify-between text-sm'>

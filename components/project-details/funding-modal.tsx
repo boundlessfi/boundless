@@ -17,13 +17,7 @@ import {
 import { contributeToProject } from '@/features/projects/api';
 import { useWalletInfo } from '@/hooks/use-wallet';
 import { Loader2, DollarSign, MessageSquare, EyeOff } from 'lucide-react';
-import {
-  FundEscrowPayload,
-  useFundEscrow,
-  useSendTransaction,
-} from '@trustless-work/escrow';
 import { toast } from 'sonner';
-import { signTransaction } from '@/lib/config/wallet-kit';
 
 interface FundingModalProps {
   campaignId: string;
@@ -52,9 +46,6 @@ export function FundingModal({
   const walletInfo = useWalletInfo();
   const address = walletInfo?.address || '';
 
-  const { fundEscrow } = useFundEscrow();
-  const { sendTransaction } = useSendTransaction();
-
   const remainingGoal = Math.max(0, fundingGoal - currentRaised);
   const progressPercentage = (currentRaised / fundingGoal) * 100;
 
@@ -75,54 +66,30 @@ export function FundingModal({
     setError(null);
 
     try {
-      // Step 1: Prepare funding
-      setStep('signing');
-      const fundEscrowPayload: FundEscrowPayload = {
-        contractId: escrowAddress,
-        signer: address || '',
+      const data = await contributeToProject(campaignId, {
         amount: parseFloat(amount),
-      };
-      const { unsignedTransaction } = await fundEscrow(
-        fundEscrowPayload,
-        'multi-release'
-      );
-      if (!unsignedTransaction) {
-        throw new Error('Failed to fund escrow');
-      }
-
-      // Step 2: Sign transaction
-      const signedXdr = await signTransaction({
-        unsignedTransaction,
-        address: address || '',
-      });
-
-      setStep('confirming');
-      const data = await sendTransaction(signedXdr);
-      if (!data) {
-        throw new Error('Failed to send transaction');
-      }
-      await contributeToProject(campaignId, {
-        amount: parseFloat(amount),
-        transactionHash: data.message,
         message: message || undefined,
         anonymous,
       });
-      if (data.status === 'SUCCESS') {
+
+      if (data.success) {
         toast.success('Thank you for your contribution!', {
-          description: `You've successfully funded $${parseFloat(amount).toLocaleString()}`,
+          description: `You've successfully funded $${parseFloat(amount).toLocaleString()} USDC`,
         });
+
+        // Success - close modal and refresh data
+        setIsOpen(false);
+        setAmount('');
+        setMessage('');
+        setAnonymous(false);
+        setStep('input');
+
+        window.location.reload();
+      } else {
+        throw new Error(data.message || 'Failed to contribute');
       }
-
-      // Success - close modal and refresh data
-      setIsOpen(false);
-      setAmount('');
-      setMessage('');
-      setAnonymous(false);
-      setStep('input');
-
-      window.location.reload();
-    } catch {
-      setError('An error occurred');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during contribution');
       setStep('input');
     } finally {
       setIsLoading(false);
@@ -130,14 +97,7 @@ export function FundingModal({
   };
 
   const getStepMessage = () => {
-    switch (step) {
-      case 'signing':
-        return 'Please sign the transaction in your wallet...';
-      case 'confirming':
-        return 'Confirming your funding...';
-      default:
-        return 'Enter the amount you want to contribute';
-    }
+    return 'Enter the amount you want to contribute';
   };
 
   return (

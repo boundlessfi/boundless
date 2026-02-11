@@ -1,6 +1,5 @@
 'use client';
 
-import { mapCrowdfundingProjectToCardData } from '@/features/projects/utils/card-mappers';
 import ProjectCard from '@/features/projects/components/ProjectCard';
 import { CrowdfundingProject } from '@/features/projects/types';
 
@@ -24,7 +23,24 @@ export function ProjectList({ projects, activeTab }: ProjectListProps) {
         <ProjectCard
           key={project.id}
           isFullWidth={true}
-          data={mapCrowdfundingProjectToCardData(project)}
+          data={
+            {
+              id: project.id,
+              slug: project.id,
+              project: project,
+              fundingGoal: project.funding?.goal || 0,
+              fundingRaised: project.funding?.raised || 0,
+              fundingCurrency: project.funding?.currency || 'USDC',
+              fundingEndDate: project.funding?.endDate || null,
+              milestones:
+                project.milestones?.map(m => ({
+                  ...m,
+                  reviewStatus: m.status,
+                })) || [],
+              voteGoal: project.voting?.goal || 0,
+              voteProgress: project.voting?.current || 0,
+            } as any
+          }
         />
       ))}
     </div>

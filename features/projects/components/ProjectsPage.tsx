@@ -221,18 +221,12 @@ function NoProjectsState({
   );
 }
 
-import { mapCrowdfundingToCardData } from '@/features/projects/utils/card-mappers';
-
 function ProjectsGrid({ projects }: { projects: Crowdfunding[] }) {
   // Memoize projects if needed, though React usually handles this well enough in mapping
   return (
     <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:gap-2'>
       {projects.map(project => (
-        <ProjectCard
-          isFullWidth={true}
-          key={project.id}
-          data={mapCrowdfundingToCardData(project)}
-        />
+        <ProjectCard isFullWidth={true} key={project.id} data={project} />
       ))}
     </div>
   );

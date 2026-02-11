@@ -159,6 +159,9 @@ export interface CrowdfundingProject {
     startDate: string;
   }>;
   daysToDeadline?: number;
+  _count?: {
+    votes: number;
+  };
 }
 
 export interface Crowdfunding {

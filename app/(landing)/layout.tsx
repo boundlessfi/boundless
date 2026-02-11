@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { Footer, Navbar } from '@/components/landing-page';
 import { generatePageMetadata } from '@/lib/metadata';
 import { GoogleOneTap } from '@/components/auth/GoogleOneTap';
+import { LandingWalletWrapper } from '@/components/wallet/LandingWalletWrapper';
 
 export const metadata: Metadata = generatePageMetadata('home');
 
@@ -17,6 +18,7 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
       <main className='flex-1'>{children}</main>
       <Footer />
       <GoogleOneTap />
+      <LandingWalletWrapper />
     </div>
   );
 }

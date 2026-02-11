@@ -10,7 +10,7 @@ export function ProjectSidebarHeader({
 }: ProjectSidebarHeaderProps) {
   const getStatusStyles = () => {
     switch (projectStatus) {
-      case 'campaigning':
+      case 'CAMPAIGNING':
         return 'bg-secondary-75 border-secondary-600 text-secondary-600';
       case 'Funded':
         return 'bg-active-bg border-primary text-primary';
