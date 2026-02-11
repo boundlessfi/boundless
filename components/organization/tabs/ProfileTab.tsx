@@ -172,18 +172,23 @@ export default function ProfileTab({
       const previousOrgId = previousOrgIdRef.current;
 
       if (currentOrgId && currentOrgId !== previousOrgId) {
+        // Find links either top-level or in metadata
+        const activeLinks =
+          activeOrg.links || (activeOrg as any).metadata?.links;
+
         setFormData({
           name: activeOrg.name || '',
           slug: activeOrg.slug || '',
           logo: activeOrg.logo || '',
           metadata: {
-            tagline: activeOrg.metadata?.tagline || '',
-            about: activeOrg.metadata?.about || '',
+            tagline:
+              activeOrg.tagline || (activeOrg as any).metadata?.tagline || '',
+            about: activeOrg.about || (activeOrg as any).metadata?.about || '',
             links: {
-              website: activeOrg.metadata?.links?.website || '',
-              x: activeOrg.metadata?.links?.x || '',
-              github: activeOrg.metadata?.links?.github || '',
-              others: activeOrg.metadata?.links?.others || '',
+              website: activeLinks?.website || '',
+              x: activeLinks?.x || '',
+              github: activeLinks?.github || '',
+              others: activeLinks?.others || '',
             },
           },
         });
@@ -576,7 +581,7 @@ export default function ProfileTab({
         </label>
 
         <div className='flex items-start gap-2 rounded-lg bg-zinc-900/30 p-3 text-xs text-zinc-500'>
-          <AlertCircle className='h-4 w-4 flex-shrink-0 text-zinc-600' />
+          <AlertCircle className='h-4 w-4 shrink-0 text-zinc-600' />
           <div className='space-y-1'>
             <p>JPEG or PNG, max 2MB</p>
             <p>Recommended: 480 × 480 px</p>
@@ -625,7 +630,7 @@ export default function ProfileTab({
       <div className='space-y-3 pt-2'>
         {hasUserChanges && !isCreating && (
           <div className='flex items-center gap-2 rounded-lg border border-amber-900/50 bg-amber-500/5 px-3 py-2 text-sm text-amber-500'>
-            <div className='h-2 w-2 flex-shrink-0 rounded-full bg-amber-500' />
+            <div className='h-2 w-2 shrink-0 rounded-full bg-amber-500' />
             <span>You have unsaved changes</span>
           </div>
         )}

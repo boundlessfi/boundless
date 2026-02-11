@@ -14,9 +14,12 @@ interface OrganizationSettingsProps {
   organizationId?: string;
   initialData?: {
     name?: string;
+    slug?: string;
     logo?: string;
-    tagline?: string;
-    about?: string;
+    metadata?: {
+      tagline?: string;
+      about?: string;
+    };
   };
   isCreating?: boolean;
 }

@@ -1158,7 +1158,7 @@ export const updateDraftStep = async (
   data: any,
   autoSave?: boolean
 ) => {
-  const res = await api.patch<ApiResponse<UpdateDraftResponse>>(
+  const res = await api.patch<UpdateDraftResponse>(
     `/organizations/${organizationId}/hackathons/draft/${draftId}`,
     {
       step,
@@ -1191,11 +1191,11 @@ export const getDraft = async (
   organizationId: string,
   draftId: string
 ): Promise<GetDraftResponse> => {
-  const res = await api.get<ApiResponse<GetDraftResponse>>(
+  const res = await api.get<GetDraftResponse>(
     `/organizations/${organizationId}/hackathons/draft/${draftId}`
   );
 
-  return res.data.data as GetDraftResponse;
+  return res.data;
 };
 
 /**

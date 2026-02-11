@@ -280,8 +280,8 @@ export function useHackathons(
                 totalPages: response.meta.pagination.totalPages,
                 totalItems: response.meta.pagination.total,
                 itemsPerPage: response.meta.pagination.limit,
-                hasNext: false, // Not provided in this pagination structure
-                hasPrev: false, // Not provided in this pagination structure
+                hasNext: false,
+                hasPrev: false,
               }
             : {
                 currentPage: 1,
@@ -415,16 +415,14 @@ export function useHackathons(
           data,
           autoSave
         );
-        if (response.data && response.data.data) {
+        if (response.data) {
           setDrafts(prev =>
-            prev.map(draft =>
-              draft.id === draftId ? response.data!.data : draft
-            )
+            prev.map(draft => (draft.id === draftId ? response.data! : draft))
           );
           if (currentDraft?.id === draftId) {
-            setCurrentDraft(response.data.data);
+            setCurrentDraft(response.data);
           }
-          return response.data.data;
+          return response.data;
         } else {
           throw new Error('No draft data received');
         }

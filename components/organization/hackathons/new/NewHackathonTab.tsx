@@ -213,7 +213,7 @@ export default function NewHackathonTab({
 
   if (isLoadingDraft) {
     return (
-      <div className='bg-background-main-bg flex flex-1 items-center justify-center text-white'>
+      <div className='bg-background-main-bg flex min-h-[60vh] flex-1 items-center justify-center text-white'>
         <div className='flex flex-col items-center gap-4'>
           <div className='border-primary h-8 w-8 animate-spin rounded-full border-2 border-t-transparent' />
           <span className='text-sm text-gray-400'>Loading draft...</span>
@@ -224,7 +224,7 @@ export default function NewHackathonTab({
 
   if (currentError) {
     return (
-      <div className='bg-background-main-bg flex flex-1 items-center justify-center text-white'>
+      <div className='bg-background-main-bg flex min-h-[60vh] flex-1 items-center justify-center text-white'>
         <div className='flex flex-col items-center gap-4'>
           <span className='text-sm text-red-400'>{currentError}</span>
         </div>
