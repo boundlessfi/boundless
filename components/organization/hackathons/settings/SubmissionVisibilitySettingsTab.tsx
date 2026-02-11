@@ -55,7 +55,7 @@ export default function SubmissionVisibilitySettingsTab({
     const fetchSettings = async () => {
       try {
         const response = await getHackathon(hackathonId);
-        if (response.success && response.data) {
+        if (response?.data) {
           form.reset({
             submissionVisibility:
               response.data.submissionVisibility || SubmissionVisibility.PUBLIC,
@@ -72,7 +72,7 @@ export default function SubmissionVisibilitySettingsTab({
     };
 
     fetchSettings();
-  }, [hackathonId, form.reset]);
+  }, [hackathonId]);
 
   const onSubmit = async (data: VisibilitySettingsFormData) => {
     setIsSaving(true);

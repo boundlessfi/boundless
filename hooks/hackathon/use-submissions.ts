@@ -44,9 +44,7 @@ export function useSubmissions() {
       SubmissionStatusVisibility.ACCEPTED_SHORTLISTED
     ) {
       filtered = filtered.filter(
-        sub =>
-          sub.status?.toLowerCase() === 'shortlisted' ||
-          sub.status === 'Approved'
+        sub => sub.status?.toLowerCase() === 'approved'
       );
     }
 

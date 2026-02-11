@@ -26,6 +26,30 @@ import {
 } from '@/lib/api/hackathon';
 
 // -------------------
+// Status Mapper
+// -------------------
+
+/**
+ * Maps API submission status to UI status values
+ * API: 'SUBMITTED' | 'SHORTLISTED' | 'DISQUALIFIED' | 'WITHDRAWN'
+ * UI: 'Pending' | 'Approved' | 'Rejected'
+ */
+function mapSubmissionStatus(apiStatus: string): SubmissionCardProps['status'] {
+  const normalized = apiStatus?.toUpperCase();
+
+  switch (normalized) {
+    case 'SHORTLISTED':
+      return 'Approved';
+    case 'DISQUALIFIED':
+    case 'WITHDRAWN':
+      return 'Rejected';
+    case 'SUBMITTED':
+    default:
+      return 'Pending';
+  }
+}
+
+// -------------------
 // Types
 // -------------------
 
@@ -228,7 +252,7 @@ export function HackathonDataProvider({
           sub.teamName || sub.teamMembers?.[0]?.name || 'Unknown Participant',
         submitterAvatar: sub.teamMembers?.[0]?.avatar || sub.logo || '',
         category: sub.category,
-        status: sub.status as SubmissionCardProps['status'],
+        status: mapSubmissionStatus(sub.status),
         upvotes: 0,
         submittedDate: sub.submittedAt,
         image: sub.logo || '/placeholder.svg',
@@ -301,6 +325,7 @@ export function HackathonDataProvider({
       fetchHackathonBySlug,
       fetchSubmissions,
       fetchExploreSubmissions,
+      fetchWinners,
     ]
   );
 

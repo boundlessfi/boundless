@@ -1,7 +1,13 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { Loader2, AlertCircle, Calendar, TrendingUp } from 'lucide-react';
+import {
+  Loader2,
+  AlertCircle,
+  Calendar,
+  TrendingUp,
+  Check,
+} from 'lucide-react';
 import { useHackathons } from '@/hooks/use-hackathons';
 import { useEffect } from 'react';
 import { useHackathonAnalytics } from '@/hooks/use-hackathon-analytics';
@@ -141,13 +147,8 @@ export default function HackathonPage() {
 
                   // Manually append Winner Announcement if missing and date exists
                   const fullTimeline = [...timelineEvents];
-                  if (
-                    !hasWinnerAnnouncement &&
-                    currentHackathon?.registrationDeadline
-                  ) {
-                    const winnerDate = new Date(
-                      currentHackathon.registrationDeadline
-                    );
+                  if (!hasWinnerAnnouncement && currentHackathon?.endDate) {
+                    const winnerDate = new Date(currentHackathon.endDate);
                     const now = new Date();
                     // Simple status logic for single date event
                     // If date is passed, completed. If today (roughly), ongoing?
@@ -165,7 +166,7 @@ export default function HackathonPage() {
                       phase: 'Winner Announcement',
                       description:
                         'Final results published and prizes distributed to winners.',
-                      date: currentHackathon.registrationDeadline,
+                      date: currentHackathon.endDate,
                       status: status,
                     });
                   }
@@ -177,7 +178,7 @@ export default function HackathonPage() {
 
                     return (
                       <div
-                        key={phase.phase}
+                        key={`${phase.phase}-${index}`}
                         className='relative flex items-start gap-3 pb-6 sm:gap-4'
                         style={isLast ? {} : { paddingBottom: '1.5rem' }}
                       >
@@ -187,9 +188,8 @@ export default function HackathonPage() {
                               <div className='bg-primary z-10 flex h-4 w-4 shrink-0 items-center justify-center rounded-full' />
                             </div>
                           ) : isCompleted ? (
-                            <div className='bg-inactive z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#1C1C1C]'>
-                              <AlertCircle className='h-4 w-4 text-gray-800' />{' '}
-                              {/* Using AlertCircle as check was imported but maybe not desired or just keep Check if imported */}
+                            <div className='z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-green-500/20 bg-green-500/10'>
+                              <Check className='h-3 w-3 text-green-500' />
                             </div>
                           ) : (
                             <div className='bg-inactive z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#1C1C1C] opacity-50' />
