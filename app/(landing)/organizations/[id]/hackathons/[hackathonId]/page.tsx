@@ -179,8 +179,7 @@ export default function HackathonPage() {
                     return (
                       <div
                         key={`${phase.phase}-${index}`}
-                        className='relative flex items-start gap-3 pb-6 sm:gap-4'
-                        style={isLast ? {} : { paddingBottom: '1.5rem' }}
+                        className={`relative flex items-start gap-3 sm:gap-4 ${!isLast ? 'pb-6' : ''}`}
                       >
                         <div className='relative flex flex-col items-center'>
                           {isActive ? (
