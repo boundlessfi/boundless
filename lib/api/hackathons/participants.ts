@@ -158,7 +158,7 @@ export const getParticipants = async (
   page = 1,
   limit = 10,
   filters?: {
-    status?: 'submitted' | 'not_submitted';
+    status?: 'submitted' | 'not_submitted' | 'shortlisted' | 'disqualified';
     type?: 'individual' | 'team';
     search?: string;
   }

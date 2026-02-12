@@ -7,13 +7,13 @@ import { ProjectSidebarProgress } from './ProjectSidebarProgress';
 import { ProjectSidebarActions } from './ProjectSidebarActions';
 import { ProjectSidebarCreator } from './ProjectSidebarCreator';
 import { ProjectSidebarLinks } from './ProjectSidebarLinks';
-import { voteProject } from '@/features/projects/api';
 import { createVote, deleteVote } from '@/lib/api/votes';
 import { getProjectStatus } from './utils';
 import { ProjectSidebarProps } from './types';
 import { VoteCountResponse, VoteEntityType, VoteType } from '@/types/votes';
 import { useVoteRealtime } from '@/hooks/use-vote-realtime';
 import { getVoteCounts } from '@/lib/api/votes';
+import { toast } from 'sonner';
 
 export function ProjectSidebar({
   project,
@@ -101,10 +101,14 @@ export function ProjectSidebar({
 
     setIsVoting(true);
     try {
-      await voteProject(project.id, value);
+      await createVote({
+        projectId: project.id,
+        entityType: entityType,
+        voteType: value === 1 ? VoteType.UPVOTE : VoteType.DOWNVOTE,
+      });
       // Optimistic update could go here, but we rely on realtime/refetch
-    } catch {
-      // Handle error implicitly
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to submit vote');
     } finally {
       setIsVoting(false);
     }

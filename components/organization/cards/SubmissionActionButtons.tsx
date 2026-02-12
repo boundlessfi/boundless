@@ -1,8 +1,5 @@
-'use client';
-
-import React from 'react';
-import { Plus, Delete } from 'lucide-react';
-import { BoundlessButton } from '@/components/buttons';
+import { Plus, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface SubmissionActionButtonsProps {
   onDisqualify: () => void;
@@ -14,24 +11,25 @@ export default function SubmissionActionButtons({
   onShortlist,
 }: SubmissionActionButtonsProps) {
   return (
-    <div className='flex justify-between gap-3'>
-      <BoundlessButton
-        size='xl'
+    <div className='flex w-full items-center justify-between gap-4'>
+      <Button
+        variant='destructive'
+        size='lg'
         onClick={onDisqualify}
-        className='text-error-75 bg-error-900 hover:bg-error-600/10 gap-2'
+        className='flex-1 gap-2 bg-red-500/10 text-red-500 hover:bg-red-500/20'
       >
+        <Trash2 className='h-4 w-4' />
         Disqualify
-        <Delete className='h-4 w-4' />
-      </BoundlessButton>
-      <BoundlessButton
+      </Button>
+      <Button
         variant='default'
-        size='xl'
+        size='lg'
         onClick={onShortlist}
-        className=''
+        className='flex-1 gap-2'
       >
-        Shortlist
         <Plus className='h-4 w-4' />
-      </BoundlessButton>
+        Shortlist
+      </Button>
     </div>
   );
 }

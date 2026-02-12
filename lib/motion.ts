@@ -1,4 +1,4 @@
-import { Variants } from 'framer-motion';
+import { Variants } from 'motion/react';
 
 // Common animation variants that match the design aesthetic
 export const fadeInUp: Variants = {

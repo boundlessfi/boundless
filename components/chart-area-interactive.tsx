@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import {

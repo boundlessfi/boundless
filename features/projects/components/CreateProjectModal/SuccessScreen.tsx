@@ -1,6 +1,6 @@
 import { BoundlessButton } from '@/components/buttons';
 import { Check } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 const SuccessScreen = ({ onContinue }: { onContinue: () => void }) => {
   return (

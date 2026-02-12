@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { ChevronRight } from 'lucide-react';
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cardHover, iconSpin } from '@/lib/motion';
 
 const Card = ({

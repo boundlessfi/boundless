@@ -2,46 +2,56 @@
 
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { VideoPlayer, VideoPlayerError } from './VideoPlayer';
+import { motion } from 'motion/react';
 
 interface SubmissionDetailsTabProps {
   projectName: string;
-  videoUrl?: string;
+  videoUrl?: string; // Kept for interface compatibility but not used here
   introduction?: string;
   description: string;
 }
 
 export const SubmissionDetailsTab: React.FC<SubmissionDetailsTabProps> = ({
   projectName,
-  videoUrl,
   introduction,
   description,
 }) => {
   return (
     <ScrollArea className='h-full pr-4'>
-      <div className='space-y-6'>
-        <div>
-          <h4 className='mb-4 text-base font-medium text-white'>
-            How {projectName} Works in 2 Minutes
-          </h4>
-          <div className='relative h-[250px] overflow-hidden rounded-lg border border-gray-800 bg-gray-900'>
-            {videoUrl ? (
-              <VideoPlayer videoUrl={videoUrl} />
-            ) : (
-              <VideoPlayerError />
-            )}
-          </div>
-        </div>
-
-        <div>
-          <h4 className='mb-3 text-base font-medium text-white'>
-            Introduction
-          </h4>
-          <p className='text-sm leading-relaxed text-gray-400'>
-            {introduction || description}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className='space-y-10'
+      >
+        <section>
+          <p className='text-lg leading-relaxed font-bold text-white'>
+            {projectName}.
           </p>
-        </div>
-      </div>
+        </section>
+
+        {introduction && (
+          <section>
+            <h4 className='mb-6 text-[11px] font-bold tracking-widest text-gray-500 uppercase'>
+              Introduction
+            </h4>
+            <p className='text-base leading-loose text-gray-400'>
+              {introduction}
+            </p>
+          </section>
+        )}
+
+        <section>
+          <h4 className='mb-6 text-[11px] font-bold tracking-widest text-gray-500 uppercase'>
+            Project Overview
+          </h4>
+          <article className='prose prose-invert max-w-none'>
+            <p className='text-base leading-loose text-gray-400'>
+              {description}
+            </p>
+          </article>
+        </section>
+      </motion.div>
     </ScrollArea>
   );
 };

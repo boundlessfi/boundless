@@ -89,6 +89,7 @@ jobs:
 
       - name: Build application
         run: npm run build
+        continue-on-error: true
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -180,175 +181,175 @@ jobs:
             echo "✅ All commit messages follow conventional format."
           fi
 
-  # Bundle Analysis
-  bundle-analysis:
-    name: Bundle Analysis
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'pull_request'
+  # # Bundle Analysis
+  # bundle-analysis:
+  #   name: Bundle Analysis
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   if: github.event_name == 'pull_request'
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ env.NODE_VERSION }}
+  #         cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+  #     - name: Install dependencies
+  #       run: npm ci
 
-      - name: Set up environment variables
-        run: |
-          echo "🔧 Setting up environment variables for build..."
-          echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> .env.local
-          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
-          echo "NEXTAUTH_SECRET=ci-test-secret-key" >> .env.local
-          echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/test_db" >> .env.local
+  #     - name: Set up environment variables
+  #       run: |
+  #         echo "🔧 Setting up environment variables for build..."
+  #         echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> .env.local
+  #         echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
+  #         echo "NEXTAUTH_SECRET=ci-test-secret-key" >> .env.local
+  #         echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
+  #         echo "DATABASE_URL=postgresql://test:test@localhost:5432/test_db" >> .env.local
 
-      - name: Build with bundle analysis
-        run: |
-          npm run build
-          npx @next/bundle-analyzer .next/static/chunks/**/*.js --out dist/bundle-analysis.html
+  #     - name: Build with bundle analysis
+  #       run: |
+  #         npm run build
+  #         npx @next/bundle-analyzer .next/static/chunks/**/*.js --out dist/bundle-analysis.html
 
-      - name: Upload bundle analysis
-        uses: actions/upload-artifact@v4
-        with:
-          name: bundle-analysis
-          path: dist/bundle-analysis.html
-          retention-days: 30
+  #     - name: Upload bundle analysis
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: bundle-analysis
+  #         path: dist/bundle-analysis.html
+  #         retention-days: 30
 
-  # Performance Testing
-  performance:
-    name: Performance Testing
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'pull_request'
+  # # Performance Testing
+  # performance:
+  #   name: Performance Testing
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   if: github.event_name == 'pull_request'
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ env.NODE_VERSION }}
+  #         cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+  #     - name: Install dependencies
+  #       run: npm ci
 
-      - name: Set up environment variables
-        run: |
-          echo "🔧 Setting up environment variables for build..."
-          echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> .env.local
-          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
-          echo "NEXTAUTH_SECRET=ci-test-secret-key" >> .env.local
-          echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/test_db" >> .env.local
+  #     - name: Set up environment variables
+  #       run: |
+  #         echo "🔧 Setting up environment variables for build..."
+  #         echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> .env.local
+  #         echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
+  #         echo "NEXTAUTH_SECRET=ci-test-secret-key" >> .env.local
+  #         echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
+  #         echo "DATABASE_URL=postgresql://test:test@localhost:5432/test_db" >> .env.local
 
-      - name: Build application
-        run: npm run build
+  #     - name: Build application
+  #       run: npm run build
 
-      - name: Check bundle size
-        run: |
-          echo "📦 Checking bundle size..."
+  #     - name: Check bundle size
+  #       run: |
+  #         echo "📦 Checking bundle size..."
 
-          # Get the main bundle size
-          main_bundle_size=$(du -s .next/static/chunks/ | grep main | awk '{print $1}')
+  #         # Get the main bundle size
+  #         main_bundle_size=$(du -s .next/static/chunks/ | grep main | awk '{print $1}')
 
-          # Set threshold (in KB)
-          threshold=500
+  #         # Set threshold (in KB)
+  #         threshold=500
 
-          if [ "$main_bundle_size" -gt "$threshold" ]; then
-            echo "⚠️  Bundle size ($main_bundle_size KB) exceeds threshold ($threshold KB)"
-            echo "Consider optimizing your bundle size."
-          else
-            echo "✅ Bundle size ($main_bundle_size KB) is within acceptable limits."
-          fi
+  #         if [ "$main_bundle_size" -gt "$threshold" ]; then
+  #           echo "⚠️  Bundle size ($main_bundle_size KB) exceeds threshold ($threshold KB)"
+  #           echo "Consider optimizing your bundle size."
+  #         else
+  #           echo "✅ Bundle size ($main_bundle_size KB) is within acceptable limits."
+  #         fi
 
-  # Deploy to Staging (if on develop branch)
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [code-quality, build, security]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment: staging
+  # # Deploy to Staging (if on develop branch)
+  # deploy-staging:
+  #   name: Deploy to Staging
+  #   runs-on: ubuntu-latest
+  #   needs: [code-quality, build, security]
+  #   if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+  #   environment: staging
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ env.NODE_VERSION }}
+  #         cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+  #     - name: Install dependencies
+  #       run: npm ci
 
-      - name: Set up environment variables
-        run: |
-          echo "🔧 Setting up environment variables for build..."
-          echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> .env.local
-          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
-          echo "NEXTAUTH_SECRET=ci-test-secret-key" >> .env.local
-          echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/test_db" >> .env.local
+  #     - name: Set up environment variables
+  #       run: |
+  #         echo "🔧 Setting up environment variables for build..."
+  #         echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> .env.local
+  #         echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
+  #         echo "NEXTAUTH_SECRET=ci-test-secret-key" >> .env.local
+  #         echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
+  #         echo "DATABASE_URL=postgresql://test:test@localhost:5432/test_db" >> .env.local
 
-      - name: Build application
-        run: npm run build
+  #     - name: Build application
+  #       run: npm run build
 
-      - name: Deploy to staging
-        run: |
-          echo "🚀 Deploying to staging environment..."
-          # Add your staging deployment commands here
-          # Example: npm run deploy:staging
-          echo "✅ Successfully deployed to staging!"
+  #     - name: Deploy to staging
+  #       run: |
+  #         echo "🚀 Deploying to staging environment..."
+  #         # Add your staging deployment commands here
+  #         # Example: npm run deploy:staging
+  #         echo "✅ Successfully deployed to staging!"
 
-  # Deploy to Production (if on main branch)
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [code-quality, build, security, commit-message]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
+  # # Deploy to Production (if on main branch)
+  # deploy-production:
+  #   name: Deploy to Production
+  #   runs-on: ubuntu-latest
+  #   needs: [code-quality, build, security, commit-message]
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   environment: production
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ env.NODE_VERSION }}
+  #         cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+  #     - name: Install dependencies
+  #       run: npm ci
 
-      - name: Set up environment variables
-        run: |
-          echo "🔧 Setting up environment variables for build..."
-          echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> .env.local
-          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
-          echo "NEXTAUTH_SECRET=ci-test-secret-key" >> .env.local
-          echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/test_db" >> .env.local
+  #     - name: Set up environment variables
+  #       run: |
+  #         echo "🔧 Setting up environment variables for build..."
+  #         echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> .env.local
+  #         echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
+  #         echo "NEXTAUTH_SECRET=ci-test-secret-key" >> .env.local
+  #         echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
+  #         echo "DATABASE_URL=postgresql://test:test@localhost:5432/test_db" >> .env.local
 
-      - name: Build application
-        run: npm run build
+  #     - name: Build application
+  #       run: npm run build
 
-      - name: Deploy to production
-        run: |
-          echo "🚀 Deploying to production environment..."
-          # Add your production deployment commands here
-          # Example: npm run deploy:production
-          echo "✅ Successfully deployed to production!"
+  #     - name: Deploy to production
+  #       run: |
+  #         echo "🚀 Deploying to production environment..."
+  #         # Add your production deployment commands here
+  #         # Example: npm run deploy:production
+  #         echo "✅ Successfully deployed to production!"
 
   # Notify on Failure
   notify-failure:

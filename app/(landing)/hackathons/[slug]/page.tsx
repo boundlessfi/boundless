@@ -53,14 +53,13 @@ export default function HackathonPage() {
     entityType: CommentEntityType.HACKATHON,
     entityId: hackathonId,
     page: 1,
-    limit: 1000,
+    limit: 100,
     enabled: !!hackathonId,
   });
 
   // Fetch team posts for count
   const { posts: teamPosts } = useTeamPosts({
     hackathonSlugOrId: hackathonId,
-    organizationId: currentHackathon?.organizationId,
     autoFetch: !!hackathonId,
   });
 

@@ -1,5 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { fadeInUp, staggerContainer } from '@/lib/motion';
 
 export const UserPageSkeleton = () => {

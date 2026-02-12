@@ -77,7 +77,6 @@ export function CreateTeamPostModal({
 }: CreateTeamPostModalProps) {
   const { createPost, updatePost, isCreating, isUpdating } = useTeamPosts({
     hackathonSlugOrId,
-    organizationId,
     autoFetch: false,
   });
 

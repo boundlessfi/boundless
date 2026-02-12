@@ -35,6 +35,7 @@ export function useTeamPosts({
   const [myTeam, setMyTeam] = useState<TeamRecruitmentPost | null>(null);
   const [myPosts, setMyPosts] = useState<TeamRecruitmentPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMyTeam, setIsLoadingMyTeam] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -120,16 +121,20 @@ export function useTeamPosts({
       return;
     }
 
+    setIsLoadingMyTeam(true);
     try {
-      const response = await getMyTeam(hackathonSlugOrId, organizationId);
+      const response = await getMyTeam(hackathonSlugOrId);
       if (response.success && response.data) {
         setMyTeam(response.data);
       } else {
         setMyTeam(null);
       }
-    } catch {
-      // Siletly fail
+    } catch (err) {
+      console.error('Error fetching my team:', err);
+      // Silently fail but log
       setMyTeam(null);
+    } finally {
+      setIsLoadingMyTeam(false);
     }
   }, [hackathonSlugOrId, organizationId, isAuthenticated]);
 
@@ -284,6 +289,7 @@ export function useTeamPosts({
     myPosts,
     myTeam,
     isLoading,
+    isLoadingMyTeam,
     isCreating,
     isUpdating,
     isDeleting,

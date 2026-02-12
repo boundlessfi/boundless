@@ -26,7 +26,7 @@ function Stepper({ steps }: StepperProps) {
         return {
           circle:
             'bg-primary text-background border border-stepper-border-active/25',
-          title: 'text-card',
+          title: 'text-card text-white',
           description: 'text-white/60',
           line: 'border-card/30',
         };

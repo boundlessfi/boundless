@@ -58,7 +58,6 @@ export function TeamFormationTab({
     fetchMyPosts,
   } = useTeamPosts({
     hackathonSlugOrId: hackathonId,
-    organizationId,
     autoFetch: !!hackathonId,
   });
 

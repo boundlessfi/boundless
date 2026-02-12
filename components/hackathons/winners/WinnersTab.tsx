@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { HackathonWinner } from '@/lib/api/hackathons';
 import { Trophy, Medal, Award } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface WinnersTabProps {
   winners: HackathonWinner[];

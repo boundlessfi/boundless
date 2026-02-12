@@ -18,6 +18,15 @@ export type SubmissionFormData = Omit<
   'hackathonId' | 'organizationId' | 'participationType'
 > & {
   participationType?: 'INDIVIDUAL' | 'TEAM';
+  teamName?: string;
+  teamMembers?: Array<{
+    userId?: string;
+    email?: string;
+    name: string;
+    role: string;
+    username?: string;
+    avatar?: string;
+  }>;
 };
 
 interface UseSubmissionOptions {

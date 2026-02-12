@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, Variants } from 'framer-motion';
+import { motion, Variants } from 'motion/react';
 import { BrushCleaning, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils'; // Assuming a utility for class merging exists, otherwise will use template literals
 

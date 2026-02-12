@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { fadeInUp, slideInFromLeft, slideInFromRight } from '@/lib/motion';
 import { Search, Bell, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';

@@ -155,7 +155,10 @@ export function FundingModal({
                     type='number'
                     placeholder='Enter amount'
                     value={amount}
-                    onChange={e => setAmount(e.target.value)}
+                    onChange={e => {
+                      setAmount(e.target.value);
+                      if (error) setError(null);
+                    }}
                     className='h-11 pl-10 text-base'
                     min='0'
                     max={remainingGoal}
@@ -184,7 +187,10 @@ export function FundingModal({
                   id='message'
                   placeholder='Leave a message of support...'
                   value={message}
-                  onChange={e => setMessage(e.target.value)}
+                  onChange={e => {
+                    setMessage(e.target.value);
+                    if (error) setError(null);
+                  }}
                   className='min-h-[80px] resize-none'
                   maxLength={500}
                 />

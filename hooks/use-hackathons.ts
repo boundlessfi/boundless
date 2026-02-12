@@ -31,7 +31,7 @@ export interface UseHackathonsOptions {
     search?: string;
   };
   participantFilters?: {
-    status?: 'submitted' | 'not_submitted';
+    status?: 'submitted' | 'not_submitted' | 'shortlisted' | 'disqualified';
     type?: 'individual' | 'team';
     search?: string;
   };
@@ -123,6 +123,9 @@ export interface UseHackathonsReturn {
   organizationId: string | null;
 }
 
+const DEFAULT_FILTERS = {};
+const DEFAULT_PARTICIPANT_FILTERS = {};
+
 export function useHackathons(
   options: UseHackathonsOptions = {}
 ): UseHackathonsReturn {
@@ -131,8 +134,8 @@ export function useHackathons(
     autoFetch = true,
     initialPage = 1,
     pageSize = 10,
-    filters: initialFilters = {},
-    participantFilters: initialParticipantFilters = {},
+    filters: initialFilters = DEFAULT_FILTERS,
+    participantFilters: initialParticipantFilters = DEFAULT_PARTICIPANT_FILTERS,
   } = options;
 
   // Get organizationId from context if not provided
@@ -225,7 +228,6 @@ export function useHackathons(
           organizationId, // Add organization filter
         });
 
-        console.trace('response.data', response.data?.hackathons);
         setHackathons(response.data?.hackathons || []);
         setHackathonsPagination({
           currentPage: response.data?.pagination.page || 1,

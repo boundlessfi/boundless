@@ -206,7 +206,7 @@ export function ProjectLayout({
                 <ProjectMilestone crowdfund={crowdfund} />
               </TabsContent>
               <TabsContent value='voters' className='mt-0'>
-                <ProjectVoters project={project} />
+                <ProjectVoters project={project} crowdfund={crowdfund} />
               </TabsContent>
               <TabsContent value='comments' className='mt-0'>
                 <ProjectComments projectId={crowdfund.project.id || ''} />
@@ -275,7 +275,7 @@ export function ProjectLayout({
                   <ProjectMilestone crowdfund={crowdfund} />
                 </TabsContent>
                 <TabsContent value='voters' className='mt-0'>
-                  <ProjectVoters project={project} />
+                  <ProjectVoters project={project} crowdfund={crowdfund} />
                 </TabsContent>
                 <TabsContent value='backers' className='mt-0'>
                   <ProjectBackers crowdfund={crowdfund} />

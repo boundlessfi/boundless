@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState } from 'react';
 import { Search, ChevronDown, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import SubmissionCard from './submissionCard';
-import { CreateSubmissionModal } from './CreateSubmissionModal';
+import { SubmissionScreenWrapper } from './SubmissionForm';
 import { SubmissionDetailModal } from './SubmissionDetailModal';
 import { useSubmissions } from '@/hooks/hackathon/use-submissions';
 import { useSubmission } from '@/hooks/hackathon/use-submission';
@@ -29,6 +27,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
+import { useExpandableScreen } from '@/components/ui/expandable-screen';
+import { toast } from 'sonner';
 
 interface SubmissionTabProps {
   // hackathonSlugOrId?: string;
@@ -36,17 +36,26 @@ interface SubmissionTabProps {
   isRegistered: boolean;
 }
 
-const SubmissionTab: React.FC<SubmissionTabProps> = ({
-  // hackathonSlugOrId,
+interface SubmissionTabContentProps extends SubmissionTabProps {
+  mySubmission: any; // Type properly if possible
+  isLoadingMySubmission: boolean;
+  fetchMySubmission: () => Promise<any>;
+  removeSubmission: (id: string) => Promise<void>;
+  hackathonId: string;
+}
+
+const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
   organizationId,
   isRegistered,
+  mySubmission,
+  isLoadingMySubmission,
+  fetchMySubmission,
+  removeSubmission,
+  hackathonId,
 }) => {
-  // const params = useParams();
   const { isAuthenticated } = useAuthStatus();
-  const { currentHackathon } = useHackathonData();
-  const hackathonId = currentHackathon?.id || '';
-  const orgId = organizationId || undefined;
   const router = useRouter();
+  const { expand } = useExpandableScreen();
 
   const {
     submissions,
@@ -60,7 +69,6 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
     setSelectedCategory,
   } = useSubmissions();
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<
     string | null
   >(null);
@@ -69,16 +77,6 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
-  const {
-    submission: mySubmission,
-    isFetching: isLoadingMySubmission,
-    fetchMySubmission,
-    remove: removeSubmission,
-  } = useSubmission({
-    hackathonSlugOrId: hackathonId,
-    organizationId: orgId,
-    autoFetch: isAuthenticated && !!hackathonId,
-  });
 
   const handleViewSubmission = (submissionId?: string) => {
     if (submissionId) {
@@ -110,13 +108,16 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
       try {
         await removeSubmission(submissionToDelete);
         setSubmissionToDelete(null);
+        toast.success('Submission deleted successfully');
       } catch (error) {
         console.error('Failed to delete submission:', error);
+        toast.error('Failed to delete submission');
       } finally {
         setIsDeleting(false);
       }
     }
   };
+
   return (
     <div className='w-full'>
       {/* Stats Section */}
@@ -133,27 +134,8 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
           </span>{' '}
           total approved submissions
         </span>
-        {/* {isAuthenticated && hackathonId && (
-          <Button
-            onClick={() => setShowCreateModal(true)}
-            className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
-          >
-            {mySubmission ? (
-              <>
-                <Edit className='mr-2 h-4 w-4' />
-                Edit Submission
-              </>
-            ) : (
-              <>
-                <Plus className='mr-2 h-4 w-4' />
-                Create Submission
-              </>
-            )}
-          </Button>
-        )} */}
+        {/* Helper button removed, triggers handled via Empty state or My Submission card */}
       </div>
-
-      {/* My Submission Section Removed - Integrated into Grid */}
 
       {/* Filters */}
       <div className='mb-8 flex flex-col items-start gap-4 md:flex-row md:items-center'>
@@ -236,7 +218,7 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
               You haven't submitted a project yet.
             </p>
             <Button
-              onClick={() => setShowCreateModal(true)}
+              onClick={expand}
               className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
             >
               <Plus className='mr-2 h-4 w-4' />
@@ -283,7 +265,7 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
               isPinned={true}
               isMySubmission={true}
               onViewClick={() => handleViewSubmission(mySubmission.id)}
-              onEditClick={() => setShowCreateModal(true)}
+              onEditClick={expand}
               onDeleteClick={() => handleDeleteClick(mySubmission.id)}
               onUpvoteClick={() => {}}
               onCommentClick={() => {}}
@@ -345,44 +327,17 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
         </div>
       )}
 
-      {hackathonId && (
-        <>
-          <CreateSubmissionModal
-            open={showCreateModal}
-            onOpenChange={setShowCreateModal}
-            hackathonSlugOrId={hackathonId}
-            organizationId={orgId}
-            initialData={
-              mySubmission
-                ? {
-                    projectName: mySubmission.projectName,
-                    category: mySubmission.category,
-                    description: mySubmission.description,
-                    logo: mySubmission.logo,
-                    videoUrl: mySubmission.videoUrl,
-                    introduction: mySubmission.introduction,
-                    links: mySubmission.links,
-                  }
-                : undefined
-            }
-            submissionId={mySubmission?.id}
-            onSuccess={() => {
-              fetchMySubmission();
-            }}
-          />
-          {selectedSubmissionId && (
-            <SubmissionDetailModal
-              open={showDetailModal}
-              onOpenChange={setShowDetailModal}
-              hackathonSlugOrId={hackathonId}
-              submissionId={selectedSubmissionId}
-              organizationId={orgId}
-              onVoteChange={() => {
-                // Refresh submissions list if needed
-              }}
-            />
-          )}
-        </>
+      {selectedSubmissionId && (
+        <SubmissionDetailModal
+          open={showDetailModal}
+          onOpenChange={setShowDetailModal}
+          hackathonSlugOrId={hackathonId}
+          submissionId={selectedSubmissionId}
+          organizationId={organizationId}
+          onVoteChange={() => {
+            // Refresh submissions list if needed
+          }}
+        />
       )}
 
       <AlertDialog
@@ -423,6 +378,63 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+};
+
+const SubmissionTab: React.FC<SubmissionTabProps> = ({
+  organizationId,
+  isRegistered,
+}) => {
+  const { currentHackathon } = useHackathonData();
+  const hackathonId = currentHackathon?.id || '';
+  const orgId = organizationId || undefined;
+  const { isAuthenticated } = useAuthStatus();
+
+  const {
+    submission: mySubmission,
+    isFetching: isLoadingMySubmission,
+    fetchMySubmission,
+    remove: removeSubmission,
+  } = useSubmission({
+    hackathonSlugOrId: hackathonId || '',
+    autoFetch: isAuthenticated && !!hackathonId,
+  });
+
+  return (
+    <SubmissionScreenWrapper
+      hackathonSlugOrId={hackathonId}
+      organizationId={orgId}
+      initialData={
+        mySubmission
+          ? {
+              projectName: mySubmission.projectName,
+              category: mySubmission.category,
+              description: mySubmission.description,
+              logo: mySubmission.logo,
+              videoUrl: mySubmission.videoUrl,
+              introduction: mySubmission.introduction,
+              links: mySubmission.links,
+              participationType: (mySubmission as any).participationType, // added support in wrapper/modal
+            }
+          : undefined
+      }
+      submissionId={mySubmission?.id}
+      onSuccess={() => {
+        fetchMySubmission();
+      }}
+    >
+      <SubmissionTabContent
+        organizationId={orgId}
+        isRegistered={isRegistered}
+        mySubmission={mySubmission}
+        isLoadingMySubmission={isLoadingMySubmission}
+        fetchMySubmission={fetchMySubmission}
+        removeSubmission={async (id: string) => {
+          await removeSubmission(id);
+        }}
+        hackathonId={hackathonId}
+      />
+    </SubmissionScreenWrapper>
   );
 };
 

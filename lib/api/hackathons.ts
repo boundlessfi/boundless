@@ -797,7 +797,8 @@ export interface CreateSubmissionRequest {
   teamId?: string;
   teamName?: string;
   teamMembers?: Array<{
-    userId: string;
+    userId?: string;
+    email?: string;
     name: string;
     username?: string;
     role: string;

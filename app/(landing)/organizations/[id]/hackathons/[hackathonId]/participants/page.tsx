@@ -1,207 +1,417 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import MetricsCard from '@/components/organization/cards/MetricsCard';
-import Participant from '@/components/organization/cards/Participant';
 import { useParams } from 'next/navigation';
 import { useHackathons } from '@/hooks/use-hackathons';
-import { getHackathonStatistics } from '@/lib/api/hackathons';
-import { useState } from 'react';
+import { getHackathonStatistics, getHackathon } from '@/lib/api/hackathons';
 import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
+import { ParticipantsTable } from '@/components/organization/hackathons/ParticipantsTable';
+import { ParticipantsGrid } from '@/components/organization/hackathons/ParticipantsGrid';
+import { ParticipantToolbar } from '@/components/organization/hackathons/ParticipantToolbar';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
+import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
+import TeamModal from '@/components/organization/cards/TeamModal';
+import ReviewSubmissionModal from '@/components/organization/cards/ReviewSubmissionModal';
+import GradeSubmissionModal from '@/components/organization/cards/GradeSubmissionModal';
+import {
+  useParticipantSubmission,
+  transformParticipantToSubmission,
+  SubmissionData,
+} from '@/hooks/use-participant-submission';
+import { Participant } from '@/lib/api/hackathons';
+import { useDebounce } from '@/hooks/use-debounce';
+import { toast } from 'sonner';
 
-export default function ParticipantsPage() {
+const PAGE_SIZE = 12;
+
+type ParticipantStatus =
+  | 'submitted'
+  | 'not_submitted'
+  | 'shortlisted'
+  | 'disqualified'
+  | 'all';
+type ParticipationType = 'individual' | 'team' | 'all';
+
+interface FilterState {
+  search: string;
+  status: ParticipantStatus;
+  type: ParticipationType;
+}
+
+const mapFiltersToParams = (filters: FilterState, searchOverride?: string) => ({
+  search: searchOverride !== undefined ? searchOverride : filters.search,
+  status: filters.status === 'all' ? undefined : filters.status,
+  type: filters.type === 'all' ? undefined : filters.type,
+});
+
+const ParticipantsPage: React.FC = () => {
   const params = useParams();
   const organizationId = params.id as string;
   const hackathonId = params.hackathonId as string;
+
+  const [view, setView] = useState<'table' | 'grid'>('table');
+  const [filters, setFilters] = useState<FilterState>({
+    search: '',
+    status: 'all',
+    type: 'all',
+  });
+
+  const hookOptions = useMemo(
+    () => ({
+      organizationId,
+      autoFetch: false,
+      pageSize: PAGE_SIZE, // Grid looks better with multiples of 3/4
+    }),
+    [organizationId]
+  );
 
   const {
     participants,
     participantsLoading,
     participantsError,
     fetchParticipants,
+    participantsPagination,
     currentHackathon,
     fetchHackathon,
-  } = useHackathons({
-    organizationId,
-    autoFetch: false,
-  });
+  } = useHackathons(hookOptions);
 
-  // Get the actual hackathon ID from the fetched hackathon data
   const actualHackathonId = currentHackathon?.id;
 
-  // Handler to refresh participants after review actions
-  const handleReviewSuccess = () => {
-    if (organizationId && actualHackathonId) {
-      fetchParticipants(actualHackathonId);
-    }
-  };
+  // Modals state
+  const [selectedParticipant, setSelectedParticipant] =
+    useState<Participant | null>(null);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isJudgeModalOpen, setIsJudgeModalOpen] = useState(false);
+  const [criteria, setCriteria] = useState<
+    Array<{ title: string; weight: number; description?: string }>
+  >([]);
+  const [isLoadingCriteria, setIsLoadingCriteria] = useState(false);
 
-  const [statistics, setStatistics] = useState<{
-    participantsCount: number;
-    submissionsCount: number;
-  } | null>(null);
-  const [statisticsLoading, setStatisticsLoading] = useState(false);
+  const debouncedSearch = useDebounce(filters.search, 300);
 
-  // Refs to prevent duplicate fetches
-  const hasFetchedParticipantsRef = useRef(false);
-  const hasFetchedStatisticsRef = useRef(false);
-  const lastOrgIdRef = useRef<string | null>(null);
-  const lastHackathonIdRef = useRef<string | null>(null);
+  // Submission data for the selected participant
+  const submissionData = useParticipantSubmission(
+    selectedParticipant || undefined
+  );
 
-  // Reset fetch flags when IDs change
-  useEffect(() => {
-    if (
-      lastOrgIdRef.current !== organizationId ||
-      lastHackathonIdRef.current !== (actualHackathonId || null)
-    ) {
-      // IDs changed, reset fetch flags
-      hasFetchedParticipantsRef.current = false;
-      hasFetchedStatisticsRef.current = false;
-      lastOrgIdRef.current = organizationId;
-      lastHackathonIdRef.current = actualHackathonId || null;
-    }
-  }, [organizationId, actualHackathonId]);
-
-  // First fetch the hackathon to get the actual ID
+  // Fetch hackathon and participants
   useEffect(() => {
     if (organizationId && hackathonId && !currentHackathon) {
       void fetchHackathon(hackathonId);
     }
   }, [organizationId, hackathonId, currentHackathon, fetchHackathon]);
 
-  // Fetch participants on mount or when actual hackathon ID is available
   useEffect(() => {
-    if (
-      organizationId &&
-      actualHackathonId &&
-      !hasFetchedParticipantsRef.current
-    ) {
-      hasFetchedParticipantsRef.current = true;
-      fetchParticipants(actualHackathonId);
+    if (actualHackathonId) {
+      fetchParticipants(
+        actualHackathonId,
+        1,
+        PAGE_SIZE,
+        mapFiltersToParams(filters, debouncedSearch)
+      );
     }
-  }, [organizationId, actualHackathonId, fetchParticipants]);
+  }, [
+    actualHackathonId,
+    fetchParticipants,
+    debouncedSearch,
+    filters.status,
+    filters.type,
+  ]);
 
-  // Fetch statistics only once on mount or when actual hackathon ID is available
+  // Statistics
+  const [statistics, setStatistics] = useState<{
+    participantsCount: number;
+    submissionsCount: number;
+  } | null>(null);
+  const [statisticsLoading, setStatisticsLoading] = useState(false);
+
   useEffect(() => {
-    const loadStatistics = async () => {
-      if (
-        !organizationId ||
-        !actualHackathonId ||
-        hasFetchedStatisticsRef.current
-      ) {
-        return;
-      }
-
-      hasFetchedStatisticsRef.current = true;
-      setStatisticsLoading(true);
-      try {
-        const response = await getHackathonStatistics(
-          organizationId,
-          actualHackathonId
-        );
-        setStatistics({
-          participantsCount: response.data.participantsCount,
-          submissionsCount: response.data.submissionsCount,
-        });
-      } catch {
-        // Fallback to calculating from participants data only if we have it
-        // Don't trigger another fetch
-      } finally {
-        setStatisticsLoading(false);
-      }
-    };
-
     if (organizationId && actualHackathonId) {
+      const loadStatistics = async () => {
+        setStatisticsLoading(true);
+        try {
+          const response = await getHackathonStatistics(
+            organizationId,
+            actualHackathonId
+          );
+          setStatistics({
+            participantsCount: response.data.participantsCount,
+            submissionsCount: response.data.submissionsCount,
+          });
+        } catch (err) {
+          console.error('Failed to load statistics', err);
+        } finally {
+          setStatisticsLoading(false);
+        }
+      };
       loadStatistics();
     }
   }, [organizationId, actualHackathonId]);
 
-  // Ensure participants is always an array
-  const participantsList = useMemo(() => {
-    return Array.isArray(participants) ? participants : [];
-  }, [participants]);
-
-  // Calculate metrics from participants if statistics not available
-  // This is a fallback calculation, not a trigger for fetching
-  const metrics = useMemo(() => {
-    if (statistics) {
-      return statistics;
+  // Handlers
+  const handlePageChange = (page: number) => {
+    if (actualHackathonId) {
+      fetchParticipants(
+        actualHackathonId,
+        page,
+        PAGE_SIZE,
+        mapFiltersToParams(filters, debouncedSearch)
+      );
     }
+  };
 
-    // Only calculate from participants if we have them and statistics failed
-    const participantsCount = participantsList.length;
-    const submissionsCount = participantsList.filter(p => p.submission).length;
+  const handleReview = (participant: Participant) => {
+    setSelectedParticipant(participant);
+    setIsReviewModalOpen(true);
+  };
 
-    return {
-      participantsCount,
-      submissionsCount,
-    };
-  }, [statistics, participantsList]);
+  const handleViewTeam = (participant: Participant) => {
+    setSelectedParticipant(participant);
+    setIsTeamModalOpen(true);
+  };
+
+  const handleGrade = async (participant: Participant) => {
+    if (!organizationId || !hackathonId) return;
+    setSelectedParticipant(participant);
+
+    setIsLoadingCriteria(true);
+    try {
+      const response = await getHackathon(hackathonId);
+      if (response.success) {
+        setCriteria(
+          response.data?.judgingCriteria?.map(criterion => ({
+            title: criterion.name || '',
+            weight: criterion.weight || 0,
+            description: criterion.description || '',
+          })) || []
+        );
+        setIsJudgeModalOpen(true);
+      } else {
+        setCriteria([]);
+        toast.error('Failed to load judging criteria');
+      }
+    } catch (err) {
+      console.error('Failed to load criteria', err);
+      setCriteria([]);
+      toast.error('An error occurred while loading judging criteria');
+    } finally {
+      setIsLoadingCriteria(false);
+    }
+  };
+
+  const handleReviewSuccess = () => {
+    if (actualHackathonId) {
+      fetchParticipants(
+        actualHackathonId,
+        participantsPagination.currentPage,
+        PAGE_SIZE,
+        mapFiltersToParams(filters, debouncedSearch)
+      );
+    }
+  };
+
+  // Mock table instance for DataTablePagination
+  const table = useReactTable({
+    data: participants,
+    columns: [], // Not used for rendering here
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    pageCount: participantsPagination.totalPages,
+    state: {
+      pagination: {
+        pageIndex: participantsPagination.currentPage - 1,
+        pageSize: participantsPagination.itemsPerPage,
+      },
+    },
+    onPaginationChange: updater => {
+      if (typeof updater === 'function') {
+        const newState = (
+          updater as (old: { pageIndex: number; pageSize: number }) => {
+            pageIndex: number;
+            pageSize: number;
+          }
+        )({
+          pageIndex: participantsPagination.currentPage - 1,
+          pageSize: participantsPagination.itemsPerPage,
+        });
+        handlePageChange(newState.pageIndex + 1);
+      }
+    },
+  });
+
+  // Memoized filter handlers to prevent infinite re-renders in ParticipantToolbar
+  const handleSearchChange = useCallback((search: string) => {
+    setFilters(f => ({ ...f, search }));
+  }, []);
+
+  const handleStatusFilterChange = useCallback((status: string) => {
+    setFilters(f => ({ ...f, status: status as ParticipantStatus }));
+  }, []);
+
+  const handleTypeFilterChange = useCallback((type: string) => {
+    setFilters(f => ({ ...f, type: type as ParticipationType }));
+  }, []);
 
   return (
     <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
-      {participantsLoading && participantsList.length === 0 ? (
-        <div className='bg-background flex min-h-screen items-center justify-center p-8 text-white'>
-          <div className='text-center'>
-            <div className='mb-4 text-lg'>Loading participants...</div>
-          </div>
-        </div>
-      ) : participantsError && participantsList.length === 0 ? (
-        <div className='bg-background flex min-h-screen items-center justify-center p-8 text-white'>
-          <div className='text-center'>
-            <div className='mb-4 text-lg text-red-400'>
-              Error loading participants
-            </div>
-            <div className='text-sm text-gray-400'>{participantsError}</div>
-          </div>
-        </div>
-      ) : (
-        <div className='bg-background min-h-screen space-y-4 p-8 text-white'>
+      <div className='bg-background min-h-screen space-y-6 p-8 text-white'>
+        <div className='flex flex-col gap-6'>
           <div className='flex gap-4'>
             <MetricsCard
               title='Total Participants'
-              value={metrics.participantsCount}
+              value={statistics?.participantsCount ?? 0}
               subtitle={
                 statisticsLoading
-                  ? undefined
-                  : metrics.participantsCount > 0
-                    ? `${metrics.participantsCount} registered`
-                    : undefined
+                  ? 'Loading...'
+                  : `${statistics?.participantsCount ?? 0} registered`
               }
               showTrend={true}
             />
             <MetricsCard
               title='Total Submissions'
-              value={metrics.submissionsCount}
+              value={statistics?.submissionsCount ?? 0}
               subtitle={
                 statisticsLoading
-                  ? undefined
-                  : metrics.participantsCount > 0
-                    ? `${((metrics.submissionsCount / metrics.participantsCount) * 100).toFixed(1)}% submission rate`
-                    : undefined
+                  ? 'Loading...'
+                  : statistics?.participantsCount
+                    ? `${((statistics.submissionsCount / statistics.participantsCount) * 100).toFixed(1)}% submission rate`
+                    : '0% submission rate'
               }
             />
           </div>
-          <div className='flex flex-col gap-4'>
-            {participantsList.length === 0 ? (
-              <div className='bg-background/8 rounded-lg border border-gray-900 p-8 text-center text-gray-400'>
-                No participants found
-              </div>
-            ) : (
-              participantsList.map(participant => (
-                <Participant
-                  key={participant.id}
-                  participant={participant}
-                  organizationId={organizationId}
-                  hackathonId={hackathonId}
-                  onReviewSuccess={handleReviewSuccess}
+
+          <ParticipantToolbar
+            currentView={view}
+            onViewChange={setView}
+            onSearchChange={handleSearchChange}
+            onStatusFilterChange={handleStatusFilterChange}
+            onTypeFilterChange={handleTypeFilterChange}
+          />
+
+          {participantsError ? (
+            <div className='rounded-lg border border-red-900 bg-red-950/20 p-8 text-center text-red-400'>
+              <p className='font-medium'>Error loading participants</p>
+              <p className='text-sm opacity-80'>{participantsError}</p>
+            </div>
+          ) : (
+            <div className='space-y-6'>
+              {view === 'table' ? (
+                <ParticipantsTable
+                  data={participants}
+                  loading={participantsLoading}
+                  onReview={handleReview}
+                  onViewTeam={handleViewTeam}
+                  onGrade={handleGrade}
                 />
-              ))
-            )}
-          </div>
+              ) : (
+                <ParticipantsGrid
+                  data={participants}
+                  loading={participantsLoading}
+                  onReview={handleReview}
+                  onViewTeam={handleViewTeam}
+                  onGrade={handleGrade}
+                />
+              )}
+
+              <div className='flex justify-end'>
+                <DataTablePagination
+                  table={table}
+                  loading={participantsLoading}
+                />
+              </div>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Centralized Modals */}
+      {selectedParticipant && (
+        <>
+          <TeamModal
+            open={isTeamModalOpen}
+            onOpenChange={setIsTeamModalOpen}
+            participationType={
+              selectedParticipant.participationType === 'team'
+                ? 'team'
+                : 'individual'
+            }
+            teamName={selectedParticipant.teamName}
+            submissionDate={
+              selectedParticipant.submission?.submissionDate
+                ? new Date(
+                    selectedParticipant.submission.submissionDate
+                  ).toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                : undefined
+            }
+            members={selectedParticipant.teamMembers?.map(member => ({
+              id: member.userId,
+              name: member.name,
+              role: member.role,
+              avatar: member.avatar,
+            }))}
+            teamId={selectedParticipant.teamId}
+            organizationId={organizationId}
+            hackathonId={hackathonId}
+          />
+
+          {submissionData && (
+            <ReviewSubmissionModal
+              open={isReviewModalOpen}
+              onOpenChange={setIsReviewModalOpen}
+              submissions={
+                participants
+                  .filter(p => !!p.submission)
+                  .map(transformParticipantToSubmission)
+                  .filter((s): s is SubmissionData => s !== undefined) || []
+              }
+              currentIndex={Math.max(
+                0,
+                participants
+                  .filter(p => !!p.submission)
+                  .findIndex(p => p.id === selectedParticipant.id)
+              )}
+              organizationId={organizationId}
+              hackathonId={hackathonId}
+              participantId={selectedParticipant.id}
+              onSuccess={handleReviewSuccess}
+            />
+          )}
+
+          {selectedParticipant.submission && (
+            <GradeSubmissionModal
+              open={isJudgeModalOpen}
+              onOpenChange={setIsJudgeModalOpen}
+              organizationId={organizationId}
+              hackathonId={hackathonId}
+              participantId={selectedParticipant.id}
+              judgingCriteria={criteria}
+              submission={{
+                id: selectedParticipant.submission.id,
+                projectName: selectedParticipant.submission.projectName,
+                category: selectedParticipant.submission.category,
+                description: selectedParticipant.submission.description,
+                votes: Array.isArray(selectedParticipant.submission.votes)
+                  ? selectedParticipant.submission.votes.length
+                  : selectedParticipant.submission.votes || 0,
+                comments: Array.isArray(selectedParticipant.submission.comments)
+                  ? selectedParticipant.submission.comments.length
+                  : selectedParticipant.submission.comments || 0,
+                logo: selectedParticipant.submission.logo,
+              }}
+              onSuccess={handleReviewSuccess}
+            />
+          )}
+        </>
       )}
     </AuthGuard>
   );
-}
+};
+
+export default ParticipantsPage;

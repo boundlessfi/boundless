@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/sidebar';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { fadeInUp, staggerContainer } from '@/lib/motion';
 import { useAuth } from '@/hooks/use-auth';
 

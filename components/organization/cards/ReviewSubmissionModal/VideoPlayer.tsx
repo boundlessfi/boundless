@@ -37,7 +37,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl }) => {
     return (
       <iframe
         src={getYouTubeEmbedUrl(videoUrl)}
-        className='h-full w-full rounded-lg'
+        className='h-full w-full'
         allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
         allowFullScreen
       />

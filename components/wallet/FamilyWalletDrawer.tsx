@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Drawer } from 'vaul';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useWallet } from '@/hooks/use-wallet';
 import { useWalletContext } from '@/components/providers/wallet-provider';
 import { formatAddress } from '@/lib/wallet-utils';

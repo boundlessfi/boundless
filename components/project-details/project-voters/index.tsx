@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Empty from './Empty';
 import Image from 'next/image';
-import { CrowdfundingProject } from '@/features/projects/types';
+import { CrowdfundingProject, Crowdfunding } from '@/features/projects/types';
 import { VoteType, VoteEntityType, VoterDto } from '@/types/votes';
 import {
   getVoteCounts as apiGetVoteCounts,
@@ -20,6 +20,8 @@ import { Button } from '@/components/ui/button';
 import { useVoteRealtime } from '@/hooks/use-vote-realtime';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useOptionalAuth } from '@/hooks/use-auth';
+import { AlertCircle } from 'lucide-react';
 
 interface VoteStats {
   upvotes: number;
@@ -30,9 +32,11 @@ interface VoteStats {
 
 interface ProjectVotersProps {
   project?: CrowdfundingProject;
+  crowdfund?: Crowdfunding;
 }
 
-const ProjectVoters = ({ project }: ProjectVotersProps) => {
+const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
+  const { user } = useOptionalAuth();
   const [voteStats, setVoteStats] = useState<VoteStats>({
     upvotes: 0,
     downvotes: 0,
@@ -42,6 +46,15 @@ const ProjectVoters = ({ project }: ProjectVotersProps) => {
   const [voters, setVoters] = useState<VoterDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState(false);
+
+  const isOwner = user?.id === project?.creatorId;
+  const team = crowdfund?.team || [];
+  const isTeamMember = team.some(
+    member =>
+      member.id === user?.id ||
+      (member.username && member.username === user?.profile?.username)
+  );
+  const isGated = isOwner || isTeamMember;
 
   const projectId = project?.id;
 
@@ -149,8 +162,8 @@ const ProjectVoters = ({ project }: ProjectVotersProps) => {
       } else {
         toast.success(voteType === VoteType.UPVOTE ? 'Upvoted!' : 'Downvoted!');
       }
-    } catch {
-      toast.error('Failed to submit vote. Please try again.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to submit vote. Please try again.');
     } finally {
       setVoting(false);
     }
@@ -231,7 +244,7 @@ const ProjectVoters = ({ project }: ProjectVotersProps) => {
           <div className='flex flex-col items-stretch gap-3 sm:flex-row sm:items-center'>
             <Button
               onClick={() => handleVote(VoteType.UPVOTE)}
-              disabled={voting}
+              disabled={voting || isGated}
               size='lg'
               className={cn(
                 'h-12 flex-1 font-medium transition-all duration-200',
@@ -264,7 +277,7 @@ const ProjectVoters = ({ project }: ProjectVotersProps) => {
 
             <Button
               onClick={() => handleVote(VoteType.DOWNVOTE)}
-              disabled={voting}
+              disabled={voting || isGated}
               size='lg'
               className={cn(
                 'h-12 flex-1 font-medium transition-all duration-200',
@@ -295,6 +308,16 @@ const ProjectVoters = ({ project }: ProjectVotersProps) => {
               </span>
             </Button>
           </div>
+
+          {isGated && (
+            <div className='flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200'>
+              <AlertCircle className='h-4 w-4 shrink-0' />
+              <p>
+                As a project owner or team member, you are not allowed to vote
+                for your own campaign.
+              </p>
+            </div>
+          )}
 
           {voteStats.userVote && (
             <div
@@ -337,7 +360,11 @@ const ProjectVoters = ({ project }: ProjectVotersProps) => {
         </div>
 
         {voters.length === 0 ? (
-          <Empty projectStatus={project?.status ?? ''} />
+          <Empty
+            projectStatus={project?.status ?? ''}
+            isGated={isGated}
+            onVote={() => handleVote(VoteType.UPVOTE)}
+          />
         ) : (
           <div className='space-y-2'>
             {voters.map((voter, index) => (
