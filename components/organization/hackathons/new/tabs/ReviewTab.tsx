@@ -67,7 +67,7 @@ export default function ReviewTab({
         setShowPublishedModal(true);
       }
     } catch {
-      toast.error('Failed to publish hackathon. Please try again.');
+      // Error is handled in the hook, so we don't need to show another toast
     }
   };
 

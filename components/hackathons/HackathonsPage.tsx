@@ -125,7 +125,7 @@ export default function HackathonsPage({
           <div className='flex flex-col items-center justify-center py-16'>
             <div className='text-center'>
               <EmptyState
-                title='No available hackathons'
+                title='No available hackathon'
                 description={
                   filters.search ||
                   filters.category ||

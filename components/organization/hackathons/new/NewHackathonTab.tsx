@@ -206,8 +206,8 @@ export default function NewHackathonTab({
     try {
       await publish();
       updateStepCompletion('review', true);
-    } catch {
-      // Error is handled in the hook
+    } catch (error) {
+      throw error;
     }
   };
 

@@ -212,12 +212,14 @@ export function useCountdown(targetDate?: string | Date) {
 interface CountdownTimerProps extends VariantProps<typeof timerVariants> {
   targetDate?: string | Date;
   className?: string;
+  displayClassName?: string;
   showIcon?: boolean;
 }
 
 export const CountdownTimer = ({
   targetDate,
   className,
+  displayClassName,
   variant = 'ghost',
   size = 'md',
   showIcon = true,
@@ -229,7 +231,11 @@ export const CountdownTimer = ({
   return (
     <TimerRoot variant={variant} size={size} className={className}>
       {showIcon && <TimerIcon size={size} loading={!isExpired} />}
-      <TimerDisplay size={size} time={isExpired ? 'Expired' : display} />
+      <TimerDisplay
+        size={size}
+        time={isExpired ? 'Expired' : display}
+        className={displayClassName}
+      />
     </TimerRoot>
   );
 };

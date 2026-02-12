@@ -1181,7 +1181,7 @@ export const publishDraft = async (
     `/organizations/${organizationId}/hackathons/draft/${draftId}/publish`
   );
 
-  return res.data.data as PublishHackathonResponse;
+  return res.data as unknown as PublishHackathonResponse;
 };
 
 /**

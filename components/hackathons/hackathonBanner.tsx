@@ -1,14 +1,8 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { useMemo } from 'react';
-import {
-  FileText,
-  Users,
-  ArrowRight,
-  Calendar,
-  Clock,
-  Trophy,
-} from 'lucide-react';
+import { FileText, Users, ArrowRight, Calendar, Trophy } from 'lucide-react';
+import { CountdownTimer } from '@/components/ui/timer';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -290,17 +284,20 @@ export function HackathonBanner({
           {/* Stats Row */}
           <div className='mb-5 grid grid-cols-2 gap-3'>
             {/* Countdown Timer */}
-            {timeRemaining.total > 0 && (
+            {(status === 'ongoing' || status === 'upcoming') && (
               <div className='rounded-lg border border-gray-800 bg-gray-900/60 p-3 backdrop-blur-sm'>
                 <div className='mb-1 flex items-center gap-1.5'>
-                  <Clock className='h-3.5 w-3.5 text-gray-400' />
                   <span className='text-xs tracking-wide text-gray-400 uppercase'>
                     {status === 'ongoing' ? 'Ends In' : 'Starts In'}
                   </span>
                 </div>
-                <div className='text-lg font-bold text-white'>
-                  {formatCountdown(timeRemaining)}
-                </div>
+                <CountdownTimer
+                  targetDate={status === 'ongoing' ? deadline : startDate}
+                  size='lg'
+                  showIcon={true}
+                  className='h-auto border-none bg-transparent p-0 shadow-none'
+                  displayClassName='text-lg font-bold text-white'
+                />
               </div>
             )}
 

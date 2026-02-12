@@ -7,13 +7,29 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import type { ParticipantDisplay } from '@/lib/api/hackathons/index';
 import Image from 'next/image';
-import { MessageCircle, Users, CheckCircle2, UserPlus } from 'lucide-react';
+import {
+  MessageCircle,
+  Users,
+  CheckCircle2,
+  UserPlus,
+  Info,
+} from 'lucide-react';
 import { useParticipants } from '@/hooks/hackathon/use-participants';
 import Link from 'next/link';
 import { useAuthStatus } from '@/hooks/use-auth';
-import { useRegisterHackathon } from '@/hooks/hackathon/use-register-hackathon';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { InviteUserModal } from '../team-formation/InviteUserModal';
+import { useFollow } from '@/hooks/use-follow';
+import { useFollowStats } from '@/hooks/use-follow-stats';
+import { getUserProfileByUsername } from '@/lib/api/auth';
+import type { PublicUserProfile } from '@/features/projects/types';
+import { useEffect } from 'react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const BRAND_COLOR = '#a7f950';
 
@@ -43,8 +59,34 @@ const formatJoinDate = (dateString: string) => {
 };
 
 export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [profileData, setProfileData] = useState<PublicUserProfile | null>(
+    null
+  );
+  const {
+    toggleFollow,
+    isFollowing,
+    isLoading: isFollowLoading,
+  } = useFollow('USER', participant.userId);
+  const { stats: followStats, refetch: refetchStats } = useFollowStats(
+    participant.userId
+  );
+
   const { participants, allParticipants, teams } = useParticipants();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        if (participant.username) {
+          const data = await getUserProfileByUsername(participant.username);
+          setProfileData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+      }
+    };
+    fetchProfile();
+  }, [participant.username]);
+
   const teamMembers = useMemo(() => {
     if (participant.role === 'leader' && participant.teamId) {
       return participants.filter(
@@ -196,7 +238,11 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
         {/* Action Buttons */}
         <div className='flex gap-2'>
           <Button
-            onClick={() => setIsFollowing(!isFollowing)}
+            onClick={async () => {
+              await toggleFollow();
+              refetchStats();
+            }}
+            disabled={isFollowLoading}
             className='flex-1 font-semibold transition-all'
             style={{
               backgroundColor: isFollowing ? '#27272a' : BRAND_COLOR,
@@ -215,14 +261,26 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
                 : BRAND_COLOR;
             }}
           >
-            {isFollowing ? 'Following' : 'Follow'}
+            {isFollowLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
           </Button>
-          <Button
-            className='bg-zinc-800 text-white transition-colors hover:bg-zinc-700'
-            size='icon'
-          >
-            <MessageCircle className='h-4 w-4' />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className='inline-block'>
+                  <Button
+                    className='bg-zinc-800 text-zinc-500 transition-colors'
+                    size='icon'
+                    disabled
+                  >
+                    <MessageCircle className='h-4 w-4' />
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className='border-zinc-800 bg-zinc-900 text-xs text-zinc-400'>
+                Messaging coming soon
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           {canInvite && (
             <Button
               className='bg-zinc-800 text-white transition-colors hover:bg-zinc-700'
@@ -304,19 +362,19 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
         <div className='grid grid-cols-3 gap-4'>
           <div className='text-center'>
             <p className='text-lg font-bold text-white'>
-              {participant.projects || 0}
+              {profileData?.stats?.projectsCreated ?? participant.projects ?? 0}
             </p>
             <p className='text-xs text-zinc-400'>Projects</p>
           </div>
           <div className='text-center'>
             <p className='text-lg font-bold text-white'>
-              {participant.followers || 0}
+              {followStats?.followers ?? participant.followers ?? 0}
             </p>
             <p className='text-xs text-zinc-400'>Followers</p>
           </div>
           <div className='text-center'>
             <p className='text-lg font-bold text-white'>
-              {participant.following || 0}
+              {followStats?.following ?? participant.following ?? 0}
             </p>
             <p className='text-xs text-zinc-400'>Following</p>
           </div>

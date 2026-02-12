@@ -343,7 +343,7 @@ export default function HackathonPage() {
                   currency: tier.currency,
                   passMark: tier.passMark,
                   description: tier.description,
-                  prizeAmount: tier.prizeAmount, // Keep as string to match PrizeTier interface
+                  prizeAmount: tier.prizeAmount,
                 }))}
                 totalPrizePool={currentHackathon.prizeTiers
                   .reduce(
