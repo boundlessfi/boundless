@@ -23,7 +23,13 @@ import { HackathonParticipants } from '@/components/hackathons/participants/hack
 import { useCommentSystem } from '@/hooks/use-comment-system';
 import { CommentEntityType } from '@/types/comment';
 import { useTeamPosts } from '@/hooks/hackathon/use-team-posts';
+import {
+  listAnnouncements,
+  type HackathonAnnouncement,
+} from '@/lib/api/hackathons/index';
 import { HackathonWinner } from '@/lib/api/hackathons';
+import { Megaphone } from 'lucide-react';
+import { AnnouncementsTab } from '@/components/hackathons/announcements/AnnouncementsTab';
 
 export default function HackathonPage() {
   const router = useRouter();
@@ -63,6 +69,29 @@ export default function HackathonPage() {
     autoFetch: !!hackathonId,
   });
 
+  // Fetch announcements for public view
+  const [announcements, setAnnouncements] = useState<HackathonAnnouncement[]>(
+    []
+  );
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchAnnouncements() {
+      if (!hackathonId) return;
+      try {
+        setAnnouncementsLoading(true);
+        const data = await listAnnouncements(hackathonId);
+        // Only show published announcements for public view
+        setAnnouncements(data.filter(a => !a.isDraft));
+      } catch (error) {
+        console.error('Failed to fetch announcements:', error);
+      } finally {
+        setAnnouncementsLoading(false);
+      }
+    }
+    fetchAnnouncements();
+  }, [hackathonId]);
+
   const hackathonTabs = useMemo(() => {
     const hasParticipants =
       Array.isArray(currentHackathon?.participants) &&
@@ -71,9 +100,7 @@ export default function HackathonPage() {
     const hasResources = currentHackathon?.resources?.[0];
     const participantType = currentHackathon?.participantType;
     const isTeamHackathon =
-      participantType === 'TEAM' ||
-      participantType === 'TEAM_OR_INDIVIDUAL' ||
-      participantType === 'INDIVIDUAL';
+      participantType === 'TEAM' || participantType === 'TEAM_OR_INDIVIDUAL';
     const isTabEnabled =
       currentHackathon?.enabledTabs?.includes('joinATeamTab') !== false;
 
@@ -107,6 +134,16 @@ export default function HackathonPage() {
               id: 'resources',
               label: 'Resources',
               badge: currentHackathon?.resources?.length,
+            },
+          ]
+        : []),
+      ...(announcements.length > 0
+        ? [
+            {
+              id: 'announcements',
+              label: 'Announcements',
+              badge: announcements.length,
+              icon: Megaphone,
             },
           ]
         : []),
@@ -202,8 +239,7 @@ export default function HackathonPage() {
   // Team formation availability
   const isTeamHackathon =
     currentHackathon?.participantType === 'TEAM' ||
-    currentHackathon?.participantType === 'TEAM_OR_INDIVIDUAL' ||
-    currentHackathon?.participantType === 'INDIVIDUAL';
+    currentHackathon?.participantType === 'TEAM_OR_INDIVIDUAL';
   const isTeamFormationEnabled =
     isTeamHackathon &&
     currentHackathon?.enabledTabs?.includes('joinATeamTab') !== false;
@@ -300,6 +336,7 @@ export default function HackathonPage() {
     isTeamFormationEnabled,
     registrationDeadlinePolicy: currentHackathon.registrationDeadlinePolicy, // Now matches API casing
     registrationDeadline: currentHackathon.registrationDeadline,
+    participantType: currentHackathon.participantType,
     onJoinClick: handleJoinClick,
     onLeaveClick: handleLeaveClick,
     isLeaving,
@@ -370,6 +407,13 @@ export default function HackathonPage() {
               currentHackathon.participants?.length > 0 && (
                 <HackathonParticipants />
               )}
+
+            {activeTab === 'announcements' && announcements.length > 0 && (
+              <AnnouncementsTab
+                announcements={announcements}
+                hackathonSlug={hackathonId}
+              />
+            )}
 
             {activeTab === 'submission' && (
               <SubmissionTab

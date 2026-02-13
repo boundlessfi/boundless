@@ -59,11 +59,12 @@ export function ProjectLayout({
       baseTabs.splice(4, 0, { value: 'voters', label: 'Voters' });
       baseTabs.splice(5, 0, { value: 'backers', label: 'Backers' });
     }
-
     return baseTabs;
   };
 
-  const visibleTabs = getVisibleTabs();
+  const visibleTabs = getVisibleTabs().filter(
+    tab => !hiddenTabs.includes(tab.value)
+  );
 
   const handleScroll = () => {
     if (tabsListRef.current) {

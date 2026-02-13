@@ -126,7 +126,7 @@ function ProjectContent({
         <ProjectLayout
           project={project.project}
           crowdfund={project}
-          hiddenTabs={isSubmission ? ['backers'] : []}
+          hiddenTabs={[]}
           hideProgress={isSubmission}
         />
       </div>

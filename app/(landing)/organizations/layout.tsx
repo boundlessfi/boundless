@@ -10,9 +10,11 @@ import {
   NavigationLoadingProvider,
   useNavigationLoading,
 } from '@/lib/providers';
+import { cn } from '@/lib/utils';
 import NewHackathonSidebar from '@/components/organization/hackathons/new/NewHackathonSidebar';
 import HackathonSidebar from '@/components/organization/hackathons/details/HackathonSidebar';
 import HackathonNavigationLoader from '@/components/organization/hackathons/details/HackathonNavigationLoader';
+
 export default function OrganizationsLayout({
   children,
 }: {
@@ -92,7 +94,14 @@ function OrganizationsLayoutContent({
           )}
           {/* {showNewGrantSidebar && <NewGrantSidebar />} */}
 
-          <main className='md:ml-[280px]'>{children}</main>
+          <main
+            className={cn(
+              'md:ml-[280px]',
+              showOrganizationSidebar && 'pt-20 md:pt-0'
+            )}
+          >
+            {children}
+          </main>
         </div>
       ) : (
         <main>{children}</main>

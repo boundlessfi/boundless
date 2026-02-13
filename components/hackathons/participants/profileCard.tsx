@@ -128,6 +128,11 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
     const currentUsername = user.username || (user.profile as any)?.username;
     const currentUserId = user.id || (user as any).userId;
 
+    // 0. Only allow if hackathon allows teams
+    if (currentHackathon.participantType === 'INDIVIDUAL') {
+      return false;
+    }
+
     // Don't invite yourself
     if (
       participant.id === currentUserParticipant.id ||

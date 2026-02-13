@@ -34,6 +34,7 @@ interface HackathonBannerProps {
   onFindTeamClick?: () => void;
   onLeaveClick?: () => void;
   isLeaving?: boolean;
+  participantType?: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
 }
 
 export function HackathonBanner({
@@ -50,6 +51,7 @@ export function HackathonBanner({
   registrationDeadlinePolicy,
   registrationDeadline,
   isLeaving,
+  participantType,
   onJoinClick,
   onSubmitClick,
   onViewSubmissionClick,
@@ -253,6 +255,16 @@ export function HackathonBanner({
             <span className='text-xs font-semibold tracking-wide text-white uppercase'>
               {getStatusText()}
             </span>
+            {participantType && (
+              <>
+                <div className='h-1 w-1 rounded-full bg-gray-600' />
+                <span className='text-xs font-semibold tracking-wide text-[#a7f950] uppercase'>
+                  {participantType === 'TEAM_OR_INDIVIDUAL'
+                    ? 'Hybrid'
+                    : participantType.toLowerCase()}
+                </span>
+              </>
+            )}
           </div>
 
           {/* Title & Tagline */}

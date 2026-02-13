@@ -78,3 +78,4 @@ export * from './judging';
 export * from './rewards';
 export * from './teams';
 export * from './resources';
+export * from './announcements';

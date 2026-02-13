@@ -132,8 +132,8 @@ const Contact = React.forwardRef<{ validate: () => boolean }, ContactProps>(
             <div className='space-y-2'>
               <p className='text-base text-white'>
                 Your Project contact information will be used for Project
-                verification and for Boundless staff to contact you. The contact
-                information can only be accessed by Boundless staff.
+                verification and for Boundless team to contact you. The contact
+                information can only be accessed by Boundless team.
               </p>
             </div>
           </div>

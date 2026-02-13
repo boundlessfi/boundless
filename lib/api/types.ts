@@ -982,3 +982,37 @@ export interface RemoveVoteResponse {
 
 // Alias for backward compatibility
 // export type CrowdfundingCampaign = CreateCrowdfundingProjectResponse;
+
+export interface AnnouncementAuthor {
+  id: string;
+  name: string;
+  image?: string;
+  username?: string;
+}
+
+export interface HackathonAnnouncement {
+  id: string;
+  hackathonId: string;
+  title: string;
+  content: string;
+  isDraft: boolean;
+  isPinned: boolean;
+  publishedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  author: AnnouncementAuthor;
+}
+
+export interface CreateAnnouncementRequest {
+  title: string;
+  content: string;
+  isDraft?: boolean;
+  isPinned?: boolean;
+}
+
+export interface UpdateAnnouncementRequest {
+  title?: string;
+  content?: string;
+  isDraft?: boolean;
+  isPinned?: boolean;
+}

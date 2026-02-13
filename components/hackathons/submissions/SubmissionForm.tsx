@@ -35,6 +35,7 @@ import {
   useSubmission,
   type SubmissionFormData,
 } from '@/hooks/hackathon/use-submission';
+import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -167,7 +168,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   onSuccess,
 }) => {
   const { collapse, isExpanded: open } = useExpandableScreen();
-
+  const { currentHackathon } = useHackathonData();
   const { user } = useAuthStatus();
   const [currentStep, setCurrentStep] = useState(0);
   const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS);
@@ -188,12 +189,8 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   } = useTeamPosts({
     hackathonSlugOrId,
     organizationId,
-    autoFetch: open, // Only fetch when modal is open
+    autoFetch: open,
   });
-
-  // No longer using separate createTeamAndInvite hook here for submission flow
-
-  // No longer using separate createTeamAndInvite hook here for submission flow
 
   const [currentInviteeName, setCurrentInviteeName] = useState('');
   const [currentInviteeEmail, setCurrentInviteeEmail] = useState('');
@@ -217,9 +214,15 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   });
 
   const invitees = form.watch('teamMembers') || [];
-
-  // Watch links to keep them in sync
   const formLinks = form.watch('links') || [];
+
+  const updateStepState = useCallback((stepIndex: number, state: StepState) => {
+    setSteps(prev =>
+      prev.map((step, index) =>
+        index === stepIndex ? { ...step, state } : step
+      )
+    );
+  }, []);
 
   // Initialize form when modal opens with data
   useEffect(() => {
@@ -240,10 +243,53 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     }
   }, [open, initialData, form]);
 
+  // Participation type enforcement
+  useEffect(() => {
+    if (!open || !currentHackathon) return;
+
+    const hackathonType = currentHackathon.participantType;
+
+    if (hackathonType === 'INDIVIDUAL') {
+      form.setValue('participationType', 'INDIVIDUAL');
+      if (!submissionId && currentStep === 0) {
+        setCurrentStep(1);
+        updateStepState(0, 'completed');
+        updateStepState(1, 'active');
+      }
+    } else if (hackathonType === 'TEAM') {
+      form.setValue('participationType', 'TEAM');
+      if (!submissionId && !!myTeam && currentStep === 0) {
+        setCurrentStep(1);
+        updateStepState(0, 'completed');
+        updateStepState(1, 'active');
+      }
+    } else if (hackathonType === 'TEAM_OR_INDIVIDUAL') {
+      if (!submissionId) {
+        if (myTeam) {
+          form.setValue('participationType', 'TEAM');
+          if (currentStep === 0) {
+            setCurrentStep(1);
+            updateStepState(0, 'completed');
+            updateStepState(1, 'active');
+          }
+        } else {
+          form.setValue('participationType', 'INDIVIDUAL');
+        }
+      }
+    }
+  }, [
+    open,
+    currentHackathon,
+    myTeam,
+    submissionId,
+    form,
+    currentStep,
+    updateStepState,
+  ]);
+
   // Reset everything when modal closes
   useEffect(() => {
     if (!open) {
-      // Use setTimeout to ensure modal animation completes before reset
       const timer = setTimeout(() => {
         form.reset({
           projectName: '',
@@ -274,7 +320,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       return;
     }
 
-    // Show preview immediately
     const reader = new FileReader();
     reader.onload = e => {
       const result = e.target?.result as string;
@@ -308,7 +353,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       const errorMessage =
         error instanceof Error ? error.message : 'Upload failed';
       toast.error(`Failed to upload logo: ${errorMessage}`);
-      // Clear preview on error
       setLogoPreview('');
     } finally {
       setIsUploadingLogo(false);
@@ -320,15 +364,13 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       projectName: 'AI-Powered Task Manager',
       category: 'AI/ML',
       description:
-        'An intelligent task management application that uses machine learning to prioritize tasks, predict deadlines, and suggest optimal work schedules. It integrates with calendar apps and provides personalized productivity insights based on your work patterns.',
+        'An intelligent task management application that uses machine learning to prioritize tasks...',
       logo: '',
       videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      introduction:
-        'This project leverages advanced AI algorithms to help users manage their time more effectively. It learns from user behavior and adapts to individual work styles.',
+      introduction: 'This project leverages advanced AI algorithms...',
       links: [
         { type: 'github', url: 'https://github.com/example/ai-task-manager' },
         { type: 'demo', url: 'https://demo.example.com/ai-task-manager' },
-        { type: 'website', url: 'https://www.example.com/ai-task-manager' },
       ],
       participationType: 'INDIVIDUAL' as const,
     };
@@ -365,14 +407,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     form.setValue('links', updatedLinks, { shouldValidate: true });
   };
 
-  const updateStepState = useCallback((stepIndex: number, state: StepState) => {
-    setSteps(prev =>
-      prev.map((step, index) =>
-        index === stepIndex ? { ...step, state } : step
-      )
-    );
-  }, []);
-
   const handleAddInvitee = () => {
     if (!currentInviteeName || !currentInviteeRole || !currentInviteeEmail) {
       toast.error('Please fill in name, email and role');
@@ -384,7 +418,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       return;
     }
 
-    // Update form value
     const currentMembers = form.getValues('teamMembers') || [];
     form.setValue('teamMembers', [
       ...currentMembers,
@@ -401,7 +434,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   };
 
   const handleRemoveInvitee = (index: number) => {
-    // Update form value
     const currentMembers = form.getValues('teamMembers') || [];
     form.setValue(
       'teamMembers',
@@ -414,15 +446,11 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     let isValid = false;
 
     if (currentStep === 0) {
-      // Step 0: Participation Type
       const participationType = form.getValues('participationType');
-
       if (participationType === 'TEAM') {
         if (myTeam) {
-          // Already in a team
           isValid = true;
         } else {
-          // Create new team logic - we just validate here, actual creation happens on submit
           const teamName = form.getValues('teamName');
           if (!teamName) {
             form.setError('teamName', { message: 'Team Name is required' });
@@ -434,29 +462,20 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         isValid = true;
       }
     } else if (currentStep === 1) {
-      // Validate required fields for step 1 (Basic Info)
       isValid = await form.trigger(['projectName', 'category', 'description']);
     } else if (currentStep === 2) {
-      // Step 2 fields are all optional, but validate them if filled (Media)
       const videoUrl = form.getValues('videoUrl');
       const links = form.getValues('links') || [];
 
-      // Only validate videoUrl if it has a value
       if (videoUrl && videoUrl.trim() !== '') {
         const videoValid = await form.trigger('videoUrl');
-        if (!videoValid) {
-          return;
-        }
+        if (!videoValid) return;
       }
 
-      // Validate links if any exist
       if (links.length > 0) {
         const linksValid = await form.trigger('links');
-        if (!linksValid) {
-          return;
-        }
+        if (!linksValid) return;
       }
-
       isValid = true;
     }
 
@@ -476,7 +495,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   };
 
   const onSubmit = async (data: SubmissionFormDataLocal) => {
-    // Enforce leader-only submission
     if (
       data.participationType === 'TEAM' &&
       myTeam &&
@@ -486,12 +504,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       return;
     }
     try {
-      // Use the data parameter directly (it's already validated by the form)
-      // Get current form values as fallback
       const currentValues = form.getValues();
-
-      // Ensure all required fields are strings (never undefined)
-      // Use data parameter first, then fallback to currentValues
       const safeData: SubmissionFormData = {
         projectName: (data.projectName ?? currentValues.projectName ?? '')
           .toString()
@@ -533,7 +546,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         participationType: data.participationType || 'INDIVIDUAL',
       };
 
-      // Validate all required fields one more time before submission
       const isValid = await form.trigger([
         'projectName',
         'category',
@@ -551,21 +563,12 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         return;
       }
 
-      // Clean and prepare submission data
       const participationType = safeData.participationType || 'INDIVIDUAL';
       const teamId = participationType === 'TEAM' ? myTeam?.id : undefined;
 
       const submissionData: SubmissionFormData = {
-        projectName: safeData.projectName,
-        category: safeData.category,
-        description: safeData.description,
-        logo: safeData.logo,
-        videoUrl: safeData.videoUrl,
-        introduction: safeData.introduction,
-        links: safeData.links || [],
-        participationType,
-
-        teamId: teamId ?? undefined, // Ensure undefined if null
+        ...safeData,
+        teamId: teamId ?? undefined,
         teamName:
           !myTeam && participationType === 'TEAM'
             ? safeData.teamName
@@ -581,11 +584,10 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       } else {
         await create(submissionData);
       }
-
       collapse();
       onSuccess?.();
     } catch {
-      // Error is already handled in the hook
+      // Error handled in hook
     }
   };
 
@@ -601,65 +603,79 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       case 0:
         return (
           <div key='step-0' className='space-y-6'>
-            <FormField
-              control={form.control}
-              name='participationType'
-              render={({ field }) => (
-                <FormItem className='space-y-3'>
-                  <FormLabel className='text-white'>
-                    I am participating...
-                  </FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className='flex flex-col space-y-1'
-                      disabled={false} // Always allow switching (validation handles team membership)
-                    >
-                      <FormItem
-                        className={cn(
-                          'flex items-center space-y-0 space-x-3 rounded-md border border-gray-800 p-4 hover:border-gray-700',
-                          myTeam && 'cursor-not-allowed opacity-50'
-                        )}
+            {currentHackathon?.participantType === 'TEAM_OR_INDIVIDUAL' ? (
+              <FormField
+                control={form.control}
+                name='participationType'
+                render={({ field }) => (
+                  <FormItem className='space-y-3'>
+                    <FormLabel className='text-white'>
+                      I am participating...
+                    </FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        className='flex flex-col space-y-1'
+                        disabled={false}
                       >
-                        <FormControl>
-                          <RadioGroupItem
-                            value='INDIVIDUAL'
-                            disabled={!!myTeam}
-                          />
-                        </FormControl>
-                        <div className='flex items-center space-x-2'>
-                          <User className='h-5 w-5 text-gray-400' />
-                          <div>
-                            <FormLabel className='font-normal text-white'>
-                              As an Individual
-                            </FormLabel>
-                            {myTeam && (
-                              <FormDescription className='text-xs text-yellow-500'>
-                                You are already part of a team (
-                                {myTeam.teamName})
-                              </FormDescription>
-                            )}
+                        <FormItem
+                          className={cn(
+                            'flex items-center space-y-0 space-x-3 rounded-md border border-gray-800 p-4 hover:border-gray-700',
+                            myTeam && 'cursor-not-allowed opacity-50'
+                          )}
+                        >
+                          <FormControl>
+                            <RadioGroupItem
+                              value='INDIVIDUAL'
+                              disabled={!!myTeam}
+                            />
+                          </FormControl>
+                          <div className='flex items-center space-x-2'>
+                            <User className='h-5 w-5 text-gray-400' />
+                            <div>
+                              <FormLabel className='font-normal text-white'>
+                                As an Individual
+                              </FormLabel>
+                              {myTeam && (
+                                <FormDescription className='text-xs text-yellow-500'>
+                                  You are already part of a team (
+                                  {myTeam.teamName})
+                                </FormDescription>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </FormItem>
-                      <FormItem className='flex items-center space-y-0 space-x-3 rounded-md border border-gray-800 p-4 hover:border-gray-700'>
-                        <FormControl>
-                          <RadioGroupItem value='TEAM' />
-                        </FormControl>
-                        <div className='flex items-center space-x-2'>
-                          <Users className='h-5 w-5 text-gray-400' />
-                          <FormLabel className='font-normal text-white'>
-                            As a Team
-                          </FormLabel>
-                        </div>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                        </FormItem>
+                        <FormItem className='flex items-center space-y-0 space-x-3 rounded-md border border-gray-800 p-4 hover:border-gray-700'>
+                          <FormControl>
+                            <RadioGroupItem value='TEAM' />
+                          </FormControl>
+                          <div className='flex items-center space-x-2'>
+                            <Users className='h-5 w-5 text-gray-400' />
+                            <FormLabel className='font-normal text-white'>
+                              As a Team
+                            </FormLabel>
+                          </div>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <div className='rounded-lg border border-blue-900/50 bg-blue-900/20 p-4'>
+                <p className='text-sm text-blue-200'>
+                  This hackathon is set for{' '}
+                  <span className='font-bold text-[#a7f950]'>
+                    {currentHackathon?.participantType === 'TEAM'
+                      ? 'Team'
+                      : 'Individual'}
+                  </span>{' '}
+                  participation only.
+                </p>
+              </div>
+            )}
 
             {form.watch('participationType') === 'TEAM' && (
               <div className='mt-6 space-y-6 rounded-lg border border-gray-800 bg-gray-900/50 p-6'>

@@ -69,8 +69,8 @@ export function ContactSocialSection({
           </svg>
           <p className='text-xs text-[#B5B5B5]'>
             Your Project contact information will be used for Project
-            verification and for Boundless staff to contact you. The contact
-            information can only be accessed by Boundless staff.
+            verification and for Boundless team to contact you. The contact
+            information can only be accessed by Boundless team.
           </p>
         </div>
       </div>

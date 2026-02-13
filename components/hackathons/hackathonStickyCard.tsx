@@ -37,6 +37,7 @@ interface HackathonStickyCardProps {
   onViewSubmissionClick?: () => void;
   onFindTeamClick?: () => void;
   onLeaveClick?: () => void;
+  participantType?: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
 }
 
 export function HackathonStickyCard(props: HackathonStickyCardProps) {
@@ -57,6 +58,7 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
     onFindTeamClick,
     onLeaveClick,
     isLeaving,
+    participantType,
   } = props;
 
   const { status } = useHackathonStatus(startDate, deadline);
@@ -169,6 +171,23 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
               </div>
               <div className='text-xl font-black text-[#a7f950]'>
                 ${totalPrizePool}
+              </div>
+            </div>
+          )}
+
+          {/* Participation Type Section */}
+          {participantType && (
+            <div className='rounded-lg border border-gray-800 bg-gray-900/50 py-2 text-center'>
+              <div className='mb-0.5 flex items-center justify-center gap-1.5'>
+                <Users className='h-3.5 w-3.5 text-gray-400' />
+                <span className='text-xs tracking-wide text-gray-400 uppercase'>
+                  Participation
+                </span>
+              </div>
+              <div className='text-base font-bold text-white uppercase'>
+                {participantType === 'TEAM_OR_INDIVIDUAL'
+                  ? 'Hybrid'
+                  : participantType.toLowerCase()}
               </div>
             </div>
           )}

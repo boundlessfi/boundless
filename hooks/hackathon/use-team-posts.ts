@@ -163,9 +163,11 @@ export function useTeamPosts({
         } else {
           throw new Error(response.message || 'Failed to create team post');
         }
-      } catch (err) {
+      } catch (err: any) {
         const errorMessage =
-          err instanceof Error ? err.message : 'Failed to create team post';
+          err.response?.data?.message ||
+          err.message ||
+          'Failed to create team post';
         setError(errorMessage);
         toast.error('Error', { description: errorMessage });
         throw err;
@@ -206,9 +208,11 @@ export function useTeamPosts({
         } else {
           throw new Error(response.message || 'Failed to update team post');
         }
-      } catch (err) {
+      } catch (err: any) {
         const errorMessage =
-          err instanceof Error ? err.message : 'Failed to update team post';
+          err.response?.data?.message ||
+          err.message ||
+          'Failed to update team post';
         setError(errorMessage);
         toast.error('Error', { description: errorMessage });
         throw err;
@@ -243,9 +247,11 @@ export function useTeamPosts({
         } else {
           throw new Error(response.message || 'Failed to delete team post');
         }
-      } catch (err) {
+      } catch (err: any) {
         const errorMessage =
-          err instanceof Error ? err.message : 'Failed to delete team post';
+          err.response?.data?.message ||
+          err.message ||
+          'Failed to delete team post';
         setError(errorMessage);
         toast.error('Error', { description: errorMessage });
         throw err;
