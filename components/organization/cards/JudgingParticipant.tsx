@@ -32,6 +32,7 @@ interface JudgingParticipantProps {
   hasCriteria?: boolean;
   judges?: any[];
   isJudgesLoading?: boolean;
+  currentUserId?: string;
   onSuccess?: () => void;
 }
 
@@ -42,28 +43,18 @@ const JudgingParticipant = ({
   hasCriteria = false,
   judges = [],
   isJudgesLoading = false,
+  currentUserId,
   onSuccess,
 }: JudgingParticipantProps) => {
-  const [session, setSession] = React.useState<any>(null);
-  const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [isJudgeModalOpen, setIsJudgeModalOpen] = useState(false);
 
-  React.useEffect(() => {
-    setIsSessionLoading(true);
-    authClient
-      .getSession()
-      .then(({ data }) => setSession(data))
-      .finally(() => setIsSessionLoading(false));
-  }, []);
-
   const isAssignedJudge = useMemo(() => {
-    if (!session?.user?.id || !judges.length) return false;
-    const currentUserId = session.user.id;
+    if (!currentUserId || !judges.length) return false;
     return judges.some(
       j => j.userId === currentUserId || j.id === currentUserId
     );
-  }, [session, judges]);
+  }, [currentUserId, judges]);
   const [criteria, setCriteria] = useState<
     Array<{ title: string; weight: number; description?: string }>
   >([]);
@@ -242,7 +233,7 @@ const JudgingParticipant = ({
 
           {/* Grade Button - Only for assigned judges */}
           <div className='flex w-[80px] justify-end'>
-            {isSessionLoading || isJudgesLoading ? (
+            {isJudgesLoading ? (
               <Loader2 className='h-4 w-4 animate-spin text-gray-500' />
             ) : (
               hasCriteria &&

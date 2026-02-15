@@ -117,7 +117,7 @@ export const useScoreForm = ({
     criteria.forEach(criterion => {
       const key = getCriterionKey(criterion);
       const score = scores[key];
-      if (typeof score !== 'number' || score === 0) {
+      if (typeof score !== 'number') {
         errors[key] = 'Score required';
         isValid = false;
       }

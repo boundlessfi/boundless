@@ -54,6 +54,7 @@ export default function JudgingPage() {
   const [isFetchingWinners, setIsFetchingWinners] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isCurrentUserJudge, setIsCurrentUserJudge] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const canManageJudges =
     currentUserRole === 'owner' || currentUserRole === 'admin';
@@ -137,7 +138,38 @@ export default function JudgingPage() {
       );
       setIsCurrentUserJudge(isJudge);
     }
+
+    // Set current user ID for child components
+    if (currentUserId) {
+      setCurrentUserId(currentUserId);
+    }
   }, [organizationId, hackathonId, activeOrgId]);
+
+  const fetchResults = useCallback(async () => {
+    if (!organizationId || !hackathonId) return;
+
+    setIsFetchingResults(true);
+    try {
+      const res = await getJudgingResults(organizationId, hackathonId);
+      console.log('Judging Results Response:', res);
+      if (res.success) {
+        setJudgingResults(res.data || []);
+      } else {
+        setJudgingResults([]);
+        toast.error(res.message || 'Failed to load judging results');
+      }
+    } catch (error: any) {
+      console.error('Error fetching results:', error);
+      setJudgingResults([]);
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to load judging results'
+      );
+    } finally {
+      setIsFetchingResults(false);
+    }
+  }, [organizationId, hackathonId]);
 
   const fetchData = useCallback(async () => {
     if (!organizationId || !hackathonId) return;
@@ -248,7 +280,7 @@ export default function JudgingPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [organizationId, hackathonId]);
+  }, [organizationId, hackathonId, fetchJudges, fetchResults]);
 
   useEffect(() => {
     fetchData();
@@ -302,32 +334,6 @@ export default function JudgingPage() {
       );
     }
   };
-
-  const fetchResults = useCallback(async () => {
-    if (!organizationId || !hackathonId) return;
-
-    setIsFetchingResults(true);
-    try {
-      const res = await getJudgingResults(organizationId, hackathonId);
-      console.log('Judging Results Response:', res);
-      if (res.success) {
-        setJudgingResults(res.data || []);
-      } else {
-        setJudgingResults([]);
-        toast.error(res.message || 'Failed to load judging results');
-      }
-    } catch (error: any) {
-      console.error('Error fetching results:', error);
-      setJudgingResults([]);
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to load judging results'
-      );
-    } finally {
-      setIsFetchingResults(false);
-    }
-  }, [organizationId, hackathonId]);
 
   const fetchWinners = useCallback(async () => {
     if (!organizationId || !hackathonId) return;
@@ -459,6 +465,7 @@ export default function JudgingPage() {
                       hasCriteria={criteria.length > 0}
                       judges={currentJudges}
                       isJudgesLoading={isRefreshingJudges}
+                      currentUserId={currentUserId || undefined}
                       onSuccess={handleSuccess}
                     />
                   ))}

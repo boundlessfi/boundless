@@ -21,6 +21,7 @@ export interface CriterionScore {
 export interface IndividualJudgeScore {
   judgeId: string;
   judgeName: string;
+  judgeEmail?: string; // Added to match actual API response
   criteriaScores: CriterionScore[];
   comment?: string; // Qualitative feedback
   totalScore: number;
@@ -182,7 +183,7 @@ export interface SubmitJudgingScoreRequest {
 
 export interface GetJudgingSubmissionsResponse extends ApiResponse<any> {
   success: true;
-  data: (
+  data:
     | JudgingSubmission[]
     | {
         submissions: any[];
@@ -192,9 +193,7 @@ export interface GetJudgingSubmissionsResponse extends ApiResponse<any> {
           total: number;
           totalPages: number;
         };
-      }
-  ) &
-    any;
+      };
   pagination?: {
     currentPage: number;
     totalPages: number;

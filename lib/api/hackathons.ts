@@ -1290,20 +1290,6 @@ export const getHackathon = async (
 };
 
 /**
- * Get judging criteria for a hackathon
- */
-export const getJudgingCriteria = async (
-  idOrSlug: string
-): Promise<JudgingCriterion[]> => {
-  const res = await api.get(`/hackathons/${idOrSlug}/judging/criteria`);
-  // Handle both array and wrapped response formats
-  if (Array.isArray(res.data)) {
-    return res.data;
-  }
-  return (res.data as any)?.data || [];
-};
-
-/**
  * Delete a hackathon
  */
 export const deleteHackathon = async (
@@ -2300,76 +2286,6 @@ export interface GetTeamPostsResponse extends ApiResponse<{
 }> {
   success: true;
 }
-
-// ============================================
-// Judges API Types and Functions
-// ============================================
-
-export interface AddJudgeRequest {
-  userId: string;
-}
-
-export interface AddJudgeResponse extends ApiResponse<null> {
-  success: true;
-  message: string;
-}
-
-export interface RemoveJudgeResponse extends ApiResponse<null> {
-  success: true;
-  message: string;
-}
-
-/**
- * Add a judge to a hackathon
- */
-export const addJudge = async (
-  organizationId: string,
-  hackathonIdOrSlug: string,
-  data: AddJudgeRequest
-): Promise<AddJudgeResponse> => {
-  const res = await api.post<AddJudgeResponse>(
-    `/organizations/${organizationId}/hackathons/${hackathonIdOrSlug}/judging/judges`,
-    data
-  );
-  return res.data;
-};
-
-/**
- * Remove a judge from a hackathon
- */
-export const removeJudge = async (
-  organizationId: string,
-  hackathonIdOrSlug: string,
-  userId: string
-): Promise<RemoveJudgeResponse> => {
-  const res = await api.delete<RemoveJudgeResponse>(
-    `/organizations/${organizationId}/hackathons/${hackathonIdOrSlug}/judging/judges/${userId}`
-  );
-  return res.data;
-};
-
-/**
- * Get judges list for a hackathon
- */
-export const getHackathonJudges = async (
-  organizationId: string,
-  hackathonIdOrSlug: string
-): Promise<ApiResponse<any[]>> => {
-  const res = await api.get<any[]>(
-    `/organizations/${organizationId}/hackathons/${hackathonIdOrSlug}/judging/judges`
-  );
-
-  // If the backend returns a raw array, wrap it in our ApiResponse structure
-  if (Array.isArray(res.data)) {
-    return {
-      success: true,
-      data: res.data,
-      message: 'Judges retrieved successfully',
-    };
-  }
-
-  return res.data as unknown as ApiResponse<any[]>;
-};
 
 export interface GetTeamPostDetailsResponse extends ApiResponse<TeamRecruitmentPost> {
   success: true;

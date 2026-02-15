@@ -1319,28 +1319,6 @@ export function OrganizationProvider({
 
           // Refresh organizations list to update current user's role in the UI
           await fetchOrganizations();
-
-          // Refresh active organization details if possible
-          if (state.activeOrgId === orgId) {
-            try {
-              const { data } =
-                await authClient.organization.getFullOrganization({
-                  query: {
-                    organizationId: orgId,
-                  },
-                });
-              if (data) {
-                // We might want to update the active organization with full details
-                // creating a merged object if needed, but for now let's rely on fetchOrganizations
-                // to update the user's role in the list which matters most for permissions
-              }
-            } catch (err) {
-              console.error(
-                'Failed to refresh organization details after transfer:',
-                err
-              );
-            }
-          }
         } else {
           logger.error({
             eventType: 'org.transfer_ownership.error',

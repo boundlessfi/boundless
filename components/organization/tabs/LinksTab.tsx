@@ -173,6 +173,16 @@ export default function LinksTab({
       return;
     }
 
+    // Block save while any field is still validating
+    const isAnyValidating =
+      validationStates.website.isValidating ||
+      validationStates.x.isValidating ||
+      validationStates.github.isValidating;
+    if (isAnyValidating) {
+      toast.error('Please wait for link validation to complete.');
+      return;
+    }
+
     // Check for validation errors
     if (links.website && validationStates.website.isValid === false) {
       toast.error(validationStates.website.error || 'Invalid website URL');

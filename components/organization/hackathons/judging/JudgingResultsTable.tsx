@@ -22,6 +22,11 @@ interface JudgingResultsTableProps {
   totalJudges?: number;
 }
 
+// Helper function to safely extract score from JudgingResult
+const getScore = (result: JudgingResult): number => {
+  return Number(result.averageScore ?? 0);
+};
+
 const JudgingResultsTable = ({
   results,
   organizationId,
@@ -41,19 +46,7 @@ const JudgingResultsTable = ({
 
   const sortedResults = React.useMemo(() => {
     return [...results].sort((a, b) => {
-      const scoreA = Number(
-        (a as any).averageScore ??
-          (a as any).average_score ??
-          (a as any).score ??
-          0
-      );
-      const scoreB = Number(
-        (b as any).averageScore ??
-          (b as any).average_score ??
-          (b as any).score ??
-          0
-      );
-      return scoreB - scoreA;
+      return getScore(b) - getScore(a);
     });
   }, [results]);
 
@@ -117,12 +110,7 @@ const JudgingResultsTable = ({
                         variant='outline'
                         className='bg-primary/10 text-primary border-primary/20 font-mono'
                       >
-                        {Number(
-                          (result as any).averageScore ??
-                            (result as any).average_score ??
-                            (result as any).score ??
-                            0
-                        ).toFixed(2)}
+                        {getScore(result).toFixed(2)}
                       </Badge>
                       {expandedRows[result.submissionId] ? (
                         <ChevronUp className='h-4 w-4 text-gray-500' />

@@ -54,7 +54,7 @@ export default function TransferOwnershipTab({
   const [popoverWidth, setPopoverWidth] = useState(0);
   const [members, setMembers] = useState<Member[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
-  const [isCurrentUserOwner, setIsCurrentUserOwner] = useState(true);
+  const [isCurrentUserOwner, setIsCurrentUserOwner] = useState(false);
   const [loadingOwnerCheck, setLoadingOwnerCheck] = useState(true);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const { activeOrgId, transferOwnership, isOwner } = useOrganization();

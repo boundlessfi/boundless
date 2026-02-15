@@ -98,15 +98,16 @@ export const useSubmissionScores = ({
         }
 
         if (response.success && Array.isArray(response.data)) {
-          // Robust judge identifier matching
+          // Safer judge identifier matching - prioritize ID and email
           const currentUserScore = (
             response.data as IndividualJudgeScore[]
           ).find(
             s =>
               s.judgeId === user.id ||
-              s.judgeName === user.name ||
-              s.judgeName === user.email ||
-              (s as any).judgeEmail === user.email
+              s.judgeEmail === user.email ||
+              (s.judgeName === user.name &&
+                user.name !== undefined &&
+                user.name.trim() !== '')
           );
 
           if (currentUserScore) {

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -174,6 +174,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const hasAutoAdvanced = useRef(false);
 
   const { create, update, isSubmitting } = useSubmission({
     hackathonSlugOrId,
@@ -246,46 +247,40 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   // Participation type enforcement
   useEffect(() => {
     if (!open || !currentHackathon) return;
+    if (hasAutoAdvanced.current) return;
 
     const hackathonType = currentHackathon.participantType;
 
     if (hackathonType === 'INDIVIDUAL') {
       form.setValue('participationType', 'INDIVIDUAL');
-      if (!submissionId && currentStep === 0) {
+      if (!submissionId) {
         setCurrentStep(1);
         updateStepState(0, 'completed');
         updateStepState(1, 'active');
+        hasAutoAdvanced.current = true;
       }
     } else if (hackathonType === 'TEAM') {
       form.setValue('participationType', 'TEAM');
-      if (!submissionId && !!myTeam && currentStep === 0) {
+      if (!submissionId && !!myTeam) {
         setCurrentStep(1);
         updateStepState(0, 'completed');
         updateStepState(1, 'active');
+        hasAutoAdvanced.current = true;
       }
     } else if (hackathonType === 'TEAM_OR_INDIVIDUAL') {
       if (!submissionId) {
         if (myTeam) {
           form.setValue('participationType', 'TEAM');
-          if (currentStep === 0) {
-            setCurrentStep(1);
-            updateStepState(0, 'completed');
-            updateStepState(1, 'active');
-          }
+          setCurrentStep(1);
+          updateStepState(0, 'completed');
+          updateStepState(1, 'active');
+          hasAutoAdvanced.current = true;
         } else {
           form.setValue('participationType', 'INDIVIDUAL');
         }
       }
     }
-  }, [
-    open,
-    currentHackathon,
-    myTeam,
-    submissionId,
-    form,
-    currentStep,
-    updateStepState,
-  ]);
+  }, [open, currentHackathon, myTeam, submissionId, form, updateStepState]);
 
   // Reset everything when modal closes
   useEffect(() => {
@@ -304,6 +299,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         setLogoPreview('');
         setCurrentStep(0);
         setSteps(INITIAL_STEPS);
+        hasAutoAdvanced.current = false;
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -591,12 +587,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     }
   };
 
-  // Auto-select TEAM if user is already in a team
-  useEffect(() => {
-    if (myTeam && !submissionId) {
-      form.setValue('participationType', 'TEAM');
-    }
-  }, [myTeam, form, submissionId]);
+  // Note: Auto-select TEAM logic is now consolidated in the participation type enforcement effect above
 
   const renderStepContent = () => {
     switch (currentStep) {

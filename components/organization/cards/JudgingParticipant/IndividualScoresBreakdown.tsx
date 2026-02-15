@@ -170,7 +170,7 @@ const IndividualScoresBreakdown = ({
                           <div key={idx} className='space-y-1.5'>
                             <div className='flex items-center justify-between text-xs'>
                               <span className='max-w-[150px] truncate text-gray-400'>
-                                {c.criterionId || c.criterionTitle}
+                                {c.criterionTitle || c.criterionId}{' '}
                               </span>
                               <span className='font-mono font-bold text-white'>
                                 {c.score}
