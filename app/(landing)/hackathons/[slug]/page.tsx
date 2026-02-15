@@ -186,6 +186,7 @@ export default function HackathonPage() {
     teamPosts.length,
     hackathonId,
     winners,
+    announcements,
   ]);
 
   // Refresh hackathon data
