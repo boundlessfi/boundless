@@ -17,15 +17,14 @@ export const useScoreCalculation = ({
     let totalWeight = 0;
 
     criteria.forEach(criterion => {
+      const key = criterion.id || criterion.name || criterion.title;
       const score =
-        typeof scores[criterion.title] === 'number'
-          ? (scores[criterion.title] as number)
-          : 0;
+        typeof scores[key] === 'number' ? (scores[key] as number) : 0;
       totalWeightedScore += score * criterion.weight;
       totalWeight += criterion.weight;
     });
 
-    return totalWeight > 0 ? totalWeightedScore / 100 : 0;
+    return totalWeight > 0 ? totalWeightedScore / 10 : 0;
   }, [criteria, scores]);
 
   const percentage = useMemo(() => Math.round(totalScore), [totalScore]);

@@ -48,6 +48,7 @@ export default function MembersTab({ onSave }: MembersTabProps) {
     isLoading,
     isOwner,
     refreshOrganization,
+    lastUpdated,
   } = useOrganization();
 
   const [userIsOwner, setUserIsOwner] = useState(false);
@@ -60,7 +61,11 @@ export default function MembersTab({ onSave }: MembersTabProps) {
       setUserIsOwner(checkIsOwner);
     };
     checkUserIsOwner();
-  }, [activeOrgId, isOwner]);
+  }, [activeOrgId, isOwner, lastUpdated]);
+
+  const [currentUserRole, setCurrentUserRole] = useState<
+    'owner' | 'admin' | 'member' | null
+  >(null);
 
   // Fetch members using the new Better Auth API
   const fetchMembers = useCallback(async () => {
@@ -68,6 +73,10 @@ export default function MembersTab({ onSave }: MembersTabProps) {
 
     setLoadingMembers(true);
     try {
+      // Get current user to determine permissions
+      const { data: sessionData } = await authClient.getSession();
+      const currentUserId = sessionData?.user?.id;
+
       const { data, error } = await authClient.organization.listMembers({
         query: {
           organizationId: activeOrgId,
@@ -97,6 +106,13 @@ export default function MembersTab({ onSave }: MembersTabProps) {
         })
       );
 
+      if (currentUserId) {
+        const currentUserMember = transformedMembers.find(
+          m => m.userId === currentUserId
+        );
+        setCurrentUserRole(currentUserMember?.role || null);
+      }
+
       setMembers(transformedMembers);
     } catch {
       toast.error('Failed to load members');
@@ -109,7 +125,7 @@ export default function MembersTab({ onSave }: MembersTabProps) {
     if (activeOrgId) {
       fetchMembers();
     }
-  }, [activeOrgId, fetchMembers]);
+  }, [activeOrgId, fetchMembers, lastUpdated]);
 
   const [inviteEmails, setInviteEmails] = useState<string[]>([]);
   const [emailInput, setEmailInput] = useState('');
@@ -304,62 +320,64 @@ export default function MembersTab({ onSave }: MembersTabProps) {
               <span className='text-sm text-zinc-400'>Loading...</span>
             )}
           </div>
-          {invitations?.length > 0 ? (
+          {invitations?.filter(inv => inv.status === 'pending').length > 0 ? (
             <div className='space-y-2'>
-              {invitations.map(invitation => (
-                <div
-                  key={invitation.id}
-                  className='flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-4'
-                >
-                  <div className='flex items-center gap-3'>
-                    <div className='flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800'>
-                      <Mail className='h-5 w-5 text-zinc-400' />
-                    </div>
-                    <div>
-                      <p className='font-medium text-white'>
-                        {invitation.email}
-                      </p>
-                      <div className='flex items-center gap-2 text-sm text-zinc-400'>
-                        <span>Role: {invitation.role}</span>
-                        <span>•</span>
-                        <div className='flex items-center gap-1'>
-                          <Clock className='h-3 w-3' />
-                          <span>
-                            Expires:{' '}
-                            {new Date(
-                              invitation.expiresAt
-                            ).toLocaleDateString()}
-                          </span>
+              {invitations
+                .filter(inv => inv.status === 'pending')
+                .map(invitation => (
+                  <div
+                    key={invitation.id}
+                    className='flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-4'
+                  >
+                    <div className='flex items-center gap-3'>
+                      <div className='flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800'>
+                        <Mail className='h-5 w-5 text-zinc-400' />
+                      </div>
+                      <div>
+                        <p className='font-medium text-white'>
+                          {invitation.email}
+                        </p>
+                        <div className='flex items-center gap-2 text-sm text-zinc-400'>
+                          <span>Role: {invitation.role}</span>
+                          <span>•</span>
+                          <div className='flex items-center gap-1'>
+                            <Clock className='h-3 w-3' />
+                            <span>
+                              Expires:{' '}
+                              {new Date(
+                                invitation.expiresAt
+                              ).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    {userIsOwner}
+                    {userIsOwner && (
+                      <button
+                        onClick={() => handleCancelInvitation(invitation.id)}
+                        disabled={
+                          cancelingInvitation === invitation.id ||
+                          invitation.status === 'canceled'
+                        }
+                        className='flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50'
+                        title='Cancel invitation'
+                      >
+                        {cancelingInvitation === invitation.id ? (
+                          <>
+                            <Loader2 className='h-4 w-4 animate-spin' />
+                            Canceling...
+                          </>
+                        ) : (
+                          <>
+                            <X className='h-4 w-4' />
+                            Cancel
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
-                  {userIsOwner}
-                  {userIsOwner && (
-                    <button
-                      onClick={() => handleCancelInvitation(invitation.id)}
-                      disabled={
-                        cancelingInvitation === invitation.id ||
-                        invitation.status === 'canceled'
-                      }
-                      className='flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50'
-                      title='Cancel invitation'
-                    >
-                      {cancelingInvitation === invitation.id ? (
-                        <>
-                          <Loader2 className='h-4 w-4 animate-spin' />
-                          Canceling...
-                        </>
-                      ) : (
-                        <>
-                          <X className='h-4 w-4' />
-                          Cancel
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              ))}
+                ))}
             </div>
           ) : (
             <div className='rounded-lg border border-zinc-800 bg-zinc-900/50 p-8 text-center'>
@@ -382,6 +400,9 @@ export default function MembersTab({ onSave }: MembersTabProps) {
           onRoleChange={handleRoleChange}
           onRemoveMember={handleRemoveMember}
           activeOrg={activeOrg}
+          canManageTeam={
+            currentUserRole === 'owner' || currentUserRole === 'admin'
+          }
         />
       )}
 

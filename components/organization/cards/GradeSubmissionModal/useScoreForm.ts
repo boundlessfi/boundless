@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
-  submitGrade,
+  submitJudgingScore,
   type CriterionScore,
   type JudgingCriterion,
-} from '@/lib/api/hackathons';
+} from '@/lib/api/hackathons/judging';
 
 interface UseScoreFormProps {
   scores: Record<string, number | string>;
   setScores: React.Dispatch<
     React.SetStateAction<Record<string, number | string>>
   >;
+  comments: Record<string, string>;
+  setComments: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  overallComment: string;
+  setOverallComment: React.Dispatch<React.SetStateAction<string>>;
   criteria: JudgingCriterion[];
   organizationId: string;
   hackathonId: string;
@@ -23,6 +27,10 @@ interface UseScoreFormProps {
 export const useScoreForm = ({
   scores,
   setScores,
+  comments,
+  setComments,
+  overallComment,
+  setOverallComment,
   criteria,
   organizationId,
   hackathonId,
@@ -38,96 +46,110 @@ export const useScoreForm = ({
   >({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleScoreChange = (
-    criterionTitle: string,
-    value: string | number
-  ) => {
-    let numValue = typeof value === 'string' ? parseFloat(value) : value;
+  const getCriterionKey = (criterion: JudgingCriterion) => {
+    return criterion.id || criterion.name || criterion.title;
+  };
 
-    if (value === '' || isNaN(numValue)) {
-      setScores(prev => ({ ...prev, [criterionTitle]: '' }));
-      setValidationErrors(prev => ({ ...prev, [criterionTitle]: null }));
+  const handleScoreChange = (criterionKey: string, value: string | number) => {
+    // If empty string, set it and let scoring section handle it
+    if (value === '') {
+      setScores(prev => ({ ...prev, [criterionKey]: '' }));
       return;
     }
 
-    numValue = Math.max(0, Math.min(100, numValue));
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(numValue)) return;
 
-    setScores(prev => ({ ...prev, [criterionTitle]: numValue }));
-    setValidationErrors(prev => ({ ...prev, [criterionTitle]: null }));
+    // Clamp between 0 and 10
+    const clampedValue = Math.min(10, Math.max(0, numValue));
+
+    setScores(prev => ({ ...prev, [criterionKey]: clampedValue }));
+
+    // Clear validation error when user types
+    if (validationErrors[criterionKey]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [criterionKey]: null,
+      }));
+    }
   };
 
-  const handleInputBlur = (criterionTitle: string) => {
-    const value = scores[criterionTitle];
-    if (value === '' || value === null || value === undefined) {
-      setScores(prev => ({ ...prev, [criterionTitle]: 0 }));
+  const handleCommentChange = (criterionKey: string, value: string) => {
+    setComments(prev => ({ ...prev, [criterionKey]: value }));
+  };
+
+  const handleInputBlur = (criterionKey: string) => {
+    // Ensure the value is properly formatted on blur
+    const currentScore = scores[criterionKey];
+
+    if (typeof currentScore === 'number') {
+      // Round to 1 decimal place
+      const roundedScore = Math.round(currentScore * 10) / 10;
+      setScores(prev => ({ ...prev, [criterionKey]: roundedScore }));
     }
-    setFocusedInput(null);
+
+    if (focusedInput === criterionKey) {
+      setFocusedInput(null);
+    }
   };
 
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
-    criterionTitle: string,
-    onSubmit: () => void
+    criterionKey: string
   ) => {
-    const currentScore =
-      typeof scores[criterionTitle] === 'number'
-        ? (scores[criterionTitle] as number)
-        : 0;
-
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      handleScoreChange(criterionTitle, Math.min(100, currentScore + 1));
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      handleScoreChange(criterionTitle, Math.max(0, currentScore - 1));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const currentIndex = criteria.findIndex(c => c.title === criterionTitle);
+    if (e.key === 'Enter') {
+      const currentIndex = criteria.findIndex(
+        c => getCriterionKey(c) === criterionKey
+      );
       if (currentIndex < criteria.length - 1) {
-        setFocusedInput(criteria[currentIndex + 1].title);
+        setFocusedInput(getCriterionKey(criteria[currentIndex + 1]));
       } else {
-        onSubmit();
+        // Last input, trigger submit
+        handleSubmit();
       }
     }
   };
 
-  const handleSubmit = async () => {
-    const errors: Record<string, string> = {};
-    let hasErrors = false;
+  const validate = () => {
+    const errors: Record<string, string | null> = {};
+    let isValid = true;
 
     criteria.forEach(criterion => {
-      const value = scores[criterion.title];
-      if (value === '' || value === null || value === undefined) {
-        errors[criterion.title] = 'Required';
-        hasErrors = true;
+      const key = getCriterionKey(criterion);
+      const score = scores[key];
+      if (typeof score !== 'number' || score === 0) {
+        errors[key] = 'Score required';
+        isValid = false;
       }
     });
 
-    if (hasErrors) {
-      setValidationErrors(errors);
-      toast.error('Please fill in all required scores');
+    setValidationErrors(errors);
+    return isValid;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) {
+      toast.error('Please provide scores for all criteria');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const scoreData: CriterionScore[] = criteria.map(criterion => ({
-        criterionTitle: criterion.title,
-        score:
-          typeof scores[criterion.title] === 'number'
-            ? (scores[criterion.title] as number)
-            : 0,
-      }));
+      const scoreData = criteria.map(criterion => {
+        const key = getCriterionKey(criterion);
+        return {
+          criterionId: criterion.id || criterion.name || criterion.title,
+          score: typeof scores[key] === 'number' ? (scores[key] as number) : 0,
+          comment: comments[key] || '',
+        };
+      });
 
-      const response = await submitGrade(
-        organizationId,
-        hackathonId,
-        participantId,
-        {
-          scores: scoreData,
-        }
-      );
+      const response = await submitJudgingScore({
+        submissionId: participantId,
+        criteriaScores: scoreData,
+        comment: overallComment, // Pass global comment
+      });
 
       if (response.success) {
         setShowSuccess(true);
@@ -162,7 +184,7 @@ export const useScoreForm = ({
 
   useEffect(() => {
     if (criteria.length > 0) {
-      setFocusedInput(criteria[0].title);
+      setFocusedInput(getCriterionKey(criteria[0]));
     }
   }, [criteria]);
 
@@ -173,11 +195,12 @@ export const useScoreForm = ({
     validationErrors,
     isLoading,
     handleScoreChange,
+    handleCommentChange,
     handleInputBlur,
     handleKeyDown: (
       e: React.KeyboardEvent<HTMLInputElement>,
-      criterionTitle: string
-    ) => handleKeyDown(e, criterionTitle, handleSubmit),
+      criterionKey: string
+    ) => handleKeyDown(e, criterionKey),
     handleSubmit,
   };
 };

@@ -432,37 +432,52 @@ export default function ProfileTab({
         onSave(formData);
       }
     } catch (error) {
+      // Try to extract the actual backend error message
+      let errorMessage =
+        'Failed to save organization profile. Please try again.';
+
       if (error instanceof Error) {
-        if (
-          error.message.includes('401') ||
-          error.message.includes('Unauthorized')
-        ) {
-          toast.error('Authentication failed. Please login again.');
-        } else if (
-          error.message.includes('403') ||
-          error.message.includes('Forbidden')
-        ) {
-          toast.error(
-            'You do not have permission to update this organization.'
-          );
-        } else if (
-          error.message.includes('404') ||
-          error.message.includes('Not Found')
-        ) {
-          toast.error('Organization not found.');
-        } else if (
-          error.message.includes('Network') ||
-          error.message.includes('timeout')
-        ) {
-          toast.error(
-            'Network error. Please check your connection and try again.'
-          );
-        } else {
-          toast.error(`Failed to save organization profile: ${error.message}`);
+        // Better Auth errors have a nested structure: error.context.body.message
+        const errorObj = error as any;
+
+        // Check for Better Auth error structure
+        if (errorObj.context?.body?.message) {
+          errorMessage = errorObj.context.body.message;
+        } else if (errorObj.response?.data?.message) {
+          // Standard API error structure
+          errorMessage = errorObj.response.data.message;
+        } else if (errorObj.message) {
+          // Parse common error patterns
+          if (
+            errorObj.message.includes('401') ||
+            errorObj.message.includes('Unauthorized')
+          ) {
+            errorMessage = 'Authentication failed. Please login again.';
+          } else if (
+            errorObj.message.includes('403') ||
+            errorObj.message.includes('Forbidden') ||
+            errorObj.message.includes('not allowed')
+          ) {
+            errorMessage =
+              'You do not have permission to update this organization.';
+          } else if (
+            errorObj.message.includes('404') ||
+            errorObj.message.includes('Not Found')
+          ) {
+            errorMessage = 'Organization not found.';
+          } else if (
+            errorObj.message.includes('Network') ||
+            errorObj.message.includes('timeout')
+          ) {
+            errorMessage =
+              'Network error. Please check your connection and try again.';
+          } else {
+            errorMessage = errorObj.message;
+          }
         }
-      } else {
-        toast.error('Failed to save organization profile. Please try again.');
       }
+
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }

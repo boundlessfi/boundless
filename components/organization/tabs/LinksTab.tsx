@@ -7,6 +7,9 @@ import { BoundlessButton } from '@/components/buttons';
 import { useOrganization } from '@/lib/providers/OrganizationProvider';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useLinkValidation } from '@/hooks/use-link-validation';
+import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export interface OrganizationLinks {
   website: string;
@@ -31,6 +34,30 @@ export default function LinksTab({
   const [hasUserChanges, setHasUserChanges] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const { validateWebsite, validateXHandle, validateGithubHandle } =
+    useLinkValidation();
+  const [validationStates, setValidationStates] = useState<{
+    website: {
+      isValid: boolean | null;
+      isValidating: boolean;
+      error: string | null;
+    };
+    x: { isValid: boolean | null; isValidating: boolean; error: string | null };
+    github: {
+      isValid: boolean | null;
+      isValidating: boolean;
+      error: string | null;
+    };
+  }>({
+    website: { isValid: null, isValidating: false, error: null },
+    x: { isValid: null, isValidating: false, error: null },
+    github: { isValid: null, isValidating: false, error: null },
+  });
+
+  const debouncedWebsite = useDebounce(links.website, 800);
+  const debouncedX = useDebounce(links.x, 800);
+  const debouncedGithub = useDebounce(links.github, 800);
 
   useEffect(() => {
     if (!isInitialized) {
@@ -69,6 +96,72 @@ export default function LinksTab({
     }
   }, [activeOrg?.metadata?.links, isInitialized, hasUserChanges, links]);
 
+  // Validate website URL
+  useEffect(() => {
+    if (!debouncedWebsite) {
+      setValidationStates(prev => ({
+        ...prev,
+        website: { isValid: null, isValidating: false, error: null },
+      }));
+      return;
+    }
+
+    const validate = async () => {
+      setValidationStates(prev => ({
+        ...prev,
+        website: { ...prev.website, isValidating: true },
+      }));
+      const result = await validateWebsite(debouncedWebsite);
+      setValidationStates(prev => ({ ...prev, website: result }));
+    };
+
+    validate();
+  }, [debouncedWebsite, validateWebsite]);
+
+  // Validate X handle
+  useEffect(() => {
+    if (!debouncedX) {
+      setValidationStates(prev => ({
+        ...prev,
+        x: { isValid: null, isValidating: false, error: null },
+      }));
+      return;
+    }
+
+    const validate = async () => {
+      setValidationStates(prev => ({
+        ...prev,
+        x: { ...prev.x, isValidating: true },
+      }));
+      const result = await validateXHandle(debouncedX);
+      setValidationStates(prev => ({ ...prev, x: result }));
+    };
+
+    validate();
+  }, [debouncedX, validateXHandle]);
+
+  // Validate GitHub handle
+  useEffect(() => {
+    if (!debouncedGithub) {
+      setValidationStates(prev => ({
+        ...prev,
+        github: { isValid: null, isValidating: false, error: null },
+      }));
+      return;
+    }
+
+    const validate = async () => {
+      setValidationStates(prev => ({
+        ...prev,
+        github: { ...prev.github, isValidating: true },
+      }));
+      const result = await validateGithubHandle(debouncedGithub);
+      setValidationStates(prev => ({ ...prev, github: result }));
+    };
+
+    validate();
+  }, [debouncedGithub, validateGithubHandle]);
+
   const updateLink = (field: keyof OrganizationLinks, value: string) => {
     setLinks(prev => ({ ...prev, [field]: value }));
     setHasUserChanges(true);
@@ -77,6 +170,20 @@ export default function LinksTab({
   const handleSave = async () => {
     if (!activeOrgId) {
       toast.error('No active organization selected');
+      return;
+    }
+
+    // Check for validation errors
+    if (links.website && validationStates.website.isValid === false) {
+      toast.error(validationStates.website.error || 'Invalid website URL');
+      return;
+    }
+    if (links.x && validationStates.x.isValid === false) {
+      toast.error(validationStates.x.error || 'Invalid X handle');
+      return;
+    }
+    if (links.github && validationStates.github.isValid === false) {
+      toast.error(validationStates.github.error || 'Invalid GitHub handle');
       return;
     }
 
@@ -106,42 +213,53 @@ export default function LinksTab({
         onSave(links);
       }
     } catch (error) {
+      // Try to extract the actual backend error message
+      let errorMessage = 'Failed to save organization links. Please try again.';
+
       if (error instanceof Error) {
-        if (
-          error.message.includes('401') ||
-          error.message.includes('Unauthorized')
-        ) {
-          toast.error('Authentication failed. Please login again.');
-        } else if (
-          error.message.includes('403') ||
-          error.message.includes('Forbidden')
-        ) {
-          toast.error(
-            'You do not have permission to update this organization.'
-          );
-        } else if (
-          error.message.includes('404') ||
-          error.message.includes('Not Found')
-        ) {
-          toast.error('Organization not found.');
-        } else if (
-          error.message.includes('Network') ||
-          error.message.includes('timeout')
-        ) {
-          toast.error(
-            'Network error. Please check your connection and try again.'
-          );
-        } else if (
-          error.message.includes('Validation failed') ||
-          error.message.includes('valid URL')
-        ) {
-          toast.error('Please enter valid URLs for all links.');
-        } else {
-          toast.error(`Failed to save organization links: ${error.message}`);
+        const errorObj = error as any;
+
+        // Check for Better Auth error structure
+        if (errorObj.context?.body?.message) {
+          errorMessage = errorObj.context.body.message;
+        } else if (errorObj.response?.data?.message) {
+          errorMessage = errorObj.response.data.message;
+        } else if (errorObj.message) {
+          if (
+            errorObj.message.includes('401') ||
+            errorObj.message.includes('Unauthorized')
+          ) {
+            errorMessage = 'Authentication failed. Please login again.';
+          } else if (
+            errorObj.message.includes('403') ||
+            errorObj.message.includes('Forbidden') ||
+            errorObj.message.includes('not allowed')
+          ) {
+            errorMessage =
+              'You do not have permission to update this organization.';
+          } else if (
+            errorObj.message.includes('404') ||
+            errorObj.message.includes('Not Found')
+          ) {
+            errorMessage = 'Organization not found.';
+          } else if (
+            errorObj.message.includes('Network') ||
+            errorObj.message.includes('timeout')
+          ) {
+            errorMessage =
+              'Network error. Please check your connection and try again.';
+          } else if (
+            errorObj.message.includes('Validation failed') ||
+            errorObj.message.includes('valid URL')
+          ) {
+            errorMessage = 'Please enter valid URLs for all links.';
+          } else {
+            errorMessage = errorObj.message;
+          }
         }
-      } else {
-        toast.error('Failed to save organization links. Please try again.');
       }
+
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -151,40 +269,102 @@ export default function LinksTab({
     <div className='space-y-6'>
       <div className='space-y-2'>
         <Label className='text-sm font-normal text-white'>Website</Label>
-        <Input
-          value={links.website}
-          onChange={e => updateLink('website', e.target.value)}
-          placeholder='Enter link to organization website'
-          className='bg-background rounded-[12px] border-gray-900 !p-4 !py-5 text-white placeholder:text-gray-700 focus-visible:ring-0'
-          disabled={isSaving}
-        />
+        <div className='relative'>
+          <Input
+            value={links.website}
+            onChange={e => updateLink('website', e.target.value)}
+            placeholder='Enter link to organization website'
+            className={cn(
+              'bg-background rounded-[12px] border-gray-900 !p-4 !py-5 pr-10 text-white placeholder:text-gray-700 focus-visible:ring-0',
+              validationStates.website.isValid === false && 'border-red-500',
+              validationStates.website.isValid === true && 'border-green-500'
+            )}
+            disabled={isSaving}
+          />
+          {validationStates.website.isValidating && (
+            <Loader2 className='absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 animate-spin text-gray-400' />
+          )}
+          {!validationStates.website.isValidating &&
+            validationStates.website.isValid === true && (
+              <CheckCircle2 className='absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 text-green-500' />
+            )}
+          {!validationStates.website.isValidating &&
+            validationStates.website.isValid === false && (
+              <XCircle className='absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 text-red-500' />
+            )}
+        </div>
+        {validationStates.website.error && (
+          <p className='text-xs text-red-500'>
+            {validationStates.website.error}
+          </p>
+        )}
       </div>
 
       <div className='space-y-2'>
         <Label className='text-sm font-normal text-white'>X (Twitter)</Label>
         <div className='relative'>
-          <span className='absolute top-1/2 left-4 -translate-y-1/2 font-normal text-white'>
+          <span className='absolute top-1/2 left-4 z-10 -translate-y-1/2 font-normal text-white'>
             @
           </span>
           <Input
             value={links.x}
             onChange={e => updateLink('x', e.target.value)}
             placeholder='Organization X handle'
-            className='bg-background rounded-[12px] border-gray-900 !p-4 !py-5 !pl-8 text-white placeholder:text-gray-700 focus-visible:ring-0'
+            className={cn(
+              'bg-background rounded-[12px] border-gray-900 !p-4 !py-5 pr-10 !pl-8 text-white placeholder:text-gray-700 focus-visible:ring-0',
+              validationStates.x.isValid === false && 'border-red-500',
+              validationStates.x.isValid === true && 'border-green-500'
+            )}
             disabled={isSaving}
           />
+          {validationStates.x.isValidating && (
+            <Loader2 className='absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 animate-spin text-gray-400' />
+          )}
+          {!validationStates.x.isValidating &&
+            validationStates.x.isValid === true && (
+              <CheckCircle2 className='absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 text-green-500' />
+            )}
+          {!validationStates.x.isValidating &&
+            validationStates.x.isValid === false && (
+              <XCircle className='absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 text-red-500' />
+            )}
         </div>
+        {validationStates.x.error && (
+          <p className='text-xs text-red-500'>{validationStates.x.error}</p>
+        )}
       </div>
 
       <div className='space-y-2'>
         <Label className='text-sm font-normal text-white'>GitHub</Label>
-        <Input
-          value={links.github}
-          onChange={e => updateLink('github', e.target.value)}
-          placeholder='Link to GitHub repo or GitHub organization profile'
-          className='bg-background rounded-[12px] border-gray-900 !p-4 !py-5 text-white placeholder:text-gray-700 focus-visible:ring-0'
-          disabled={isSaving}
-        />
+        <div className='relative'>
+          <Input
+            value={links.github}
+            onChange={e => updateLink('github', e.target.value)}
+            placeholder='GitHub username or organization'
+            className={cn(
+              'bg-background rounded-[12px] border-gray-900 !p-4 !py-5 pr-10 text-white placeholder:text-gray-700 focus-visible:ring-0',
+              validationStates.github.isValid === false && 'border-red-500',
+              validationStates.github.isValid === true && 'border-green-500'
+            )}
+            disabled={isSaving}
+          />
+          {validationStates.github.isValidating && (
+            <Loader2 className='absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 animate-spin text-gray-400' />
+          )}
+          {!validationStates.github.isValidating &&
+            validationStates.github.isValid === true && (
+              <CheckCircle2 className='absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 text-green-500' />
+            )}
+          {!validationStates.github.isValidating &&
+            validationStates.github.isValid === false && (
+              <XCircle className='absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 text-red-500' />
+            )}
+        </div>
+        {validationStates.github.error && (
+          <p className='text-xs text-red-500'>
+            {validationStates.github.error}
+          </p>
+        )}
       </div>
 
       <div className='space-y-2'>

@@ -120,6 +120,8 @@ export interface HackathonRewards {
 }
 
 export interface JudgingCriterion {
+  id?: string;
+  name?: string;
   title: string;
   weight: number; // 0-100
   description?: string;

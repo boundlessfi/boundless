@@ -120,16 +120,7 @@ export const getHackathon = async (
   hackathonId: string
 ): Promise<GetHackathonResponse> => {
   const res = await api.get(`/hackathons/${hackathonId}`);
-
-  return {
-    success: true,
-    data: res.data,
-    message: 'Hackathon retrieved successfully',
-    meta: {
-      timestamp: new Date().toISOString(),
-      requestId: '',
-    },
-  };
+  return res.data as GetHackathonResponse;
 };
 
 /**
@@ -178,16 +169,7 @@ export const GetHackathonBySlug = async (
   slug: string
 ): Promise<GetHackathonResponse> => {
   const res = await api.get(`/hackathons/s/${slug}`);
-
-  return {
-    success: true,
-    data: res.data,
-    message: 'Hackathon retrieved successfully',
-    meta: {
-      timestamp: new Date().toISOString(),
-      requestId: '',
-    },
-  };
+  return res.data as GetHackathonResponse;
 };
 
 /**

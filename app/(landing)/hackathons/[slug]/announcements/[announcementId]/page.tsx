@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Megaphone, ArrowLeft, Calendar, User, Pin } from 'lucide-react';
 import {
   getAnnouncementDetails,
+  GetHackathonBySlug,
   type HackathonAnnouncement,
 } from '@/lib/api/hackathons/index';
 import { useMarkdown } from '@/hooks/use-markdown';
@@ -20,6 +21,7 @@ export default function AnnouncementDetailPage() {
 
   const [announcement, setAnnouncement] =
     useState<HackathonAnnouncement | null>(null);
+  const [hackathonName, setHackathonName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,10 +30,14 @@ export default function AnnouncementDetailPage() {
       if (!announcementId) return;
       try {
         setLoading(true);
-        const data = await getAnnouncementDetails(announcementId);
-        setAnnouncement(data);
+        const [announcementData, hackathonData] = await Promise.all([
+          getAnnouncementDetails(announcementId),
+          GetHackathonBySlug(slug),
+        ]);
+        setAnnouncement(announcementData);
+        setHackathonName(hackathonData.data.name);
       } catch (err) {
-        console.error('Failed to fetch announcement details:', err);
+        console.error('Failed to fetch details:', err);
         setError(
           'Failed to load announcement. It may have been deleted or moved.'
         );
@@ -40,7 +46,7 @@ export default function AnnouncementDetailPage() {
       }
     }
     fetchDetails();
-  }, [announcementId]);
+  }, [announcementId, slug]);
 
   const { styledContent, loading: markdownLoading } = useMarkdown(
     announcement?.content || '',
@@ -93,7 +99,7 @@ export default function AnnouncementDetailPage() {
           <div className='flex items-center gap-2 text-zinc-500'>
             <Megaphone className='text-primary h-4 w-4' />
             <span className='text-xs font-medium tracking-widest uppercase'>
-              Announcement
+              {hackathonName ? `${hackathonName} • ` : ''}Announcement
             </span>
           </div>
         </div>
@@ -103,6 +109,14 @@ export default function AnnouncementDetailPage() {
         {/* Title & Metadata */}
         <div className='mb-12 space-y-6 border-b border-zinc-900 pb-12'>
           <div className='flex flex-wrap items-center gap-3'>
+            {hackathonName && (
+              <Badge
+                variant='outline'
+                className='border-primary/30 text-primary bg-primary/5 font-bold tracking-tighter uppercase'
+              >
+                {hackathonName}
+              </Badge>
+            )}
             {announcement.isPinned && (
               <Badge
                 variant='secondary'
@@ -120,7 +134,7 @@ export default function AnnouncementDetailPage() {
             </Badge>
           </div>
 
-          <h1 className='text-4xl font-extrabold tracking-tight text-white md:text-5xl'>
+          <h1 className='text-2xl font-bold tracking-tight text-white'>
             {announcement.title}
           </h1>
 

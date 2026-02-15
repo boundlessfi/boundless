@@ -1271,14 +1271,76 @@ export function OrganizationProvider({
       try {
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true } });
 
+        // 1. Promote new owner
         const response = await assignOrganizationRole({
           role: ['owner'],
           memberId: newOwnerId,
           organizationId: orgId,
         });
+
+        // 2. Demote current user (the old owner) to 'admin'
+        try {
+          const { data: sessionData } = await authClient.getSession();
+          const currentUserId = sessionData?.user?.id;
+
+          if (currentUserId) {
+            // Find current user's member ID in this organization
+            const { data: membersData } =
+              await authClient.organization.listMembers({
+                query: {
+                  organizationId: orgId,
+                  limit: 100, // Should be enough to find the owner
+                },
+              });
+
+            const currentUserMember = membersData?.members?.find(
+              m => m.userId === currentUserId
+            );
+
+            if (currentUserMember) {
+              await assignOrganizationRole({
+                role: ['admin'], // or 'member'
+                memberId: currentUserMember.id,
+                organizationId: orgId,
+              });
+            }
+          }
+        } catch (error) {
+          console.error(
+            'Failed to demote previous owner during transfer:',
+            error
+          );
+          // Continue execution - user might end up with two owners but better than failing completely
+          // They can fix it manually now via the Members tab
+        }
         const updatedOrg = response;
         if (updatedOrg && updatedOrg.id) {
           dispatch({ type: 'UPDATE_ORGANIZATION', payload: updatedOrg });
+
+          // Refresh organizations list to update current user's role in the UI
+          await fetchOrganizations();
+
+          // Refresh active organization details if possible
+          if (state.activeOrgId === orgId) {
+            try {
+              const { data } =
+                await authClient.organization.getFullOrganization({
+                  query: {
+                    organizationId: orgId,
+                  },
+                });
+              if (data) {
+                // We might want to update the active organization with full details
+                // creating a merged object if needed, but for now let's rely on fetchOrganizations
+                // to update the user's role in the list which matters most for permissions
+              }
+            } catch (err) {
+              console.error(
+                'Failed to refresh organization details after transfer:',
+                err
+              );
+            }
+          }
         } else {
           logger.error({
             eventType: 'org.transfer_ownership.error',
@@ -1298,7 +1360,7 @@ export function OrganizationProvider({
         dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
       }
     },
-    []
+    [dispatch, fetchOrganizations, state.activeOrgId]
   );
 
   const getOrganizationPermissions = useCallback(

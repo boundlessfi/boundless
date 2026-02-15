@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { getHackathon, type JudgingCriterion } from '@/lib/api/hackathons';
+import {
+  getJudgingCriteria,
+  type JudgingCriterion,
+} from '@/lib/api/hackathons/judging';
 
 interface UseJudgingCriteriaProps {
   open: boolean;
@@ -33,19 +36,10 @@ export const useJudgingCriteria = ({
       (!localCriteria || localCriteria.length === 0)
     ) {
       setIsFetchingCriteria(true);
-      getHackathon(hackathonId)
-        .then(response => {
-          if (response.success) {
-            const criteria = response.data.judgingCriteria || [];
-            if (criteria && criteria.length > 0) {
-              // Filter out criteria that don't have required title and weight
-              const validCriteria = criteria.filter(
-                (criterion): criterion is JudgingCriterion =>
-                  !!criterion.name && typeof criterion.weight === 'number'
-              );
-              setLocalCriteria(validCriteria);
-            }
-          }
+      getJudgingCriteria(hackathonId)
+        .then((criteria: JudgingCriterion[]) => {
+          // Double check that we have an array
+          setLocalCriteria(Array.isArray(criteria) ? criteria : []);
         })
         .catch(() => {})
         .finally(() => {

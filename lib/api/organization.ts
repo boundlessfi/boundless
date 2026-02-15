@@ -681,6 +681,18 @@ export const resetOrganizationPermissions = async (
 };
 
 /**
+ * Get organization members
+ */
+export const getOrganizationMembers = async (
+  organizationId: string
+): Promise<ApiResponse<any[]>> => {
+  const res = await api.get<ApiResponse<any[]>>(
+    `/organizations/${organizationId}/members`
+  );
+  return res.data;
+};
+
+/**
  * Assign role to organization member (promote/demote)
  *
  * Note: Backend supports both endpoints for backward compatibility:

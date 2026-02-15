@@ -20,12 +20,14 @@ interface TeamManagementSectionProps {
   onRoleChange: (memberId: string, newRole: string) => void;
   onRemoveMember: (memberId: string) => void;
   activeOrg?: Organization | null;
+  canManageTeam?: boolean;
 }
 
 export default function TeamManagementSection({
   members,
   onRoleChange,
   onRemoveMember,
+  canManageTeam = false,
 }: TeamManagementSectionProps) {
   const activeMembers = members.filter(member => member.status === 'active');
   const pendingMembers = members.filter(member => member.status === 'pending');
@@ -62,20 +64,18 @@ export default function TeamManagementSection({
         )}
         {/* <pre>{JSON.stringify(activeMembers, null, 2)}</pre> */}
         {/* <pre>{JSON.stringify(activeOrg, null, 2)}</pre> */}
-        {activeMembers.filter(
-          member => member.role === 'admin' || member.role === 'member'
-        ).length > 0 && (
+        {activeMembers.filter(member => member.id !== orgOwner?.id).length >
+          0 && (
           <div className='space-y-3'>
             {activeMembers
-              .filter(
-                member => member.role === 'admin' || member.role === 'member'
-              )
+              .filter(member => member.id !== orgOwner?.id)
               .map(member => (
                 <MemberCard
                   key={member.id}
                   member={member}
                   onRoleChange={onRoleChange}
                   onRemoveMember={onRemoveMember}
+                  canManage={canManageTeam}
                 />
               ))}
           </div>

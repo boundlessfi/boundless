@@ -26,12 +26,14 @@ interface MemberCardProps {
   member: Member;
   onRoleChange: (memberId: string, newRole: string) => void;
   onRemoveMember: (memberId: string) => void;
+  canManage?: boolean;
 }
 
 export default function MemberCard({
   member,
   onRoleChange,
   onRemoveMember,
+  canManage = false,
 }: MemberCardProps) {
   return (
     <div className='flex items-center justify-between gap-3'>
@@ -47,13 +49,17 @@ export default function MemberCard({
 
       <div className='flex items-center gap-3'>
         <Popover>
-          <PopoverTrigger disabled={member.role === 'owner'} asChild>
+          <PopoverTrigger asChild disabled={!canManage}>
             <Button
               variant='ghost'
               size='sm'
               className='data-[state=open]:text-primary text-gray-500 hover:bg-transparent hover:text-white'
             >
-              {member.role === 'admin' ? 'Admin' : 'Member'}
+              {member.role === 'owner'
+                ? 'Owner'
+                : member.role === 'admin'
+                  ? 'Admin'
+                  : 'Member'}
               <ChevronsUpDown className='data-[state=open]:text-primary ml-1 size-4' />
             </Button>
           </PopoverTrigger>
@@ -61,7 +67,18 @@ export default function MemberCard({
             <div className='space-y-2'>
               <RadioGroup
                 value={member.role}
-                onValueChange={value => onRoleChange(member.id, value)}
+                onValueChange={value => {
+                  if (member.role === 'owner') {
+                    if (
+                      !confirm(
+                        'Are you sure you want to demote this owner? Make sure there is at least one other owner.'
+                      )
+                    ) {
+                      return;
+                    }
+                  }
+                  onRoleChange(member.id, value);
+                }}
                 className='flex flex-col gap-2'
               >
                 <div className='flex items-center justify-between gap-3 px-4 py-3'>
@@ -86,28 +103,30 @@ export default function MemberCard({
             </div>
           </PopoverContent>
         </Popover>
-        <Popover>
-          <PopoverTrigger disabled={member.role === 'member'} asChild>
-            <Button className='h-6 w-6 rounded-full bg-white !p-1 hover:bg-gray-200'>
-              <X className='size-5 text-black' />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            align='center'
-            side='left'
-            className='bg-background w-48 rounded-[16px] border-white/24 p-3'
-          >
-            <BoundlessButton
-              variant='destructive'
-              icon={<Delete className='size-4 text-white' />}
-              fullWidth
-              onClick={() => onRemoveMember(member.id)}
-              className='text-white'
+        {canManage && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button className='h-6 w-6 rounded-full bg-white p-1! hover:bg-gray-200'>
+                <X className='size-5 text-black' />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              align='center'
+              side='left'
+              className='bg-background w-48 rounded-[16px] border-white/24 p-3'
             >
-              Remove
-            </BoundlessButton>
-          </PopoverContent>
-        </Popover>
+              <BoundlessButton
+                variant='destructive'
+                icon={<Delete className='size-4 text-white' />}
+                fullWidth
+                onClick={() => onRemoveMember(member.id)}
+                className='text-white'
+              >
+                Remove
+              </BoundlessButton>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
     </div>
   );

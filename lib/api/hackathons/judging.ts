@@ -3,14 +3,28 @@ import { ApiResponse, PaginatedResponse } from '../types';
 
 // Judging API Types
 export interface JudgingCriterion {
+  id?: string;
+  name?: string;
   title: string;
   weight: number; // 0-100
   description?: string;
 }
 
 export interface CriterionScore {
-  criterionTitle: string;
-  score: number; // 0-100
+  criterionId: string;
+  criterionTitle?: string;
+  criterionName?: string;
+  score: number; // 0-10
+  comment?: string;
+}
+
+export interface IndividualJudgeScore {
+  judgeId: string;
+  judgeName: string;
+  criteriaScores: CriterionScore[];
+  comment?: string; // Qualitative feedback
+  totalScore: number;
+  submittedAt: string;
 }
 
 export interface JudgeScore {
@@ -30,6 +44,14 @@ export interface JudgeScore {
   notes?: string;
   judgedAt: string;
   updatedAt: string;
+}
+
+export interface JudgingResult {
+  submissionId: string;
+  projectName: string;
+  averageScore: number;
+  judgeCount: number;
+  rank?: any;
 }
 
 export interface JudgingSubmission {
@@ -146,13 +168,59 @@ export interface GradeSubmissionResponse {
   averageScore: number;
 }
 
-export interface GetJudgingSubmissionsResponse extends PaginatedResponse<JudgingSubmission> {
-  success: true;
+export interface CriterionScoreRequest {
+  criterionId: string;
+  score: number;
+  comment?: string;
 }
 
-export interface GetSubmissionScoresResponse extends ApiResponse<SubmissionScoresResponse> {
+export interface SubmitJudgingScoreRequest {
+  submissionId: string;
+  criteriaScores: CriterionScoreRequest[];
+  comment?: string; // Optional global feedback
+}
+
+export interface GetJudgingSubmissionsResponse extends ApiResponse<any> {
   success: true;
-  data: SubmissionScoresResponse;
+  data: (
+    | JudgingSubmission[]
+    | {
+        submissions: any[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      }
+  ) &
+    any;
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+export interface GetSubmissionScoresResponse extends ApiResponse<
+  IndividualJudgeScore[]
+> {}
+
+export interface AddJudgeRequest {
+  userId: string;
+  email: string;
+}
+
+export interface AddJudgeResponse extends ApiResponse<null> {
+  success: true;
+  message: string;
+}
+
+export interface RemoveJudgeResponse extends ApiResponse<null> {
+  success: true;
   message: string;
 }
 
@@ -161,6 +229,10 @@ export interface SubmitGradeResponse extends ApiResponse<GradeSubmissionResponse
   data: GradeSubmissionResponse;
   message: string;
 }
+
+export interface GetJudgingResultsResponse extends ApiResponse<
+  JudgingResult[]
+> {}
 
 // Participant interface (needed for shortlist/disqualify response)
 export interface Participant {
@@ -236,10 +308,11 @@ export const getJudgingSubmissions = async (
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
+    status: 'SHORTLISTED',
   });
 
   const res = await api.get(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/submissions?${params.toString()}`
+    `/hackathons/${hackathonId}/submissions?${params.toString()}`
   );
   return res.data;
 };
@@ -261,15 +334,162 @@ export const submitGrade = async (
 };
 
 /**
- * Get all scores for a specific submission
+ * Get all scores for a specific submission (individual judge breakdown)
  */
 export const getSubmissionScores = async (
   organizationId: string,
   hackathonId: string,
   participantId: string
 ): Promise<GetSubmissionScoresResponse> => {
-  const res = await api.get(
+  const res = await api.get<
+    IndividualJudgeScore[] | ApiResponse<IndividualJudgeScore[]>
+  >(
     `/organizations/${organizationId}/hackathons/${hackathonId}/judging/submissions/${participantId}/scores`
+  );
+
+  // Handle raw array response format
+  if (Array.isArray(res.data)) {
+    return {
+      success: true,
+      data: res.data,
+      message: 'Scores retrieved successfully',
+    } as GetSubmissionScoresResponse;
+  }
+
+  return (res.data || {}) as GetSubmissionScoresResponse;
+};
+
+/**
+ * Get judging criteria for a hackathon
+ */
+export const getJudgingCriteria = async (
+  idOrSlug: string
+): Promise<JudgingCriterion[]> => {
+  const res = await api.get(`/hackathons/${idOrSlug}/judging/criteria`);
+  // Handle both array and wrapped response formats
+  if (Array.isArray(res.data)) {
+    return res.data;
+  }
+  return (res.data as any)?.data || [];
+};
+
+/**
+ * Submit score for a submission
+ */
+export const submitJudgingScore = async (
+  data: SubmitJudgingScoreRequest
+): Promise<ApiResponse<any>> => {
+  const res = await api.post(`/hackathons/judging/score`, data);
+  return res.data;
+};
+
+/**
+ * Get aggregated judging results for a hackathon
+ */
+export const getJudgingResults = async (
+  organizationId: string,
+  hackathonId: string
+): Promise<GetJudgingResultsResponse> => {
+  const res = await api.get<JudgingResult[] | ApiResponse<JudgingResult[]>>(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/results`
+  );
+
+  // Handle raw array response format
+  if (Array.isArray(res.data)) {
+    return {
+      success: true,
+      data: res.data,
+      message: 'Results retrieved successfully',
+    } as GetJudgingResultsResponse;
+  }
+
+  return (res.data || {}) as GetJudgingResultsResponse;
+};
+
+/**
+ * Add a judge to a hackathon
+ */
+export const addJudge = async (
+  organizationId: string,
+  hackathonId: string,
+  data: AddJudgeRequest
+): Promise<AddJudgeResponse> => {
+  const res = await api.post<AddJudgeResponse>(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/judges`,
+    data
+  );
+  return res.data;
+};
+
+/**
+ * Remove a judge from a hackathon
+ */
+export const removeJudge = async (
+  organizationId: string,
+  hackathonId: string,
+  userId: string
+): Promise<RemoveJudgeResponse> => {
+  const res = await api.delete<RemoveJudgeResponse>(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/judges/${userId}`
+  );
+  return res.data;
+};
+
+/**
+ * Get judges list for a hackathon
+ */
+export const getHackathonJudges = async (
+  organizationId: string,
+  hackathonId: string
+): Promise<ApiResponse<any[]>> => {
+  const res = await api.get<any[]>(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/judges`
+  );
+
+  // If the backend returns a raw array, wrap it in our ApiResponse structure
+  if (Array.isArray(res.data)) {
+    return {
+      success: true,
+      data: res.data,
+      message: 'Judges retrieved successfully',
+    };
+  }
+
+  return res.data as unknown as ApiResponse<any[]>;
+};
+
+/**
+ * Get winner ranking (finalized results)
+ */
+export const getJudgingWinners = async (
+  organizationId: string,
+  hackathonId: string
+): Promise<GetJudgingResultsResponse> => {
+  const res = await api.get<JudgingResult[] | ApiResponse<JudgingResult[]>>(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/winners`
+  );
+
+  // Handle raw array response format
+  if (Array.isArray(res.data)) {
+    return {
+      success: true,
+      data: res.data,
+      message: 'Winners retrieved successfully',
+    } as GetJudgingResultsResponse;
+  }
+
+  return (res.data || {}) as GetJudgingResultsResponse;
+};
+
+/**
+ * Publish judging results (finalize rankings)
+ */
+export const publishJudgingResults = async (
+  organizationId: string,
+  hackathonId: string
+): Promise<ApiResponse<null>> => {
+  const res = await api.post(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/publish-results`
   );
   return res.data;
 };
