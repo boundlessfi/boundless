@@ -255,8 +255,8 @@ const IndividualScoresBreakdown = ({
                       {score.criteriaScores &&
                         score.criteriaScores.length > 0 && (
                           <div className='grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2'>
-                            {score.criteriaScores.map((c: any, idx: number) => (
-                              <div key={idx} className='space-y-1.5'>
+                            {score.criteriaScores.map(c => (
+                              <div key={c.criterionId} className='space-y-1.5'>
                                 <div className='flex items-center justify-between text-xs'>
                                   <span className='max-w-[150px] truncate text-gray-400'>
                                     {c.criterionTitle || c.criterionId}{' '}
@@ -271,7 +271,10 @@ const IndividualScoresBreakdown = ({
                                       'h-full transition-all',
                                       getScoreColor(c.score)
                                     )}
-                                    style={{ width: `${c.score * 10}%` }}
+                                    // Normalize to 100% (assuming max score is 10)
+                                    style={{
+                                      width: `${Math.min((c.score / 10) * 100, 100)}%`,
+                                    }}
                                   />
                                 </div>
                                 {c.comment && (
