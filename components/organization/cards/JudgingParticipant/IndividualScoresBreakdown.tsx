@@ -51,6 +51,18 @@ const IndividualScoresBreakdown = ({
     {}
   );
 
+  // Helper to normalize initial scores to JudgeScore shape
+  const normalizeInitialScores = (
+    scores: NonNullable<IndividualScoresBreakdownProps['initialScores']>
+  ): JudgeScore[] => {
+    return scores.map(s => ({
+      judgeId: s.judgeId,
+      judgeName: s.judgeName,
+      totalScore: s.score,
+      score: s.score,
+    }));
+  };
+
   useEffect(() => {
     // Always fetch detailed scores to get criteria breakdown
     // Even if initialScores are provided, they don't include criteriaScores
@@ -83,27 +95,13 @@ const IndividualScoresBreakdown = ({
           setScores(mappedScores);
         } else if (initialScores) {
           // Fallback to initialScores if API fails
-          // Normalize initialScores to match API shape (score -> totalScore)
-          const normalizedScores: JudgeScore[] = initialScores.map(s => ({
-            judgeId: s.judgeId,
-            judgeName: s.judgeName,
-            totalScore: s.score,
-            score: s.score,
-          }));
-          setScores(normalizedScores);
+          setScores(normalizeInitialScores(initialScores));
         }
       } catch (err) {
         console.error('Failed to fetch individual scores:', err);
         // Fallback to initialScores if fetch fails
         if (initialScores) {
-          // Normalize initialScores to match API shape (score -> totalScore)
-          const normalizedScores: JudgeScore[] = initialScores.map(s => ({
-            judgeId: s.judgeId,
-            judgeName: s.judgeName,
-            totalScore: s.score,
-            score: s.score,
-          }));
-          setScores(normalizedScores);
+          setScores(normalizeInitialScores(initialScores));
         }
       } finally {
         setIsLoading(false);
