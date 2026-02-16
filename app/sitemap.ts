@@ -3,7 +3,7 @@ import { getBlogPosts } from '@/lib/api/blog';
 import { getHackathons } from '@/lib/api/hackathons';
 import { getCrowdfundingProjects } from '@/features/projects/api';
 import type { BlogPost } from '@/types/blog';
-import type { Hackathon } from '@/types/hackathon/core';
+import type { Hackathon as HackathonAPI } from '@/lib/api/hackathons';
 import type { Crowdfunding } from '@/features/projects/types';
 
 // Constants
@@ -173,14 +173,14 @@ async function fetchHackathonsSitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     return response.data.hackathons
-      .filter((hackathon: Hackathon) => {
+      .filter((hackathon: HackathonAPI) => {
         // Validate required fields
         if (!hackathon.slug) {
           return false;
         }
         return true;
       })
-      .map((hackathon: Hackathon) => ({
+      .map((hackathon: HackathonAPI) => ({
         url: `${SITE_URL}/hackathons/${hackathon.slug}`,
         lastModified: new Date(
           hackathon.updatedAt || hackathon.publishedAt || new Date()

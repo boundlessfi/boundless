@@ -70,8 +70,13 @@ export interface HackathonPhase {
 export interface HackathonTimeline {
   startDate: string; // ISO 8601 date
   submissionDeadline: string; // ISO 8601 date
-  judgingDate: string; // ISO 8601 date
-  winnerAnnouncementDate: string; // ISO 8601 date
+  judgingStart: string; // ISO 8601 date
+  endDate: string; // ISO 8601 date
+  judgingEnd?: string; // ISO 8601 date
+  winnersAnnouncedAt?: string; // ISO 8601 date
+  // Legacy fields for backward compatibility
+  judgingDate?: string; // ISO 8601 date
+  winnerAnnouncementDate?: string; // ISO 8601 date
   timezone: string;
   phases?: HackathonPhase[];
 }

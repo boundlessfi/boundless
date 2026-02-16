@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { InfoFormData } from './schemas/infoSchema';
 import { TimelineFormData } from './schemas/timelineSchema';
 import { ParticipantFormData } from './schemas/participantSchema';
@@ -22,6 +22,7 @@ import { SectionRenderer } from './components/review/SectionRenderer';
 import { usePrizePoolCalculations } from '@/hooks/use-prize-pool-calculations';
 import { REVIEW_SECTION_CONFIG } from './constants/review-sections';
 import { toast } from 'sonner';
+import type { PublishResponseData } from '@/hooks/use-hackathon-publish';
 
 interface ReviewTabProps {
   allData: {
@@ -37,9 +38,9 @@ interface ReviewTabProps {
   onSaveDraft?: () => Promise<void>;
   isLoading?: boolean;
   isSavingDraft?: boolean;
-  hackathonUrl?: string;
   organizationId?: string;
   draftId?: string | null;
+  publishResponse?: PublishResponseData | null;
 }
 
 export default function ReviewTab({
@@ -49,9 +50,9 @@ export default function ReviewTab({
   onSaveDraft,
   isLoading = false,
   isSavingDraft = false,
-  hackathonUrl,
   organizationId,
   draftId,
+  publishResponse,
 }: ReviewTabProps) {
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [showPublishedModal, setShowPublishedModal] = useState(false);
@@ -60,11 +61,18 @@ export default function ReviewTab({
   const { totalPrizePool, platformFee, totalFunding } =
     usePrizePoolCalculations(allData.rewards);
 
+  // Show published modal only when we have a successful publish response
+  useEffect(() => {
+    if (publishResponse) {
+      setShowPublishedModal(true);
+    }
+  }, [publishResponse]);
+
   const handlePublish = async () => {
     try {
       if (onPublish) {
         await onPublish();
-        setShowPublishedModal(true);
+        // Modal will be shown automatically when publishResponse is set via useEffect
       }
     } catch {
       // Error is handled in the hook, so we don't need to show another toast
@@ -154,7 +162,8 @@ export default function ReviewTab({
       <HackathonPublishedModal
         open={showPublishedModal}
         onOpenChange={setShowPublishedModal}
-        hackathonUrl={hackathonUrl}
+        publishResponse={publishResponse}
+        organizationId={organizationId}
       />
     </div>
   );

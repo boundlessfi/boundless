@@ -10,10 +10,12 @@ interface TimelineSectionProps {
 const formatDateShort = (date: Date | string | undefined): string => {
   if (!date) return 'Not set';
   const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-US', {
+  return d.toLocaleString('en-US', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
   });
 };
 
@@ -24,7 +26,7 @@ export default function TimelineSection({
 }: TimelineSectionProps) {
   return (
     <div className='space-y-4'>
-      <div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
+      <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
         <div className='space-y-1'>
           <p className='text-xs font-medium text-gray-500'>Start Date:</p>
           <p className='text-sm font-medium text-white'>
@@ -40,19 +42,35 @@ export default function TimelineSection({
           </p>
         </div>
         <div className='space-y-1'>
-          <p className='text-xs font-medium text-gray-500'>Judging:</p>
+          <p className='text-xs font-medium text-gray-500'>Judging Start:</p>
+          <p className='text-sm font-medium text-white'>
+            {formatDateShort(data.judgingStart)}
+          </p>
+        </div>
+        <div className='space-y-1'>
+          <p className='text-xs font-medium text-gray-500'>End Date:</p>
           <p className='text-sm font-medium text-white'>
             {formatDateShort(data.endDate)}
           </p>
         </div>
-        <div className='space-y-1'>
-          <p className='text-xs font-medium text-gray-500'>
-            Winner Announcement:
-          </p>
-          <p className='text-sm font-medium text-white'>
-            {formatDateShort(data.registrationDeadline)}
-          </p>
-        </div>
+        {data.judgingEnd && (
+          <div className='space-y-1'>
+            <p className='text-xs font-medium text-gray-500'>Judging End:</p>
+            <p className='text-sm font-medium text-white'>
+              {formatDateShort(data.judgingEnd)}
+            </p>
+          </div>
+        )}
+        {data.winnersAnnouncedAt && (
+          <div className='space-y-1'>
+            <p className='text-xs font-medium text-gray-500'>
+              Winner Announcement:
+            </p>
+            <p className='text-sm font-medium text-white'>
+              {formatDateShort(data.winnersAnnouncedAt)}
+            </p>
+          </div>
+        )}
       </div>
       {data.phases && data.phases.length > 0 && (
         <div className='space-y-3 border-t border-gray-800 pt-4'>

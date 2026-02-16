@@ -63,9 +63,14 @@ export const transformToApiFormat = (stepData: {
     timeline: {
       startDate: timeline?.startDate?.toISOString() || '',
       submissionDeadline: timeline?.submissionDeadline?.toISOString() || '',
-      judgingDate: timeline?.endDate?.toISOString() || '',
-      winnerAnnouncementDate:
-        timeline?.registrationDeadline?.toISOString() || '',
+      judgingStart: timeline?.judgingStart?.toISOString() || '',
+      endDate: timeline?.endDate?.toISOString() || '',
+      ...(timeline?.judgingEnd
+        ? { judgingEnd: timeline.judgingEnd.toISOString() }
+        : {}),
+      ...(timeline?.winnersAnnouncedAt
+        ? { winnersAnnouncedAt: timeline.winnersAnnouncedAt.toISOString() }
+        : {}),
       timezone: timeline?.timezone || 'UTC',
       phases: timeline?.phases?.map(phase => ({
         name: phase.name,
@@ -175,15 +180,23 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
     } as InfoFormData,
     timeline: {
       startDate: timeline?.startDate ? new Date(timeline.startDate) : undefined,
-      endDate: timeline?.judgingDate
-        ? new Date(timeline.judgingDate)
-        : undefined,
-      registrationDeadline: timeline?.winnerAnnouncementDate
-        ? new Date(timeline.winnerAnnouncementDate)
-        : undefined,
       submissionDeadline: timeline?.submissionDeadline
         ? new Date(timeline.submissionDeadline)
         : undefined,
+      judgingStart: timeline?.judgingStart
+        ? new Date(timeline.judgingStart)
+        : timeline?.judgingDate
+          ? new Date(timeline.judgingDate)
+          : undefined,
+      endDate: timeline?.endDate ? new Date(timeline.endDate) : undefined,
+      judgingEnd: timeline?.judgingEnd
+        ? new Date(timeline.judgingEnd)
+        : undefined,
+      winnersAnnouncedAt: timeline?.winnersAnnouncedAt
+        ? new Date(timeline.winnersAnnouncedAt)
+        : timeline?.winnerAnnouncementDate
+          ? new Date(timeline.winnerAnnouncementDate)
+          : undefined,
       timezone: timeline?.timezone || 'UTC',
       phases:
         timeline?.phases?.map(phase => ({

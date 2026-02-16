@@ -159,7 +159,7 @@ export default function NewHackathonTab({
     onDraftLoadedRef.current = onDraftLoaded;
   }, [onDraftLoaded]);
 
-  const { isPublishing, publish } = useHackathonPublish({
+  const { isPublishing, publish, publishResponse } = useHackathonPublish({
     organizationId: derivedOrgId || '',
     stepData,
     draftId: draftId || '',
@@ -323,6 +323,7 @@ export default function NewHackathonTab({
               isSavingDraft={isSavingDraft}
               organizationId={derivedOrgId}
               draftId={draftId}
+              publishResponse={publishResponse}
             />
           </TabsContent>
         </div>

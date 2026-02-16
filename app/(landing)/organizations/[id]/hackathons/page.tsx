@@ -41,8 +41,7 @@ const calculateDraftCompletion = (draft: HackathonDraft): number => {
     draft.data.information?.categories,
     draft.data.timeline?.startDate,
     draft.data.timeline?.submissionDeadline,
-    draft.data.timeline?.judgingDate,
-    draft.data.timeline?.winnerAnnouncementDate,
+    draft.data.timeline?.judgingStart || draft.data.timeline?.judgingDate,
     draft.data.timeline?.timezone,
     draft.data.participation?.participantType,
     draft.data.rewards?.prizeTiers?.length,
@@ -402,7 +401,12 @@ export default function HackathonsPage() {
                   ? (hackathon as HackathonDraft).data.timeline
                       ?.submissionDeadline ||
                     (hackathon as HackathonDraft).data.timeline
-                      ?.winnerAnnouncementDate
+                      ?.winnersAnnouncedAt ||
+                    (hackathon as HackathonDraft).data.timeline
+                      ?.winnerAnnouncementDate ||
+                    (hackathon as HackathonDraft).data.timeline?.judgingEnd ||
+                    (hackathon as HackathonDraft).data.timeline?.judgingDate ||
+                    (hackathon as HackathonDraft).data.timeline?.judgingStart
                   : (hackathon as Hackathon).submissionDeadline ||
                     (hackathon as Hackathon).endDate;
                 const totalPrize = isDraft

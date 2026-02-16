@@ -450,14 +450,22 @@ export function useHackathons(
 
       try {
         const response = await publishDraft(draftId, organizationId);
-        setHackathons(prev => [response.data, ...prev]);
-        setCurrentHackathon(response.data);
+
+        // Extract data from API response wrapper if it exists
+        const hackathon = response?.data || response;
+
+        if (!hackathon || !hackathon.id) {
+          throw new Error('Invalid publish response: missing hackathon ID');
+        }
+
+        setHackathons(prev => [hackathon, ...prev]);
+        setCurrentHackathon(hackathon);
         // Optionally remove from drafts if it was a draft
         if (currentDraft) {
           setDrafts(prev => prev.filter(d => d.id !== currentDraft.id));
           setCurrentDraft(null);
         }
-        return response.data;
+        return hackathon;
       } catch (error) {
         const errorMessage =
           error instanceof Error

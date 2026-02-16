@@ -30,6 +30,15 @@ interface UseHackathonPublishProps {
   ) => Promise<Hackathon>;
 }
 
+export interface PublishResponseData {
+  id: string;
+  slug: string;
+  publishedAt: string;
+  message: string;
+  escrowAddress: string;
+  transactionHash: string | null;
+}
+
 export const useHackathonPublish = ({
   organizationId,
   stepData,
@@ -39,11 +48,13 @@ export const useHackathonPublish = ({
   const router = useRouter();
   const { walletAddress } = useWalletContext();
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishResponse, setPublishResponse] =
+    useState<PublishResponseData | null>(null);
 
-  const publish = async () => {
+  const publish = async (): Promise<PublishResponseData | null> => {
     if (!organizationId) {
       toast.error('Organization ID is required');
-      return;
+      return null;
     }
 
     if (
@@ -55,12 +66,12 @@ export const useHackathonPublish = ({
       !stepData.collaboration
     ) {
       toast.error('Please complete all steps before publishing');
-      return;
+      return null;
     }
 
     if (!walletAddress) {
       toast.error('Please connect your wallet first');
-      return;
+      return null;
     }
 
     if (
@@ -68,18 +79,18 @@ export const useHackathonPublish = ({
       stepData.rewards.prizeTiers.length === 0
     ) {
       toast.error('Please add at least one prize tier before publishing');
-      return;
+      return null;
     }
 
     const totalPrizeAmount = getTotalPrizePoolForFunding(stepData.rewards);
     if (totalPrizeAmount === 0) {
       toast.error('Total prize amount must be greater than zero');
-      return;
+      return null;
     }
 
     if (!draftId) {
       toast.error('Draft ID is required');
-      return;
+      return null;
     }
 
     setIsPublishing(true);
@@ -87,17 +98,34 @@ export const useHackathonPublish = ({
     try {
       toast.info('Publishing hackathon...');
       // The backend now handles the custodial wallet and escrow logic
-      const hackathon = await publishDraftAction(draftId, organizationId);
+      const response = await publishDraftAction(draftId, organizationId);
 
-      toast.success('Hackathon published successfully!');
+      // Handle different response formats
+      // Could be: { success, message, data: {...} } or direct Hackathon object
+      let hackathon = response;
 
-      if (organizationId && hackathon.id) {
-        setTimeout(() => {
-          router.push(
-            `/organizations/${organizationId}/hackathons/${hackathon.id}`
-          );
-        }, 1500);
+      if (!hackathon || !hackathon.id) {
+        throw new Error('Invalid publish response: missing hackathon ID');
       }
+
+      // Prepare response data from hackathon object
+      const responseData: PublishResponseData = {
+        id: hackathon.id,
+        slug: hackathon.slug || '',
+        publishedAt: hackathon.publishedAt || new Date().toISOString(),
+        message: hackathon.message || 'Hackathon published successfully',
+        escrowAddress: hackathon.escrowAddress || '',
+        transactionHash: hackathon.transactionHash || null,
+      };
+
+      setPublishResponse(responseData);
+
+      // Show success toast with hackathon ID
+      toast.success(`Hackathon published! ID: ${responseData.id}`, {
+        duration: 4000,
+      });
+
+      return responseData;
     } catch (error) {
       let errorMessage = 'Failed to publish hackathon';
 
@@ -115,5 +143,6 @@ export const useHackathonPublish = ({
   return {
     isPublishing,
     publish,
+    publishResponse,
   };
 };

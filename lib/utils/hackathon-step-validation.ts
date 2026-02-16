@@ -98,8 +98,7 @@ export const isStepDataValid = (
       return !!(
         timeline.startDate &&
         timeline.submissionDeadline &&
-        timeline.endDate &&
-        timeline.registrationDeadline
+        timeline.judgingStart
       );
     }
     case 'participation': {

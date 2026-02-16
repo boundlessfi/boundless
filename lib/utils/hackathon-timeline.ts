@@ -109,40 +109,45 @@ export const calculateTimelineStatus = (
       'Participants are submitting their projects for review before the deadline.',
   });
 
-  // Judging phase (from submissionDeadline to judgingDate)
-  phases.push({
-    name: 'Judging',
-    startDate: timeline.submissionDeadline,
-    endDate: timeline.judgingDate,
-    status: isPhaseCompleted(timeline.judgingDate, currentDate)
-      ? 'completed'
-      : isPhaseActive(
-            timeline.submissionDeadline,
-            timeline.judgingDate,
-            currentDate
-          )
-        ? 'active'
-        : 'upcoming',
-    description:
-      'Judges are currently reviewing and scoring all submitted projects.',
-  });
+  const judgingStart = timeline.judgingStart || timeline.judgingDate;
+  const judgingEnd = timeline.judgingEnd || judgingStart;
+  const winnersAnnouncedAt =
+    timeline.winnersAnnouncedAt ||
+    timeline.winnerAnnouncementDate ||
+    judgingEnd;
 
-  // Winner Announcement phase (from judgingDate to winnerAnnouncementDate)
-  phases.push({
-    name: 'Winner Announcement',
-    startDate: timeline.judgingDate,
-    endDate: timeline.winnerAnnouncementDate,
-    status: isPhaseCompleted(timeline.winnerAnnouncementDate, currentDate)
-      ? 'completed'
-      : isPhaseActive(
-            timeline.judgingDate,
-            timeline.winnerAnnouncementDate,
-            currentDate
-          )
-        ? 'active'
-        : 'upcoming',
-    description: 'Final results published and prizes distributed to winners.',
-  });
+  // Judging phase (from judgingStart to judgingEnd)
+  // Only create if explicitly set and has non-zero duration
+  if (judgingStart && judgingEnd && judgingStart !== judgingEnd) {
+    phases.push({
+      name: 'Judging',
+      startDate: judgingStart,
+      endDate: judgingEnd,
+      status: isPhaseCompleted(judgingEnd, currentDate)
+        ? 'completed'
+        : isPhaseActive(judgingStart, judgingEnd, currentDate)
+          ? 'active'
+          : 'upcoming',
+      description:
+        'Judges are currently reviewing and scoring all submitted projects.',
+    });
+  }
+
+  // Winner Announcement phase (from judgingEnd to winnersAnnouncedAt)
+  // Only create if explicitly set and has non-zero duration
+  if (judgingEnd && winnersAnnouncedAt && judgingEnd !== winnersAnnouncedAt) {
+    phases.push({
+      name: 'Winner Announcement',
+      startDate: judgingEnd,
+      endDate: winnersAnnouncedAt,
+      status: isPhaseCompleted(winnersAnnouncedAt, currentDate)
+        ? 'completed'
+        : isPhaseActive(judgingEnd, winnersAnnouncedAt, currentDate)
+          ? 'active'
+          : 'upcoming',
+      description: 'Final results published and prizes distributed to winners.',
+    });
+  }
 
   // Find current active phase
   const currentPhase = phases.find(phase => phase.status === 'active') || null;
