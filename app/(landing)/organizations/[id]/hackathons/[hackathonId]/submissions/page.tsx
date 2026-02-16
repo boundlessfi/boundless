@@ -1,13 +1,15 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useHackathonSubmissions } from '@/hooks/hackathon/use-hackathon-submissions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
 import { SubmissionsManagement } from '@/components/organization/hackathons/submissions/SubmissionsManagement';
+import { authClient } from '@/lib/auth-client';
+import { getHackathon, type Hackathon } from '@/lib/api/hackathons';
 
 export default function SubmissionsPage() {
   const params = useParams();
@@ -26,11 +28,39 @@ export default function SubmissionsPage() {
     refresh,
   } = useHackathonSubmissions(hackathonId);
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [hackathon, setHackathon] = useState<Hackathon | null>(null);
+
   useEffect(() => {
     if (hackathonId) {
       fetchSubmissions();
+      const fetchHackathonDetails = async () => {
+        try {
+          const res = await getHackathon(hackathonId);
+          if (res.success && res.data) {
+            setHackathon(res.data);
+          }
+        } catch (err) {
+          console.error('Failed to fetch hackathon details:', err);
+        }
+      };
+      fetchHackathonDetails();
     }
   }, [hackathonId, fetchSubmissions]);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const { data: session } = await authClient.getSession();
+        if (session?.user?.id) {
+          setCurrentUserId(session.user.id);
+        }
+      } catch (err) {
+        console.error('Failed to fetch session:', err);
+      }
+    };
+    fetchSession();
+  }, []);
 
   if (error) {
     return (
@@ -84,6 +114,8 @@ export default function SubmissionsPage() {
               onRefresh={refresh}
               organizationId={organizationId}
               hackathonId={hackathonId}
+              currentUserId={currentUserId || undefined}
+              hackathon={hackathon || undefined}
             />
           )}
         </div>

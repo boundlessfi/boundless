@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { SubmissionsList } from './SubmissionsList';
 import { DisqualifyDialog } from './DisqualifyDialog';
-import type { ParticipantSubmission } from '@/lib/api/hackathons';
+import type { ParticipantSubmission, Hackathon } from '@/lib/api/hackathons';
 import { useReviewSubmission } from '@/hooks/hackathon/use-review-submission';
 import { useDisqualifySubmission } from '@/hooks/hackathon/use-disqualify-submission';
 import { useBulkAction } from '@/hooks/hackathon/use-bulk-action';
@@ -61,6 +61,8 @@ interface SubmissionsManagementProps {
   onRefresh: () => void;
   organizationId?: string;
   hackathonId?: string;
+  currentUserId?: string;
+  hackathon?: Hackathon;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -77,6 +79,8 @@ export function SubmissionsManagement({
   onRefresh,
   organizationId,
   hackathonId,
+  currentUserId,
+  hackathon,
 }: SubmissionsManagementProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
@@ -94,15 +98,19 @@ export function SubmissionsManagement({
     submissionId: string,
     status: 'SHORTLISTED' | 'SUBMITTED'
   ) => {
-    if (!organizationId || !hackathonId) return;
-    await review(organizationId, hackathonId, submissionId, { status });
+    if (!organizationId || !hackathonId || !currentUserId) return;
+    await review(organizationId, hackathonId, submissionId, {
+      status,
+      judgeId: currentUserId,
+    });
     onRefresh();
   };
 
   const handleDisqualify = async (submissionId: string, reason: string) => {
-    if (!organizationId || !hackathonId) return;
+    if (!organizationId || !hackathonId || !currentUserId) return;
     await disqualify(organizationId, hackathonId, submissionId, {
       disqualificationReason: reason,
+      judgeId: currentUserId,
     });
     onRefresh();
   };
@@ -127,6 +135,7 @@ export function SubmissionsManagement({
     await performBulkAction(organizationId, hackathonId, {
       submissionIds: selectedIds,
       action,
+      judgeId: currentUserId || '',
       reason,
     });
 
@@ -312,6 +321,7 @@ export function SubmissionsManagement({
         }
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
+        hackathon={hackathon}
       />
 
       {/* Bulk Disqualify Dialog */}

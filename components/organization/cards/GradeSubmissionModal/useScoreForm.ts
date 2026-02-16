@@ -170,12 +170,18 @@ export const useScoreForm = ({
           setShowSuccess(false);
           onClose();
         }, 2000);
+      } else {
+        // Handle API error response
+        const errorMessage =
+          response.message || 'Failed to submit grade. Please try again.';
+        toast.error(errorMessage);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Handle network or unexpected errors
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'Failed to submit grade. Please try again.';
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to submit grade. Please try again.';
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);

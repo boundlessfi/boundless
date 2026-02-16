@@ -4,6 +4,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Scale, Info } from 'lucide-react';
 import type { JudgingCriterion } from '@/lib/api/hackathons';
+import EmptyState from '@/components/EmptyState';
 
 interface JudgingCriteriaListProps {
   criteria: JudgingCriterion[];
@@ -17,15 +18,10 @@ export function JudgingCriteriaList({
   if (!criteria || criteria.length === 0) {
     return (
       emptyState || (
-        <div className='bg-background/8 flex flex-col items-center justify-center rounded-lg border border-gray-900 p-12 text-center'>
-          <Scale className='mb-4 h-12 w-12 text-gray-600' />
-          <h3 className='text-lg font-medium text-white'>
-            No Judging Criteria Set
-          </h3>
-          <p className='mt-2 max-w-sm text-sm text-gray-400'>
-            There are no judging criteria defined for this hackathon yet.
-          </p>
-        </div>
+        <EmptyState
+          title='No Judging Criteria Set'
+          description='There are no judging criteria defined for this hackathon yet.'
+        />
       )
     );
   }

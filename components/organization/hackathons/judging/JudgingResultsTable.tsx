@@ -11,15 +11,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
 import { Trophy, Medal, Award, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import IndividualScoresBreakdown from '@/components/organization/cards/JudgingParticipant/IndividualScoresBreakdown';
+import AggregatedCriteriaBreakdown from './AggregatedCriteriaBreakdown';
+import { JudgingCriterion } from '@/lib/api/hackathons/judging';
 
 interface JudgingResultsTableProps {
   results: JudgingResult[];
   organizationId: string;
   hackathonId: string;
   totalJudges?: number;
+  criteria?: JudgingCriterion[];
 }
 
 // Helper function to safely extract score from JudgingResult
@@ -32,6 +40,7 @@ const JudgingResultsTable = ({
   organizationId,
   hackathonId,
   totalJudges,
+  criteria = [],
 }: JudgingResultsTableProps) => {
   const [expandedRows, setExpandedRows] = React.useState<
     Record<string, boolean>
@@ -81,7 +90,9 @@ const JudgingResultsTable = ({
         <TableBody>
           {sortedResults.map((result, index) => {
             const isFullyGraded =
-              totalJudges && result.judgeCount >= totalJudges;
+              result.isComplete ||
+              (result.expectedJudgeCount > 0 &&
+                result.judgeCount >= result.expectedJudgeCount);
 
             return (
               <React.Fragment key={result.submissionId}>
@@ -92,17 +103,64 @@ const JudgingResultsTable = ({
                   <TableCell className='font-medium text-white'>
                     <div className='flex items-center gap-2'>
                       {getRankIcon(index)}
-                      <span>
-                        #
-                        {result.rank?.position ||
-                          (typeof result.rank === 'number'
-                            ? result.rank
-                            : index + 1)}
-                      </span>
+                      <span>#{result.rank || index + 1}</span>
                     </div>
                   </TableCell>
                   <TableCell className='font-medium text-white'>
-                    {result.projectName}
+                    <div className='flex flex-col gap-1'>
+                      <span>{result.projectName}</span>
+                      <div className='flex flex-wrap gap-1'>
+                        {result.isPending && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge
+                                variant='outline'
+                                className='h-4 cursor-help border-yellow-500/50 bg-yellow-500/10 py-0 text-[10px] text-yellow-500'
+                              >
+                                Pending
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Some judges have scored this submission, but
+                              others are still missing
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        {!result.isComplete && !result.isPending && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge
+                                variant='outline'
+                                className='h-4 cursor-help border-blue-500/50 bg-blue-500/10 py-0 text-[10px] text-blue-500'
+                              >
+                                Incomplete
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Not all assigned judges have submitted their
+                              scores yet
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        {result.hasDisagreement && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge
+                                variant='outline'
+                                className='h-4 cursor-help border-red-500/50 bg-red-500/10 py-0 text-[10px] text-red-500'
+                              >
+                                Disagreement
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              ⚠️ High variance detected: The gap between highest
+                              and lowest judge scores is greater than 3.0.
+                              Review recommended.
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className='text-right'>
                     <div className='flex items-center justify-end gap-2'>
@@ -129,8 +187,8 @@ const JudgingResultsTable = ({
                             'border-green-500/20 bg-green-500/10 text-green-500'
                         )}
                       >
-                        {result.judgeCount}
-                        {totalJudges ? ` / ${totalJudges}` : ''}
+                        {result.judgeCount} /{' '}
+                        {result.expectedJudgeCount || totalJudges || '?'}
                       </Badge>
                     </div>
                   </TableCell>
@@ -138,11 +196,22 @@ const JudgingResultsTable = ({
                 {expandedRows[result.submissionId] && (
                   <TableRow className='border-gray-900 bg-black/20'>
                     <TableCell colSpan={4} className='p-0'>
-                      <div className='p-4 pt-0'>
+                      <div className='p-6 pt-2'>
+                        {/* Aggregated Criteria Breakdown */}
+                        {result.criteriaBreakdown &&
+                          result.criteriaBreakdown.length > 0 && (
+                            <AggregatedCriteriaBreakdown
+                              criteriaBreakdown={result.criteriaBreakdown}
+                              criteria={criteria}
+                            />
+                          )}
+
+                        {/* Individual Judge Scores */}
                         <IndividualScoresBreakdown
                           organizationId={organizationId}
                           hackathonId={hackathonId}
                           participantId={result.submissionId}
+                          initialScores={result.individualScores}
                         />
                       </div>
                     </TableCell>

@@ -363,7 +363,7 @@ function AnnouncementEditor({
             </DialogHeader>
             <div className='space-y-4'>
               <div>
-                <Label htmlFor='image-url' className='text-white'>
+                <Label htmlFor='image-url' className='mb-2 text-white'>
                   Image URL
                 </Label>
                 <Input
@@ -384,7 +384,7 @@ function AnnouncementEditor({
                 </Button>
                 <Button
                   onClick={handleInsertImage}
-                  className='bg-primary hover:bg-primary/90 text-white'
+                  className='bg-primary hover:bg-primary/90 text-background'
                 >
                   Insert
                 </Button>

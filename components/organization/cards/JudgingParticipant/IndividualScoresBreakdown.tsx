@@ -8,25 +8,38 @@ import {
 import { Loader2, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
 
 interface IndividualScoresBreakdownProps {
   organizationId: string;
   hackathonId: string;
   participantId: string;
+  initialScores?: Array<{
+    judgeId: string;
+    judgeName: string;
+    score: number;
+  }>;
 }
 
 const IndividualScoresBreakdown = ({
   organizationId,
   hackathonId,
   participantId,
+  initialScores,
 }: IndividualScoresBreakdownProps) => {
-  const [scores, setScores] = useState<IndividualJudgeScore[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [scores, setScores] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(!initialScores);
   const [expandedJudges, setExpandedJudges] = useState<Record<string, boolean>>(
     {}
   );
 
   useEffect(() => {
+    // Always fetch detailed scores to get criteria breakdown
+    // Even if initialScores are provided, they don't include criteriaScores
     const fetchScores = async () => {
       setIsLoading(true);
       try {
@@ -37,16 +50,23 @@ const IndividualScoresBreakdown = ({
         );
         if (res.success && Array.isArray(res.data)) {
           setScores(res.data);
+        } else if (initialScores) {
+          // Fallback to initialScores if API fails
+          setScores(initialScores);
         }
       } catch (err) {
         console.error('Failed to fetch individual scores:', err);
+        // Fallback to initialScores if fetch fails
+        if (initialScores) {
+          setScores(initialScores);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchScores();
-  }, [organizationId, hackathonId, participantId]);
+  }, [organizationId, hackathonId, participantId, initialScores]);
 
   const toggleExpand = (judgeId: string) => {
     setExpandedJudges(prev => ({
@@ -91,12 +111,21 @@ const IndividualScoresBreakdown = ({
         </h6>
         <div className='flex gap-2'>
           {scores.some(s => Math.abs(s.totalScore - avgTotalScore) > 2) && (
-            <Badge
-              variant='outline'
-              className='animate-pulse border-red-500/20 bg-red-500/10 text-[10px] text-red-500'
-            >
-              Scoring Discrepancy Detected
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant='outline'
+                  className='animate-pulse cursor-help border-red-500/20 bg-red-500/10 text-[10px] text-red-500'
+                >
+                  Scoring Discrepancy Detected
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                One or more judges&apos; scores deviate significantly (&gt;2
+                points) from the average. This may indicate differing
+                interpretations.
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>
@@ -127,9 +156,18 @@ const IndividualScoresBreakdown = ({
                     {score.judgeName}
                   </span>
                   {isDiscrepant && (
-                    <Badge className='ml-2 h-4 border-red-500/30 bg-red-500/20 px-1.5 text-[9px] text-red-400'>
-                      Outlier
-                    </Badge>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge className='ml-2 h-4 cursor-help border-red-500/30 bg-red-500/20 px-1.5 text-[9px] text-red-400'>
+                          Outlier
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        This judge's score deviates significantly from the
+                        average, indicating a different perspective on this
+                        submission.
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
                 <div className='flex items-center gap-3'>
@@ -137,7 +175,10 @@ const IndividualScoresBreakdown = ({
                     variant='outline'
                     className='bg-primary/5 text-primary border-primary/20 text-[10px]'
                   >
-                    Total: {score.totalScore.toFixed(1)}
+                    Total:{' '}
+                    {typeof score.totalScore === 'number'
+                      ? score.totalScore.toFixed(1)
+                      : score.score?.toFixed(1) || '0.0'}
                   </Badge>
                   {expandedJudges[score.judgeId] ? (
                     <ChevronUp className='h-4 w-4 text-gray-500' />
@@ -165,34 +206,37 @@ const IndividualScoresBreakdown = ({
                       <label className='mb-2 block text-[10px] font-bold text-gray-400 uppercase'>
                         Criteria Breakdown
                       </label>
-                      <div className='grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2'>
-                        {score.criteriaScores.map((c, idx) => (
-                          <div key={idx} className='space-y-1.5'>
-                            <div className='flex items-center justify-between text-xs'>
-                              <span className='max-w-[150px] truncate text-gray-400'>
-                                {c.criterionTitle || c.criterionId}{' '}
-                              </span>
-                              <span className='font-mono font-bold text-white'>
-                                {c.score}
-                              </span>
-                            </div>
-                            <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-800'>
-                              <div
-                                className={cn(
-                                  'h-full transition-all',
-                                  getScoreColor(c.score)
+                      {score.criteriaScores &&
+                        score.criteriaScores.length > 0 && (
+                          <div className='grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2'>
+                            {score.criteriaScores.map((c: any, idx: number) => (
+                              <div key={idx} className='space-y-1.5'>
+                                <div className='flex items-center justify-between text-xs'>
+                                  <span className='max-w-[150px] truncate text-gray-400'>
+                                    {c.criterionTitle || c.criterionId}{' '}
+                                  </span>
+                                  <span className='font-mono font-bold text-white'>
+                                    {c.score}
+                                  </span>
+                                </div>
+                                <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-800'>
+                                  <div
+                                    className={cn(
+                                      'h-full transition-all',
+                                      getScoreColor(c.score)
+                                    )}
+                                    style={{ width: `${c.score * 10}%` }}
+                                  />
+                                </div>
+                                {c.comment && (
+                                  <p className='mt-0.5 text-[10px] leading-tight text-gray-500 italic'>
+                                    {c.comment}
+                                  </p>
                                 )}
-                                style={{ width: `${c.score * 10}%` }}
-                              />
-                            </div>
-                            {c.comment && (
-                              <p className='mt-0.5 text-[10px] leading-tight text-gray-500 italic'>
-                                {c.comment}
-                              </p>
-                            )}
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        )}
                     </div>
                   </div>
                 </div>

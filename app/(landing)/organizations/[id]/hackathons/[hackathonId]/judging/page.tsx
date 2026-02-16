@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import MetricsCard from '@/components/organization/cards/MetricsCard';
 import JudgingParticipant from '@/components/organization/cards/JudgingParticipant';
+import EmptyState from '@/components/EmptyState';
 import { useParams } from 'next/navigation';
 import {
   getJudgingSubmissions,
@@ -16,6 +17,7 @@ import {
   type JudgingCriterion,
   type JudgingSubmission,
   type JudgingResult,
+  type AggregatedJudgingResults,
 } from '@/lib/api/hackathons/judging';
 import { getSubmissionDetails } from '@/lib/api/hackathons/participants';
 import { getOrganizationMembers } from '@/lib/api/organization';
@@ -49,8 +51,12 @@ export default function JudgingPage() {
     'owner' | 'admin' | 'member' | null
   >(null);
   const [judgingResults, setJudgingResults] = useState<JudgingResult[]>([]);
+  const [judgingSummary, setJudgingSummary] =
+    useState<AggregatedJudgingResults | null>(null);
   const [isFetchingResults, setIsFetchingResults] = useState(false);
   const [winners, setWinners] = useState<JudgingResult[]>([]);
+  const [winnersSummary, setWinnersSummary] =
+    useState<AggregatedJudgingResults | null>(null);
   const [isFetchingWinners, setIsFetchingWinners] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isCurrentUserJudge, setIsCurrentUserJudge] = useState(false);
@@ -151,16 +157,22 @@ export default function JudgingPage() {
     setIsFetchingResults(true);
     try {
       const res = await getJudgingResults(organizationId, hackathonId);
-      console.log('Judging Results Response:', res);
-      if (res.success) {
-        setJudgingResults(res.data || []);
+      console.log('Judging Results Structure Verification:', res);
+
+      if (res.success && res.data) {
+        setJudgingResults(res.data.results || []);
+        setJudgingSummary(res.data);
       } else {
         setJudgingResults([]);
-        toast.error(res.message || 'Failed to load judging results');
+        setJudgingSummary(null);
+        if (!res.success) {
+          toast.error((res as any).message || 'Failed to load judging results');
+        }
       }
     } catch (error: any) {
       console.error('Error fetching results:', error);
       setJudgingResults([]);
+      setJudgingSummary(null);
       toast.error(
         error.response?.data?.message ||
           error.message ||
@@ -340,8 +352,9 @@ export default function JudgingPage() {
     setIsFetchingWinners(true);
     try {
       const res = await getJudgingWinners(organizationId, hackathonId);
-      if (res.success) {
-        setWinners(res.data || []);
+      if (res.success && res.data) {
+        setWinners(res.data.results || []);
+        setWinnersSummary(res.data);
       }
     } catch (error) {
       console.error('Error fetching winners:', error);
@@ -368,15 +381,27 @@ export default function JudgingPage() {
     }
   };
 
-  // Calculate statistics safely
-  const gradedCount = judgingResults.length;
-  const averageHackathonScore =
-    judgingResults.length > 0
+  // Use pre-calculated statistics from the API if available, otherwise fallback to local calculation
+  const gradedCount = judgingSummary
+    ? judgingSummary.submissionsScoredCount
+    : judgingResults.length;
+
+  const totalPossibleSubmissions = judgingSummary
+    ? judgingSummary.totalSubmissions
+    : submissions.length;
+
+  const averageHackathonScore = judgingSummary
+    ? judgingSummary.averageScoreAcrossAll
+    : judgingResults.length > 0
       ? judgingResults.reduce(
           (acc, curr) => acc + (curr.averageScore || 0),
           0
         ) / judgingResults.length
       : 0;
+
+  const assignedJudgesCount = judgingSummary
+    ? judgingSummary.judgesAssigned
+    : currentJudges.length;
 
   return (
     <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
@@ -392,8 +417,8 @@ export default function JudgingPage() {
           <div className='flex gap-4'>
             <MetricsCard
               title='Graded Projects'
-              value={`${gradedCount} / ${submissions.length}`}
-              subtitle={`${submissions.length > 0 ? Math.round((gradedCount / submissions.length) * 100) : 0}% Completion`}
+              value={`${gradedCount} / ${totalPossibleSubmissions}`}
+              subtitle={`${totalPossibleSubmissions > 0 ? Math.round((gradedCount / totalPossibleSubmissions) * 100) : 0}% Completion`}
             />
             <MetricsCard
               title='Avg. Hackathon Score'
@@ -402,7 +427,7 @@ export default function JudgingPage() {
             />
             <MetricsCard
               title='Assigned Judges'
-              value={currentJudges.length}
+              value={assignedJudgesCount}
               subtitle='on this hackathon'
             />
           </div>
@@ -451,7 +476,7 @@ export default function JudgingPage() {
                 <div className='flex items-center justify-center py-12'>
                   <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
                 </div>
-              ) : (
+              ) : submissions.length > 0 ? (
                 <div className='flex flex-col gap-4'>
                   {submissions.map(submission => (
                     <JudgingParticipant
@@ -470,6 +495,11 @@ export default function JudgingPage() {
                     />
                   ))}
                 </div>
+              ) : (
+                <EmptyState
+                  title='No Submissions Yet'
+                  description='There are currently no submissions to judge.'
+                />
               )}
             </TabsContent>
 
@@ -489,11 +519,14 @@ export default function JudgingPage() {
                   </h3>
                   <div className='space-y-4'>
                     {currentJudges.length === 0 ? (
-                      <p className='py-4 text-sm text-gray-400 italic'>
-                        No judges assigned yet.
-                      </p>
+                      <EmptyState
+                        title='No Judges Assigned'
+                        description='No judges assigned yet.'
+                        type='compact'
+                        className='py-8'
+                      />
                     ) : (
-                      currentJudges.map((judge: any) => (
+                      currentJudges.map((judge: any, index: number) => (
                         <div
                           key={judge.id}
                           className='flex items-center justify-between rounded-md border border-white/10 bg-white/5 p-3'
@@ -517,7 +550,7 @@ export default function JudgingPage() {
                                 {judge.name}
                               </p>
                               <p className='text-xs text-gray-500'>
-                                {judge.userId}
+                                Judge {index + 1}
                               </p>
                             </div>
                           </div>
@@ -605,9 +638,12 @@ export default function JudgingPage() {
                         );
                       })}
                       {orgMembers.length === 0 && !isRefreshingJudges && (
-                        <p className='py-8 text-center text-sm text-gray-400'>
-                          No organization members found.
-                        </p>
+                        <EmptyState
+                          title='No Members Found'
+                          description='No organization members found.'
+                          type='compact'
+                          className='py-8'
+                        />
                       )}
                     </div>
                   </div>
@@ -648,6 +684,7 @@ export default function JudgingPage() {
                       organizationId={organizationId}
                       hackathonId={hackathonId}
                       totalJudges={currentJudges.length}
+                      criteria={criteria}
                     />
                   </div>
                 )}
@@ -660,12 +697,18 @@ export default function JudgingPage() {
                     <div className='flex items-center justify-center py-12'>
                       <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
                     </div>
-                  ) : (
+                  ) : judgingResults.length > 0 ? (
                     <JudgingResultsTable
                       results={judgingResults}
                       organizationId={organizationId}
                       hackathonId={hackathonId}
                       totalJudges={currentJudges.length}
+                      criteria={criteria}
+                    />
+                  ) : (
+                    <EmptyState
+                      title='No Results Yet'
+                      description='No judging results available yet. Results appear once judges submit scores.'
                     />
                   )}
                 </div>

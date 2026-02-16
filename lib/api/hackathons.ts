@@ -237,6 +237,7 @@ export interface HackathonSubmission {
 
 export interface ReviewSubmissionRequest {
   status: 'SHORTLISTED' | 'SUBMITTED';
+  judgeId: string;
   notes?: string;
   rank?: number;
 }
@@ -248,6 +249,7 @@ export interface ReviewSubmissionResponse {
 
 export interface DisqualifySubmissionRequest {
   disqualificationReason: string;
+  judgeId: string;
 }
 
 export interface DisqualifySubmissionResponse {
@@ -258,6 +260,7 @@ export interface DisqualifySubmissionResponse {
 export interface BulkActionRequest {
   submissionIds: string[];
   action: 'SHORTLISTED' | 'SUBMITTED' | 'DISQUALIFIED';
+  judgeId: string;
   reason?: string;
 }
 

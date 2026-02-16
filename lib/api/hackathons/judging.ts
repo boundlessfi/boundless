@@ -50,9 +50,53 @@ export interface JudgeScore {
 export interface JudgingResult {
   submissionId: string;
   projectName: string;
+  teamId?: string | null;
+  participantId: string;
+  status: string;
+  submittedAt: string;
   averageScore: number;
+  totalScore: number;
   judgeCount: number;
-  rank?: any;
+  expectedJudgeCount: number;
+  judgingProgress: string;
+  individualScores: Array<{
+    judgeId: string;
+    judgeName: string;
+    score: number;
+  }>;
+  scoreVariance: number;
+  scoreRange: {
+    min: number;
+    max: number;
+  };
+  criteriaBreakdown: Array<{
+    criterionId: string;
+    averageScore: number;
+    min: number;
+    max: number;
+    variance: number;
+  }>;
+  rank: number;
+  isComplete: boolean;
+  isPending: boolean;
+  hasDisagreement: boolean;
+}
+
+export interface AggregatedJudgingResults {
+  hackathonId: string;
+  totalSubmissions: number;
+  submissionsScoredCount: number;
+  submissionsPendingCount: number;
+  averageScoreAcrossAll: number;
+  judgesAssigned: number;
+  results: JudgingResult[];
+  generatedAt: string;
+  metadata: {
+    sortedBy: string;
+    includesVariance: boolean;
+    includesIndividualScores: boolean;
+    includesProgressTracking: boolean;
+  };
 }
 
 export interface JudgingSubmission {
@@ -229,9 +273,7 @@ export interface SubmitGradeResponse extends ApiResponse<GradeSubmissionResponse
   message: string;
 }
 
-export interface GetJudgingResultsResponse extends ApiResponse<
-  JudgingResult[]
-> {}
+export interface GetJudgingResultsResponse extends ApiResponse<AggregatedJudgingResults> {}
 
 // Participant interface (needed for shortlist/disqualify response)
 export interface Participant {
@@ -389,15 +431,17 @@ export const getJudgingResults = async (
   organizationId: string,
   hackathonId: string
 ): Promise<GetJudgingResultsResponse> => {
-  const res = await api.get<JudgingResult[] | ApiResponse<JudgingResult[]>>(
+  const res = await api.get<
+    AggregatedJudgingResults | ApiResponse<AggregatedJudgingResults>
+  >(
     `/organizations/${organizationId}/hackathons/${hackathonId}/judging/results`
   );
 
-  // Handle raw array response format
-  if (Array.isArray(res.data)) {
+  // Handle case where backend returns AggregatedJudgingResults directly vs ApiResponse wrapped
+  if (res.data && 'results' in res.data) {
     return {
       success: true,
-      data: res.data,
+      data: res.data as AggregatedJudgingResults,
       message: 'Results retrieved successfully',
     } as GetJudgingResultsResponse;
   }
@@ -464,15 +508,16 @@ export const getJudgingWinners = async (
   organizationId: string,
   hackathonId: string
 ): Promise<GetJudgingResultsResponse> => {
-  const res = await api.get<JudgingResult[] | ApiResponse<JudgingResult[]>>(
+  const res = await api.get<
+    AggregatedJudgingResults | ApiResponse<AggregatedJudgingResults>
+  >(
     `/organizations/${organizationId}/hackathons/${hackathonId}/judging/winners`
   );
 
-  // Handle raw array response format
-  if (Array.isArray(res.data)) {
+  if (res.data && 'results' in res.data) {
     return {
       success: true,
-      data: res.data,
+      data: res.data as AggregatedJudgingResults,
       message: 'Winners retrieved successfully',
     } as GetJudgingResultsResponse;
   }
