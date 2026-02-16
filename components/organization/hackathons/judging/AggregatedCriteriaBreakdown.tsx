@@ -81,7 +81,7 @@ const AggregatedCriteriaBreakdown = ({
                     <TooltipTrigger asChild>
                       <span className='flex cursor-help items-center gap-1 font-mono text-xs text-gray-500'>
                         <Info className='h-3 w-3' />
-                        Var: {item.variance.toFixed(2)}
+                        Var: {(item.variance ?? 0).toFixed(2)}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -93,7 +93,7 @@ const AggregatedCriteriaBreakdown = ({
                     variant='outline'
                     className='bg-primary/10 text-primary border-primary/20 font-mono text-xs'
                   >
-                    {item.averageScore.toFixed(2)}
+                    {(item.averageScore ?? 0).toFixed(2)}
                   </Badge>
                 </div>
               </div>
@@ -103,23 +103,23 @@ const AggregatedCriteriaBreakdown = ({
                 <div
                   className='absolute h-full bg-gray-700/50'
                   style={{
-                    left: `${item.min * 10}%`,
-                    width: `${(item.max - item.min) * 10}%`,
+                    left: `${(item.min ?? 0) * 10}%`,
+                    width: `${((item.max ?? 0) - (item.min ?? 0)) * 10}%`,
                   }}
                 />
                 {/* Average Marker */}
                 <div
                   className={cn(
                     'absolute h-full transition-all',
-                    getScoreColor(item.averageScore)
+                    getScoreColor(item.averageScore ?? 0)
                   )}
-                  style={{ width: `${item.averageScore * 10}%` }}
+                  style={{ width: `${(item.averageScore ?? 0) * 10}%` }}
                 />
               </div>
 
               <div className='flex justify-between font-mono text-[9px] text-gray-500'>
-                <span>Min: {item.min.toFixed(1)}</span>
-                <span>Max: {item.max.toFixed(1)}</span>
+                <span>Min: {(item.min ?? 0).toFixed(1)}</span>
+                <span>Max: {(item.max ?? 0).toFixed(1)}</span>
               </div>
             </div>
           );

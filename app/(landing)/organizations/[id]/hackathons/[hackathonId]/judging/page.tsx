@@ -157,7 +157,6 @@ export default function JudgingPage() {
     setIsFetchingResults(true);
     try {
       const res = await getJudgingResults(organizationId, hackathonId);
-      console.log('Judging Results Structure Verification:', res);
 
       if (res.success && res.data) {
         setJudgingResults(res.data.results || []);

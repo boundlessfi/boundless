@@ -103,7 +103,7 @@ const JudgingResultsTable = ({
                   <TableCell className='font-medium text-white'>
                     <div className='flex items-center gap-2'>
                       {getRankIcon(index)}
-                      <span>#{result.rank || index + 1}</span>
+                      <span>#{result.rank ?? index + 1}</span>
                     </div>
                   </TableCell>
                   <TableCell className='font-medium text-white'>
@@ -188,7 +188,7 @@ const JudgingResultsTable = ({
                         )}
                       >
                         {result.judgeCount} /{' '}
-                        {result.expectedJudgeCount || totalJudges || '?'}
+                        {result.expectedJudgeCount ?? totalJudges ?? '?'}
                       </Badge>
                     </div>
                   </TableCell>

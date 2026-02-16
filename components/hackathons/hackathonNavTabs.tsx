@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface HackathonNavTab {

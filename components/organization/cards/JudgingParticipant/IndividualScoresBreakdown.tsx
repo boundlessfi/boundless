@@ -25,13 +25,27 @@ interface IndividualScoresBreakdownProps {
   }>;
 }
 
+interface JudgeScore {
+  judgeId: string;
+  judgeName: string;
+  totalScore: number;
+  score?: number;
+  comment?: string;
+  criteriaScores?: Array<{
+    criterionId: string;
+    criterionTitle?: string;
+    score: number;
+    comment?: string;
+  }>;
+}
+
 const IndividualScoresBreakdown = ({
   organizationId,
   hackathonId,
   participantId,
   initialScores,
 }: IndividualScoresBreakdownProps) => {
-  const [scores, setScores] = useState<any[]>([]);
+  const [scores, setScores] = useState<JudgeScore[]>([]);
   const [isLoading, setIsLoading] = useState(!initialScores);
   const [expandedJudges, setExpandedJudges] = useState<Record<string, boolean>>(
     {}
@@ -52,13 +66,27 @@ const IndividualScoresBreakdown = ({
           setScores(res.data);
         } else if (initialScores) {
           // Fallback to initialScores if API fails
-          setScores(initialScores);
+          // Normalize initialScores to match API shape (score -> totalScore)
+          const normalizedScores: JudgeScore[] = initialScores.map(s => ({
+            judgeId: s.judgeId,
+            judgeName: s.judgeName,
+            totalScore: s.score,
+            score: s.score,
+          }));
+          setScores(normalizedScores);
         }
       } catch (err) {
         console.error('Failed to fetch individual scores:', err);
         // Fallback to initialScores if fetch fails
         if (initialScores) {
-          setScores(initialScores);
+          // Normalize initialScores to match API shape (score -> totalScore)
+          const normalizedScores: JudgeScore[] = initialScores.map(s => ({
+            judgeId: s.judgeId,
+            judgeName: s.judgeName,
+            totalScore: s.score,
+            score: s.score,
+          }));
+          setScores(normalizedScores);
         }
       } finally {
         setIsLoading(false);
@@ -77,7 +105,7 @@ const IndividualScoresBreakdown = ({
 
   const avgTotalScore =
     scores.length > 0
-      ? scores.reduce((sum, s) => sum + s.totalScore, 0) / scores.length
+      ? scores.reduce((sum, s) => sum + (s.totalScore ?? 0), 0) / scores.length
       : 0;
 
   const getScoreColor = (score: number) => {
