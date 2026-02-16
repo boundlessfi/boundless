@@ -54,6 +54,7 @@ const IndividualScoresBreakdown = ({
   useEffect(() => {
     // Always fetch detailed scores to get criteria breakdown
     // Even if initialScores are provided, they don't include criteriaScores
+    // initialScores is only used as a fallback if fetch fails, so we don't need it in deps
     const fetchScores = async () => {
       setIsLoading(true);
       try {
@@ -63,7 +64,23 @@ const IndividualScoresBreakdown = ({
           participantId
         );
         if (res.success && Array.isArray(res.data)) {
-          setScores(res.data);
+          // Map API response to internal state shape
+          const mappedScores: JudgeScore[] = res.data.map((item: any) => ({
+            judgeId: item.judgeId,
+            judgeName: item.judgeName,
+            // Ensure totalScore is available, fallback to sum of criteria scores if missing
+            totalScore:
+              item.totalScore ??
+              item.criteriaScores?.reduce(
+                (sum: number, c: any) => sum + (c.score || 0),
+                0
+              ) ??
+              0,
+            score: item.totalScore, // Keep score for backward compatibility if needed
+            comment: item.comment,
+            criteriaScores: item.criteriaScores,
+          }));
+          setScores(mappedScores);
         } else if (initialScores) {
           // Fallback to initialScores if API fails
           // Normalize initialScores to match API shape (score -> totalScore)
@@ -94,7 +111,8 @@ const IndividualScoresBreakdown = ({
     };
 
     fetchScores();
-  }, [organizationId, hackathonId, participantId, initialScores]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, hackathonId, participantId]);
 
   const toggleExpand = (judgeId: string) => {
     setExpandedJudges(prev => ({
