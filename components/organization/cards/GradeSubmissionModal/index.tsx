@@ -11,6 +11,17 @@ import { useScoreCalculation } from './useScoreCalculation';
 import { useJudgingCriteria } from './useJudgingCriteria';
 import { useSubmissionScores } from './useSubmissionScores';
 import { useScoreForm } from './useScoreForm';
+import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useState } from 'react';
 
 interface SubmissionData {
   id: string;
@@ -30,6 +41,16 @@ interface GradeSubmissionModalProps {
   participantId: string;
   judgingCriteria?: JudgingCriterion[];
   submission: SubmissionData;
+  mode?: 'judge' | 'organizer-override';
+  overrideJudgeId?: string;
+  judges?: Array<{
+    id?: string;
+    userId?: string;
+    name?: string;
+    email?: string;
+    image?: string;
+    role?: string;
+  }>;
   onSuccess?: () => void;
 }
 
@@ -41,8 +62,42 @@ export default function GradeSubmissionModal({
   participantId,
   judgingCriteria,
   submission,
+  mode = 'judge',
+  overrideJudgeId,
+  judges = [],
   onSuccess,
 }: GradeSubmissionModalProps) {
+  const isOverride = mode === 'organizer-override';
+  const [creditJudge, setCreditJudge] = useState(false);
+  const [selectedJudgeId, setSelectedJudgeId] = useState<string | undefined>(
+    overrideJudgeId
+  );
+
+  const availableJudges = judges
+    .map(j => ({
+      id: j.userId || j.id,
+      name: j.name || j.email || 'Unknown Judge',
+      email: j.email,
+      image: j.image,
+      role: j.role,
+    }))
+    .filter(j => !!j.id) as Array<{
+    id: string;
+    name: string;
+    email?: string;
+    image?: string;
+    role?: string;
+  }>;
+
+  const handleToggleCredit = (value: boolean) => {
+    setCreditJudge(value);
+    if (value && !selectedJudgeId && availableJudges.length > 0) {
+      setSelectedJudgeId(availableJudges[0].id);
+    }
+    if (!value) {
+      setSelectedJudgeId(undefined);
+    }
+  };
   const { criteria, isFetchingCriteria } = useJudgingCriteria({
     open,
     organizationId,
@@ -90,6 +145,8 @@ export default function GradeSubmissionModal({
     hackathonId,
     participantId: submission.id,
     existingScore,
+    mode,
+    overrideJudgeId: creditJudge ? selectedJudgeId : undefined,
     onSuccess,
     onClose: () => onOpenChange(false),
   });
@@ -103,7 +160,7 @@ export default function GradeSubmissionModal({
     <BoundlessSheet
       open={open}
       setOpen={onOpenChange}
-      title='Grade Submission'
+      title={isOverride ? 'Override Submission Score' : 'Grade Submission'}
       size='xl'
     >
       <div className='relative flex flex-col'>
@@ -117,6 +174,75 @@ export default function GradeSubmissionModal({
           ) : (
             <div className='mx-auto max-w-6xl'>
               <ProjectHeader submission={submission} />
+              {isOverride && (
+                <div className='mb-6 space-y-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-300'>
+                  <div>
+                    Organizer override: this action directly assigns scores and
+                    bypasses judge assignment checks.
+                  </div>
+                  <div className='flex flex-wrap items-center gap-3 text-[11px] text-amber-200'>
+                    <div className='flex items-center gap-2'>
+                      <Switch
+                        checked={creditJudge}
+                        onCheckedChange={handleToggleCredit}
+                        className='data-[state=checked]:bg-amber-500'
+                      />
+                      <span>Credit judge</span>
+                    </div>
+                    {creditJudge && (
+                      <div className='min-w-[220px]'>
+                        <Select
+                          value={selectedJudgeId}
+                          onValueChange={value => setSelectedJudgeId(value)}
+                        >
+                          <SelectTrigger className='h-8 border-amber-500/30 bg-black/20 text-amber-100'>
+                            <SelectValue placeholder='Select judge' />
+                          </SelectTrigger>
+                          <SelectContent className='border-amber-500/20 bg-black text-amber-100'>
+                            {availableJudges.length === 0 && (
+                              <SelectItem value='no-judges' disabled>
+                                No judges available
+                              </SelectItem>
+                            )}
+                            {availableJudges.map(judge => (
+                              <SelectItem key={judge.id} value={judge.id}>
+                                <div className='flex items-center gap-2'>
+                                  <Avatar className='h-5 w-5 border border-amber-500/20'>
+                                    <AvatarImage src={judge.image} />
+                                    <AvatarFallback className='bg-amber-500/10 text-[9px] text-amber-200'>
+                                      {judge.name.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className='min-w-0'>
+                                    <div className='truncate text-xs text-amber-100'>
+                                      {judge.name}
+                                    </div>
+                                    <div className='flex items-center gap-1 text-[10px] text-amber-300/80'>
+                                      {judge.email && (
+                                        <span className='truncate'>
+                                          {judge.email}
+                                        </span>
+                                      )}
+                                      {judge.role && (
+                                        <Badge
+                                          variant='outline'
+                                          className='border-amber-500/30 bg-amber-500/10 px-1.5 py-0 text-[9px] text-amber-200'
+                                        >
+                                          {judge.role}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className='mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3'>
                 <div className='lg:col-span-2'>
@@ -134,6 +260,7 @@ export default function GradeSubmissionModal({
                     getScoreColor={getScoreColor}
                     overallComment={overallComment}
                     onOverallCommentChange={setOverallComment}
+                    showComments={!isOverride}
                   />
                 </div>
 
@@ -196,6 +323,7 @@ export default function GradeSubmissionModal({
               isFetchingCriteria={isFetchingCriteria}
               hasCriteria={criteria.length > 0}
               existingScore={existingScore}
+              mode={mode}
               onCancel={() => onOpenChange(false)}
               onSubmit={handleSubmit}
             />

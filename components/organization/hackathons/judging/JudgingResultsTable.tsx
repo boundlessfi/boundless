@@ -77,7 +77,7 @@ const JudgingResultsTable = ({
       <Table>
         <TableHeader>
           <TableRow className='border-gray-900 bg-white/5 hover:bg-transparent'>
-            <TableHead className='w-[80px] text-gray-400'>Rank</TableHead>
+            <TableHead className='w-20 text-gray-400'>Rank</TableHead>
             <TableHead className='text-gray-400'>Project</TableHead>
             <TableHead className='text-right text-gray-400'>
               Avg. Score
@@ -110,6 +110,14 @@ const JudgingResultsTable = ({
                     <div className='flex flex-col gap-1'>
                       <span>{result.projectName}</span>
                       <div className='flex flex-wrap gap-1'>
+                        {result.prize && (
+                          <Badge
+                            variant='outline'
+                            className='h-4 border-amber-500/50 bg-amber-500/10 py-0 text-[10px] text-amber-400'
+                          >
+                            Prize: {result.prize}
+                          </Badge>
+                        )}
                         {result.isPending && (
                           <Tooltip>
                             <TooltipTrigger asChild>

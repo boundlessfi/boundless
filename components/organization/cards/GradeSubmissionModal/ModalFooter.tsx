@@ -10,6 +10,7 @@ interface ModalFooterProps {
   isFetchingCriteria: boolean;
   hasCriteria: boolean;
   existingScore: { scores: unknown[]; notes?: string } | null;
+  mode?: 'judge' | 'organizer-override';
   onCancel: () => void;
   onSubmit: () => void;
 }
@@ -20,9 +21,25 @@ export const ModalFooter = ({
   isFetchingCriteria,
   hasCriteria,
   existingScore,
+  mode = 'judge',
   onCancel,
   onSubmit,
 }: ModalFooterProps) => {
+  const isOverride = mode === 'organizer-override';
+  const actionLabel = isOverride
+    ? existingScore
+      ? 'Update Override'
+      : 'Apply Override'
+    : existingScore
+      ? 'Update Grade'
+      : 'Submit Grade';
+
+  const loadingLabel = isOverride
+    ? 'Applying...'
+    : existingScore
+      ? 'Updating...'
+      : 'Submitting...';
+
   return (
     <div className='flex flex-shrink-0 items-center justify-between'>
       <div className='text-sm text-gray-400'>
@@ -59,12 +76,10 @@ export const ModalFooter = ({
           {isLoading ? (
             <>
               <Loader2 className='mr-2 inline h-4 w-4 animate-spin' />
-              {existingScore ? 'Updating...' : 'Submitting...'}
+              {loadingLabel}
             </>
-          ) : existingScore ? (
-            'Update Grade'
           ) : (
-            'Submit Grade'
+            actionLabel
           )}
         </Button>
       </div>

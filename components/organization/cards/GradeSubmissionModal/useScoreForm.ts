@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
+  overrideSubmissionScore,
   submitJudgingScore,
   type CriterionScore,
   type JudgingCriterion,
@@ -20,6 +21,8 @@ interface UseScoreFormProps {
   hackathonId: string;
   participantId: string;
   existingScore: { scores: CriterionScore[]; notes?: string } | null;
+  mode?: 'judge' | 'organizer-override';
+  overrideJudgeId?: string;
   onSuccess?: () => void;
   onClose: () => void;
 }
@@ -36,6 +39,8 @@ export const useScoreForm = ({
   hackathonId,
   participantId,
   existingScore,
+  mode = 'judge',
+  overrideJudgeId,
   onSuccess,
   onClose,
 }: UseScoreFormProps) => {
@@ -136,27 +141,50 @@ export const useScoreForm = ({
     setIsLoading(true);
 
     try {
+      const includeComments = mode !== 'organizer-override';
       const scoreData = criteria.map(criterion => {
         const key = getCriterionKey(criterion);
-        return {
+        const payload: {
+          criterionId: string;
+          score: number;
+          comment?: string;
+        } = {
           criterionId: criterion.id || criterion.name || criterion.title,
           score: typeof scores[key] === 'number' ? (scores[key] as number) : 0,
-          comment: comments[key] || '',
         };
+        if (includeComments) {
+          payload.comment = comments[key] || '';
+        }
+        return payload;
       });
 
-      const response = await submitJudgingScore({
-        submissionId: participantId,
-        criteriaScores: scoreData,
-        comment: overallComment, // Pass global comment
-      });
+      const response =
+        mode === 'organizer-override'
+          ? await overrideSubmissionScore(
+              organizationId,
+              hackathonId,
+              participantId,
+              {
+                criteriaScores: scoreData,
+                judgeId: overrideJudgeId,
+              }
+            )
+          : await submitJudgingScore({
+              submissionId: participantId,
+              criteriaScores: scoreData,
+              comment: overallComment,
+            });
 
-      if (response.success) {
+      const isSuccess = response.success !== false;
+
+      if (isSuccess) {
         setShowSuccess(true);
         toast.success(
-          existingScore
-            ? 'Grade updated successfully'
-            : 'Grade submitted successfully',
+          mode === 'organizer-override'
+            ? 'Score override applied successfully'
+            : existingScore
+              ? 'Grade updated successfully'
+              : 'Grade submitted successfully',
           {
             duration: 2000,
           }
@@ -173,7 +201,8 @@ export const useScoreForm = ({
       } else {
         // Handle API error response
         const errorMessage =
-          response.message || 'Failed to submit grade. Please try again.';
+          (response as any)?.message ||
+          'Failed to submit grade. Please try again.';
         toast.error(errorMessage);
       }
     } catch (error: any) {

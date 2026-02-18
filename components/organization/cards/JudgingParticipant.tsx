@@ -33,6 +33,7 @@ interface JudgingParticipantProps {
   judges?: any[];
   isJudgesLoading?: boolean;
   currentUserId?: string;
+  canOverrideScores?: boolean;
   onSuccess?: () => void;
 }
 
@@ -44,10 +45,14 @@ const JudgingParticipant = ({
   judges = [],
   isJudgesLoading = false,
   currentUserId,
+  canOverrideScores = false,
   onSuccess,
 }: JudgingParticipantProps) => {
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
-  const [isJudgeModalOpen, setIsJudgeModalOpen] = useState(false);
+  const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
+  const [scoreMode, setScoreMode] = useState<'judge' | 'organizer-override'>(
+    'judge'
+  );
 
   const isAssignedJudge = useMemo(() => {
     if (!currentUserId || !judges.length) return false;
@@ -108,7 +113,7 @@ const JudgingParticipant = ({
   }, [participant.participationType, sub.type]);
 
   // Fetch criteria when opening judge modal
-  const handleOpenJudgeModal = async () => {
+  const handleOpenScoreModal = async (mode: 'judge' | 'organizer-override') => {
     if (!hasCriteria) return; // Guard clause
     setIsLoadingCriteria(true);
     try {
@@ -132,7 +137,8 @@ const JudgingParticipant = ({
             title: c.name || c.title || '',
           }));
         setCriteria(validCriteria);
-        setIsJudgeModalOpen(true);
+        setScoreMode(mode);
+        setIsScoreModalOpen(true);
       } else {
         setCriteria([]);
         // Optional: Show toast that no criteria are set
@@ -232,22 +238,34 @@ const JudgingParticipant = ({
           </div>
 
           {/* Grade Button - Only for assigned judges */}
-          <div className='flex w-[80px] justify-end'>
+          <div className='flex items-center gap-2'>
             {isJudgesLoading ? (
               <Loader2 className='h-4 w-4 animate-spin text-gray-500' />
             ) : (
-              hasCriteria &&
-              isAssignedJudge && (
-                <Button
-                  size='sm'
-                  onClick={handleOpenJudgeModal}
-                  disabled={isLoadingCriteria}
-                  className='bg-primary text-primary-foreground hover:bg-primary/90 h-8 shrink-0 gap-1.5 px-3 text-xs'
-                >
-                  <span>Grade</span>
-                  <ArrowUpRight className='h-3.5 w-3.5' />
-                </Button>
-              )
+              <>
+                {hasCriteria && isAssignedJudge && (
+                  <Button
+                    size='sm'
+                    onClick={() => handleOpenScoreModal('judge')}
+                    disabled={isLoadingCriteria}
+                    className='bg-primary text-primary-foreground hover:bg-primary/90 h-8 shrink-0 gap-1.5 px-3 text-xs'
+                  >
+                    <span>Grade</span>
+                    <ArrowUpRight className='h-3.5 w-3.5' />
+                  </Button>
+                )}
+                {hasCriteria && canOverrideScores && (
+                  <Button
+                    size='sm'
+                    variant='outline'
+                    onClick={() => handleOpenScoreModal('organizer-override')}
+                    disabled={isLoadingCriteria}
+                    className='h-8 shrink-0 border-amber-500/40 px-3 text-xs text-amber-300 hover:bg-amber-500/10 hover:text-amber-200'
+                  >
+                    Override
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -290,12 +308,14 @@ const JudgingParticipant = ({
 
       {/* Grade Submission Modal */}
       <GradeSubmissionModal
-        open={isJudgeModalOpen}
-        onOpenChange={setIsJudgeModalOpen}
+        open={isScoreModalOpen}
+        onOpenChange={setIsScoreModalOpen}
         organizationId={organizationId}
         hackathonId={hackathonId}
         participantId={sub.id || participant.id}
         judgingCriteria={criteria}
+        mode={scoreMode}
+        judges={judges}
         submission={{
           id: submissionData.id || participant.id,
           projectName: submissionData.projectName,

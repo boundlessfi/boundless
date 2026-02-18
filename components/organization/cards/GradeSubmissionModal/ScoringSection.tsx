@@ -23,6 +23,7 @@ interface ScoringSectionProps {
   getScoreColor: (percentage: number) => string;
   overallComment: string;
   onOverallCommentChange: (value: string) => void;
+  showComments?: boolean;
 }
 
 export const ScoringSection = ({
@@ -39,6 +40,7 @@ export const ScoringSection = ({
   getScoreColor,
   overallComment,
   onOverallCommentChange,
+  showComments = true,
 }: ScoringSectionProps) => {
   const getCriterionKey = (criterion: JudgingCriterion) => {
     return criterion.id || criterion.name || criterion.title;
@@ -149,55 +151,58 @@ export const ScoringSection = ({
                 />
               </div>
 
-              {/* Comment field */}
-              <div className='mt-4'>
-                <label
-                  htmlFor={`comment-${key}`}
-                  className='mb-1.5 block text-[10px] font-semibold tracking-wider text-gray-500 uppercase'
-                >
-                  Judge Feedback (Optional)
-                </label>
-                <textarea
-                  id={`comment-${key}`}
-                  value={comment}
-                  onChange={e => onCommentChange(key, e.target.value)}
-                  placeholder={`Share your thoughts on ${criterionTitle.toLowerCase()}...`}
-                  className={cn(
-                    'min-h-[80px] w-full rounded-lg border border-gray-800 bg-gray-950/50 p-3 text-sm text-gray-200 transition-all',
-                    'focus:border-primary focus:ring-primary/20 focus:ring-1 focus:outline-none',
-                    'resize-none placeholder:text-gray-600'
-                  )}
-                />
-              </div>
+              {showComments && (
+                <div className='mt-4'>
+                  <label
+                    htmlFor={`comment-${key}`}
+                    className='mb-1.5 block text-[10px] font-semibold tracking-wider text-gray-500 uppercase'
+                  >
+                    Judge Feedback (Optional)
+                  </label>
+                  <textarea
+                    id={`comment-${key}`}
+                    value={comment}
+                    onChange={e => onCommentChange(key, e.target.value)}
+                    placeholder={`Share your thoughts on ${criterionTitle.toLowerCase()}...`}
+                    className={cn(
+                      'min-h-[80px] w-full rounded-lg border border-gray-800 bg-gray-950/50 p-3 text-sm text-gray-200 transition-all',
+                      'focus:border-primary focus:ring-primary/20 focus:ring-1 focus:outline-none',
+                      'resize-none placeholder:text-gray-600'
+                    )}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
 
         {/* Global Comment Section */}
-        <div className='mt-8 border-t border-gray-800 pt-8'>
-          <h4 className='mb-4 flex items-center gap-2 text-lg font-semibold text-white'>
-            Overall Evaluation
-          </h4>
-          <div className='rounded-xl border border-gray-800 bg-gray-900/50 p-5'>
-            <label
-              htmlFor='overall-comment'
-              className='mb-2 block text-[10px] font-semibold tracking-wider text-gray-500 uppercase'
-            >
-              Summary Feedback for the Entire Project
-            </label>
-            <textarea
-              id='overall-comment'
-              value={overallComment}
-              onChange={e => onOverallCommentChange(e.target.value)}
-              placeholder='Summarize your evaluation or add any final notes here...'
-              className={cn(
-                'min-h-[120px] w-full rounded-lg border border-gray-800 bg-gray-950/50 p-4 font-sans text-sm text-gray-200 transition-all',
-                'focus:border-primary focus:ring-primary/20 focus:ring-1 focus:outline-none',
-                'resize-none placeholder:text-gray-600'
-              )}
-            />
+        {showComments && (
+          <div className='mt-8 border-t border-gray-800 pt-8'>
+            <h4 className='mb-4 flex items-center gap-2 text-lg font-semibold text-white'>
+              Overall Evaluation
+            </h4>
+            <div className='rounded-xl border border-gray-800 bg-gray-900/50 p-5'>
+              <label
+                htmlFor='overall-comment'
+                className='mb-2 block text-[10px] font-semibold tracking-wider text-gray-500 uppercase'
+              >
+                Summary Feedback for the Entire Project
+              </label>
+              <textarea
+                id='overall-comment'
+                value={overallComment}
+                onChange={e => onOverallCommentChange(e.target.value)}
+                placeholder='Summarize your evaluation or add any final notes here...'
+                className={cn(
+                  'min-h-[120px] w-full rounded-lg border border-gray-800 bg-gray-950/50 p-4 font-sans text-sm text-gray-200 transition-all',
+                  'focus:border-primary focus:ring-primary/20 focus:ring-1 focus:outline-none',
+                  'resize-none placeholder:text-gray-600'
+                )}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

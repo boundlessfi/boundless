@@ -11,6 +11,7 @@ import {
   Trophy,
   MoreHorizontal,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -175,20 +176,26 @@ export function SubmissionsList({
   return (
     <>
       {viewMode === 'grid' ? (
-        <div className='grid gap-6 sm:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
           {submissions.map(submission => {
             const subData = submission as any;
             return (
               <Card
                 key={subData.id}
-                className={`group hover:border-primary/50 relative cursor-pointer overflow-hidden border-gray-800/50 bg-gray-900/20 transition-all hover:bg-gray-900/40 ${selectedIds?.includes(subData.id) ? 'border-primary/50 bg-primary/5' : ''}`}
+                className={cn(
+                  'group hover:border-primary/40 relative cursor-pointer overflow-hidden border-gray-800/60 bg-gray-950/40 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] transition-all hover:-translate-y-0.5 hover:bg-gray-900/40 hover:shadow-[0_10px_28px_-20px_rgba(0,0,0,0.55)]',
+                  {
+                    'border-primary/50 ring-primary/30 ring-1':
+                      selectedIds?.includes(subData.id),
+                  }
+                )}
                 onClick={() => handleSubmissionClick(subData.id)}
               >
-                <CardContent className='p-6'>
+                <CardContent className='p-4'>
                   {/* Selection Checkbox (Absolute positioning) */}
                   {onSelectionChange && (
                     <div
-                      className='absolute top-4 right-4 z-10'
+                      className='absolute top-3 right-3 z-10'
                       onClick={e => e.stopPropagation()}
                     >
                       <Checkbox
@@ -199,9 +206,8 @@ export function SubmissionsList({
                     </div>
                   )}
 
-                  {/* Logo, Status and Rank */}
-                  <div className='mb-4 flex items-start justify-between pr-8'>
-                    <div className='relative h-16 w-16 overflow-hidden rounded-lg bg-gray-800'>
+                  <div className='flex items-start gap-4 pr-10'>
+                    <div className='relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-gray-900 ring-1 ring-white/5'>
                       {subData.logo ? (
                         <Image
                           src={subData.logo}
@@ -210,52 +216,64 @@ export function SubmissionsList({
                           className='object-cover'
                         />
                       ) : (
-                        <div className='flex h-full w-full items-center justify-center text-2xl font-bold text-gray-600'>
+                        <div className='flex h-full w-full items-center justify-center text-base font-semibold text-gray-500'>
                           {subData.projectName?.charAt(0) || 'P'}
                         </div>
                       )}
                     </div>
-                    <Badge
-                      className={`${getStatusColor(subData.status)} border`}
-                    >
-                      {subData.status}
-                    </Badge>
-                  </div>
-
-                  {/* Project Name */}
-                  <h3 className='group-hover:text-primary mb-2 line-clamp-2 text-lg font-semibold text-white'>
-                    {subData.projectName || 'Untitled Project'}
-                  </h3>
-
-                  {/* Category */}
-                  {subData.category && (
-                    <p className='mb-3 text-sm text-gray-400'>
-                      {subData.category}
-                    </p>
-                  )}
-
-                  {/* Type & Date */}
-                  <div className='mt-4 flex items-center justify-between border-t border-gray-800/50 pt-4 text-xs text-gray-500'>
-                    <div className='flex items-center gap-1'>
-                      {subData.participationType === 'TEAM' ? (
-                        <>
-                          <Users className='h-3 w-3' />
-                          <span>Team</span>
-                        </>
-                      ) : (
-                        <>
-                          <User className='h-3 w-3' />
-                          <span>Individual</span>
-                        </>
-                      )}
+                    <div className='min-w-0 flex-1'>
+                      <div className='flex items-center gap-2'>
+                        <h3 className='group-hover:text-primary line-clamp-1 text-sm font-semibold text-white'>
+                          {subData.projectName || 'Untitled Project'}
+                        </h3>
+                        {subData.rank ? (
+                          <div className='flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold text-yellow-400'>
+                            <Trophy className='h-3 w-3' />
+                            <span>#{subData.rank}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className='mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400'>
+                        {subData.category ? (
+                          <>
+                            <span className='truncate'>{subData.category}</span>
+                            <span className='text-gray-600'>•</span>
+                          </>
+                        ) : null}
+                        <span className='inline-flex items-center gap-1'>
+                          {subData.participationType === 'TEAM' ? (
+                            <>
+                              <Users className='h-3 w-3' />
+                              <span>Team</span>
+                            </>
+                          ) : (
+                            <>
+                              <User className='h-3 w-3' />
+                              <span>Individual</span>
+                            </>
+                          )}
+                        </span>
+                        <span className='text-gray-600'>•</span>
+                        <span className='inline-flex items-center gap-1'>
+                          <Calendar className='h-3 w-3' />
+                          <span>
+                            {new Date(
+                              subData.submittedAt || subData.createdAt
+                            ).toLocaleDateString()}
+                          </span>
+                        </span>
+                      </div>
                     </div>
-                    <div className='flex items-center gap-1'>
-                      <Calendar className='h-3 w-3' />
-                      <span>
-                        {new Date(
-                          subData.submittedAt || subData.createdAt
-                        ).toLocaleDateString()}
-                      </span>
+                    <div className='flex shrink-0 flex-col items-end gap-2'>
+                      <Badge
+                        className={`${getStatusColor(subData.status)} border text-[10px]`}
+                      >
+                        {subData.status}
+                      </Badge>
+                      <div className='text-primary flex items-center gap-1 text-[11px] opacity-0 transition-opacity group-hover:opacity-100'>
+                        <span>View</span>
+                        <ExternalLink className='h-3 w-3' />
+                      </div>
                     </div>
                   </div>
 
@@ -314,12 +332,6 @@ export function SubmissionsList({
                         )}
                       </div>
                     )}
-
-                  {/* View Link */}
-                  <div className='text-primary mt-4 flex items-center gap-1 text-xs opacity-0 transition-opacity group-hover:opacity-100'>
-                    <span>View Details</span>
-                    <ExternalLink className='h-3 w-3' />
-                  </div>
                 </CardContent>
               </Card>
             );

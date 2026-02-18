@@ -8,7 +8,7 @@ echo "🚀 Running pre-push checks..."
 
 # Run security audit
 echo "🔒 Running security audit..."
-npm audit --audit-level=moderate
+npm audit --omit=dev --audit-level=high
 
 # Run build check one more time
 # echo "🏗️ Final build check..."

@@ -55,8 +55,6 @@ export default function JudgingPage() {
     useState<AggregatedJudgingResults | null>(null);
   const [isFetchingResults, setIsFetchingResults] = useState(false);
   const [winners, setWinners] = useState<JudgingResult[]>([]);
-  const [winnersSummary, setWinnersSummary] =
-    useState<AggregatedJudgingResults | null>(null);
   const [isFetchingWinners, setIsFetchingWinners] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isCurrentUserJudge, setIsCurrentUserJudge] = useState(false);
@@ -352,8 +350,7 @@ export default function JudgingPage() {
     try {
       const res = await getJudgingWinners(organizationId, hackathonId);
       if (res.success && res.data) {
-        setWinners(res.data.results || []);
-        setWinnersSummary(res.data);
+        setWinners(Array.isArray(res.data) ? res.data : []);
       }
     } catch (error) {
       console.error('Error fetching winners:', error);
@@ -490,6 +487,7 @@ export default function JudgingPage() {
                       judges={currentJudges}
                       isJudgesLoading={isRefreshingJudges}
                       currentUserId={currentUserId || undefined}
+                      canOverrideScores={canManageJudges}
                       onSuccess={handleSuccess}
                     />
                   ))}

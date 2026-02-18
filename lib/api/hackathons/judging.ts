@@ -80,6 +80,7 @@ export interface JudgingResult {
   isComplete: boolean;
   isPending: boolean;
   hasDisagreement: boolean;
+  prize?: string;
 }
 
 export interface AggregatedJudgingResults {
@@ -225,6 +226,19 @@ export interface SubmitJudgingScoreRequest {
   comment?: string; // Optional global feedback
 }
 
+export interface OverrideSubmissionScoreRequest {
+  criteriaScores: CriterionScoreRequest[];
+  judgeId?: string;
+}
+
+export interface OverrideSubmissionScoreResponse extends ApiResponse<{
+  judgingScore?: unknown;
+  complianceChecks?: {
+    rubricValid?: boolean;
+    isOrganizerOverride?: boolean;
+  };
+}> {}
+
 export interface GetJudgingSubmissionsResponse extends ApiResponse<any> {
   success: true;
   data:
@@ -274,6 +288,10 @@ export interface SubmitGradeResponse extends ApiResponse<GradeSubmissionResponse
 }
 
 export interface GetJudgingResultsResponse extends ApiResponse<AggregatedJudgingResults> {}
+
+export interface GetJudgingWinnersResponse extends ApiResponse<
+  JudgingResult[]
+> {}
 
 // Participant interface (needed for shortlist/disqualify response)
 export interface Participant {
@@ -425,6 +443,22 @@ export const submitJudgingScore = async (
 };
 
 /**
+ * Organizer override for submission scores
+ */
+export const overrideSubmissionScore = async (
+  organizationId: string,
+  hackathonId: string,
+  submissionId: string,
+  data: OverrideSubmissionScoreRequest
+): Promise<OverrideSubmissionScoreResponse> => {
+  const res = await api.post(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/submissions/${submissionId}/score-override`,
+    data
+  );
+  return res.data as OverrideSubmissionScoreResponse;
+};
+
+/**
  * Get aggregated judging results for a hackathon
  */
 export const getJudgingResults = async (
@@ -507,22 +541,34 @@ export const getHackathonJudges = async (
 export const getJudgingWinners = async (
   organizationId: string,
   hackathonId: string
-): Promise<GetJudgingResultsResponse> => {
+): Promise<GetJudgingWinnersResponse> => {
   const res = await api.get<
-    AggregatedJudgingResults | ApiResponse<AggregatedJudgingResults>
+    JudgingResult[] | ApiResponse<JudgingResult[]> | AggregatedJudgingResults
   >(
     `/organizations/${organizationId}/hackathons/${hackathonId}/judging/winners`
   );
 
+  if (Array.isArray(res.data)) {
+    return {
+      success: true,
+      data: res.data,
+      message: 'Winners retrieved successfully',
+    } as GetJudgingWinnersResponse;
+  }
+
   if (res.data && 'results' in res.data) {
     return {
       success: true,
-      data: res.data as AggregatedJudgingResults,
+      data: (res.data as AggregatedJudgingResults).results || [],
       message: 'Winners retrieved successfully',
-    } as GetJudgingResultsResponse;
+    } as GetJudgingWinnersResponse;
   }
 
-  return (res.data || {}) as GetJudgingResultsResponse;
+  return {
+    success: false,
+    data: [],
+    message: 'No winners found or unexpected response format',
+  } as GetJudgingWinnersResponse;
 };
 
 /**
