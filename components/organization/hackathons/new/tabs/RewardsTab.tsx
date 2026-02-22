@@ -318,6 +318,7 @@ export default function RewardsTab({
           prizeAmount: '0',
           description: '',
           currency: 'USDC',
+          rank: 1,
           passMark: 80,
         },
         {
@@ -326,6 +327,7 @@ export default function RewardsTab({
           prizeAmount: '0',
           description: '',
           currency: 'USDC',
+          rank: 2,
           passMark: 70,
         },
         {
@@ -334,6 +336,7 @@ export default function RewardsTab({
           prizeAmount: '0',
           description: '',
           currency: 'USDC',
+          rank: 3,
           passMark: 50,
         },
       ],
@@ -384,6 +387,7 @@ export default function RewardsTab({
       prizeAmount: String(Math.round((baseAmount * percentage) / 100)),
       description: '',
       currency: 'USDC',
+      rank: idx + 1,
       passMark: 80 - idx * 10,
     }));
     replace(newTiers);
@@ -408,6 +412,7 @@ export default function RewardsTab({
       prizeAmount: '0',
       description: '',
       currency: 'USDC',
+      rank: fields.length + 1,
       passMark: 0,
     });
     toast.success('Prize tier added');

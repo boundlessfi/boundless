@@ -43,12 +43,7 @@ export default function WinnersPreviewPage({
         label: `${amount} ${tier.currency}`,
       };
     }
-    const amount = rank === 1 ? '10,000' : rank === 2 ? '5,000' : '8,000';
-    return {
-      amount,
-      currency: 'USDC',
-      label: `${amount} USDC`,
-    };
+    return { label: 'No prize configured' };
   };
 
   return (

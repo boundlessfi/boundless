@@ -75,6 +75,7 @@ const getDefaultPrizeTiers = (): PrizeTier[] => [
     place: '1st Place',
     prizeAmount: '0',
     currency: 'USDC',
+    rank: 1,
     passMark: 0,
   },
   {
@@ -82,6 +83,7 @@ const getDefaultPrizeTiers = (): PrizeTier[] => [
     place: '2nd Place',
     prizeAmount: '0',
     currency: 'USDC',
+    rank: 2,
     passMark: 0,
   },
   {
@@ -89,6 +91,7 @@ const getDefaultPrizeTiers = (): PrizeTier[] => [
     place: '3rd Place',
     prizeAmount: '0',
     currency: 'USDC',
+    rank: 3,
     passMark: 0,
   },
 ];

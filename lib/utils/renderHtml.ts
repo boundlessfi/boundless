@@ -44,6 +44,6 @@ export function sanitizeHtml(html: string | undefined | null) {
     });
     return { __html: clean };
   } catch {
-    return { __html: dirty };
+    return { __html: '' };
   }
 }

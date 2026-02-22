@@ -25,6 +25,11 @@ interface RewardDistributionStatusBannerProps {
   onRefresh?: () => void;
 }
 
+/**
+ * Stellar stroop precision: 7 decimals
+ */
+const STROOP_FACTOR = 1e7;
+
 const STATUS_CONFIG: Record<
   RewardDistributionStatusEnum,
   {
@@ -205,7 +210,7 @@ export const RewardDistributionStatusBanner: React.FC<
                 </span>
                 <p className='mt-0.5'>
                   {(
-                    distributionStatus.snapshot.totalPrizePool / 1e7
+                    distributionStatus.snapshot.totalPrizePool / STROOP_FACTOR
                   ).toLocaleString('en-US', { maximumFractionDigits: 2 })}{' '}
                   {distributionStatus.snapshot.currency}
                 </p>

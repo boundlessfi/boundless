@@ -11,6 +11,7 @@ export const prizeTierSchema = z.object({
     ),
   description: z.string().optional(),
   currency: z.string().optional().default('USDC'),
+  rank: z.number().int().min(1),
   passMark: z.number().min(0).max(100),
 });
 

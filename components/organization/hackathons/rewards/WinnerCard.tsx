@@ -58,9 +58,9 @@ export default function WinnerCard({
           className='h-4 w-4 text-yellow-400'
         />
         <span className='text-primary text-base font-medium'>
-          {prizeLabel === 'No prize configured'
-            ? prizeLabel
-            : `$${prizeAmount} ${currency}`}
+          {prizeAmount != null && currency && prizeAmount !== '0'
+            ? `$${prizeAmount} ${currency}`
+            : prizeLabel || 'No prize configured'}
         </span>
       </div>
 

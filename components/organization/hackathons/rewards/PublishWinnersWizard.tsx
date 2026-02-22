@@ -89,7 +89,7 @@ export default function PublishWinnersWizard({
   const mappedPrizeTiers = useMemo(
     () =>
       prizeTiers.map(tier => ({
-        rank: (tier as any).rank || 0,
+        rank: tier.rank,
         prizeAmount: tier.prizeAmount,
         currency: tier.currency,
       })),
