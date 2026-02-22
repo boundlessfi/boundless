@@ -15,9 +15,9 @@ interface PreviewStepProps {
   announcement: string;
   onEditAnnouncement: () => void;
   getPrizeForRank: (rank: number) => {
-    amount?: string;
-    currency?: string;
-    label?: string;
+    amount: string;
+    currency: string;
+    label: string;
   };
 }
 

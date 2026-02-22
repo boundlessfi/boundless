@@ -43,7 +43,7 @@ export default function WinnersPreviewPage({
         label: `${amount} ${tier.currency}`,
       };
     }
-    return { label: 'No prize configured' };
+    return { amount: '0', currency: 'USDC', label: 'No prize configured' };
   };
 
   return (

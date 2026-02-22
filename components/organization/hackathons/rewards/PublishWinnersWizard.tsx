@@ -105,7 +105,7 @@ export default function PublishWinnersWizard({
       const currency = tier.currency || 'USDC';
       return { amount, currency, label: `${amount} ${currency}` };
     }
-    return { label: 'No prize configured' };
+    return { amount: '0', currency: 'USDC', label: 'No prize configured' };
   };
 
   return (

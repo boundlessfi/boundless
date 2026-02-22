@@ -196,26 +196,34 @@ export const useHackathonRewards = (
         setHackathon(fetchedHackathon);
 
         if (fetchedHackathon.prizeTiers) {
-          // Sort tiers by amount descending or use position if available
+          // Sort tiers by amount descending or use parsed numeric rank from place if available
           const sortedTiers = [...fetchedHackathon.prizeTiers].sort(
             (a: any, b: any) => {
-              if (a.position && b.position) return a.position - b.position;
-              return (b.amount || 0) - (a.amount || 0);
+              const rankA = parseInt(a.place?.match(/\d+/)?.[0] || '999');
+              const rankB = parseInt(b.place?.match(/\d+/)?.[0] || '999');
+              if (rankA !== rankB) return rankA - rankB;
+
+              const amountA = parseFloat(a.prizeAmount || '0');
+              const amountB = parseFloat(b.prizeAmount || '0');
+              return amountB - amountA;
             }
           );
 
           const tiers: PrizeTier[] = sortedTiers.map(
-            (tier: any, index: number) => ({
-              id: tier.id || `tier-${index + 1}`,
-              place: tier.position
-                ? `${getOrdinalSuffix(tier.position)} Place`
-                : `${getOrdinalSuffix(index + 1)} Place`,
-              prizeAmount: (tier.prizeAmount || tier.amount)?.toString() || '0',
-              currency: tier.currency || 'USDC',
-              passMark: tier.passMark || 0,
-              description: tier.description,
-              rank: tier.position || index + 1,
-            })
+            (tier: any, index: number) => {
+              const parsedRank = parseInt(
+                tier.place?.match(/\d+/)?.[0] || String(index + 1)
+              );
+              return {
+                id: tier.id || `tier-${index + 1}`,
+                place: tier.place || `${getOrdinalSuffix(index + 1)} Place`,
+                prizeAmount: tier.prizeAmount?.toString() || '0',
+                currency: tier.currency || 'USDC',
+                passMark: tier.passMark || 0,
+                description: tier.description,
+                rank: parsedRank,
+              };
+            }
           );
           setPrizeTiers(tiers);
         }

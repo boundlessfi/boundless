@@ -13,9 +13,9 @@ interface WinnersGridProps {
   }>;
   winners: Submission[];
   getPrizeForRank: (rank: number) => {
-    amount?: string;
-    currency?: string;
-    label?: string;
+    amount: string;
+    currency: string;
+    label: string;
   };
 }
 
