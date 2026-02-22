@@ -37,19 +37,24 @@ import {
 } from '@/components/ui/select';
 import { TIMEZONES } from '@/components/organization/hackathons/new/tabs/components/timeline/timelineConstants';
 
+import { api } from '@/lib/api/api';
+import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+
 interface TimelineSettingsTabProps {
-  organizationId?: string;
-  hackathonId?: string;
+  organizationId: string;
+  hackathonId: string;
   initialData?: Partial<TimelineFormData>;
-  onSave?: (data: TimelineFormData) => Promise<void>;
-  isLoading?: boolean;
+  onSaveSuccess?: () => Promise<void>;
 }
 
 export default function TimelineSettingsTab({
+  organizationId,
+  hackathonId,
   initialData,
-  onSave,
-  isLoading = false,
+  onSaveSuccess,
 }: TimelineSettingsTabProps) {
+  const [isSaving, setIsSaving] = useState(false);
   const form = useForm<TimelineFormData>({
     resolver: zodResolver(timelineSchema),
     defaultValues: {
@@ -63,6 +68,21 @@ export default function TimelineSettingsTab({
       phases: initialData?.phases || [],
     },
   });
+
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        startDate: initialData.startDate || undefined,
+        submissionDeadline: initialData.submissionDeadline || undefined,
+        judgingStart: initialData.judgingStart || undefined,
+        endDate: initialData.endDate || undefined,
+        judgingEnd: initialData.judgingEnd || undefined,
+        winnersAnnouncedAt: initialData.winnersAnnouncedAt || undefined,
+        timezone: initialData.timezone || 'UTC',
+        phases: initialData.phases || [],
+      });
+    }
+  }, [initialData, form]);
 
   const hasJudgingEnd = !!form.watch('judgingEnd');
   const hasWinnersAnnouncedAt = !!form.watch('winnersAnnouncedAt');
@@ -82,8 +102,51 @@ export default function TimelineSettingsTab({
   };
 
   const onSubmit = async (data: TimelineFormData) => {
-    if (onSave) {
-      await onSave(data);
+    setIsSaving(true);
+    try {
+      const formatDate = (date?: Date | string | null) => {
+        if (!date) return undefined;
+        const d = new Date(date);
+        return isNaN(d.getTime()) ? undefined : d.toISOString();
+      };
+
+      const payload = {
+        timeline: {
+          startDate: formatDate(data.startDate),
+          submissionDeadline: formatDate(data.submissionDeadline),
+          judgingStart: formatDate(data.judgingStart),
+          endDate: formatDate(data.endDate),
+          judgingEnd: formatDate(data.judgingEnd),
+          winnersAnnouncedAt: formatDate(data.winnersAnnouncedAt),
+          timezone: data.timezone,
+          phases: data.phases?.map(phase => ({
+            name: phase.name,
+            description: phase.description,
+            startDate: formatDate(phase.startDate),
+            endDate: formatDate(phase.endDate),
+          })),
+        },
+      };
+
+      await api.patch(
+        `/organizations/${organizationId}/hackathons/${hackathonId}/schedule`,
+        payload
+      );
+      toast.success('Timeline settings saved successfully!');
+      // Reset form with current data to clear dirty state
+      form.reset(data);
+      if (onSaveSuccess) {
+        await onSaveSuccess();
+      }
+    } catch (error: any) {
+      const message = error.message || error.response?.data?.message;
+      const errorMessage = Array.isArray(message) ? message[0] : message;
+      toast.error(
+        errorMessage || 'Failed to save timeline settings. Please try again.'
+      );
+      throw error; // Re-throw for parent if needed
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -548,10 +611,10 @@ export default function TimelineSettingsTab({
               type='submit'
               variant='default'
               size='lg'
-              disabled={isLoading}
+              disabled={isSaving}
               className='min-w-[120px]'
             >
-              {isLoading ? 'Saving...' : 'Save Changes'}
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </BoundlessButton>
           </div>
         </form>

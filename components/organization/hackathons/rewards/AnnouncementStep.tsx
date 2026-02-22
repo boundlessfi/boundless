@@ -14,17 +14,19 @@ export const AnnouncementStep: React.FC<AnnouncementStepProps> = ({
   onAnnouncementChange,
 }) => {
   return (
-    <div className='space-y-4'>
+    <div className='mx-auto max-w-lg space-y-3'>
       <div>
-        <Label className='mb-2 block text-white'>Announcement Message</Label>
+        <Label className='mb-1.5 block text-xs font-medium text-gray-300'>
+          Announcement Message
+        </Label>
         <MinimalTiptap
           content={announcement}
           onChange={onAnnouncementChange}
-          placeholder='Leave your winners and community a message from the host (optional)'
-          className='border-gray-800 bg-[#1C1C1C] text-white'
+          placeholder='Leave your winners and community a message (optional)'
+          className='border-gray-800 bg-[#1C1C1C] text-sm text-white'
         />
-        <p className='mt-2 text-xs text-gray-500'>
-          This message will be displayed publicly with the winners announcement.
+        <p className='mt-1.5 text-[11px] text-gray-500'>
+          Displayed publicly with the winners announcement.
         </p>
       </div>
     </div>

@@ -237,7 +237,15 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
           {/* Action Buttons */}
           <div className='flex flex-col gap-2'>
             {/* Register / Leave Button */}
-            {!isRegistered ? (
+            {status === 'ended' ? (
+              <Button
+                disabled
+                className='w-full cursor-not-allowed border border-gray-700 bg-gray-800 py-4 text-sm text-gray-500'
+              >
+                <Calendar className='mr-1.5 h-3.5 w-3.5' />
+                Hackathon Ended
+              </Button>
+            ) : !isRegistered ? (
               canRegister ? (
                 <Button
                   onClick={!isAuthenticated ? redirectToAuth : onJoinClick}

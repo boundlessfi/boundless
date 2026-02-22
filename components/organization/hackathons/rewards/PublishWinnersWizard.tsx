@@ -13,9 +13,7 @@ import { Submission } from './types';
 import { HackathonEscrowData } from '@/lib/api/hackathons';
 import { PrizeTier } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
 import { useWizardSteps } from '@/hooks/use-wizard-steps';
-import { useWalletAddresses } from '@/hooks/use-wallet-addresses';
 import { usePublishWinners } from '@/hooks/use-publish-winners';
-import { WalletsStep } from './WalletsStep';
 import { AnnouncementStep } from './AnnouncementStep';
 import { PreviewStep } from './PreviewStep';
 import { WizardStepIndicator } from './WizardStepIndicator';
@@ -53,7 +51,6 @@ export default function PublishWinnersWizard({
   );
 
   const [announcement, setAnnouncement] = useState('');
-  const [milestonesCreated, setMilestonesCreated] = useState(false);
 
   const {
     currentStep,
@@ -64,21 +61,13 @@ export default function PublishWinnersWizard({
     handleBack,
   } = useWizardSteps({ open, escrow });
 
-  const { walletAddresses, handleWalletAddressChange } = useWalletAddresses({
-    isOpen: open,
-    winners,
-  });
-
   const { isPublishing, publishWinners } = usePublishWinners({
     winners,
     prizeTiers,
     escrow,
     organizationId,
     hackathonId,
-    walletAddresses,
     announcement,
-    milestonesCreated,
-    setMilestonesCreated,
     onSuccess: () => {
       onOpenChange(false);
       if (onSuccess) {
@@ -99,8 +88,8 @@ export default function PublishWinnersWizard({
 
   const mappedPrizeTiers = useMemo(
     () =>
-      prizeTiers.map((tier, index) => ({
-        rank: index + 1,
+      prizeTiers.map(tier => ({
+        rank: (tier as any).rank || 0,
         prizeAmount: tier.prizeAmount,
         currency: tier.currency,
       })),
@@ -110,28 +99,29 @@ export default function PublishWinnersWizard({
   const getPrizeForRank = (rank: number) => {
     const tier = mappedPrizeTiers.find(t => t.rank === rank);
     if (tier) {
-      const amount = parseFloat(tier.prizeAmount).toLocaleString('en-US');
-      return `${amount} ${tier.currency}`;
+      const amount = parseFloat(tier.prizeAmount || '0').toLocaleString(
+        'en-US'
+      );
+      const currency = tier.currency || 'USDC';
+      return `${amount} ${currency}`;
     }
-    return rank === 1
-      ? '10,000 USDC'
-      : rank === 2
-        ? '5,000 USDC'
-        : '8,000 USDC';
+    return 'No prize configured';
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className='bg-background-card !max-w-7xl border-gray-900 p-0'
+        className='bg-background-card max-w-2xl! border-gray-900 p-0'
         showCloseButton={false}
       >
-        <DialogHeader className='flex flex-row items-center gap-3 border-b border-gray-900 p-6'>
-          <Megaphone className='h-5 w-5 text-white' />
-          <DialogTitle className='text-white'>Publish Winners</DialogTitle>
+        <DialogHeader className='flex flex-row items-center gap-3 border-b border-gray-900 px-5 py-3'>
+          <Megaphone className='h-4 w-4 text-white' />
+          <DialogTitle className='text-sm font-semibold text-white'>
+            Reward Winners
+          </DialogTitle>
           <DialogClose asChild>
             <button className='ml-auto text-gray-400 transition-colors hover:text-white'>
-              <X className='h-5 w-5' />
+              <X className='h-4 w-4' />
             </button>
           </DialogClose>
         </DialogHeader>
@@ -142,18 +132,7 @@ export default function PublishWinnersWizard({
           currentStepIndex={currentStepIndex}
         />
 
-        <div className='max-h-[60vh] overflow-y-auto p-6'>
-          {currentStep === 'wallets' && (
-            <WalletsStep
-              winners={winners}
-              prizeTiers={prizeTiers}
-              escrow={escrow}
-              walletAddresses={walletAddresses}
-              isPublishing={isPublishing}
-              onWalletAddressChange={handleWalletAddressChange}
-            />
-          )}
-
+        <div className='max-h-[65vh] overflow-y-auto px-5 py-4'>
           {currentStep === 'announcement' && (
             <AnnouncementStep
               announcement={announcement}

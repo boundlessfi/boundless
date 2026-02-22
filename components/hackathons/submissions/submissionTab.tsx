@@ -29,6 +29,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { useExpandableScreen } from '@/components/ui/expandable-screen';
 import { toast } from 'sonner';
+import { useHackathonStatus } from '@/hooks/hackathon/use-hackathon-status';
 
 interface SubmissionTabProps {
   // hackathonSlugOrId?: string;
@@ -68,6 +69,13 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
     setSelectedSort,
     setSelectedCategory,
   } = useSubmissions();
+
+  const { currentHackathon } = useHackathonData();
+  const { status } = useHackathonStatus(
+    currentHackathon?.startDate,
+    currentHackathon?.submissionDeadline
+  );
+  const isDeadlinePassed = status === 'ended';
 
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<
     string | null
@@ -219,10 +227,13 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
             </p>
             <Button
               onClick={expand}
-              className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
+              disabled={isDeadlinePassed}
+              className='bg-[#a7f950] text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
             >
               <Plus className='mr-2 h-4 w-4' />
-              Create Your Submission
+              {isDeadlinePassed
+                ? 'Submission Deadline Passed'
+                : 'Create Your Submission'}
             </Button>
           </div>
         )}
@@ -264,6 +275,7 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
               submissionId={mySubmission.id}
               isPinned={true}
               isMySubmission={true}
+              isDeadlinePassed={isDeadlinePassed}
               onViewClick={() => handleViewSubmission(mySubmission.id)}
               onEditClick={expand}
               onDeleteClick={() => handleDeleteClick(mySubmission.id)}

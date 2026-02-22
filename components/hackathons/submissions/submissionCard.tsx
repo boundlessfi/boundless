@@ -47,6 +47,7 @@ interface SubmissionCardProps {
   hasUserUpvoted?: boolean;
   isPinned?: boolean;
   isMySubmission?: boolean;
+  isDeadlinePassed?: boolean;
 }
 
 const SubmissionCard = ({
@@ -71,6 +72,7 @@ const SubmissionCard = ({
   hasUserUpvoted = false,
   isPinned = false,
   isMySubmission = false,
+  isDeadlinePassed = false,
 }: SubmissionCardProps) => {
   const router = useRouter();
 
@@ -162,7 +164,7 @@ const SubmissionCard = ({
             {status}
           </Badge>
 
-          {isMySubmission && (
+          {isMySubmission && !isDeadlinePassed && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

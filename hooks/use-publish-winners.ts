@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { toast } from 'sonner';
-import { createWinnerMilestones } from '@/lib/api/hackathons';
+import { v4 as uuidv4 } from 'uuid';
+import { triggerRewardDistribution } from '@/lib/api/hackathons';
 import { validateStellarAddress } from '@/lib/utils/stellar-address-validation';
 import { validatePrizeTiers } from '@/lib/utils/prize-tier-validation';
 import { extractRankFromPosition } from '@/lib/utils/hackathon-escrow';
@@ -14,10 +15,7 @@ interface UsePublishWinnersProps {
   escrow: HackathonEscrowData | null;
   organizationId: string;
   hackathonId: string;
-  walletAddresses: Record<string, string>;
   announcement: string;
-  milestonesCreated: boolean;
-  setMilestonesCreated: (value: boolean) => void;
   onSuccess?: () => void;
 }
 
@@ -27,18 +25,33 @@ export const usePublishWinners = ({
   escrow,
   organizationId,
   hackathonId,
-  walletAddresses,
   announcement,
-  milestonesCreated,
-  setMilestonesCreated,
   onSuccess,
 }: UsePublishWinnersProps) => {
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // Keep the idempotency key consistent across retries even if the page reloads
+  const idempotencyKeyRef = useRef<string | null>(null);
+
+  if (!idempotencyKeyRef.current) {
+    if (typeof window !== 'undefined') {
+      const storageKey = `publish-idempotency-${hackathonId}`;
+      let key = sessionStorage.getItem(storageKey);
+      if (!key) {
+        key = uuidv4();
+        sessionStorage.setItem(storageKey, key);
+      }
+      idempotencyKeyRef.current = key;
+    } else {
+      idempotencyKeyRef.current = uuidv4();
+    }
+  }
 
   const publishWinners = async () => {
     setIsPublishing(true);
 
     try {
+      // 1. Initial Local Validations
       const tierValidation = validatePrizeTiers(winners, prizeTiers);
       if (!tierValidation.valid) {
         const ranksStr = tierValidation.missingRanks
@@ -50,126 +63,29 @@ export const usePublishWinners = ({
 
         throw new Error(
           `No prize tier found for rank${tierValidation.missingRanks.length > 1 ? 's' : ''} ${ranksStr}. ` +
-            `Please configure prize tiers in the Rewards tab before creating milestones. ` +
-            `Go to the hackathon edit page and add prize tiers with positions matching the ranks you're assigning.`
+            `Please configure prize tiers in the Rewards tab before publishing winners.`
         );
       }
 
-      const shouldCreateMilestones = escrow?.canUpdate && escrow?.isFunded;
-
-      if (shouldCreateMilestones && !milestonesCreated) {
-        if (!escrow) {
-          toast.error('Escrow not found');
-          setIsPublishing(false);
-          return;
-        }
-
-        const winnersData = winners
-          .filter(winner => winner.rank !== undefined && winner.rank !== null)
-          .map(winner => {
-            const participantId = winner.participantId || winner.id;
-            if (!participantId || participantId.trim() === '') {
-              throw new Error(`Participant ID missing for ${winner.name}`);
-            }
-
-            const rank = winner.rank!;
-            if (rank < 1) {
-              throw new Error(`Invalid rank for ${winner.name}`);
-            }
-
-            const walletAddress = walletAddresses[winner.id]?.trim();
-            if (!walletAddress || walletAddress === '') {
-              throw new Error(`Wallet address missing for ${winner.name}`);
-            }
-
-            if (!validateStellarAddress(walletAddress)) {
-              throw new Error(
-                `Invalid Stellar wallet address format for ${winner.name}. Address must be 56 characters and start with 'G'.`
-              );
-            }
-
-            const prizeTier = prizeTiers.find(tier => {
-              const tierRank = extractRankFromPosition(tier.place);
-              return tierRank === rank;
-            });
-            if (!prizeTier) {
-              throw new Error(
-                `No prize tier found for rank ${rank} (${winner.name}). Please ensure a prize tier with position matching rank ${rank} exists (e.g., "${rank}${rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th'} Place").`
-              );
-            }
-
-            const prizeAmount = prizeTier.prizeAmount
-              ? parseFloat(prizeTier.prizeAmount)
-              : 0;
-
-            if (prizeAmount <= 0) {
-              throw new Error(
-                `Invalid prize amount for rank ${rank} (${winner.name}). Prize amount must be greater than 0.`
-              );
-            }
-
-            const currency = prizeTier.currency || 'USDC';
-
-            return {
-              participantId: participantId.trim(),
-              rank: rank,
-              walletAddress: walletAddress.trim(),
-              amount: prizeAmount,
-              currency: currency,
-            };
-          });
-
-        if (winnersData.length === 0) {
-          throw new Error(
-            'No winners selected. Please assign ranks to submissions first.'
-          );
-        }
-
-        const milestonesResponse = await createWinnerMilestones(
-          organizationId,
-          hackathonId,
-          { winners: winnersData }
-        );
-
-        if (!milestonesResponse.success) {
-          const errorMessage =
-            milestonesResponse.message || 'Failed to create milestones';
-          if (
-            errorMessage.includes('prize tier') ||
-            errorMessage.includes('rank')
-          ) {
-            throw new Error(
-              `${errorMessage} Please go to the hackathon edit page and add prize tiers in the Rewards tab. ` +
-                `The position field in prize tiers must match the ranks you're assigning (e.g., "1" for rank 1).`
-            );
-          }
-          throw new Error(errorMessage);
-        }
-
-        setMilestonesCreated(true);
-        toast.success(
-          `Successfully created ${milestonesResponse.data.milestonesCreated} milestone(s)`
-        );
-      } else if (shouldCreateMilestones && milestonesCreated) {
-        toast.info('Milestones already created, proceeding to announcement...');
-      } else {
-        if (!escrow?.isFunded) {
-          throw new Error(
-            'Escrow is not funded. Please fund the escrow first.'
-          );
-        }
+      if (!escrow?.isFunded) {
+        throw new Error('Escrow is not funded. Please fund the escrow first.');
       }
 
-      const { api } = await import('@/lib/api/api');
-      await api.post(
-        `/organizations/${organizationId}/hackathons/${hackathonId}/winners/announce`,
-        {
-          winners: winners.map(w => ({ submissionId: w.id, rank: w.rank })),
-          announcement,
-        }
+      // 2. Trigger Reward Distribution
+      await triggerRewardDistribution(organizationId, hackathonId, {
+        idempotencyKey: idempotencyKeyRef.current || uuidv4(),
+        organizerNote: announcement || undefined,
+      });
+
+      toast.success(
+        'Reward distribution successfully triggered! Pending admin review.'
       );
 
-      toast.success('Winners published successfully!');
+      // Cleanup idempotency key since distribution succeeded
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(`publish-idempotency-${hackathonId}`);
+      }
+
       if (onSuccess) {
         onSuccess();
       }

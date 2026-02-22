@@ -26,7 +26,7 @@ export const WizardFooter: React.FC<WizardFooterProps> = ({
   onPublish,
 }) => {
   return (
-    <div className='flex justify-between gap-3 border-t border-gray-900 p-6'>
+    <div className='flex justify-between gap-3 border-t border-gray-900 px-5 py-3'>
       <BoundlessButton
         variant='outline'
         onClick={currentStepIndex === 0 ? onCancel : onBack}
@@ -62,7 +62,7 @@ export const WizardFooter: React.FC<WizardFooterProps> = ({
             ) : (
               <>
                 <Megaphone className='h-4 w-4' />
-                Publish Winners
+                Reward Winners
               </>
             )}
           </BoundlessButton>

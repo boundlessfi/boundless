@@ -423,13 +423,8 @@ export default function RewardsTab({
   };
 
   const onSubmit = async (data: RewardsFormData) => {
-    try {
-      if (onSave) {
-        await onSave(data);
-        toast.success('Rewards saved successfully');
-      }
-    } catch {
-      toast.error('Failed to save rewards. Please try again.');
+    if (onSave) {
+      await onSave(data);
     }
   };
 

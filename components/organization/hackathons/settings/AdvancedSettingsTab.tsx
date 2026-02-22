@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Form,
@@ -32,6 +32,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { deleteHackathon } from '@/lib/api/hackathons';
 import { toast } from 'sonner';
+import { api } from '@/lib/api/api';
 
 const advancedSettingsSchema = z.object({
   isPublic: z.boolean(),
@@ -50,19 +51,20 @@ type AdvancedSettingsFormData = z.infer<typeof advancedSettingsSchema>;
 interface AdvancedSettingsTabProps {
   organizationId: string;
   hackathonId: string;
-  onSave?: (data: AdvancedSettingsFormData) => Promise<void>;
-  isLoading?: boolean;
+  initialData?: AdvancedSettingsFormData;
+  onSaveSuccess?: () => Promise<void>;
 }
 
 export default function AdvancedSettingsTab({
   organizationId,
   hackathonId,
-  onSave,
-  isLoading = false,
+  initialData,
+  onSaveSuccess,
 }: AdvancedSettingsTabProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<AdvancedSettingsFormData>({
     resolver: zodResolver(advancedSettingsSchema),
@@ -79,9 +81,33 @@ export default function AdvancedSettingsTab({
     },
   });
 
+  useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
+
   const onSubmit = async (data: AdvancedSettingsFormData) => {
-    if (onSave) {
-      await onSave(data);
+    setIsSaving(true);
+    try {
+      await api.patch(
+        `/organizations/${organizationId}/hackathons/${hackathonId}/advanced-settings`,
+        { advancedSettings: data }
+      );
+      toast.success('Advanced settings saved successfully!');
+      // Update form state with new values to maintain "clean" status
+      form.reset(data);
+      if (onSaveSuccess) {
+        await onSaveSuccess();
+      }
+    } catch (error: any) {
+      const message = error.message || error.response?.data?.message;
+      const errorMessage = Array.isArray(message) ? message[0] : message;
+      toast.error(
+        errorMessage || 'Failed to save advanced settings. Please try again.'
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -366,10 +392,10 @@ export default function AdvancedSettingsTab({
                 type='submit'
                 variant='default'
                 size='lg'
-                disabled={isLoading}
+                disabled={isSaving}
                 className='min-w-[120px]'
               >
-                {isLoading ? 'Saving...' : 'Save Changes'}
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </BoundlessButton>
             </div>
           </form>

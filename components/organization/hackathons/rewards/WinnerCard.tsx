@@ -43,25 +43,25 @@ export default function WinnerCard({
   return (
     <div
       className={cn(
-        'bg-background-card relative w-fit overflow-hidden rounded-lg p-6 transition-transform',
+        'bg-background-card relative w-fit overflow-hidden rounded-lg p-4 transition-transform',
         getScaleClass()
       )}
     >
-      <div className='mb-4 flex items-center justify-center gap-2'>
+      <div className='mb-3 flex items-center justify-center gap-2'>
         <Image
           src='/trophy.svg'
           alt='Trophy'
-          width={20}
-          height={20}
-          className='h-5 w-5 text-yellow-400'
+          width={16}
+          height={16}
+          className='h-4 w-4 text-yellow-400'
         />
-        <span className='text-primary text-lg font-medium'>
+        <span className='text-primary text-base font-medium'>
           ${prizeAmount} {currency}
         </span>
       </div>
 
-      <div className='mb-4 flex justify-center'>
-        <Avatar className='h-24 w-24'>
+      <div className='mb-3 flex justify-center'>
+        <Avatar className='h-16 w-16'>
           {winner ? (
             <>
               <AvatarImage
@@ -72,14 +72,14 @@ export default function WinnerCard({
               </AvatarFallback>
             </>
           ) : (
-            <AvatarFallback className='text-3xl text-gray-500'>
+            <AvatarFallback className='text-2xl text-gray-500'>
               ?
             </AvatarFallback>
           )}
         </Avatar>
       </div>
 
-      <div className='relative mb-4 flex items-center justify-center'>
+      <div className='relative mb-3 flex items-center justify-center'>
         <Ribbon
           primaryColor={getRibbonColors(rank).primaryColor}
           secondaryColor={getRibbonColors(rank).secondaryColor}
@@ -89,8 +89,10 @@ export default function WinnerCard({
         </span>
       </div>
 
-      <div className='mb-4 text-center'>
-        <h3 className='text-sm text-white'>{winner?.name || '?'}</h3>
+      <div className='mb-3 text-center'>
+        <h3 className='text-xs font-medium text-white'>
+          {winner?.name || '?'}
+        </h3>
       </div>
 
       {winner && (
@@ -116,15 +118,20 @@ export default function WinnerCard({
                   <p className='break-words'>{winner.projectName}</p>
                 </TooltipContent>
               </Tooltip>
-              <Badge className='bg-office-brown border-office-brown-darker text-office-brown-darker rounded-[4px] border px-1 py-0.5 text-xs font-medium'>
-                Category
+              <Badge className='bg-office-brown border-office-brown-darker text-office-brown-darker rounded-[4px] border px-1 py-0.5 text-[10px] font-medium'>
+                {winner.category || 'General'}
               </Badge>
             </div>
-            <div className='flex items-center gap-3 text-xs text-gray-500'>
-              <span>{winner.score} Votes</span>
-              <div className='h-3 w-px bg-gray-900' />
-              <span>1k+ Comments</span>
-              <ArrowUpRight className='h-4 w-4' />
+            <div className='flex items-center gap-2 text-[10px] text-gray-500'>
+              <span>
+                {winner.averageScore
+                  ? winner.averageScore.toFixed(1)
+                  : winner.score || 0}{' '}
+                Score
+              </span>
+              <div className='h-2 w-px bg-gray-900' />
+              <span>{winner.commentCount || 0} Comments</span>
+              <ArrowUpRight className='h-3 w-3' />
             </div>
           </div>
         </div>

@@ -351,6 +351,9 @@ export type Hackathon = {
   endDate: string; // ISO date
   submissionDeadline: string; // ISO date
   registrationDeadline: string; // ISO date
+  judgingStart: string; // ISO date
+  judgingEnd: string; // ISO date
+  winnersAnnouncedAt: string; // ISO date
   customRegistrationDeadline: string | null;
 
   registrationOpen: boolean;
@@ -447,9 +450,24 @@ export type Hackathon = {
 
   contractId?: string;
   escrowAddress?: string;
+  resultsPublished?: boolean;
   transactionHash?: string | null;
   message?: string;
   escrowDetails?: object;
+  metadata?: {
+    advancedSettings?: {
+      isPublic: boolean;
+      allowLateRegistration: boolean;
+      requireApproval: boolean;
+      maxParticipants?: number;
+      customDomain?: string;
+      enableDiscord: boolean;
+      discordInviteLink?: string;
+      enableTelegram: boolean;
+      telegramInviteLink?: string;
+    };
+    [key: string]: unknown;
+  };
 };
 
 // Request Types
@@ -1417,13 +1435,18 @@ export const getJudgingSubmissions = async (
   organizationId: string,
   hackathonId: string,
   page = 1,
-  limit = 10
+  limit = 10,
+  status?: string
 ): Promise<GetJudgingSubmissionsResponse> => {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
-    status: 'SHORTLISTED',
   });
+
+  const filterStatus = status === 'all' ? undefined : status || 'SHORTLISTED';
+  if (filterStatus) {
+    params.append('status', filterStatus);
+  }
 
   const res = await api.get(
     `/hackathons/${hackathonId}/submissions?${params.toString()}`
@@ -1476,9 +1499,87 @@ export const assignRanks = async (
   return res.data;
 };
 
+// ─── Reward Distribution Status Types ─────────────────────────────────────────
+
+export type RewardDistributionStatusEnum =
+  | 'NOT_TRIGGERED'
+  | 'PENDING_ADMIN_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'EXECUTING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'PARTIAL_SUCCESS';
+
+export interface WinnerSnapshot {
+  submissionId: string;
+  rank: number;
+  submissionTitle: string;
+  prizeTierName: string;
+  prizeAmount: number;
+  walletAddresses: string;
+}
+
+export interface RewardDistributionSnapshot {
+  idempotencyKey: string;
+  winners: WinnerSnapshot[];
+  totalPrizePool: number;
+  platformFee: number;
+  totalRequired: number;
+  currency: string;
+  escrowAddress: string;
+  winnersChecksum: string;
+  snapshotAt: string;
+  organizerNote: string | null;
+}
+
+export interface RewardDistributionStatusResponse {
+  distributionId: string | null;
+  status: RewardDistributionStatusEnum;
+  snapshot: RewardDistributionSnapshot;
+  triggeredAt: string;
+  adminDecisionAt: string | null;
+  adminNote: string | null;
+  adminUserId: string | null;
+  rejectionReason: string | null;
+  updatedAt: string;
+}
+
 /**
- * Get hackathon escrow details
+ * Get reward distribution status (organizer)
+ * Returns the latest distribution status: PENDING_ADMIN_REVIEW, APPROVED, REJECTED, EXECUTING, etc.
  */
+export const getRewardDistributionStatus = async (
+  organizationId: string,
+  hackathonId: string
+): Promise<RewardDistributionStatusResponse> => {
+  const res = await api.get(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/rewards/status`
+  );
+  return res.data?.data ?? res.data;
+};
+
+export interface TriggerRewardDistributionRequest {
+  idempotencyKey: string;
+  organizerNote?: string;
+}
+
+/**
+ * Trigger a new reward distribution for a hackathon.
+ * Moves the snapshot into PENDING_ADMIN_REVIEW. Requires published results, funds in escrow.
+ */
+export const triggerRewardDistribution = async (
+  organizationId: string,
+  hackathonId: string,
+  data: TriggerRewardDistributionRequest
+): Promise<RewardDistributionStatusResponse> => {
+  const res = await api.post(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/rewards/trigger`,
+    data
+  );
+  return res.data?.data ?? res.data;
+};
+
 export const getHackathonEscrow = async (
   organizationId: string,
   hackathonId: string

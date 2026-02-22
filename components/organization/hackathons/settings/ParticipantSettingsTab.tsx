@@ -10,12 +10,14 @@ interface ParticipantSettingsTabProps {
   initialData?: ParticipantFormData;
   onSave?: (data: ParticipantFormData) => Promise<void>;
   isLoading?: boolean;
+  isRegistrationClosed?: boolean;
 }
 
 export default function ParticipantSettingsTab({
   initialData,
   onSave,
   isLoading = false,
+  isRegistrationClosed = false,
 }: ParticipantSettingsTabProps) {
   return (
     <div className='bg-background-card rounded-xl border border-gray-900 p-6'>
@@ -33,6 +35,7 @@ export default function ParticipantSettingsTab({
         initialData={initialData}
         onSave={onSave}
         isLoading={isLoading}
+        isRegistrationClosed={isRegistrationClosed}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Submission } from './types';
 import WinnerCard from './WinnerCard';
@@ -20,54 +20,68 @@ export default function WinnersGrid({
   winners,
   getPrizeForRank,
 }: WinnersGridProps) {
-  const maxRank = prizeTiers.length;
+  const totalTiers = prizeTiers.length;
 
-  const getGridCols = () => {
-    if (maxRank === 1) return 'grid-cols-1';
-    if (maxRank === 2) return 'grid-cols-1 md:grid-cols-2';
-    if (maxRank === 3) return 'grid-cols-1 md:grid-cols-3';
-    if (maxRank === 4) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3';
+  // Filter only tiers that have an assigned winner
+  const tiersWithWinners = useMemo(() => {
+    return prizeTiers.filter(tier => winners.some(w => w.rank === tier.rank));
+  }, [prizeTiers, winners]);
+
+  const getGridCols = (count: number) => {
+    if (count === 1) return 'grid-cols-1';
+    if (count === 2) return 'grid-cols-1 md:grid-cols-2';
+    if (count === 3) return 'grid-cols-1 md:grid-cols-3';
     return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
   };
 
-  const getTierOrder = () => {
-    const sortedTiers = [...prizeTiers].sort((a, b) => a.rank - b.rank);
+  const getTierOrder = (availableTiers: typeof prizeTiers) => {
+    const sortedTiers = [...availableTiers].sort((a, b) => a.rank - b.rank);
 
-    if (maxRank <= 3) {
-      const secondTier = sortedTiers.find(t => t.rank === 2);
-      const firstTier = sortedTiers.find(t => t.rank === 1);
-      const thirdTier = sortedTiers.find(t => t.rank === 3);
+    if (sortedTiers.length === 3) {
+      const secondTier = sortedTiers.find(t => t.rank === 2) || sortedTiers[1];
+      const firstTier = sortedTiers.find(t => t.rank === 1) || sortedTiers[0];
+      const thirdTier = sortedTiers.find(t => t.rank === 3) || sortedTiers[2];
       return [secondTier, firstTier, thirdTier].filter(Boolean);
     }
 
     return sortedTiers;
   };
 
-  const tiers = getTierOrder();
+  const tiersToDisplay = getTierOrder(tiersWithWinners);
 
   return (
-    <div className={cn('mb-12 grid gap-6', getGridCols())}>
-      {tiers.map(tier => {
-        if (!tier) return null;
+    <div className='flex flex-col gap-4'>
+      <div className='flex items-center justify-between'>
+        <span className='text-xs font-medium text-gray-500'>
+          {winners.length}/{totalTiers} Winners Assigned
+        </span>
+      </div>
 
-        const rank = tier.rank;
-        const winner = winners.find(s => s.rank === rank);
-        const prize = getPrizeForRank(rank);
-        const parts = prize.split(' ');
-        const amount = parts.slice(0, -1).join(' ');
-        const currency = parts[parts.length - 1];
+      <div
+        className={cn('mb-8 grid gap-3', getGridCols(tiersToDisplay.length))}
+      >
+        {tiersToDisplay.map(tier => {
+          if (!tier) return null;
 
-        return (
-          <WinnerCard
-            key={rank}
-            rank={rank}
-            winner={winner}
-            prizeAmount={amount}
-            currency={currency}
-            maxRank={maxRank}
-          />
-        );
-      })}
+          const rank = tier.rank;
+          const winner = winners.find(s => s.rank === rank);
+          const prize = getPrizeForRank(rank);
+          const parts = prize.split(' ');
+          const amount = parts.slice(0, -1).join(' ');
+          const currency = parts[parts.length - 1];
+
+          return (
+            <WinnerCard
+              key={rank}
+              rank={rank}
+              winner={winner}
+              prizeAmount={amount}
+              currency={currency}
+              maxRank={totalTiers}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

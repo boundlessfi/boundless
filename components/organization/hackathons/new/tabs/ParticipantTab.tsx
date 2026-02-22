@@ -39,6 +39,7 @@ interface ParticipantTabProps {
   onSave?: (data: ParticipantFormData) => Promise<void>;
   initialData?: ParticipantFormData;
   isLoading?: boolean;
+  isRegistrationClosed?: boolean;
 }
 
 const participantTypes = [
@@ -105,6 +106,7 @@ export default function ParticipantTab({
   onSave,
   initialData,
   isLoading = false,
+  isRegistrationClosed = false,
 }: ParticipantTabProps) {
   const form = useForm<ParticipantFormData>({
     resolver: zodResolver(participantSchema),
@@ -132,14 +134,15 @@ export default function ParticipantTab({
 
   const participantType = form.watch('participantType');
 
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
+
   const onSubmit = async (data: ParticipantFormData) => {
-    try {
-      if (onSave) {
-        await onSave(data);
-        toast.success('Participation settings saved successfully');
-      }
-    } catch {
-      toast.error('Failed to save participation settings. Please try again.');
+    if (onSave) {
+      await onSave(data);
     }
   };
 
@@ -147,29 +150,44 @@ export default function ParticipantTab({
     value: number;
     onIncrement: () => void;
     onDecrement: () => void;
+    disabled?: boolean;
   }
 
   const NumberInput = ({
     value,
     onIncrement,
     onDecrement,
+    disabled = false,
   }: NumberInputProps) => (
     <div className='flex items-center overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/50'>
-      <div className='flex-1 px-4 py-2.5 text-sm font-medium text-white'>
+      <div
+        className={cn(
+          'flex-1 px-4 py-2.5 text-sm font-medium text-white',
+          disabled && 'text-zinc-500'
+        )}
+      >
         {value}
       </div>
       <div className='flex border-l border-zinc-800'>
         <button
           type='button'
           onClick={onDecrement}
-          className='flex h-full items-center justify-center bg-zinc-900/50 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white'
+          disabled={disabled}
+          className={cn(
+            'flex h-full items-center justify-center bg-zinc-900/50 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white',
+            disabled && 'cursor-not-allowed opacity-50'
+          )}
         >
           <Minus className='h-4 w-4' />
         </button>
         <button
           type='button'
           onClick={onIncrement}
-          className='flex h-full items-center justify-center border-l border-zinc-800 bg-zinc-900/50 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white'
+          disabled={disabled}
+          className={cn(
+            'flex h-full items-center justify-center border-l border-zinc-800 bg-zinc-900/50 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white',
+            disabled && 'cursor-not-allowed opacity-50'
+          )}
         >
           <Plus className='h-4 w-4' />
         </button>
@@ -204,12 +222,17 @@ export default function ParticipantTab({
                         <button
                           key={value}
                           type='button'
-                          onClick={() => field.onChange(value)}
+                          onClick={() =>
+                            !isRegistrationClosed && field.onChange(value)
+                          }
+                          disabled={isRegistrationClosed}
                           className={cn(
                             'flex items-center gap-3 rounded-lg border p-4 text-left transition-all',
                             isSelected
                               ? 'border-primary/50 bg-primary/10 shadow-primary/10 shadow-sm'
-                              : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50'
+                              : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50',
+                            isRegistrationClosed &&
+                              'cursor-not-allowed opacity-60'
                           )}
                         >
                           <div
@@ -265,12 +288,17 @@ export default function ParticipantTab({
                             <button
                               key={value}
                               type='button'
-                              onClick={() => field.onChange(value)}
+                              onClick={() =>
+                                !isRegistrationClosed && field.onChange(value)
+                              }
+                              disabled={isRegistrationClosed}
                               className={cn(
                                 'flex w-full items-start gap-3 rounded-lg border p-4 text-left transition-all',
                                 isSelected
                                   ? 'border-primary/50 bg-primary/10'
-                                  : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50'
+                                  : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50',
+                                isRegistrationClosed &&
+                                  'cursor-not-allowed opacity-60'
                               )}
                             >
                               <div
@@ -376,6 +404,7 @@ export default function ParticipantTab({
                         </div>
                         <NumberInput
                           value={field.value || 2}
+                          disabled={isRegistrationClosed}
                           onIncrement={() => {
                             const next = Math.min(
                               (field.value || 2) + 1,
@@ -459,6 +488,7 @@ export default function ParticipantTab({
                         <Switch
                           checked={field.value ?? false}
                           onCheckedChange={field.onChange}
+                          disabled={isRegistrationClosed}
                         />
                       </div>
                     </FormControl>

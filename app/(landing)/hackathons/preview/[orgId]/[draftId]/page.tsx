@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getDraft, PrizeTier, VenueType } from '@/lib/api/hackathons';
+import { getOrganization } from '@/lib/api/organization';
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
@@ -93,6 +94,18 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
           resolvedParams.orgId,
           resolvedParams.draftId
         );
+        let organizationData = { name: '', logo: '' };
+        try {
+          const orgRes = await getOrganization(resolvedParams.orgId);
+          if (orgRes) {
+            organizationData = {
+              name: orgRes.name,
+              logo: orgRes.logo || '',
+            };
+          }
+        } catch (orgErr) {
+          console.error('Failed to fetch organization for preview:', orgErr);
+        }
 
         if (response.success && response.data) {
           const draft = response.data;
@@ -111,8 +124,8 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
             organizationId: resolvedParams.orgId,
             organization: {
               id: resolvedParams.orgId,
-              name: '', // We don't have organizer name from draft
-              logo: '',
+              name: organizationData.name,
+              logo: organizationData.logo,
             },
 
             status: 'DRAFT',
@@ -144,6 +157,12 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
             submissionDeadline: draft.data.timeline?.submissionDeadline || '',
             registrationDeadline:
               draft.data.participation?.registrationDeadline || '',
+            judgingStart: draft.data.timeline?.judgingStart || '',
+            judgingEnd: draft.data.timeline?.judgingEnd || '',
+            winnersAnnouncedAt:
+              draft.data.timeline?.winnersAnnouncedAt ||
+              draft.data.timeline?.winnerAnnouncementDate ||
+              '',
             customRegistrationDeadline:
               draft.data.participation?.registrationDeadline || null,
 

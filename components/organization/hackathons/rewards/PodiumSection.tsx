@@ -35,10 +35,10 @@ export default function PodiumSection({
     const thirdPlace = winners.find(s => s.rank === 3);
 
     return (
-      <div className='mb-6 grid grid-cols-3 items-start justify-center gap-2 sm:grid-cols-[repeat(3,120px)] sm:gap-3 md:grid-cols-[repeat(3,150px)] md:gap-4'>
-        <PodiumCard rank={2} submission={secondPlace} />
-        <PodiumCard rank={1} submission={firstPlace} />
-        <PodiumCard rank={3} submission={thirdPlace} />
+      <div className='mb-6 flex flex-wrap items-start justify-center gap-2 sm:gap-3 md:gap-4'>
+        {secondPlace && <PodiumCard rank={2} submission={secondPlace} />}
+        {firstPlace && <PodiumCard rank={1} submission={firstPlace} />}
+        {thirdPlace && <PodiumCard rank={3} submission={thirdPlace} />}
       </div>
     );
   }
@@ -47,13 +47,16 @@ export default function PodiumSection({
     <div
       className={cn(
         'mb-6 grid items-start justify-center gap-2 sm:gap-3 md:gap-4',
-        getGridCols(maxRank)
+        getGridCols(winners.length)
       )}
     >
-      {Array.from({ length: maxRank }, (_, i) => i + 1).map(rank => {
-        const winner = winners.find(s => s.rank === rank);
-        return <PodiumCard key={rank} rank={rank} submission={winner} />;
-      })}
+      {winners.map(winner => (
+        <PodiumCard
+          key={winner.rank}
+          rank={winner.rank || 0}
+          submission={winner}
+        />
+      ))}
     </div>
   );
 }

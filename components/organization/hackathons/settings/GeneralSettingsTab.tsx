@@ -76,6 +76,8 @@ export default function GeneralSettingsTab({
     resolver: zodResolver(infoSchema),
     defaultValues: {
       name: initialData?.name || '',
+      tagline: initialData?.tagline || '',
+      slug: initialData?.slug || '',
       banner: initialData?.banner || '',
       description: initialData?.description || '',
       categories: Array.isArray(initialData?.categories)
@@ -170,6 +172,46 @@ export default function GeneralSettingsTab({
                     {...field}
                     type='text'
                     placeholder='Enter a title for your hackathon'
+                    className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'
+                  />
+                </FormControl>
+                <FormMessage className='text-error-400 text-xs' />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='slug'
+            render={({ field }) => (
+              <FormItem className='gap-3'>
+                <FormLabel className='text-sm'>URL Slug</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type='text'
+                    placeholder='e.g. my-awesome-hackathon'
+                    className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'
+                  />
+                </FormControl>
+                <FormMessage className='text-error-400 text-xs' />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='tagline'
+            render={({ field }) => (
+              <FormItem className='gap-3'>
+                <FormLabel className='text-sm'>
+                  Tagline <span className='text-error-400'>*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type='text'
+                    placeholder='Enter a short tagline for your hackathon'
                     className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'
                   />
                 </FormControl>

@@ -7,6 +7,7 @@ import PublishWinnersWizard from '@/components/organization/hackathons/rewards/P
 import { RewardsPageHeader } from '@/components/organization/hackathons/rewards/RewardsPageHeader';
 import { RewardsPageContent } from '@/components/organization/hackathons/rewards/RewardsPageContent';
 import { useHackathonRewards } from '@/hooks/use-hackathon-rewards';
+import { useRewardDistributionStatus } from '@/hooks/use-reward-distribution-status';
 import { useRankAssignment } from '@/hooks/use-rank-assignment';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AuthGuard } from '@/components/auth';
@@ -27,10 +28,19 @@ export default function RewardsPage() {
     isLoadingSubmissions,
     error,
     refreshEscrow,
+    refetchHackathon,
+    resultsPublished,
+    hackathon,
   } = useHackathonRewards(organizationId, hackathonId);
 
   const { handleRankChange } = useRankAssignment();
   const [isPublishWizardOpen, setIsPublishWizardOpen] = useState(false);
+
+  const {
+    distributionStatus,
+    isLoading: isLoadingDistributionStatus,
+    refetch: refetchDistributionStatus,
+  } = useRewardDistributionStatus(organizationId, hackathonId);
 
   const maxRank = useMemo(() => prizeTiers.length, [prizeTiers.length]);
   const winners = useMemo(
@@ -56,6 +66,8 @@ export default function RewardsPage() {
 
   const handlePublishSuccess = () => {
     refreshEscrow();
+    refetchDistributionStatus();
+    refetchHackathon();
   };
 
   return (
@@ -95,6 +107,11 @@ export default function RewardsPage() {
             hasWinners={hasWinners}
             onPublishClick={() => setIsPublishWizardOpen(true)}
             onRankChange={handleRankChangeWrapper}
+            distributionStatus={distributionStatus}
+            isLoadingDistributionStatus={isLoadingDistributionStatus}
+            onRefreshDistributionStatus={refetchDistributionStatus}
+            resultsPublished={resultsPublished}
+            escrowAddress={hackathon?.escrowAddress || hackathon?.contractId}
           />
         )}
 

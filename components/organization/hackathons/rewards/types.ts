@@ -11,4 +11,6 @@ export interface Submission {
   walletAddress?: string;
   averageScore?: number;
   judgeCount?: number;
+  category?: string;
+  commentCount?: number;
 }

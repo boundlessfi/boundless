@@ -356,19 +356,25 @@ export const disqualifySubmission = async (
 };
 
 /**
- * Get shortlisted submissions for judging
+ * Get shortlisted submissions for judging (or all if status is undefined)
  */
 export const getJudgingSubmissions = async (
   organizationId: string,
   hackathonId: string,
   page = 1,
-  limit = 10
+  limit = 10,
+  status?: string
 ): Promise<GetJudgingSubmissionsResponse> => {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
-    status: 'SHORTLISTED',
   });
+
+  // Default to SHORTLISTED for backwards-compatibility, passing 'all' bypasses it
+  const filterStatus = status === 'all' ? undefined : status || 'SHORTLISTED';
+  if (filterStatus) {
+    params.append('status', filterStatus);
+  }
 
   const res = await api.get(
     `/hackathons/${hackathonId}/submissions?${params.toString()}`

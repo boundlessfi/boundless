@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api/api';
+import { getHackathon, Hackathon } from '@/lib/api/hackathons';
+import { useEffect } from 'react';
 import GeneralSettingsTab from '@/components/organization/hackathons/settings/GeneralSettingsTab';
 import TimelineSettingsTab from '@/components/organization/hackathons/settings/TimelineSettingsTab';
 import ParticipantSettingsTab from '@/components/organization/hackathons/settings/ParticipantSettingsTab';
@@ -32,100 +34,154 @@ export default function SettingsPage() {
   const hackathonId = params.hackathonId as string;
 
   const [isSaving, setIsSaving] = useState(false);
+  const [hackathon, setHackathon] = useState<Hackathon | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchHackathon = async () => {
+    try {
+      const res = await getHackathon(hackathonId);
+      setHackathon(res.data);
+    } catch {
+      toast.error('Failed to load hackathon data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (hackathonId) {
+      fetchHackathon();
+    }
+  }, [hackathonId]);
 
   const tabTriggerClassName =
     'data-[state=active]:border-b-primary rounded-none border-b-2 border-transparent bg-transparent px-0 pt-4 pb-3 text-sm font-medium text-gray-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none flex items-center gap-2';
 
-  const mockHackathonData = {
-    info: {
-      name: 'Web3 Innovation Hackathon',
-      banner: 'https://example.com/banner.jpg',
-      description: '<p>Join us for an exciting hackathon...</p>',
-      category: ['DeFi' as const],
-      venueType: 'virtual' as const,
-      country: '',
-      state: '',
-      city: '',
-      venueName: '',
-      venueAddress: '',
-    },
-    timeline: {
-      startDate: new Date('2025-01-15'),
-      endDate: new Date('2025-01-20'),
-      registrationDeadline: new Date('2025-01-10'),
-      submissionDeadline: new Date('2025-01-18'),
-      timezone: 'UTC',
-      phases: [],
-    },
-    participant: {
-      participantType: 'team_or_individual' as const,
-      teamMin: 2,
-      teamMax: 5,
-      about: '',
-      require_github: true,
-      require_demo_video: true,
-      require_other_links: false,
-      details_tab: true,
-      schedule_tab: true,
-      rules_tab: true,
-      reward_tab: true,
-      announcements_tab: true,
-      partners_tab: true,
-      join_a_team_tab: true,
-      projects_tab: true,
-      participants_tab: true,
-    },
-    rewards: {
-      prizeTiers: [
-        {
-          id: '1',
-          place: '1st',
-          prizeAmount: '10000',
-          currency: 'USDC',
-          description: '',
-          passMark: 80,
-        },
-        {
-          id: '2',
-          place: '2nd',
-          prizeAmount: '5000',
-          currency: 'USDC',
-          description: '',
-          passMark: 70,
-        },
-        {
-          id: '3',
-          place: '3rd',
-          prizeAmount: '3000',
-          currency: 'USDC',
-          description: '',
-          passMark: 60,
-        },
-      ],
-    },
-    collaboration: {
-      contactEmail: 'contact@example.com',
-      telegram: '',
-      discord: '',
-      socialLinks: [],
-      sponsorsPartners: [],
-    },
+  // Mapping functions to convert Hackathon to tab data types
+  const getGeneralData = (h: Hackathon | null) => {
+    if (!h) return undefined;
+    return {
+      name: h.name,
+      tagline: h.tagline,
+      slug: h.slug,
+      banner: h.banner,
+      description: h.description,
+      categories: h.categories,
+      venueType: h.venueType.toLowerCase() as any,
+      country: h.country,
+      state: h.state,
+      city: h.city,
+      venueName: h.venueName,
+      venueAddress: h.venueAddress,
+    };
+  };
+
+  const getTimelineData = (h: Hackathon | null) => {
+    if (!h) return undefined;
+    return {
+      startDate: h.startDate ? new Date(h.startDate) : undefined,
+      endDate: h.endDate ? new Date(h.endDate) : undefined,
+      submissionDeadline: h.submissionDeadline
+        ? new Date(h.submissionDeadline)
+        : undefined,
+      judgingStart: h.judgingStart ? new Date(h.judgingStart) : undefined,
+      judgingEnd: h.judgingEnd ? new Date(h.judgingEnd) : undefined,
+      winnersAnnouncedAt: h.winnersAnnouncedAt
+        ? new Date(h.winnersAnnouncedAt)
+        : undefined,
+      timezone: h.timezone || 'UTC',
+      phases: h.phases?.map(p => ({
+        ...p,
+        startDate: p.startDate ? new Date(p.startDate) : undefined,
+        endDate: p.endDate ? new Date(p.endDate) : undefined,
+      })) as any,
+    };
+  };
+
+  const getParticipantData = (h: Hackathon | null) => {
+    if (!h) return undefined;
+    return {
+      participantType: h.participantType.toLowerCase() as any,
+      teamMin: h.teamMin,
+      teamMax: h.teamMax,
+      require_github: h.requireGithub,
+      require_demo_video: h.requireDemoVideo,
+      require_other_links: h.requireOtherLinks,
+      registrationDeadlinePolicy:
+        h.registrationDeadlinePolicy?.toLowerCase() as any,
+      registrationDeadline: h.customRegistrationDeadline || undefined,
+      detailsTab: h.enabledTabs.includes('detailsTab'),
+      participantsTab: h.enabledTabs.includes('participantsTab'),
+      resourcesTab: h.enabledTabs.includes('resourcesTab'),
+      submissionTab: h.enabledTabs.includes('submissionTab'),
+      announcementsTab: h.enabledTabs.includes('announcementsTab'),
+      discussionTab: h.enabledTabs.includes('discussionTab'),
+      winnersTab: h.enabledTabs.includes('winnersTab'),
+      sponsorsTab: h.enabledTabs.includes('sponsorsTab'),
+      joinATeamTab: h.enabledTabs.includes('joinATeamTab'),
+      rulesTab: h.enabledTabs.includes('rulesTab'),
+    };
+  };
+
+  const getAdvancedData = (h: Hackathon | null) => {
+    if (!h) return undefined;
+    const adv = h.metadata?.advancedSettings;
+    return {
+      isPublic: adv?.isPublic ?? true,
+      allowLateRegistration: adv?.allowLateRegistration ?? false,
+      requireApproval: adv?.requireApproval ?? false,
+      maxParticipants: adv?.maxParticipants,
+      customDomain: adv?.customDomain || '',
+      enableDiscord: adv?.enableDiscord ?? !!h.discord,
+      discordInviteLink: adv?.discordInviteLink || h.discord || '',
+      enableTelegram: adv?.enableTelegram ?? !!h.telegram,
+      telegramInviteLink: adv?.telegramInviteLink || h.telegram || '',
+    };
   };
 
   const handleSave = async (section: string, data: unknown) => {
     setIsSaving(true);
     try {
-      await api.patch(
-        `/organizations/${organizationId}/hackathons/${hackathonId}/settings/${section.toLowerCase()}`,
-        data
-      );
+      if (section === 'General') {
+        await api.patch(
+          `/organizations/${organizationId}/hackathons/${hackathonId}/content`,
+          { information: data }
+        );
+      } else if (section === 'Collaboration') {
+        await api.patch(
+          `/organizations/${organizationId}/hackathons/${hackathonId}/content`,
+          { collaboration: data }
+        );
+      } else if (section === 'Participants') {
+        await api.patch(
+          `/organizations/${organizationId}/hackathons/${hackathonId}/schedule`,
+          { participation: data }
+        );
+      } else if (section === 'Rewards') {
+        await api.patch(
+          `/organizations/${organizationId}/hackathons/${hackathonId}/financial`,
+          { rewards: data }
+        );
+      } else {
+        await api.patch(
+          `/organizations/${organizationId}/hackathons/${hackathonId}/settings/${section.toLowerCase()}`,
+          data
+        );
+      }
       toast.success(`${section} settings saved successfully!`);
-    } catch {
-      toast.error(`Failed to save ${section} settings`);
+      await fetchHackathon(); // Call fetchHackathon after successful save
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || `Failed to save ${section} settings`;
+      const errorMessage = Array.isArray(message) ? message[0] : message;
+      toast.error(errorMessage);
+      throw error; // Re-throw to let callers know it failed
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) return <Loading />;
 
   return (
     <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
@@ -208,8 +264,11 @@ export default function SettingsPage() {
               <GeneralSettingsTab
                 organizationId={organizationId}
                 hackathonId={hackathonId}
-                initialData={mockHackathonData.info}
-                onSave={data => handleSave('General', data)}
+                initialData={getGeneralData(hackathon) as any}
+                onSave={async data => {
+                  await handleSave('General', data);
+                  await fetchHackathon();
+                }}
                 isLoading={isSaving}
               />
             </TabsContent>
@@ -218,9 +277,8 @@ export default function SettingsPage() {
               <TimelineSettingsTab
                 organizationId={organizationId}
                 hackathonId={hackathonId}
-                initialData={mockHackathonData.timeline}
-                onSave={data => handleSave('Timeline', data)}
-                isLoading={isSaving}
+                initialData={getTimelineData(hackathon)}
+                onSaveSuccess={fetchHackathon}
               />
             </TabsContent>
 
@@ -228,8 +286,16 @@ export default function SettingsPage() {
               <ParticipantSettingsTab
                 organizationId={organizationId}
                 hackathonId={hackathonId}
-                initialData={mockHackathonData.participant}
-                onSave={data => handleSave('Participants', data)}
+                initialData={
+                  hackathon ? getParticipantData(hackathon) : undefined
+                }
+                isRegistrationClosed={
+                  hackathon ? !hackathon.registrationOpen : false
+                }
+                onSave={async data => {
+                  await handleSave('Participants', data);
+                  await fetchHackathon();
+                }}
                 isLoading={isSaving}
               />
             </TabsContent>
@@ -238,8 +304,11 @@ export default function SettingsPage() {
               <RewardsSettingsTab
                 organizationId={organizationId}
                 hackathonId={hackathonId}
-                initialData={mockHackathonData.rewards}
-                onSave={data => handleSave('Rewards', data)}
+                initialData={{ prizeTiers: hackathon?.prizeTiers || [] } as any}
+                onSave={async data => {
+                  await handleSave('Rewards', data);
+                  await fetchHackathon();
+                }}
                 isLoading={isSaving}
               />
             </TabsContent>
@@ -248,8 +317,19 @@ export default function SettingsPage() {
               <CollaborationSettingsTab
                 organizationId={organizationId}
                 hackathonId={hackathonId}
-                initialData={mockHackathonData.collaboration}
-                onSave={data => handleSave('Collaboration', data)}
+                initialData={
+                  {
+                    contactEmail: hackathon?.contactEmail || '',
+                    telegram: hackathon?.telegram || '',
+                    discord: hackathon?.discord || '',
+                    socialLinks: hackathon?.socialLinks || [],
+                    sponsorsPartners: hackathon?.sponsorsPartners || [],
+                  } as any
+                }
+                onSave={async data => {
+                  await handleSave('Collaboration', data);
+                  await fetchHackathon();
+                }}
                 isLoading={isSaving}
               />
             </TabsContent>
@@ -258,8 +338,8 @@ export default function SettingsPage() {
               <AdvancedSettingsTab
                 organizationId={organizationId}
                 hackathonId={hackathonId}
-                onSave={data => handleSave('Advanced', data)}
-                isLoading={isSaving}
+                initialData={getAdvancedData(hackathon)}
+                onSaveSuccess={fetchHackathon}
               />
             </TabsContent>
 

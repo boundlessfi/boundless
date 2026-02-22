@@ -108,11 +108,9 @@ export default function PodiumCard({ rank, submission }: PodiumCardProps) {
           >
             {submission ? (
               <>
-                <AvatarImage
-                  src={submission.avatar || 'https://github.com/shadcn.png'}
-                />
+                <AvatarImage src={submission.avatar} />
                 <AvatarFallback>
-                  {submission.name.charAt(0) || 'U'}
+                  {submission.name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </>
             ) : (
