@@ -6,7 +6,9 @@
 import { StellarNetwork } from '@/hooks/use-wallet';
 
 // Environment variables
-const STELLAR_NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'testnet';
+const rawNetwork = process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'testnet';
+const STELLAR_NETWORK =
+  rawNetwork === 'public' || rawNetwork === 'mainnet' ? 'public' : 'testnet';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const WALLET_CONNECT_PROJECT_ID =
   process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
@@ -70,7 +72,7 @@ export function validateAddress(address: string): boolean {
  */
 export function getExplorerUrl(
   address: string,
-  network: NetworkType = 'testnet'
+  network: NetworkType = getCurrentNetwork()
 ): string {
   if (!validateAddress(address)) {
     throw new Error('Invalid Stellar address');
@@ -88,7 +90,7 @@ export function getExplorerUrl(
  */
 export function getTransactionExplorerUrl(
   txHash: string,
-  network: NetworkType = 'testnet'
+  network: NetworkType = getCurrentNetwork()
 ): string {
   const networkConfig = NETWORKS[network];
   return `${networkConfig.explorer}/tx/${txHash}`;
@@ -104,7 +106,7 @@ export function getTransactionExplorerUrl(
 export function getAssetExplorerUrl(
   assetCode: string,
   assetIssuer: string,
-  network: NetworkType = 'testnet'
+  network: NetworkType = getCurrentNetwork()
 ): string {
   const networkConfig = NETWORKS[network];
   return `${networkConfig.explorer}/asset/${assetCode}-${assetIssuer}`;
@@ -132,7 +134,9 @@ export function getCurrentNetwork(): NetworkType {
  * @param network - The network type
  * @returns Horizon server URL
  */
-export function getHorizonUrl(network: NetworkType = 'testnet'): string {
+export function getHorizonUrl(
+  network: NetworkType = getCurrentNetwork()
+): string {
   return NETWORKS[network].horizon;
 }
 
@@ -141,7 +145,9 @@ export function getHorizonUrl(network: NetworkType = 'testnet'): string {
  * @param network - The network type
  * @returns Network passphrase
  */
-export function getNetworkPassphrase(network: NetworkType = 'testnet'): string {
+export function getNetworkPassphrase(
+  network: NetworkType = getCurrentNetwork()
+): string {
   return NETWORKS[network].networkPassphrase;
 }
 
@@ -150,7 +156,9 @@ export function getNetworkPassphrase(network: NetworkType = 'testnet'): string {
  * @param network - The network type
  * @returns Network color hex code
  */
-export function getNetworkColor(network: NetworkType = 'testnet'): string {
+export function getNetworkColor(
+  network: NetworkType = getCurrentNetwork()
+): string {
   return NETWORKS[network].color;
 }
 

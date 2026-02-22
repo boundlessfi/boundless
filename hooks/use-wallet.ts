@@ -1,6 +1,7 @@
 import { kit } from '@/lib/config/wallet-kit';
 import { useWalletContext } from '@/components/providers/wallet-provider';
 import { ISupportedWallet } from '@creit.tech/stellar-wallets-kit';
+import { getCurrentNetwork } from '@/lib/wallet-utils';
 
 // Type exports for compatibility
 export type StellarNetwork = 'testnet' | 'public';
@@ -9,7 +10,7 @@ export type StellarNetwork = 'testnet' | 'public';
 export const useWalletStore = () => {
   const { walletAddress, walletName } = useWalletContext();
   return {
-    network: 'testnet' as StellarNetwork,
+    network: getCurrentNetwork() as StellarNetwork,
     availableWallets: [] as Array<{
       id: string;
       name: string;
@@ -59,7 +60,7 @@ export const useNetworkSwitcher = () => {
     switchNetwork: async () => {},
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     switchToNetwork: async (_network: StellarNetwork) => {},
-    currentNetwork: 'testnet' as StellarNetwork,
+    currentNetwork: getCurrentNetwork() as StellarNetwork,
   };
 };
 

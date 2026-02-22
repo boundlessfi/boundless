@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { useWalletStore } from '@/hooks/use-wallet';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { getTransactionExplorerUrl } from '@/lib/wallet-utils';
 
 interface TxResultToastProps {
   hash: string;
@@ -38,9 +39,7 @@ const TxResultToast: React.FC<TxResultToastProps> = ({
   };
 
   const getExplorerUrl = () => {
-    return network === 'testnet'
-      ? `https://testnet.stellarexpert.io/tx/${hash}`
-      : `https://stellar.expert/explorer/public/tx/${hash}`;
+    return getTransactionExplorerUrl(hash, network as any);
   };
 
   const formatHash = (txHash: string) => {

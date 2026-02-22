@@ -13,6 +13,8 @@ import { useWalletStore } from '@/hooks/use-wallet';
 import { toast } from 'sonner';
 import { AlertCircle, Loader2, X } from 'lucide-react';
 
+import { getCurrentNetwork } from '@/lib/wallet-utils';
+
 const ConnectWallet = ({
   open,
   onOpenChange,
@@ -22,7 +24,7 @@ const ConnectWallet = ({
   onOpenChange: (open: boolean) => void;
   onConnect?: () => void;
 }) => {
-  const [selectedNetwork, setSelectedNetwork] = useState('testnet');
+  const [selectedNetwork, setSelectedNetwork] = useState(getCurrentNetwork());
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
 

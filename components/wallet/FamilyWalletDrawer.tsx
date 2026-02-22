@@ -3,7 +3,7 @@ import { Drawer } from 'vaul';
 import { motion, AnimatePresence } from 'motion/react';
 import { useWallet } from '@/hooks/use-wallet';
 import { useWalletContext } from '@/components/providers/wallet-provider';
-import { formatAddress } from '@/lib/wallet-utils';
+import { formatAddress, getExplorerUrl } from '@/lib/wallet-utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -450,7 +450,7 @@ export function FamilyWalletDrawer({
                         )}
                         <Button variant='outline' className='w-full' asChild>
                           <a
-                            href={`https://stellar.expert/explorer/testnet/account/${walletAddress}`}
+                            href={getExplorerUrl(walletAddress)}
                             target='_blank'
                             rel='noopener noreferrer'
                           >

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useWallet } from '@/hooks/use-wallet';
 import { useWalletContext } from '@/components/providers/wallet-provider';
-import { formatAddress } from '@/lib/wallet-utils';
+import { formatAddress, getExplorerUrl } from '@/lib/wallet-utils';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -131,7 +131,7 @@ export function WalletSheet({ open, onOpenChange }: WalletSheetProps) {
               </Button>
               <Button variant='ghost' size='icon' className='h-6 w-6' asChild>
                 <a
-                  href={`https://stellar.expert/explorer/testnet/account/${walletAddress}`}
+                  href={getExplorerUrl(walletAddress)}
                   target='_blank'
                   rel='noopener noreferrer'
                 >
@@ -275,7 +275,7 @@ export function WalletSheet({ open, onOpenChange }: WalletSheetProps) {
                       asChild
                     >
                       <a
-                        href={`https://stellar.expert/explorer/testnet/account/${walletAddress}`}
+                        href={getExplorerUrl(walletAddress)}
                         target='_blank'
                         rel='noopener noreferrer'
                       >

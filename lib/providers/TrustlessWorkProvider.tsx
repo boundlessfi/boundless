@@ -44,14 +44,11 @@ export function TrustlessWorkProvider({
 
   // Get API key from environment variable
   useEffect(() => {
-    const key =
-      process.env.NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY ||
-      'otpYaD_lfSkaZLivBnY0DA.26e285f5303050dc43978f482cee63d4028597ec4e3597e1e2ccd67af38472e4';
+    const key = process.env.NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY || '';
     setApiKey(key);
   }, []);
 
   // Network can be configured via environment variable
-  // Default to testnet for development
   useEffect(() => {
     const envNetwork = process.env.NEXT_PUBLIC_STELLAR_NETWORK;
     if (envNetwork === 'public' || envNetwork === 'mainnet') {
@@ -73,12 +70,7 @@ export function TrustlessWorkProvider({
 
   return (
     <TrustlessWorkContext.Provider value={contextValue}>
-      <TrustlessWorkConfig
-        baseURL={baseURL}
-        apiKey={
-          'otpYaD_lfSkaZLivBnY0DA.26e285f5303050dc43978f482cee63d4028597ec4e3597e1e2ccd67af38472e4'
-        }
-      >
+      <TrustlessWorkConfig baseURL={baseURL} apiKey={apiKey}>
         {children}
       </TrustlessWorkConfig>
     </TrustlessWorkContext.Provider>
