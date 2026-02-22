@@ -155,7 +155,7 @@ export default function Hero2() {
                 registrationDeadlinePolicy:
                   'BEFORE_SUBMISSION_DEADLINE' as const,
                 daysUntilStart: 0,
-                daysUntilEnd: 20,
+                daysUntilEnd: 0,
                 participantType: 'INDIVIDUAL' as const,
                 teamMin: 1,
                 teamMax: 4,

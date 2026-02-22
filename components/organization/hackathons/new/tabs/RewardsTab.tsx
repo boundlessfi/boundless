@@ -423,8 +423,16 @@ export default function RewardsTab({
   };
 
   const onSubmit = async (data: RewardsFormData) => {
-    if (onSave) {
-      await onSave(data);
+    try {
+      if (onSave) {
+        await onSave(data);
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message;
+      const errorMessage = Array.isArray(message) ? message[0] : message;
+      toast.error(
+        errorMessage || 'Failed to save rewards settings. Please try again.'
+      );
     }
   };
 

@@ -12,7 +12,11 @@ interface WinnersGridProps {
     currency: string;
   }>;
   winners: Submission[];
-  getPrizeForRank: (rank: number) => string;
+  getPrizeForRank: (rank: number) => {
+    amount?: string;
+    currency?: string;
+    label?: string;
+  };
 }
 
 export default function WinnersGrid({
@@ -66,9 +70,9 @@ export default function WinnersGrid({
           const rank = tier.rank;
           const winner = winners.find(s => s.rank === rank);
           const prize = getPrizeForRank(rank);
-          const parts = prize.split(' ');
-          const amount = parts.slice(0, -1).join(' ');
-          const currency = parts[parts.length - 1];
+          const amount = prize.amount || '0';
+          const currency = prize.currency || 'USDC';
+          const label = prize.label;
 
           return (
             <WinnerCard
@@ -77,6 +81,7 @@ export default function WinnersGrid({
               winner={winner}
               prizeAmount={amount}
               currency={currency}
+              prizeLabel={label}
               maxRank={totalTiers}
             />
           );

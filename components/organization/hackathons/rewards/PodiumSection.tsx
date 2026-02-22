@@ -52,7 +52,7 @@ export default function PodiumSection({
     >
       {winners.map(winner => (
         <PodiumCard
-          key={winner.rank}
+          key={winner.id}
           rank={winner.rank || 0}
           submission={winner}
         />

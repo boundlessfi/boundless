@@ -52,7 +52,15 @@ export const infoSchema = z
     city: z.string().optional(),
     venueName: z.string().optional(),
     venueAddress: z.string().optional(),
-    slug: z.string().optional(),
+    slug: z
+      .string()
+      .min(3, 'Slug must be at least 3 characters')
+      .max(50, 'Slug must be less than 50 characters')
+      .regex(
+        /^[a-z0-9-]+$/,
+        'Slug can only contain lowercase letters, numbers, and hyphens'
+      )
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.venueType === 'physical') {

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMarkdown } from '@/hooks/use-markdown';
+import { sanitizeHtml } from '@/lib/utils/renderHtml';
 
 interface AnnouncementSectionProps {
   announcement: string;
@@ -16,10 +17,22 @@ export default function AnnouncementSection({
 }: AnnouncementSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const announcementContent = useMarkdown(announcement || '', {
+  const announcementRaw = announcement || '';
+  const isLongAnnouncement = announcementRaw.length > 300;
+
+  const markdownToParse =
+    !isExpanded && isLongAnnouncement
+      ? announcementRaw.substring(0, 300) + '...'
+      : announcementRaw;
+
+  const announcementContent = useMarkdown(markdownToParse, {
     breaks: true,
     gfm: true,
   });
+
+  const handleToggleExpand = () => setIsExpanded(!isExpanded);
+
+  const sanitizedContent = sanitizeHtml(announcementContent.content);
 
   return (
     <div className='bg-background-card rounded-lg border border-gray-900 p-3'>
@@ -40,17 +53,11 @@ export default function AnnouncementSection({
           <>
             <div
               className='markdown-content text-gray-400'
-              dangerouslySetInnerHTML={{
-                __html: isExpanded
-                  ? announcementContent.content
-                  : announcementContent.content.length > 300
-                    ? announcementContent.content.substring(0, 300) + '...'
-                    : announcementContent.content,
-              }}
+              dangerouslySetInnerHTML={sanitizedContent}
             />
-            {announcementContent.content.length > 300 && (
+            {isLongAnnouncement && (
               <button
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={handleToggleExpand}
                 className='text-primary mt-1 text-xs hover:underline'
               >
                 {isExpanded ? 'View Less' : 'View More'}

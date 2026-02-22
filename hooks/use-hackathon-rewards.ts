@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import pLimit from 'p-limit';
 import { useGetEscrowFromIndexerByContractIds } from '@trustless-work/escrow/hooks';
 import type {
   GetEscrowFromIndexerByContractIdsParams,
@@ -51,6 +52,21 @@ const mapEscrowToHackathonEscrowData = (
     isFunded,
     canUpdate,
   };
+};
+
+const getOrdinalSuffix = (i: number) => {
+  const j = i % 10,
+    k = i % 100;
+  if (j === 1 && k !== 11) {
+    return i + 'st';
+  }
+  if (j === 2 && k !== 12) {
+    return i + 'nd';
+  }
+  if (j === 3 && k !== 13) {
+    return i + 'rd';
+  }
+  return i + 'th';
 };
 
 const getDefaultPrizeTiers = (): PrizeTier[] => [
@@ -173,12 +189,12 @@ export const useHackathonRewards = (
     try {
       const response = await getHackathon(hackathonId);
       if (response.success) {
-        const hackathon: Hackathon = response.data;
-        setHackathon(hackathon);
+        const fetchedHackathon: Hackathon = response.data;
+        setHackathon(fetchedHackathon);
 
-        if (hackathon.prizeTiers) {
+        if (fetchedHackathon.prizeTiers) {
           // Sort tiers by amount descending or use position if available
-          const sortedTiers = [...hackathon.prizeTiers].sort(
+          const sortedTiers = [...fetchedHackathon.prizeTiers].sort(
             (a: any, b: any) => {
               if (a.position && b.position) return a.position - b.position;
               return (b.amount || 0) - (a.amount || 0);
@@ -189,8 +205,8 @@ export const useHackathonRewards = (
             (tier: any, index: number) => ({
               id: tier.id || `tier-${index + 1}`,
               place: tier.position
-                ? `${tier.position}${tier.position === 1 ? 'st' : tier.position === 2 ? 'nd' : tier.position === 3 ? 'rd' : 'th'} Place`
-                : `${index + 1}st Place`,
+                ? `${getOrdinalSuffix(tier.position)} Place`
+                : `${getOrdinalSuffix(index + 1)} Place`,
               prizeAmount: (tier.prizeAmount || tier.amount)?.toString() || '0',
               currency: tier.currency || 'USDC',
               passMark: tier.passMark || 0,
@@ -202,7 +218,7 @@ export const useHackathonRewards = (
         }
 
         const hackathonContractId =
-          hackathon.contractId || hackathon.escrowAddress || null;
+          fetchedHackathon.contractId || fetchedHackathon.escrowAddress || null;
         if (hackathonContractId) {
           setContractId(hackathonContractId);
         }
@@ -252,102 +268,106 @@ export const useHackathonRewards = (
               ? rawData.submissions
               : [];
 
-          const detailsPromises = submissionsArray.map(async (sub: any) => {
-            try {
-              // Standard path for judging submission data
-              const subData = sub.submission || sub;
-              const partData = sub.participant || sub;
+          const limit = pLimit(5);
+          const detailsPromises = submissionsArray.map((sub: any) =>
+            limit(async () => {
+              try {
+                // Standard path for judging submission data
+                const subData = sub.submission || sub;
+                const partData = sub.participant || sub;
 
-              // Get current profile data safely
-              const profile =
-                partData.user?.profile || partData.submitterProfile || {};
-              const name =
-                partData.name ||
-                profile.firstName ||
-                profile.name ||
-                (partData as any)?.username;
-              const avatar =
-                profile.avatar ||
-                profile.image ||
-                (partData as any)?.image ||
-                (partData as any)?.avatar;
+                // Get current profile data safely
+                const profile =
+                  partData.user?.profile || partData.submitterProfile || {};
+                const name =
+                  partData.name ||
+                  profile.firstName ||
+                  profile.name ||
+                  (partData as any)?.username;
+                const avatar =
+                  profile.avatar ||
+                  profile.image ||
+                  (partData as any)?.image ||
+                  (partData as any)?.avatar;
 
-              const isGenericName =
-                !name || name === 'Unknown' || name === 'anonymous';
-              const isGenericAvatar =
-                !avatar || avatar.includes('github.com/shadcn.png');
+                const isGenericName =
+                  !name || name === 'Unknown' || name === 'anonymous';
+                const isGenericAvatar =
+                  !avatar || avatar.includes('github.com/shadcn.png');
 
-              // If we already have good data, don't re-fetch
-              if (!isGenericName && !isGenericAvatar) {
-                return sub;
-              }
+                // If we already have good data, don't re-fetch
+                if (!isGenericName && !isGenericAvatar) {
+                  return sub;
+                }
 
-              // 1. Try resolving via Project ID (best for creator info)
-              const pId = sub.projectId || subData.projectId || subData.id;
-              if (pId) {
-                try {
-                  const project = await getCrowdfundingProject(pId);
-                  if (project && project.project && project.project.creator) {
-                    const creator = project.project.creator;
-                    return {
-                      ...sub,
-                      participant: {
-                        ...partData,
-                        name: creator.name || partData.name,
-                        username: creator.username || partData.username,
-                        image: creator.image,
-                        email: creator.email,
-                        user: {
-                          ...partData.user,
-                          name: creator.name,
-                          username: creator.username,
+                // 1. Try resolving via Project ID (best for creator info)
+                const pId = sub.projectId || subData.projectId || subData.id;
+                if (pId) {
+                  try {
+                    const project = await getCrowdfundingProject(pId);
+                    if (project && project.project && project.project.creator) {
+                      const creator = project.project.creator;
+                      return {
+                        ...sub,
+                        participant: {
+                          ...partData,
+                          name: creator.name || partData.name,
+                          username: creator.username || partData.username,
                           image: creator.image,
                           email: creator.email,
-                          profile: {
-                            ...partData.user?.profile,
-                            firstName: creator.name?.split(' ')[0] || '',
-                            lastName:
-                              creator.name?.split(' ').slice(1).join(' ') || '',
+                          user: {
+                            ...partData.user,
+                            name: creator.name,
                             username: creator.username,
-                            avatar: creator.image,
                             image: creator.image,
+                            email: creator.email,
+                            profile: {
+                              ...partData.user?.profile,
+                              firstName: creator.name?.split(' ')[0] || '',
+                              lastName:
+                                creator.name?.split(' ').slice(1).join(' ') ||
+                                '',
+                              username: creator.username,
+                              avatar: creator.image,
+                              image: creator.image,
+                            },
                           },
                         },
-                      },
-                    };
+                      };
+                    }
+                  } catch (pErr) {
+                    // silent fail for project fetch
                   }
-                } catch (pErr) {
-                  // silent fail for project fetch
                 }
-              }
 
-              // 2. Fallback to Submission Details (fetches participant/user object directly)
-              const sId = sub.id || subData.id || sub.submissionId;
-              if (sId) {
-                try {
-                  const detailsRes = await getSubmissionDetails(sId);
-                  if (detailsRes.success && detailsRes.data) {
-                    const details = detailsRes.data as any;
-                    return {
-                      ...sub,
-                      participant: {
-                        ...partData,
-                        ...details.participant,
-                        user: details.participant?.user || partData.user,
-                      },
-                    };
+                // 2. Fallback to Submission Details (fetches participant/user object directly)
+                const sId = sub.id || subData.id || sub.submissionId;
+                if (sId) {
+                  try {
+                    const detailsRes = await getSubmissionDetails(sId);
+                    if (detailsRes.success && detailsRes.data) {
+                      const details = detailsRes.data as any;
+                      return {
+                        ...sub,
+                        participant: {
+                          ...partData,
+                          ...details.participant,
+                          user: details.participant?.user || partData.user,
+                        },
+                      };
+                    }
+                  } catch (sErr) {
+                    // silent fail
                   }
-                } catch (sErr) {
-                  // silent fail
                 }
-              }
 
-              return sub;
-            } catch (err) {
-              console.error(`Failed to enrich submission detail:`, err);
-              return sub;
-            }
-          });
+                return sub;
+              } catch (err) {
+                console.error(`Failed to enrich submission detail:`, err);
+                return sub;
+              }
+            })
+          );
 
           const enrichedSubmissions = await Promise.all(detailsPromises);
 

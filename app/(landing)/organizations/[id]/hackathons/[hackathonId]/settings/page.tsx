@@ -267,9 +267,9 @@ export default function SettingsPage() {
                 initialData={getGeneralData(hackathon) as any}
                 onSave={async data => {
                   await handleSave('General', data);
-                  await fetchHackathon();
                 }}
                 isLoading={isSaving}
+                isPublished={hackathon?.status === 'PUBLISHED'}
               />
             </TabsContent>
 
@@ -294,7 +294,6 @@ export default function SettingsPage() {
                 }
                 onSave={async data => {
                   await handleSave('Participants', data);
-                  await fetchHackathon();
                 }}
                 isLoading={isSaving}
               />
@@ -307,7 +306,6 @@ export default function SettingsPage() {
                 initialData={{ prizeTiers: hackathon?.prizeTiers || [] } as any}
                 onSave={async data => {
                   await handleSave('Rewards', data);
-                  await fetchHackathon();
                 }}
                 isLoading={isSaving}
               />
@@ -328,7 +326,6 @@ export default function SettingsPage() {
                 }
                 onSave={async data => {
                   await handleSave('Collaboration', data);
-                  await fetchHackathon();
                 }}
                 isLoading={isSaving}
               />

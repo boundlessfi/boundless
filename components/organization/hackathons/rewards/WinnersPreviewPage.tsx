@@ -37,13 +37,18 @@ export default function WinnersPreviewPage({
     const tier = prizeTiers.find(t => t.rank === rank);
     if (tier) {
       const amount = parseFloat(tier.prizeAmount).toLocaleString('en-US');
-      return `${amount} ${tier.currency}`;
+      return {
+        amount,
+        currency: tier.currency,
+        label: `${amount} ${tier.currency}`,
+      };
     }
-    return rank === 1
-      ? '10,000 USDC'
-      : rank === 2
-        ? '5,000 USDC'
-        : '8,000 USDC';
+    const amount = rank === 1 ? '10,000' : rank === 2 ? '5,000' : '8,000';
+    return {
+      amount,
+      currency: 'USDC',
+      label: `${amount} USDC`,
+    };
   };
 
   return (

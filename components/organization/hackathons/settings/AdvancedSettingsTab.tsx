@@ -101,7 +101,7 @@ export default function AdvancedSettingsTab({
         await onSaveSuccess();
       }
     } catch (error: any) {
-      const message = error.message || error.response?.data?.message;
+      const message = error.response?.data?.message || error.message;
       const errorMessage = Array.isArray(message) ? message[0] : message;
       toast.error(
         errorMessage || 'Failed to save advanced settings. Please try again.'

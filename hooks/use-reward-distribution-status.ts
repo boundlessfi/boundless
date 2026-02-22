@@ -21,7 +21,11 @@ export const useRewardDistributionStatus = (
   const [error, setError] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
-    if (!organizationId || !hackathonId) return;
+    if (!organizationId || !hackathonId) {
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {

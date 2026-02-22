@@ -39,6 +39,7 @@ export default function RewardsPage() {
   const {
     distributionStatus,
     isLoading: isLoadingDistributionStatus,
+    error: distributionError,
     refetch: refetchDistributionStatus,
   } = useRewardDistributionStatus(organizationId, hackathonId);
 
@@ -94,6 +95,14 @@ export default function RewardsPage() {
             <AlertCircle className='h-4 w-4' />
             <AlertTitle>Error Loading Data</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {!isLoading && distributionError && (
+          <Alert variant='destructive' className='mb-8'>
+            <AlertCircle className='h-4 w-4' />
+            <AlertTitle>Distribution Status Error</AlertTitle>
+            <AlertDescription>{distributionError}</AlertDescription>
           </Alert>
         )}
 

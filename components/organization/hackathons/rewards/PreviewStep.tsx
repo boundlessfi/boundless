@@ -14,7 +14,11 @@ interface PreviewStepProps {
   }>;
   announcement: string;
   onEditAnnouncement: () => void;
-  getPrizeForRank: (rank: number) => string;
+  getPrizeForRank: (rank: number) => {
+    amount?: string;
+    currency?: string;
+    label?: string;
+  };
 }
 
 export const PreviewStep: React.FC<PreviewStepProps> = ({
@@ -27,8 +31,8 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
   return (
     <div className='space-y-4'>
       <div className='text-center'>
-        <p className='text-[11px] text-gray-500'>
-          Review winners and announcement before triggering
+        <p className='text-xs text-gray-500'>
+          Review winners and announcement before triggering distribution.
         </p>
       </div>
 

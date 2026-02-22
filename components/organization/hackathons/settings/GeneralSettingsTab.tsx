@@ -8,8 +8,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -50,12 +53,16 @@ interface GeneralSettingsTabProps {
   initialData?: Partial<InfoFormData>;
   onSave?: (data: InfoFormData) => Promise<void>;
   isLoading?: boolean;
+  isPublished?: boolean;
 }
 
 export default function GeneralSettingsTab({
+  organizationId,
+  hackathonId,
   initialData,
   onSave,
   isLoading = false,
+  isPublished = false,
 }: GeneralSettingsTabProps) {
   const [countries, setCountries] = useState<Country[]>([]);
   const [states, setStates] = useState<State[]>([]);
@@ -180,6 +187,17 @@ export default function GeneralSettingsTab({
             )}
           />
 
+          {isPublished && (
+            <Alert className='border-amber-900 bg-amber-950/20 text-amber-200'>
+              <AlertCircle className='h-4 w-4' />
+              <AlertTitle>Slug cannot be changed</AlertTitle>
+              <AlertDescription>
+                The URL slug cannot be modified once a hackathon has been
+                published to avoid breaking existing links.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <FormField
             control={form.control}
             name='slug'
@@ -191,9 +209,14 @@ export default function GeneralSettingsTab({
                     {...field}
                     type='text'
                     placeholder='e.g. my-awesome-hackathon'
-                    className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'
+                    readOnly={isPublished}
+                    disabled={isPublished}
+                    className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50'
                   />
                 </FormControl>
+                <FormDescription className='text-xs text-gray-500'>
+                  Lowercase letters, numbers, and hyphens only.
+                </FormDescription>
                 <FormMessage className='text-error-400 text-xs' />
               </FormItem>
             )}

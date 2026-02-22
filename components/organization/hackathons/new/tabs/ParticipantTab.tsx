@@ -141,8 +141,16 @@ export default function ParticipantTab({
   }, [initialData, form]);
 
   const onSubmit = async (data: ParticipantFormData) => {
-    if (onSave) {
-      await onSave(data);
+    try {
+      if (onSave) {
+        await onSave(data);
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message;
+      const errorMessage = Array.isArray(message) ? message[0] : message;
+      toast.error(
+        errorMessage || 'Failed to save participant settings. Please try again.'
+      );
     }
   };
 

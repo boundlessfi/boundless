@@ -139,12 +139,11 @@ export default function TimelineSettingsTab({
         await onSaveSuccess();
       }
     } catch (error: any) {
-      const message = error.message || error.response?.data?.message;
+      const message = error.response?.data?.message || error.message;
       const errorMessage = Array.isArray(message) ? message[0] : message;
       toast.error(
         errorMessage || 'Failed to save timeline settings. Please try again.'
       );
-      throw error; // Re-throw for parent if needed
     } finally {
       setIsSaving(false);
     }

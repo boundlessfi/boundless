@@ -18,8 +18,9 @@ import { getRibbonColors, getRibbonText } from './winnersUtils';
 interface WinnerCardProps {
   rank: number;
   winner?: Submission;
-  prizeAmount: string;
-  currency: string;
+  prizeAmount?: string;
+  currency?: string;
+  prizeLabel?: string;
   maxRank: number;
 }
 
@@ -28,6 +29,7 @@ export default function WinnerCard({
   winner,
   prizeAmount,
   currency,
+  prizeLabel,
   maxRank,
 }: WinnerCardProps) {
   const getScaleClass = () => {
@@ -56,7 +58,9 @@ export default function WinnerCard({
           className='h-4 w-4 text-yellow-400'
         />
         <span className='text-primary text-base font-medium'>
-          ${prizeAmount} {currency}
+          {prizeLabel === 'No prize configured'
+            ? prizeLabel
+            : `$${prizeAmount} ${currency}`}
         </span>
       </div>
 

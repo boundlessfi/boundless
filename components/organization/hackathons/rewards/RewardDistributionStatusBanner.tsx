@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import type {
   RewardDistributionStatusResponse,
   RewardDistributionStatusEnum,
@@ -104,7 +105,11 @@ const STATUS_CONFIG: Record<
 const formatDate = (val: string | null | undefined): string | null => {
   if (!val) return null;
   try {
-    return format(new Date(val), "MMM d, yyyy 'at' HH:mm 'UTC'");
+    return formatInTimeZone(
+      new Date(val),
+      'UTC',
+      "MMM d, yyyy 'at' HH:mm 'UTC'"
+    );
   } catch {
     return val;
   }
