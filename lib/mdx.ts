@@ -51,9 +51,7 @@ function parseFrontmatter(slug: string): MdxBlogPost {
 export function getAllBlogPosts(): MdxBlogPost[] {
   if (!fs.existsSync(BLOG_DIR)) return [];
 
-  const files = fs
-    .readdirSync(BLOG_DIR)
-    .filter(f => f.endsWith('.mdx'));
+  const files = fs.readdirSync(BLOG_DIR).filter(f => f.endsWith('.mdx'));
 
   const posts = files.map(file => {
     const slug = file.replace(/\.mdx$/, '');

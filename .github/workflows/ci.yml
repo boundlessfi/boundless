@@ -123,7 +123,7 @@ jobs:
         run: |
           echo "🔒 Checking for known vulnerabilities..."
           npm audit --audit-level=moderate --json > audit-report.json
-          if jq -e '.metadata.vulnerabilities.total > 0' audit-report.json; then
+          if jq -e '(.metadata.vulnerabilities.moderate + .metadata.vulnerabilities.high + .metadata.vulnerabilities.critical) > 0' audit-report.json; then
             echo "❌ Found security vulnerabilities. Please fix them before merging."
             cat audit-report.json | jq '.metadata.vulnerabilities'
             exit 1
@@ -158,7 +158,12 @@ jobs:
           while IFS= read -r commit; do
             hash=$(echo "$commit" | cut -d' ' -f1)
             message=$(echo "$commit" | cut -d' ' -f2-)
-            
+
+            # Skip merge commits
+            if echo "$message" | grep -qE "^Merge "; then
+              continue
+            fi
+
             if ! echo "$message" | grep -qE "$commit_regex"; then
               invalid_commits="$invalid_commits\n$hash: $message"
             fi

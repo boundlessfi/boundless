@@ -2,11 +2,7 @@ import React from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import BlogPostDetails from '@/components/landing-page/blog/BlogPostDetails';
-import {
-  getAllBlogPosts,
-  getBlogPostBySlug,
-  getRelatedPosts,
-} from '@/lib/mdx';
+import { getAllBlogPosts, getBlogPostBySlug, getRelatedPosts } from '@/lib/mdx';
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;

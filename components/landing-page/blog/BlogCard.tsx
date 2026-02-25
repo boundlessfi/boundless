@@ -16,9 +16,7 @@ interface BlogCardProps {
 
 const BlogCard = ({ post, onCardClick }: BlogCardProps) => {
   return (
-    <Card
-      className='group bg-background-card flex h-full w-full max-w-none flex-col overflow-hidden rounded-xl border border-[#1B1B1B] p-0 transition-all duration-300 hover:border-[#A7F950]/30 hover:shadow-lg hover:shadow-[#A7F950]/5'
-    >
+    <Card className='group bg-background-card flex h-full w-full max-w-none flex-col overflow-hidden rounded-xl border border-[#1B1B1B] p-0 transition-all duration-300 hover:border-[#A7F950]/30 hover:shadow-lg hover:shadow-[#A7F950]/5'>
       {/* Image Header with 2:1 Aspect Ratio */}
       <CardHeader className='relative overflow-hidden p-0'>
         <div className='relative aspect-2/1 w-full bg-[#1A1A1A]'>
