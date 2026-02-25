@@ -144,11 +144,8 @@ const BlogGrid: React.FC<BlogGridProps> = ({
   };
 
   const handleCardClick = useCallback((slug: string) => {
+    void slug;
     setIsNavigating(true);
-    // The navigation will be handled by Next.js Link, but we show loading state
-    // The loading state will be cleared when the page actually navigates
-    // eslint-disable-next-line no-console
-    console.log(`Navigating to blog post: ${slug}`);
     setTimeout(() => {
       setIsNavigating(false);
     }, 2000); // Fallback timeout
