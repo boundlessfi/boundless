@@ -55,7 +55,11 @@ jobs:
           invalid_commits=""
 
           while IFS= read -r message; do
-            if [ -n "$message" ] && ! echo "$message" | grep -qE "$commit_regex"; then
+            # Skip empty lines and merge commits
+            if [ -z "$message" ] || echo "$message" | grep -qE "^Merge "; then
+              continue
+            fi
+            if ! echo "$message" | grep -qE "$commit_regex"; then
               invalid_commits="$invalid_commits\n$message"
             fi
           done <<< "$commits"
