@@ -1,0 +1,99 @@
+---
+title: "Why We Built Boundless on the Stellar Network"
+excerpt: "When choosing a blockchain for a decentralized crowdfunding platform, we evaluated dozens of options. Here's why Stellar's combination of speed, cost, and Soroban smart contracts made it the clear winner."
+coverImage: "https://images.unsplash.com/photo-1639762681057-408e52192e55?w=800&auto=format&fit=crop"
+publishedAt: "2025-02-20"
+author:
+  name: "Priya Chen"
+  image: "https://i.pravatar.cc/150?img=47"
+categories: ["Technology", "Web3"]
+tags: ["stellar", "soroban", "blockchain", "tech"]
+readingTime: 5
+isFeatured: true
+---
+
+# Why We Built Boundless on the Stellar Network
+
+Choosing the right blockchain for a platform like Boundless wasn't a decision we made lightly. We needed something that could handle real-world payment flows, support complex smart contract logic, and remain accessible to users around the world — including those in emerging markets.
+
+After evaluating over a dozen networks, we chose **Stellar**. Here's why.
+
+## The Core Requirements
+
+Our platform needed a blockchain that could:
+
+- Process thousands of transactions per day with **sub-cent fees**
+- Support **programmable smart contracts** for escrow logic
+- Achieve **fast finality** (no waiting 10+ minutes for confirmations)
+- Work with **stablecoins** for predictable pricing
+- Support **multi-wallet ecosystems** for user choice
+
+Stellar checks every box.
+
+## Speed and Cost
+
+Stellar settles transactions in **3–5 seconds** with fees of roughly **0.00001 XLM** (fractions of a cent). Compare this to Ethereum, where gas fees can spike to tens of dollars during peak usage.
+
+For a crowdfunding platform where backers might contribute small amounts frequently, high fees would be a deal-breaker. Stellar makes micro-contributions economically viable.
+
+## Soroban: Stellar's Smart Contract Platform
+
+[Soroban](https://stellar.org/soroban) is Stellar's Rust-based smart contract platform. It gave us everything we needed for Boundless escrow contracts:
+
+```rust
+// Simplified escrow logic
+pub fn release_milestone(
+    env: Env,
+    campaign_id: u64,
+    milestone_index: u32,
+) -> Result<(), Error> {
+    let campaign = env.storage().get::<Campaign>(&campaign_id)?;
+    require_milestone_approved(&env, &campaign, milestone_index)?;
+    transfer_funds(&env, &campaign, milestone_index)
+}
+```
+
+Soroban contracts are:
+
+- **Deterministic** — same input always produces same output
+- **Gas-efficient** — lower costs than comparable EVM contracts
+- **Developer-friendly** — excellent Rust SDK with strong type safety
+- **Auditable** — open-source contracts anyone can verify
+
+## Trustless Work Integration
+
+We partnered with [Trustless Work](https://trustlesswork.com) to leverage their battle-tested escrow infrastructure. This let us focus on the product experience rather than reinventing contract security from scratch.
+
+## Global Accessibility
+
+Stellar was explicitly designed for **cross-border payments**. It supports:
+
+- Native USD and other stablecoin anchors (USDC via Circle)
+- Fiat on/off ramps in 180+ countries
+- Compliance with international payment standards
+
+This means a creator in Nigeria and a backer in Japan can transact on Boundless with the same seamless experience.
+
+## The Multi-Wallet Ecosystem
+
+Stellar has a rich wallet ecosystem. Boundless supports:
+
+- **Freighter** (browser extension, most popular)
+- **Lobstr** (mobile-first)
+- **xBull** (advanced users)
+- **Albedo** (web-based)
+- And more via our wallet kit integration
+
+## What's Next
+
+We're exploring Stellar's upcoming features including:
+
+- **Stellar Asset Contracts (SAC)** for native token support
+- **Multi-sig enhancements** for DAO treasury management
+- **Improved DEX integration** for instant currency conversion on contributions
+
+Stellar's roadmap aligns perfectly with where Boundless is headed.
+
+---
+
+Want to learn more about how Boundless uses Stellar under the hood? Check out our [technical documentation](/docs) or join our [community Discord](https://discord.gg/boundless).

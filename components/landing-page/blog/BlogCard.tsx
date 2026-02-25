@@ -5,19 +5,18 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import Image from 'next/image';
-import { BlogPost } from '@/types/blog';
+import { MdxBlogPost } from '@/lib/mdx';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Clock } from 'lucide-react';
 
 interface BlogCardProps {
-  post: BlogPost;
+  post: MdxBlogPost;
   onCardClick?: (slug: string) => void;
 }
 
 const BlogCard = ({ post, onCardClick }: BlogCardProps) => {
   return (
     <Card
-      key={post.id}
       className='group bg-background-card flex h-full w-full max-w-none flex-col overflow-hidden rounded-xl border border-[#1B1B1B] p-0 transition-all duration-300 hover:border-[#A7F950]/30 hover:shadow-lg hover:shadow-[#A7F950]/5'
     >
       {/* Image Header with 2:1 Aspect Ratio */}

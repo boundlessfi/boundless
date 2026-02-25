@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useTransition } from 'react';
-import { BlogPost, GetBlogPostsResponse } from '@/types/blog';
+import { MdxBlogPost } from '@/lib/mdx';
 import { useRouter } from 'next/navigation';
 import BlogCard from './BlogCard';
-import { Search, Loader2 } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import AuthLoadingState from '@/components/auth/AuthLoadingState';
 import {
@@ -16,29 +16,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
+const PAGE_SIZE = 12;
+
 interface StreamingBlogGridProps {
-  initialPosts: BlogPost[];
-  hasMore: boolean;
-  initialPage: number;
-  totalPages: number;
-  onLoadMore: (page: number) => Promise<GetBlogPostsResponse>;
+  initialPosts: MdxBlogPost[];
 }
 
 const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
   initialPosts,
-  hasMore: initialHasMore,
-  initialPage,
-  onLoadMore,
 }) => {
-  const [allPosts, setAllPosts] = useState<BlogPost[]>(initialPosts);
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [allPosts] = useState<MdxBlogPost[]>(initialPosts);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<'Latest' | 'Oldest' | ''>('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -65,15 +57,14 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
         post =>
           post.title.toLowerCase().includes(query) ||
           post.excerpt.toLowerCase().includes(query) ||
-          (post.tags &&
-            post.tags.some(tag => tag.tag.name.toLowerCase().includes(query)))
+          post.tags.some(tag => tag.toLowerCase().includes(query))
       );
     }
 
     if (sortOrder) {
       filtered = [...filtered].sort((a, b) => {
-        const dateA = new Date(a.coverImage).getTime();
-        const dateB = new Date(b.createdAt).getTime();
+        const dateA = new Date(a.publishedAt).getTime();
+        const dateB = new Date(b.publishedAt).getTime();
         return sortOrder === 'Latest' ? dateB - dateA : dateA - dateB;
       });
     }
@@ -81,31 +72,17 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
     return filtered;
   }, [allPosts, selectedCategories, searchQuery, sortOrder]);
 
-  const displayPosts = filteredPosts;
-  const hasMorePostsToShow =
-    hasMore && !searchQuery && selectedCategories.length === 0;
+  const isFiltering = !!searchQuery || selectedCategories.length > 0;
+  const displayPosts = isFiltering
+    ? filteredPosts
+    : filteredPosts.slice(0, visibleCount);
+  const hasMoreToShow = !isFiltering && visibleCount < filteredPosts.length;
 
   const sortOptions: Array<'Latest' | 'Oldest'> = ['Latest', 'Oldest'];
 
-  const handleLoadMore = useCallback(async () => {
-    if (isLoading || !hasMore) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const nextPage = currentPage + 1;
-      const response = await onLoadMore(nextPage);
-
-      setAllPosts(prev => [...prev, ...response.data]);
-      setCurrentPage(nextPage);
-      setHasMore(response.hasMore);
-    } catch {
-      setError('Failed to load more posts. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoading, hasMore, currentPage, onLoadMore]);
+  const handleShowMore = useCallback(() => {
+    setVisibleCount(prev => prev + PAGE_SIZE);
+  }, []);
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategories(prev =>
@@ -284,16 +261,10 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
           </div>
         </div>
         <div className=''>
-          {error && (
-            <div className='mb-6 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-400'>
-              {error}
-            </div>
-          )}
-
           {displayPosts.length > 0 ? (
             <div className='grid grid-cols-1 gap-6 pt-5 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'>
               {displayPosts.map(post => (
-                <div key={post.id} className='w-full'>
+                <div key={post.slug} className='w-full'>
                   <BlogCard post={post} onCardClick={handleCardClick} />
                 </div>
               ))}
@@ -316,10 +287,10 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
             </div>
           )}
 
-          {hasMorePostsToShow && !isLoading && (
+          {hasMoreToShow && (
             <div className='mt-12 flex justify-center'>
               <button
-                onClick={handleLoadMore}
+                onClick={handleShowMore}
                 className='flex items-center gap-2 rounded-lg border border-[#2B2B2B] bg-[#1A1A1A] px-6 py-3 text-white transition-colors hover:bg-[#2A2A2A] hover:text-white focus:ring-2 focus:ring-[#A7F950] focus:outline-none'
               >
                 View More
@@ -327,18 +298,9 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
             </div>
           )}
 
-          {isLoading && (
-            <div className='mt-12 flex justify-center'>
-              <div className='flex items-center gap-2 text-[#B5B5B5]'>
-                <Loader2 className='h-5 w-5 animate-spin' />
-                <span>Loading more posts...</span>
-              </div>
-            </div>
-          )}
-
-          {!hasMore && filteredPosts.length > 0 && !isLoading && (
+          {!hasMoreToShow && filteredPosts.length > 0 && (
             <div className='mt-12 text-center text-[#B5B5B5]'>
-              <p>You've reached the end of the blog posts!</p>
+              <p>You&apos;ve reached the end of the blog posts!</p>
             </div>
           )}
         </div>

@@ -1,52 +1,29 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { Tag, BookOpen, Check } from 'lucide-react';
-import { BlogPost } from '@/types/blog';
+import { MdxBlogPost } from '@/lib/mdx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { useMarkdown } from '@/hooks/use-markdown';
 import BlogCard from './BlogCard';
 import AuthLoadingState from '@/components/auth/AuthLoadingState';
-import { getRelatedPosts } from '@/lib/api/blog';
+import { useRouter } from 'next/navigation';
+import { useTransition, useCallback } from 'react';
 
 interface BlogPostDetailsProps {
-  post: BlogPost;
+  post: MdxBlogPost & { content: React.ReactElement };
+  relatedPosts: MdxBlogPost[];
 }
 
-const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
-  const { loading, error, styledContent } = useMarkdown(post.content, {
-    breaks: true,
-    gfm: true,
-    pedantic: true,
-    loadingDelay: 100,
-  });
-
-  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
+const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({
+  post,
+  relatedPosts,
+}) => {
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
-  const [isLoadingRelated, setIsLoadingRelated] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
-  const [relatedPostsError, setRelatedPostsError] = useState<string | null>(
-    null
-  );
-
-  useEffect(() => {
-    const fetchRelatedPosts = async () => {
-      try {
-        setIsLoadingRelated(true);
-        setRelatedPostsError(null);
-        const related = await getRelatedPosts(post.id);
-        setRelatedPosts(related.posts);
-      } catch {
-        setRelatedPostsError('Failed to load related posts');
-        setRelatedPosts([]);
-      } finally {
-        setIsLoadingRelated(false);
-      }
-    };
-    fetchRelatedPosts();
-  }, [post.slug]);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -104,19 +81,21 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
     }
   };
 
-  const handleRelatedPostClick = (slug: string) => {
-    setIsNavigating(true);
-    // The navigation will be handled by Next.js Link, but we show loading state
-    // eslint-disable-next-line no-console
-    console.log(`Navigating to related post: ${slug}`);
-    setTimeout(() => {
-      setIsNavigating(false);
-    }, 2000); // Fallback timeout
-  };
+  const handleRelatedPostClick = useCallback(
+    (slug: string) => {
+      setIsNavigating(true);
+      startTransition(() => {
+        router.push(`/blog/${slug}`);
+      });
+    },
+    [router]
+  );
 
   return (
     <>
-      {isNavigating && <AuthLoadingState message='Loading article...' />}
+      {(isNavigating || isPending) && (
+        <AuthLoadingState message='Loading article...' />
+      )}
       <div className='bg-background-main-bg relative z-10 mx-auto min-h-screen max-w-[1440px] justify-start space-y-[23px] px-5 py-5 text-white md:space-y-[80px] md:px-[50px] md:py-16 lg:px-[100px]'>
         <div className='relative flex flex-col lg:flex-row'>
           <div className='flex-1'>
@@ -139,7 +118,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
                       </span>
                     </div>
                     <span className='text-sm text-[#DFDFDF] sm:text-base'>
-                      {formatDate(post.createdAt)}
+                      {formatDate(post.publishedAt)}
                     </span>
                   </div>
 
@@ -168,22 +147,8 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
             </div>
 
             <div className='max-w-4xl py-8 sm:py-12'>
-              <div className='prose prose-invert prose-justify prose-sm sm:prose-base max-w-none'>
-                {loading ? (
-                  <div className='flex items-center justify-center py-12'>
-                    <div className='flex items-center gap-2 text-[#B5B5B5]'>
-                      <div className='h-4 w-4 animate-spin rounded-full border-2 border-[#A7F950] border-t-transparent'></div>
-                      Loading content...
-                    </div>
-                  </div>
-                ) : error ? (
-                  <div className='rounded-lg border border-red-500/30 bg-red-900/20 p-4 text-red-400'>
-                    <p className='font-medium'>Error loading content:</p>
-                    <p className='mt-1 text-sm'>{error}</p>
-                  </div>
-                ) : (
-                  styledContent
-                )}
+              <div className='prose prose-invert prose-sm sm:prose-base max-w-none'>
+                {post.content}
               </div>
 
               <div className='mt-8 border-t border-[#2B2B2B] pt-6 sm:mt-12 sm:pt-8'>
@@ -193,12 +158,12 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
                   </span>
                   {post.tags?.map(tag => (
                     <Badge
-                      key={tag.id}
+                      key={tag}
                       variant='secondary'
                       className='bg-[#2B2B2B] text-[#B5B5B5] transition-colors hover:bg-[#3B3B3B]'
                     >
                       <Tag className='mr-1 h-3 w-3' />
-                      {tag.tag.name}
+                      {tag}
                     </Badge>
                   ))}
                 </div>
@@ -311,22 +276,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ post }) => {
             <h2 className='mb-6 text-xl font-bold text-white sm:mb-8 sm:text-2xl lg:text-3xl'>
               Related Articles
             </h2>
-            {isLoadingRelated ? (
-              <div className='grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3'>
-                {[...Array(3)].map((_, index) => (
-                  <div key={index} className='animate-pulse'>
-                    <div className='mb-4 h-48 rounded-lg bg-[#1C1C1C]'></div>
-                    <div className='mb-2 h-4 rounded bg-[#1C1C1C]'></div>
-                    <div className='h-4 w-3/4 rounded bg-[#1C1C1C]'></div>
-                  </div>
-                ))}
-              </div>
-            ) : relatedPostsError ? (
-              <div className='py-12 text-center text-[#B5B5B5]'>
-                <BookOpen className='mx-auto mb-4 h-12 w-12' />
-                <p className='text-base'>{relatedPostsError}</p>
-              </div>
-            ) : relatedPosts && relatedPosts.length > 0 ? (
+            {relatedPosts.length > 0 ? (
               <div className='grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3'>
                 {relatedPosts.map(relatedPost => (
                   <BlogCard

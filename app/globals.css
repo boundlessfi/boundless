@@ -1,7 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
 @custom-variant dark (&:is(.dark *));
+
+/* Prose (Tailwind Typography) dark theme overrides for blog content */
+@layer base {
+  .prose {
+    --tw-prose-body: #d1d5db;
+    --tw-prose-headings: #ffffff;
+    --tw-prose-lead: #d1d5db;
+    --tw-prose-links: #a7f950;
+    --tw-prose-bold: #ffffff;
+    --tw-prose-counters: #b5b5b5;
+    --tw-prose-bullets: #b5b5b5;
+    --tw-prose-hr: #374151;
+    --tw-prose-quotes: #d1d5db;
+    --tw-prose-quote-borders: #a7f950;
+    --tw-prose-captions: #9ca3af;
+    --tw-prose-code: #a7f950;
+    --tw-prose-pre-code: #e5e7eb;
+    --tw-prose-pre-bg: #111827;
+    --tw-prose-th-borders: #374151;
+    --tw-prose-td-borders: #1f2937;
+  }
+}
 
 @theme {
   --font-inter: 'Inter', sans-serif;

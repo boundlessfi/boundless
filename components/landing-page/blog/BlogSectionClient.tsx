@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useState, useTransition } from 'react';
 import AuthLoadingState from '@/components/auth/AuthLoadingState';
 import BlogCard from './BlogCard';
-import { BlogPost } from '@/types/blog';
+import { MdxBlogPost } from '@/lib/mdx';
 
 interface BlogSectionClientProps {
-  posts: BlogPost[];
+  posts: MdxBlogPost[];
 }
 
 const BlogSectionClient = ({ posts }: BlogSectionClientProps) => {
@@ -71,7 +71,7 @@ const BlogSectionClient = ({ posts }: BlogSectionClientProps) => {
             aria-label='Blog posts grid'
           >
             {posts.slice(0, 6).map(blog => (
-              <div key={blog.id} role='listitem'>
+              <div key={blog.slug} role='listitem'>
                 <BlogCard post={blog} onCardClick={handleCardClick} />
               </div>
             ))}

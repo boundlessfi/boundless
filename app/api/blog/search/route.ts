@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getBlogPosts } from '@/lib/api/blog';
+import { getAllBlogPosts } from '@/lib/mdx';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,9 +10,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const tags = searchParams.get('tags')?.split(',').filter(Boolean);
 
-    const response = await getBlogPosts({ limit: 100 });
-    const allPosts = response.data;
-
+    const allPosts = getAllBlogPosts();
     let filteredPosts = allPosts;
 
     if (q.trim()) {
@@ -21,21 +19,19 @@ export async function GET(request: NextRequest) {
         post =>
           post.title.toLowerCase().includes(query) ||
           post.excerpt.toLowerCase().includes(query) ||
-          (post.tags &&
-            post.tags.some(tag => tag.tag.name.toLowerCase().includes(query)))
+          post.tags.some(tag => tag.toLowerCase().includes(query))
       );
     }
 
     if (category) {
-      filteredPosts = filteredPosts.filter(
-        post => post.categories && post.categories.includes(category)
+      filteredPosts = filteredPosts.filter(post =>
+        post.categories.includes(category)
       );
     }
 
     if (tags && tags.length > 0) {
-      filteredPosts = filteredPosts.filter(
-        post =>
-          post.tags && tags.some(tag => post.tags.some(t => t.tag.name === tag))
+      filteredPosts = filteredPosts.filter(post =>
+        tags.some(tag => post.tags.includes(tag))
       );
     }
 
