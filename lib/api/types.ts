@@ -1016,3 +1016,35 @@ export interface UpdateAnnouncementRequest {
   isDraft?: boolean;
   isPinned?: boolean;
 }
+
+// Earnings types
+export type EarningSource = 'hackathon' | 'grant' | 'crowdfunding' | 'bounty';
+export type EarningStatus = 'pending' | 'claimable' | 'claimed' | 'completed';
+
+export interface EarningActivity {
+  id: string;
+  title: string;
+  source: EarningSource;
+  amount: number;
+  currency: string;
+  status: EarningStatus;
+  date: string;
+  description?: string;
+  referenceId?: string;
+}
+
+export interface EarningSourceBreakdown {
+  source: EarningSource;
+  totalEarned: number;
+  pendingAmount: number;
+  currency: string;
+}
+
+export interface EarningsData {
+  totalEarned: number;
+  pendingWithdrawal: number;
+  completedWithdrawal: number;
+  currency: string;
+  breakdown: EarningSourceBreakdown[];
+  activities: EarningActivity[];
+}
