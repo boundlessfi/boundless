@@ -64,7 +64,7 @@ const PRIZE_PRESETS = {
 const RANK_EMOJIS = ['🥇', '🥈', '🥉', '🏅', '🏅'];
 
 interface PrizeTierProps {
-  tier: Omit<PrizeTier, 'currency'> & { id: string; currency?: string };
+  tier: any; // Using any for simplicity with FieldArray types
   index: number;
   onRemove: (id: string) => void;
   canRemove: boolean;
@@ -302,6 +302,7 @@ const ValidationAlert = ({ totalPool }: { totalPool: number }) => {
 
 export default function RewardsTab({
   onSave,
+  onContinue,
   initialData,
   isLoading = false,
 }: RewardsTabProps) {
@@ -432,6 +433,9 @@ export default function RewardsTab({
       if (onSave) {
         await onSave(data);
       }
+      if (onContinue) {
+        onContinue();
+      }
     } catch (error: any) {
       const message = error.response?.data?.message || error.message;
       const errorMessage = Array.isArray(message) ? message[0] : message;
@@ -538,10 +542,31 @@ export default function RewardsTab({
           </Button>
 
           {form.formState.errors.prizeTiers && (
-            <p className='flex items-center gap-2 text-sm text-red-400'>
-              <AlertCircle className='h-4 w-4' />
-              {form.formState.errors.prizeTiers.message}
-            </p>
+            <div className='rounded-lg border border-red-500/20 bg-red-500/10 p-3'>
+              <p className='flex items-center gap-2 text-sm font-medium text-red-400'>
+                <AlertCircle className='h-4 w-4' />
+                {form.formState.errors.prizeTiers.message ||
+                  'Validation error in prize tiers'}
+              </p>
+              <div className='mt-2 space-y-3 text-xs text-red-400/80'>
+                <p>
+                  To proceed, you must use a <strong>Prize Preset</strong> to
+                  configure your rewards. Presets automatically apply the
+                  required ranking and score thresholds needed for the system.
+                </p>
+                <div className='rounded-lg border-red-500/30 bg-red-500/10 p-3 text-red-300'>
+                  <p className='mb-1 font-semibold tracking-wider uppercase'>
+                    Action Required:
+                  </p>
+                  <p>
+                    Scroll up and select one of the{' '}
+                    <strong>Prize Presets</strong> (Standard, Winner Takes Most,
+                    etc.). You can still adjust the total prize pool amounts
+                    after selecting a preset.
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
