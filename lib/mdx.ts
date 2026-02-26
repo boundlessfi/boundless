@@ -3,6 +3,7 @@ import path from 'path';
 import matter from 'gray-matter';
 import { compileMDX } from 'next-mdx-remote/rsc';
 import type { ReactElement } from 'react';
+import { mdxComponents } from '@/components/landing-page/blog/MdxComponents';
 
 const BLOG_DIR = path.join(process.cwd(), 'content', 'blog');
 
@@ -33,18 +34,22 @@ function parseFrontmatter(slug: string): MdxBlogPost {
 
   return {
     slug,
-    title: data.title ?? '',
-    excerpt: data.excerpt ?? '',
-    coverImage: data.coverImage ?? '',
-    publishedAt: data.publishedAt ?? '',
+    title: String(data.title ?? ''),
+    excerpt: String(data.excerpt ?? ''),
+    coverImage: String(data.coverImage ?? ''),
+    publishedAt: String(data.publishedAt ?? ''),
     author: {
-      name: data.author?.name ?? '',
-      image: data.author?.image ?? '',
+      name: String(data.author?.name ?? ''),
+      image: String(data.author?.image ?? ''),
     },
-    categories: Array.isArray(data.categories) ? data.categories : [],
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    readingTime: data.readingTime ?? 0,
-    isFeatured: data.isFeatured ?? false,
+    categories: Array.isArray(data.categories)
+      ? data.categories.map((c: unknown) => String(c))
+      : [],
+    tags: Array.isArray(data.tags)
+      ? data.tags.map((t: unknown) => String(t))
+      : [],
+    readingTime: typeof data.readingTime === 'number' ? data.readingTime : 0,
+    isFeatured: data.isFeatured === true,
   };
 }
 
@@ -58,10 +63,11 @@ export function getAllBlogPosts(): MdxBlogPost[] {
     return parseFrontmatter(slug);
   });
 
-  return posts.sort(
-    (a, b) =>
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-  );
+  return posts.sort((a, b) => {
+    const ta = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+    const tb = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+    return (isNaN(tb) ? 0 : tb) - (isNaN(ta) ? 0 : ta);
+  });
 }
 
 export async function getBlogPostBySlug(
@@ -75,23 +81,28 @@ export async function getBlogPostBySlug(
 
   const { content } = await compileMDX({
     source: mdxSource,
+    components: mdxComponents,
     options: { parseFrontmatter: false },
   });
 
   return {
     slug,
-    title: data.title ?? '',
-    excerpt: data.excerpt ?? '',
-    coverImage: data.coverImage ?? '',
-    publishedAt: data.publishedAt ?? '',
+    title: String(data.title ?? ''),
+    excerpt: String(data.excerpt ?? ''),
+    coverImage: String(data.coverImage ?? ''),
+    publishedAt: String(data.publishedAt ?? ''),
     author: {
-      name: data.author?.name ?? '',
-      image: data.author?.image ?? '',
+      name: String(data.author?.name ?? ''),
+      image: String(data.author?.image ?? ''),
     },
-    categories: Array.isArray(data.categories) ? data.categories : [],
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    readingTime: data.readingTime ?? 0,
-    isFeatured: data.isFeatured ?? false,
+    categories: Array.isArray(data.categories)
+      ? data.categories.map((c: unknown) => String(c))
+      : [],
+    tags: Array.isArray(data.tags)
+      ? data.tags.map((t: unknown) => String(t))
+      : [],
+    readingTime: typeof data.readingTime === 'number' ? data.readingTime : 0,
+    isFeatured: data.isFeatured === true,
     content,
   };
 }

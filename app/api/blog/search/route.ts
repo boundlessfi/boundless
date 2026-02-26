@@ -8,7 +8,11 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
     const category = searchParams.get('category');
-    const tags = searchParams.get('tags')?.split(',').filter(Boolean);
+    const tags = searchParams
+      .get('tags')
+      ?.split(',')
+      .map(t => t.trim().toLowerCase())
+      .filter(Boolean);
 
     const allPosts = getAllBlogPosts();
     let filteredPosts = allPosts;
@@ -24,14 +28,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
+      const normalizedCategory = category.trim().toLowerCase();
       filteredPosts = filteredPosts.filter(post =>
-        post.categories.includes(category)
+        post.categories.some(c => c.toLowerCase() === normalizedCategory)
       );
     }
 
     if (tags && tags.length > 0) {
       filteredPosts = filteredPosts.filter(post =>
-        tags.some(tag => post.tags.includes(tag))
+        tags.some(tag => post.tags.some(t => t.toLowerCase() === tag))
       );
     }
 

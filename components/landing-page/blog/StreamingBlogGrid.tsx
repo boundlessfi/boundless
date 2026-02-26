@@ -298,7 +298,7 @@ const StreamingBlogGrid: React.FC<StreamingBlogGridProps> = ({
             </div>
           )}
 
-          {!hasMoreToShow && filteredPosts.length > 0 && (
+          {!hasMoreToShow && !isFiltering && filteredPosts.length > 0 && (
             <div className='mt-12 text-center text-[#B5B5B5]'>
               <p>You&apos;ve reached the end of the blog posts!</p>
             </div>

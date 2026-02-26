@@ -159,8 +159,8 @@ jobs:
             hash=$(echo "$commit" | cut -d' ' -f1)
             message=$(echo "$commit" | cut -d' ' -f2-)
 
-            # Skip merge commits
-            if echo "$message" | grep -qE "^Merge "; then
+            # Skip git-generated merge commits
+            if echo "$message" | grep -qE "^Merge (branch|pull request|remote-tracking branch) "; then
               continue
             fi
 

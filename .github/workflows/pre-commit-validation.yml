@@ -55,8 +55,8 @@ jobs:
           invalid_commits=""
 
           while IFS= read -r message; do
-            # Skip empty lines and merge commits
-            if [ -z "$message" ] || echo "$message" | grep -qE "^Merge "; then
+            # Skip empty lines and git-generated merge commits
+            if [ -z "$message" ] || echo "$message" | grep -qE "^Merge (branch|pull request|remote-tracking branch) "; then
               continue
             fi
             if ! echo "$message" | grep -qE "$commit_regex"; then
