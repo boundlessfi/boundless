@@ -160,7 +160,7 @@ jobs:
             message=$(echo "$commit" | cut -d' ' -f2-)
 
             # Skip git-generated merge commits
-            if echo "$message" | grep -qE "^Merge (branch|pull request|remote-tracking branch) "; then
+            if echo "$message" | grep -qE "^Merge (branch|pull request|remote-tracking branch|[0-9a-f]{7,40}) "; then
               continue
             fi
 
