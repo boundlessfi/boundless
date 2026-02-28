@@ -1,4 +1,5 @@
 'use client';
+
 import {
   ArrowDownUp,
   CircleDollarSign,
@@ -8,96 +9,103 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-type FeatureCardProps = {
+type Feature = {
   title: string;
   description: string;
   icon: LucideIcon;
 };
 
-const features: FeatureCardProps[] = [
+const features: Feature[] = [
   {
     title: 'Full Grant Flow & Architecture',
-    description: 'End-to-end grant application and approval system',
+    description:
+      'End-to-end grant lifecycle system covering submission, evaluation, approval, and fund distribution.',
     icon: ArrowDownUp,
   },
   {
     title: 'Bounty Implementation',
-    description: 'Decentralized bounty posting and submission verification',
+    description:
+      'Structured bounty creation with decentralized submission handling and transparent verification.',
     icon: CircleDollarSign,
   },
   {
     title: 'Advanced Analytics Dashboard',
-    description: 'Visualized financial data and participation metrics',
+    description:
+      'Clear financial and participation metrics with intuitive visual breakdowns.',
     icon: ChartNoAxesColumnIncreasing,
   },
   {
     title: 'Verified Project Badging',
-    description: 'System for certifying high-quality projects',
+    description:
+      'Recognition layer for trusted and high-quality ecosystem projects.',
     icon: ShieldCheck,
   },
 ];
 
-const FeatureCard = ({
+const FeatureBlock = ({
   title,
   description,
   icon: Icon,
   index,
-}: FeatureCardProps & { index: number }) => {
+}: Feature & { index: number }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: index * 0.15 }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.6, delay: index * 0.12 }}
       viewport={{ once: true }}
-      whileHover={{ y: -6 }}
-      className='text-card-foreground group border-border/50 bg-card/50 hover:border-border hover:bg-card relative flex flex-col gap-6 overflow-hidden rounded-xl border p-6 shadow-sm backdrop-blur-sm transition-all duration-300'
+      whileHover={{ scale: 1.02 }}
+      className='relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0e0e0e] to-[#1a1a1a] p-10'
     >
-      <div className='bg-muted-foreground/10 flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg'>
-        <Icon className='h-6 w-6' />
+      {/* Abstract Background Icon */}
+      <div className='pointer-events-none absolute -top-16 -right-16 opacity-5'>
+        <Icon className='h-64 w-64' />
       </div>
 
-      <div className='space-y-2'>
-        <div className='flex items-center justify-between gap-2'>
-          <h3 className='text-foreground font-semibold'>{title}</h3>
-          <span className='inline-flex w-fit shrink-0 items-center justify-center gap-2 overflow-hidden rounded-md border border-[#a7f950] bg-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap text-[#a7f950]'>
-            In Progress
-          </span>
-        </div>
-        <p className='text-muted-foreground text-sm leading-relaxed'>
-          {description}
-        </p>
+      {/* Status Indicator */}
+      <div className='mb-6 flex items-center gap-2 text-sm text-[#a7f950]'>
+        <div className='h-2 w-2 animate-pulse rounded-full bg-[#a7f950]' />
+        In Progress
       </div>
+
+      {/* Content */}
+      <h3 className='text-2xl font-semibold tracking-tight text-white'>
+        {title}
+      </h3>
+
+      <p className='mt-4 max-w-xl text-sm leading-relaxed text-neutral-400'>
+        {description}
+      </p>
     </motion.div>
   );
 };
 
 const ComingSoon = () => {
   return (
-    <section className='py-16'>
-      <div className='container mx-auto px-6 md:px-8 lg:px-12'>
-        <div className='grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16'>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className='lg:col-span-4'
-          >
-            <h1 className='flex items-center gap-3 text-4xl font-bold tracking-tight md:text-6xl lg:text-6xl'>
-              Coming Soon
-            </h1>
-            <p className='text-muted-foreground mt-4'>
-              We are working on these features and they will be available soon.
-            </p>
-          </motion.div>
+    <section className='py-24'>
+      <div className='mx-auto max-w-6xl px-6'>
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className='mb-20 max-w-2xl'
+        >
+          <h1 className='text-5xl font-bold tracking-tight text-white md:text-6xl'>
+            Coming Soon
+          </h1>
+          <p className='mt-6 text-lg text-neutral-400'>
+            We’re building foundational systems to power a more transparent,
+            efficient grant and bounty ecosystem.
+          </p>
+        </motion.div>
 
-          <div className='lg:col-span-8'>
-            <div className='grid grid-cols-1 gap-4'>
-              {features.map((feature, index) => (
-                <FeatureCard key={index} {...feature} index={index} />
-              ))}
-            </div>
-          </div>
+        {/* Abstract Feature Blocks */}
+        <div className='flex flex-col gap-12'>
+          {features.map((feature, index) => (
+            <FeatureBlock key={index} {...feature} index={index} />
+          ))}
         </div>
       </div>
     </section>
