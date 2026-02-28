@@ -1,7 +1,9 @@
+import { redirect } from 'next/navigation';
 import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
 
 export default function GrantsPage() {
+  redirect('/coming-soon');
   return (
     <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
       <div className='min-h-screen bg-black text-white'>

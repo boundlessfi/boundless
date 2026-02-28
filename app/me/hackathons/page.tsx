@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
-const Page = () => {
+
+const page = () => {
   redirect('/coming-soon');
 };
 
-export default Page;
+export default page;
