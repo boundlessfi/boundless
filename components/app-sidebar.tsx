@@ -4,7 +4,6 @@ import * as React from 'react';
 import {
   IconBell,
   IconChartBar,
-  IconCurrencyDollar,
   IconDashboard,
   IconFileText,
   IconFolder,
@@ -39,11 +38,6 @@ const navigationData = {
       title: 'Analytics',
       url: '/me/analytics',
       icon: IconChartBar,
-    },
-    {
-      title: 'Earnings',
-      url: '/me/earnings',
-      icon: IconCurrencyDollar,
     },
   ],
   projects: [
