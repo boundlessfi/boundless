@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { getOrganization } from '@/lib/api/organization';
+import { getOrganizationProfile } from '@/lib/api/organization';
 import OrgProfileClient from './org-profile-client';
 
 interface OrgProfilePageProps {
@@ -11,24 +10,21 @@ export async function generateMetadata({
   params,
 }: OrgProfilePageProps): Promise<Metadata> {
   try {
-    const { id } = await params;
-    const response = await getOrganization(id);
-    const org = response.data || response;
+    const { id: slug } = await params;
+    const org = await getOrganizationProfile(slug);
 
     return {
       title: `${org.name} | Boundless`,
-      description: org.tagline || org.about || `View ${org.name} on Boundless`,
+      description: org.description || `View ${org.name} on Boundless`,
       openGraph: {
         title: `${org.name} | Boundless`,
-        description:
-          org.tagline || org.about || `View ${org.name} on Boundless`,
-        images: org.logo ? [{ url: org.logo }] : [],
+        description: org.description || `View ${org.name} on Boundless`,
+        images: org.logoUrl ? [{ url: org.logoUrl }] : [],
       },
       twitter: {
         card: 'summary',
         title: `${org.name} | Boundless`,
-        description:
-          org.tagline || org.about || `View ${org.name} on Boundless`,
+        description: org.description || `View ${org.name} on Boundless`,
       },
     };
   } catch {
@@ -39,10 +35,8 @@ export async function generateMetadata({
   }
 }
 
-export default async function OrgProfilePage({
-  params,
-}: OrgProfilePageProps) {
-  const { id } = await params;
+export default async function OrgProfilePage({ params }: OrgProfilePageProps) {
+  const { id: slug } = await params;
 
-  return <OrgProfileClient id={id} />;
+  return <OrgProfileClient slug={slug} />;
 }

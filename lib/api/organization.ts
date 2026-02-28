@@ -31,6 +31,22 @@ export interface Organization {
   updatedAt: string;
 }
 
+/**
+ * Public organization profile (by slug) - GET /organizations/profile/:slug
+ */
+export interface OrganizationProfile {
+  id: string;
+  name: string;
+  logoUrl: string;
+  description: string;
+  stats: {
+    projectsCount: number;
+    totalHackathons: number;
+    totalBounties: number;
+    totalGrants: number;
+  };
+}
+
 export type Role = 'member' | 'admin' | 'owner';
 
 /**
@@ -265,6 +281,18 @@ export const getOrganization = async (
     `/organizations/${organizationId}`
   );
   return res.data.data as GetOrganizationResponse;
+};
+
+/**
+ * Get public organization profile by slug (e.g. "boundless-dao")
+ */
+export const getOrganizationProfile = async (
+  slug: string
+): Promise<OrganizationProfile> => {
+  const res = await api.get<{ data: OrganizationProfile }>(
+    `/organizations/profile/${slug}`
+  );
+  return res.data.data;
 };
 
 /**
