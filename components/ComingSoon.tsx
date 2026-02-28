@@ -10,6 +10,7 @@ import {
 import { motion } from 'framer-motion';
 
 type Feature = {
+  id: string;
   title: string;
   description: string;
   icon: LucideIcon;
@@ -17,24 +18,28 @@ type Feature = {
 
 const features: Feature[] = [
   {
+    id: 'grant-flow',
     title: 'Full Grant Flow & Architecture',
     description:
       'End-to-end grant lifecycle system covering submission, evaluation, approval, and fund distribution.',
     icon: ArrowDownUp,
   },
   {
+    id: 'bounty-implementation',
     title: 'Bounty Implementation',
     description:
       'Structured bounty creation with decentralized submission handling and transparent verification.',
     icon: CircleDollarSign,
   },
   {
+    id: 'analytics-dashboard',
     title: 'Advanced Analytics Dashboard',
     description:
       'Clear financial and participation metrics with intuitive visual breakdowns.',
     icon: ChartNoAxesColumnIncreasing,
   },
   {
+    id: 'verified-badging',
     title: 'Verified Project Badging',
     description:
       'Recognition layer for trusted and high-quality ecosystem projects.',
@@ -57,18 +62,15 @@ const FeatureBlock = ({
       whileHover={{ scale: 1.02 }}
       className='relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0e0e0e] to-[#1a1a1a] p-10'
     >
-      {/* Abstract Background Icon */}
       <div className='pointer-events-none absolute -top-16 -right-16 opacity-5'>
         <Icon className='h-64 w-64' />
       </div>
 
-      {/* Status Indicator */}
       <div className='mb-6 flex items-center gap-2 text-sm text-[#a7f950]'>
         <div className='h-2 w-2 animate-pulse rounded-full bg-[#a7f950]' />
         In Progress
       </div>
 
-      {/* Content */}
       <h3 className='text-2xl font-semibold tracking-tight text-white'>
         {title}
       </h3>
@@ -84,7 +86,6 @@ const ComingSoon = () => {
   return (
     <section className='py-24'>
       <div className='mx-auto max-w-6xl px-6'>
-        {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -101,10 +102,9 @@ const ComingSoon = () => {
           </p>
         </motion.div>
 
-        {/* Abstract Feature Blocks */}
         <div className='flex flex-col gap-12'>
           {features.map((feature, index) => (
-            <FeatureBlock key={index} {...feature} index={index} />
+            <FeatureBlock key={feature.id} {...feature} index={index} />
           ))}
         </div>
       </div>
