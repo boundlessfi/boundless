@@ -37,6 +37,7 @@ interface SidebarContentProps {
   isLoading: boolean;
   normalizedPath: string | null;
   basePath: string;
+  organizationId?: string;
 }
 
 function HackathonSidebarContent({
@@ -46,6 +47,7 @@ function HackathonSidebarContent({
   isLoading,
   normalizedPath,
   basePath,
+  organizationId,
 }: SidebarContentProps) {
   return (
     <nav className='flex h-full flex-col overflow-y-auto px-4 py-6'>
@@ -68,6 +70,7 @@ function HackathonSidebarContent({
             <HackathonSelector
               hackathons={hackathonData}
               currentHackathon={currentHackathon}
+              organizationId={organizationId}
             />
           </div>
         )}
@@ -383,6 +386,7 @@ export default function HackathonSidebar({
               isLoading={isLoading}
               normalizedPath={normalizedPath}
               basePath={basePath}
+              organizationId={derivedOrgId}
             />
           </SheetContent>
         </Sheet>
@@ -400,6 +404,7 @@ export default function HackathonSidebar({
           isLoading={isLoading}
           normalizedPath={normalizedPath}
           basePath={basePath}
+          organizationId={derivedOrgId}
         />
       </aside>
     </>

@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ interface Hackathon {
 interface HackathonSelectorProps {
   hackathons?: Hackathon[];
   currentHackathon?: Hackathon;
+  organizationId?: string;
   onHackathonChange?: (hackathonId: string) => void;
   onToggle?: (isOpen: boolean) => void;
 }
@@ -29,6 +31,7 @@ interface HackathonSelectorProps {
 export default function HackathonSelector({
   hackathons = [],
   currentHackathon,
+  organizationId,
   onHackathonChange,
   onToggle,
 }: HackathonSelectorProps) {
@@ -152,6 +155,17 @@ export default function HackathonSelector({
             )}
           </DropdownMenuItem>
         ))}
+
+        <DropdownMenuSeparator className='bg-[#2B2B2B]' />
+        <DropdownMenuItem
+          onClick={() =>
+            router.push(`/organizations/${organizationId}/hackathons/new`)
+          }
+          className='text-primary flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 hover:bg-[#252525] focus:bg-[#252525]'
+        >
+          <Plus className='h-4 w-4 shrink-0' />
+          <span className='text-sm font-medium'>New Hackathon</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
