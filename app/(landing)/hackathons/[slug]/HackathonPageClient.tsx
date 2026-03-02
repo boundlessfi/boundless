@@ -299,18 +299,24 @@ export default function HackathonPageClient() {
   // This handles direct URL access to a disabled tab — user is silently redirected to overview.
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl) {
-      if (hackathonTabs.some(tab => tab.id === tabFromUrl)) {
-        // Tab exists in filtered list — activate it normally
-        setActiveTab(tabFromUrl);
-      } else {
-        // Tab is disabled or unrecognised — fall back to overview
-        setActiveTab('overview');
-        const queryParams = new URLSearchParams(searchParams.toString());
-        queryParams.set('tab', 'overview');
-        router.replace(`?${queryParams.toString()}`, { scroll: false });
-      }
+
+    // No tab in URL — default to overview
+    if (!tabFromUrl) {
+      setActiveTab('overview');
+      return;
     }
+
+    if (hackathonTabs.some(tab => tab.id === tabFromUrl)) {
+      // Tab exists in filtered list — activate it normally
+      setActiveTab(tabFromUrl);
+      return;
+    }
+
+    // Tab is disabled or unrecognised — fall back to overview
+    setActiveTab('overview');
+    const queryParams = new URLSearchParams(searchParams.toString());
+    queryParams.set('tab', 'overview');
+    router.replace(`?${queryParams.toString()}`, { scroll: false });
   }, [searchParams, hackathonTabs, router]);
 
   const handleTabChange = (tabId: string) => {
