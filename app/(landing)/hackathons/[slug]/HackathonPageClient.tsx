@@ -167,6 +167,23 @@ export default function HackathonPageClient() {
       });
     }
 
+    //  Filter tabs against enabledTabs so only explicitly enabled tabs are shown.
+    // 'overview' is always kept as it is the default fallback tab.
+    // If enabledTabs is undefined/null (not configured), all tabs are shown as before.
+    type EnabledTab = NonNullable<
+      typeof currentHackathon
+    >['enabledTabs'][number];
+    if (
+      currentHackathon?.enabledTabs &&
+      currentHackathon.enabledTabs.length > 0
+    ) {
+      return tabs.filter(
+        tab =>
+          tab.id === 'overview' ||
+          currentHackathon.enabledTabs!.includes(tab.id as EnabledTab)
+      );
+    }
+
     return tabs;
   }, [
     currentHackathon?.participants,
@@ -273,12 +290,23 @@ export default function HackathonPageClient() {
   }, [hackathonId, setCurrentHackathon]);
 
   // Handle tab changes from URL
+  // Now also defaults to 'overview' if the URL tab is not in the filtered hackathonTabs list.
+  // This handles direct URL access to a disabled tab — user is silently redirected to overview.
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl && hackathonTabs.some(tab => tab.id === tabFromUrl)) {
-      setActiveTab(tabFromUrl);
+    if (tabFromUrl) {
+      if (hackathonTabs.some(tab => tab.id === tabFromUrl)) {
+        // Tab exists in filtered list — activate it normally
+        setActiveTab(tabFromUrl);
+      } else {
+        // Tab is disabled or unrecognised — fall back to overview
+        setActiveTab('overview');
+        const queryParams = new URLSearchParams(searchParams.toString());
+        queryParams.set('tab', 'overview');
+        router.replace(`?${queryParams.toString()}`, { scroll: false });
+      }
     }
-  }, [searchParams, hackathonTabs]);
+  }, [searchParams, hackathonTabs, router]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -307,6 +335,11 @@ export default function HackathonPageClient() {
       </div>
     );
   }
+
+  // Helper: checks if a tab id is present in the filtered hackathonTabs array.
+  // Used below to guard each tab's content from rendering if the tab is disabled.
+  const isTabVisible = (tabId: string) =>
+    hackathonTabs.some(tab => tab.id === tabId);
 
   // Shared props for banner and sticky card
   const sharedActionProps = {
@@ -378,48 +411,60 @@ export default function HackathonPageClient() {
               />
             )}
 
+            {/* isTabVisible('resources') guard — HackathonResources will not
+                render at all if 'resources' is not in enabledTabs, even via direct URL */}
             {activeTab === 'resources' &&
+              isTabVisible('resources') &&
               currentHackathon.resources?.length > 0 && <HackathonResources />}
+
+            {/*  isTabVisible('participants') guard */}
             {activeTab === 'participants' &&
+              isTabVisible('participants') &&
               currentHackathon.participants?.length > 0 && (
                 <HackathonParticipants />
               )}
 
-            {activeTab === 'announcements' && announcements.length > 0 && (
-              <AnnouncementsTab
-                announcements={announcements}
-                hackathonSlug={hackathonId}
-              />
-            )}
+            {/*  isTabVisible('announcements') guard */}
+            {activeTab === 'announcements' &&
+              isTabVisible('announcements') &&
+              announcements.length > 0 && (
+                <AnnouncementsTab
+                  announcements={announcements}
+                  hackathonSlug={hackathonId}
+                />
+              )}
 
-            {activeTab === 'submission' && (
+            {/* isTabVisible('submission') guard */}
+            {activeTab === 'submission' && isTabVisible('submission') && (
               <SubmissionTab
                 organizationId={currentHackathon.organizationId}
                 isRegistered={isRegistered}
               />
             )}
 
-            {activeTab === 'discussions' && (
+            {/*  isTabVisible('discussions') guard */}
+            {activeTab === 'discussions' && isTabVisible('discussions') && (
               <HackathonDiscussions
                 hackathonId={hackathonId}
                 isRegistered={isRegistered}
               />
             )}
 
-            {activeTab === 'team-formation' && (
-              <TeamFormationTab
-                hackathonSlugOrId={hackathonId}
-                isRegistered={isRegistered}
-              />
-            )}
+            {/*  isTabVisible('team-formation') guard */}
+            {activeTab === 'team-formation' &&
+              isTabVisible('team-formation') && (
+                <TeamFormationTab
+                  hackathonSlugOrId={hackathonId}
+                  isRegistered={isRegistered}
+                />
+              )}
 
-            {activeTab === 'winners' && (
+            {/* isTabVisible('winners') guard */}
+            {activeTab === 'winners' && isTabVisible('winners') && (
               <WinnersTab winners={winners} hackathonSlug={hackathonId} />
             )}
 
-            {activeTab === 'resources' && currentHackathon?.resources?.[0] && (
-              <HackathonResources />
-            )}
+            {/* Note: duplicate resources render removed — was already covered above */}
           </div>
         </div>
 
