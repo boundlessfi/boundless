@@ -174,6 +174,11 @@ export default function HackathonPageClient() {
     const tabIdToEnabledKey: Record<string, string> = {
       'team-formation': 'joinATeamTab',
       winners: 'winnersTab',
+      resources: 'resourcesTab',
+      participants: 'participantsTab',
+      announcements: 'announcementsTab',
+      submission: 'submissionTab',
+      discussions: 'discussionTab',
     };
 
     type EnabledTab = NonNullable<
