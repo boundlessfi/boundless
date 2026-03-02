@@ -167,23 +167,28 @@ export default function HackathonPageClient() {
       });
     }
 
-    //  Filter tabs against enabledTabs so only explicitly enabled tabs are shown.
+    // Filter tabs against enabledTabs so only explicitly enabled tabs are shown.
     // 'overview' is always kept as it is the default fallback tab.
     // If enabledTabs is undefined/null (not configured), all tabs are shown as before.
+    // Map UI tab ids to backend enabledTabs keys where they differ.
+    const tabIdToEnabledKey: Record<string, string> = {
+      'team-formation': 'joinATeamTab',
+      winners: 'winnersTab',
+    };
+
     type EnabledTab = NonNullable<
       typeof currentHackathon
     >['enabledTabs'][number];
-    if (
-      currentHackathon?.enabledTabs &&
-      currentHackathon.enabledTabs.length > 0
-    ) {
-      return tabs.filter(
-        tab =>
-          tab.id === 'overview' ||
-          currentHackathon.enabledTabs!.includes(tab.id as EnabledTab)
-      );
-    }
+    const enabledTabs = currentHackathon?.enabledTabs;
 
+    if (Array.isArray(enabledTabs)) {
+      const enabledSet = new Set(enabledTabs);
+      return tabs.filter(tab => {
+        if (tab.id === 'overview') return true;
+        const key = (tabIdToEnabledKey[tab.id] ?? tab.id) as EnabledTab;
+        return enabledSet.has(key);
+      });
+    }
     return tabs;
   }, [
     currentHackathon?.participants,
