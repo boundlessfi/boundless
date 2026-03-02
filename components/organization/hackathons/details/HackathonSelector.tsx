@@ -81,6 +81,11 @@ export default function HackathonSelector({
     onToggle?.(open);
   };
 
+  const handleNewHackathonClick = () => {
+    if (!organizationId) return;
+    router.push(`/organizations/${organizationId}/hackathons/new`);
+  };
+
   if (hackathons.length === 0) {
     return null;
   }
@@ -158,9 +163,7 @@ export default function HackathonSelector({
 
         <DropdownMenuSeparator className='bg-[#2B2B2B]' />
         <DropdownMenuItem
-          onClick={() =>
-            router.push(`/organizations/${organizationId}/hackathons/new`)
-          }
+          onClick={handleNewHackathonClick}
           className='text-primary flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 hover:bg-[#252525] focus:bg-[#252525]'
         >
           <Plus className='h-4 w-4 shrink-0' />
