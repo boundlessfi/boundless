@@ -59,26 +59,26 @@ const CACHE_DURATION = 5 * 60 * 1000;
 
 type OrganizationAction =
   | {
-      type: 'SET_LOADING';
-      payload: {
-        isLoading: boolean;
-        isLoadingOrganizations?: boolean;
-        isLoadingActiveOrg?: boolean;
-      };
-    }
+    type: 'SET_LOADING';
+    payload: {
+      isLoading: boolean;
+      isLoadingOrganizations?: boolean;
+      isLoadingActiveOrg?: boolean;
+    };
+  }
   | {
-      type: 'SET_ERROR';
-      payload: {
-        error: string | null;
-        organizationsError?: string | null;
-        activeOrgError?: string | null;
-      };
-    }
+    type: 'SET_ERROR';
+    payload: {
+      error: string | null;
+      organizationsError?: string | null;
+      activeOrgError?: string | null;
+    };
+  }
   | { type: 'SET_ORGANIZATIONS'; payload: OrganizationSummary[] }
   | {
-      type: 'SET_ACTIVE_ORG';
-      payload: { org: Organization | null; orgId: string | null };
-    }
+    type: 'SET_ACTIVE_ORG';
+    payload: { org: Organization | null; orgId: string | null };
+  }
   | { type: 'UPDATE_ORGANIZATION'; payload: Organization }
   | { type: 'ADD_ORGANIZATION'; payload: OrganizationSummary }
   | { type: 'REMOVE_ORGANIZATION'; payload: string }
@@ -216,26 +216,33 @@ function organizationReducer(
       };
 
     case 'UPDATE_ORGANIZATION':
-      if (!action.payload || !action.payload.id) {
+      const updatePayload = action.payload as any;
+      const orgId = updatePayload?.id || updatePayload?._id;
+
+      if (!action.payload || !orgId) {
         return state;
       }
       return {
         ...state,
         activeOrg:
-          state.activeOrgId === action.payload.id
-            ? action.payload
-            : state.activeOrg,
+          state.activeOrgId === orgId ? action.payload : state.activeOrg,
         organizations: state.organizations.map(org =>
-          org.organizationId === action.payload.id
+          org.organizationId === orgId
             ? {
-                ...org,
-                name: action.payload.name,
-                logo: action.payload.logo,
-                tagline: action.payload.tagline,
-                about: action.payload.about,
-                links: action.payload.links,
-                isProfileComplete: action.payload.isProfileComplete,
-              }
+              ...org,
+              name: action.payload.name,
+              logo: action.payload.logo,
+              tagline:
+                action.payload.tagline ||
+                (action.payload as any).metadata?.tagline,
+              about:
+                action.payload.about ||
+                (action.payload as any).metadata?.about,
+              links:
+                action.payload.links ||
+                (action.payload as any).metadata?.links,
+              isProfileComplete: action.payload.isProfileComplete,
+            }
             : org
         ),
       };
@@ -464,12 +471,12 @@ export function OrganizationProvider({
         count: organizationSummaries.length,
         sampleOrg: organizationSummaries[0]
           ? {
-              organizationId: organizationSummaries[0].organizationId,
-              name: organizationSummaries[0].name,
-              hackathonCount: organizationSummaries[0].hackathonCount,
-              grantCount: organizationSummaries[0].grantCount,
-              memberCount: organizationSummaries[0].memberCount,
-            }
+            organizationId: organizationSummaries[0].organizationId,
+            name: organizationSummaries[0].name,
+            hackathonCount: organizationSummaries[0].hackathonCount,
+            grantCount: organizationSummaries[0].grantCount,
+            memberCount: organizationSummaries[0].memberCount,
+          }
           : null,
       });
       dispatch({ type: 'SET_ORGANIZATIONS', payload: organizationSummaries });
@@ -755,6 +762,35 @@ export function OrganizationProvider({
           },
         });
         if (error) throw error;
+
+        // Immediately update local state before redirect to avoid empty form/state mismatch
+        const orgData: Organization = {
+          id: newOrg.id,
+          name: newOrg.name,
+          slug: newOrg.slug,
+          logo: newOrg.logo || '',
+          metadata: newOrg.metadata as any,
+          tagline: (newOrg.metadata as any)?.tagline || '',
+          about: (newOrg.metadata as any)?.about || '',
+          links: (newOrg.metadata as any)?.links || {},
+          isProfileComplete: !!(
+            newOrg.name &&
+            newOrg.slug &&
+            (newOrg.metadata as any)?.tagline &&
+            (newOrg.metadata as any)?.about
+          ),
+          members: [],
+          owner: '',
+          hackathons: [],
+          grants: [],
+          createdAt: newOrg.createdAt.toISOString(),
+          updatedAt: newOrg.createdAt.toISOString(),
+        };
+
+        dispatch({
+          type: 'SET_ACTIVE_ORG',
+          payload: { org: orgData, orgId: newOrg.id },
+        });
 
         await refreshOrganizations();
 

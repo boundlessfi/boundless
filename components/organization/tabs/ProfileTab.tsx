@@ -51,6 +51,7 @@ export default function ProfileTab({
     updateOrganization,
     isLoading,
     isLoadingOrganizations,
+    isLoadingActiveOrg,
   } = useOrganization();
 
   const [formData, setFormData] = useState({
@@ -124,6 +125,13 @@ export default function ProfileTab({
       setHasUserChanges(false);
       setIsInitialized(true);
     } else if (!isInitialized) {
+      // Guard: If we have an ID but the active org is still loading or hasn't matched our ID yet, wait
+      if (organizationId && (!activeOrg || activeOrg.id !== organizationId)) {
+        if (isLoadingActiveOrg) {
+          return;
+        }
+      }
+
       if (activeOrg) {
         setFormData({
           name: activeOrg.name || '',
@@ -164,7 +172,14 @@ export default function ProfileTab({
         setIsInitialized(true);
       }
     }
-  }, [activeOrg, initialData, isInitialized, isCreating]);
+  }, [
+    activeOrg,
+    initialData,
+    isInitialized,
+    isCreating,
+    isLoadingActiveOrg,
+    organizationId,
+  ]);
 
   useEffect(() => {
     if (activeOrg && isInitialized && !isCreating) {
@@ -483,7 +498,10 @@ export default function ProfileTab({
     }
   };
 
-  const loadingui = isSaving || isLoadingOrganizations;
+  const loadingui =
+    isSaving ||
+    isLoadingOrganizations ||
+    (isLoadingActiveOrg && !isInitialized);
   if (loadingui) {
     return (
       <div className='relative h-[calc(100vh-300px)] space-y-8'>
