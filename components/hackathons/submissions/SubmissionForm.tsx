@@ -404,6 +404,10 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   };
 
   const handleAddInvitee = () => {
+    if (currentHackathon && invitees.length + 1 >= currentHackathon.teamMax) {
+      return;
+    }
+
     if (!currentInviteeName || !currentInviteeRole || !currentInviteeEmail) {
       toast.error('Please fill in name, email and role');
       return;
@@ -450,6 +454,17 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
           const teamName = form.getValues('teamName');
           if (!teamName) {
             form.setError('teamName', { message: 'Team Name is required' });
+            return;
+          }
+          if (
+            currentHackathon &&
+            invitees.length + 1 < currentHackathon.teamMin
+          ) {
+            const membersNeeded =
+              currentHackathon.teamMin - (invitees.length + 1);
+            toast.error(
+              `Your team needs at least ${currentHackathon.teamMin} members. Please add ${membersNeeded} more member${membersNeeded > 1 ? 's' : ''}.`
+            );
             return;
           }
           isValid = true;
@@ -772,9 +787,34 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                     />
 
                     <div className='space-y-3'>
-                      <FormLabel className='text-white'>
-                        Invite Members (Optional)
-                      </FormLabel>
+                      <div className='flex items-center justify-between'>
+                        <FormLabel className='text-white'>
+                          Invite Members
+                        </FormLabel>
+                        {currentHackathon && (
+                          <Badge
+                            variant='outline'
+                            className={cn(
+                              'text-xs',
+                              invitees.length + 1 >= currentHackathon.teamMax
+                                ? 'border-amber-500 bg-amber-500/20 text-amber-400'
+                                : 'border-gray-600 text-gray-400'
+                            )}
+                          >
+                            {invitees.length + 1} / {currentHackathon.teamMax}{' '}
+                            members
+                          </Badge>
+                        )}
+                      </div>
+                      {currentHackathon &&
+                        invitees.length + 1 < currentHackathon.teamMin && (
+                          <p className='text-xs text-yellow-500'>
+                            Minimum {currentHackathon.teamMin} members required
+                            — add{' '}
+                            {currentHackathon.teamMin - (invitees.length + 1)}{' '}
+                            more to proceed.
+                          </p>
+                        )}
                       <div className='flex flex-col gap-3'>
                         <div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
                           <Input
@@ -784,6 +824,12 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                               setCurrentInviteeName(e.target.value)
                             }
                             className='border-gray-700 bg-gray-800/50 text-white'
+                            disabled={
+                              !!(
+                                currentHackathon &&
+                                invitees.length + 1 >= currentHackathon.teamMax
+                              )
+                            }
                           />
                           <Input
                             placeholder='Email'
@@ -793,6 +839,12 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                               setCurrentInviteeEmail(e.target.value)
                             }
                             className='border-gray-700 bg-gray-800/50 text-white'
+                            disabled={
+                              !!(
+                                currentHackathon &&
+                                invitees.length + 1 >= currentHackathon.teamMax
+                              )
+                            }
                           />
                           <Input
                             placeholder='Role (e.g. Designer)'
@@ -801,12 +853,30 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                               setCurrentInviteeRole(e.target.value)
                             }
                             className='border-gray-700 bg-gray-800/50 text-white'
+                            disabled={
+                              !!(
+                                currentHackathon &&
+                                invitees.length + 1 >= currentHackathon.teamMax
+                              )
+                            }
                           />
                         </div>
                         <Button
                           type='button'
                           onClick={handleAddInvitee}
-                          className='self-start bg-gray-800 text-white hover:bg-gray-700'
+                          disabled={
+                            !!(
+                              currentHackathon &&
+                              invitees.length + 1 >= currentHackathon.teamMax
+                            )
+                          }
+                          className='self-start bg-gray-800 text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50'
+                          aria-label={
+                            currentHackathon &&
+                            invitees.length + 1 >= currentHackathon.teamMax
+                              ? 'Team is at maximum capacity'
+                              : 'Add member'
+                          }
                         >
                           <Plus className='mr-2 h-4 w-4' />
                           Add Member
