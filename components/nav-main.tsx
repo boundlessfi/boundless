@@ -45,10 +45,14 @@ export const NavMain = ({ items, label }: NavMainProps): React.ReactElement => {
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map(item => {
+            const normalizedUrl =
+              item.url !== '/' && item.url.endsWith('/')
+                ? item.url.slice(0, -1)
+                : item.url;
             const isActive =
-              pathname === item.url ||
-              (item.url !== PROFILE_ROUTE &&
-                pathname?.startsWith(`${item.url}/`));
+              pathname === normalizedUrl ||
+              (normalizedUrl !== PROFILE_ROUTE &&
+                pathname?.startsWith(`${normalizedUrl}/`));
 
             return (
               <SidebarMenuItem key={item.title}>

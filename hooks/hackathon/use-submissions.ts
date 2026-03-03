@@ -86,7 +86,6 @@ export function useSubmissions() {
   }, [submissions]);
 
   const filteredAndSortedSubmissions = useMemo(() => {
-    console.log({ submissions });
     let filtered = submissions;
 
     // Filter by search term

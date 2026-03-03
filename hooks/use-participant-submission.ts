@@ -8,7 +8,7 @@ export interface SubmissionData {
   description: string;
   votes: number;
   comments: number;
-  submissionDate: string;
+  submissionDate?: string;
   videoUrl?: string;
   introduction?: string;
   logo?: string;
@@ -96,8 +96,7 @@ export const transformParticipantToSubmission = (
     comments: commentsCount ?? 0,
     submissionDate:
       participant.submission.submissionDate ??
-      participant.submission.submittedAt ??
-      '',
+      participant.submission.submittedAt,
     videoUrl: participant.submission.videoUrl,
     introduction: participant.submission.introduction,
     logo: participant.submission.logo,

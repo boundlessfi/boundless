@@ -131,8 +131,10 @@ export function SubmissionDetailModal({
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '—';
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return '—';
     return date.toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
@@ -275,7 +277,7 @@ export function SubmissionDetailModal({
                 <span>
                   Submitted:{' '}
                   {formatDate(
-                    submission.submissionDate ?? submission.submittedAt ?? ''
+                    submission.submissionDate ?? submission.submittedAt
                   )}
                 </span>
               </div>
