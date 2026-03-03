@@ -27,8 +27,12 @@ import {
 } from '@/components/ui/sidebar';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useNotificationStore } from '@/lib/stores/notification-store';
 
-const getNavigationData = (counts?: { participating?: number }) => ({
+const getNavigationData = (counts?: {
+  participating?: number;
+  unreadNotifications?: number;
+}) => ({
   main: [
     {
       title: 'Overview',
@@ -97,7 +101,10 @@ const getNavigationData = (counts?: { participating?: number }) => ({
       title: 'Notifications',
       url: '/me/notifications',
       icon: IconBell,
-      badge: '5',
+      badge:
+        counts?.unreadNotifications && counts.unreadNotifications > 0
+          ? counts.unreadNotifications.toString()
+          : undefined,
     },
   ],
 });
@@ -116,9 +123,11 @@ export function AppSidebar({
   user: UserData;
   counts?: { participating?: number };
 } & React.ComponentProps<typeof Sidebar>) {
+  const unreadNotifications = useNotificationStore(state => state.unreadCount);
+
   const navigationData = React.useMemo(
-    () => getNavigationData(counts),
-    [counts]
+    () => getNavigationData({ ...counts, unreadNotifications }),
+    [counts, unreadNotifications]
   );
 
   return (
