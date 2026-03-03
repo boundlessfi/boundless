@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Filter } from 'lucide-react';
 import { getUserProfileByUsername } from '@/lib/api/auth';
+import { authClient } from '@/lib/auth-client';
 import { PublicUserProfile } from '@/features/projects/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ActivityTab from '@/components/profile/ActivityTab';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,11 +13,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import ActivityTab from '@/components/profile/ActivityTab';
 import OrganizationsTab from '@/components/profile/OrganizationsTab';
-import { Filter } from 'lucide-react';
-import { authClient } from '@/lib/auth-client';
 import ProfileOverviewPublic from '@/components/profile/ProfileOverviewPublic';
 import ProjectsTabPublic from '@/components/profile/ProjectsTabPublic';
+import PublicEarningsTab from '@/components/profile/PublicEarningsTab';
 
 interface PublicProfileDataProps {
   username: string;
@@ -32,20 +33,26 @@ const FILTER_OPTIONS = [
   'All Time',
 ];
 
-export function ProfileData({ username }: PublicProfileDataProps) {
+const TAB_CLASS =
+  'data-[state=active]:border-b-primary/45 rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white';
+
+export function ProfileData({
+  username,
+}: PublicProfileDataProps): React.ReactElement {
   const [userData, setUserData] = useState<PublicUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState('All');
-  const [authUser, setAuthUser] = useState<string | null>(null);
+  const [authUsername, setAuthUsername] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   useEffect(() => {
-    async function loadProfile() {
+    async function loadProfile(): Promise<void> {
       try {
-        const { data: session } = await authClient.getSession();
-        setAuthUser(session?.user?.profile?.username || null);
-        setIsAuthenticated(!!session?.user);
         setLoading(true);
+        const { data: session } = await authClient.getSession();
+        setAuthUsername(session?.user?.profile?.username || null);
+        setIsAuthenticated(!!session?.user);
         const data = await getUserProfileByUsername(username);
         setUserData(data);
       } catch (err) {
@@ -87,8 +94,7 @@ export function ProfileData({ username }: PublicProfileDataProps) {
       name: org.name,
       avatarUrl: org.logo || '/blog1.jpg',
     })) || [];
-  // Determine if it's the user's own profile
-  const isOwnProfile = isAuthenticated && authUser === userData.username;
+  const isOwnProfile = isAuthenticated && authUsername === userData.username;
 
   return (
     <section className='mt-14 flex flex-col gap-8 lg:flex-row lg:gap-16'>
@@ -103,21 +109,18 @@ export function ProfileData({ username }: PublicProfileDataProps) {
         <Tabs defaultValue='activity' className='w-full'>
           <div className='border-b border-zinc-800'>
             <TabsList className='h-auto w-full justify-start gap-6 bg-transparent p-0'>
-              <TabsTrigger
-                value='activity'
-                className='data-[state=active]:border-b-primary/45 rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white'
-              >
+              <TabsTrigger value='activity' className={TAB_CLASS}>
                 Activity
               </TabsTrigger>
-              <TabsTrigger
-                value='projects'
-                className='data-[state=active]:border-b-primary/45 rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white'
-              >
+              <TabsTrigger value='projects' className={TAB_CLASS}>
                 Projects
+              </TabsTrigger>
+              <TabsTrigger value='earnings' className={TAB_CLASS}>
+                Earnings
               </TabsTrigger>
               <TabsTrigger
                 value='organizations'
-                className='data-[state=active]:border-primary rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white md:hidden'
+                className={`${TAB_CLASS} md:hidden`}
               >
                 Organizations
               </TabsTrigger>
@@ -161,6 +164,10 @@ export function ProfileData({ username }: PublicProfileDataProps) {
 
             <TabsContent value='projects' className='mt-0'>
               <ProjectsTabPublic user={userData} />
+            </TabsContent>
+
+            <TabsContent value='earnings' className='mt-0'>
+              <PublicEarningsTab username={username} />
             </TabsContent>
 
             {isAuthenticated && isOwnProfile && (

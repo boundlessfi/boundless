@@ -32,6 +32,7 @@ import { useNotificationStore } from '@/lib/stores/notification-store';
 const getNavigationData = (counts?: {
   participating?: number;
   unreadNotifications?: number;
+  submissions?: number;
 }) => ({
   main: [
     {
@@ -77,6 +78,10 @@ const getNavigationData = (counts?: {
       title: 'Submissions',
       url: '/me/hackathons/submissions',
       icon: IconUsers,
+      badge:
+        counts?.submissions && counts.submissions > 0
+          ? counts.submissions.toString()
+          : undefined,
     },
   ],
   crowdfunding: [
@@ -121,7 +126,7 @@ export function AppSidebar({
   ...props
 }: {
   user: UserData;
-  counts?: { participating?: number };
+  counts?: { participating?: number; submissions?: number };
 } & React.ComponentProps<typeof Sidebar>) {
   const unreadNotifications = useNotificationStore(state => state.unreadCount);
 

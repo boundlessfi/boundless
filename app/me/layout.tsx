@@ -21,11 +21,28 @@ export default function MeLayout({ children }: { children: React.ReactNode }) {
 
   const hackathonsCount = useMemo(() => {
     if (!profile) return 0;
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const joined = (profile as any)?.user?.joinedHackathons || [];
-
     return joined.length;
+  }, [profile]);
+
+  const submissionsCount = useMemo(() => {
+    if (!profile) return 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fromUser =
+      (profile as any)?.user?.hackathonSubmissionsAsParticipant || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fromProfile =
+      (profile as any)?.hackathonSubmissionsAsParticipant || [];
+    // Deduplicate by id before counting
+    const merged = [...fromUser, ...fromProfile];
+    const seen = new Set<string>();
+    return merged.filter((s: any) => {
+      const id = s?.id || s?._id;
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    }).length;
   }, [profile]);
 
   if (isLoading) {
@@ -47,7 +64,10 @@ export default function MeLayout({ children }: { children: React.ReactNode }) {
     >
       <AppSidebar
         user={userData}
-        counts={{ participating: hackathonsCount }}
+        counts={{
+          participating: hackathonsCount,
+          submissions: submissionsCount,
+        }}
         variant='inset'
       />
       <SidebarInset className='bg-[#0e0c0c]'>
