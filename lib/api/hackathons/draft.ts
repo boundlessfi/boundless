@@ -38,6 +38,12 @@ export interface PublishHackathonResponse extends ApiResponse<Hackathon> {
   message: string;
 }
 
+export interface DeleteHackathonResponse extends ApiResponse<null> {
+  success: true;
+  message: string;
+  data: null;
+}
+
 /**
  * Initialize a new hackathon draft
  */
@@ -84,6 +90,20 @@ export const publishDraft = async (
   );
 
   return res.data.data as PublishHackathonResponse;
+};
+
+/**
+ * Delete Draft Hackathon
+ */
+export const deleteDraft = async (
+  draftId: string,
+  organizationId: string
+): Promise<DeleteHackathonResponse> => {
+  const res = await api.delete<DeleteHackathonResponse>(
+    `/organizations/${organizationId}/hackathons/draft/${draftId}`
+  );
+
+  return res.data;
 };
 
 /**

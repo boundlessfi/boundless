@@ -2,12 +2,16 @@
 
 import { useState, useCallback } from 'react';
 import { deleteHackathon } from '@/lib/api/hackathons';
+import { deleteDraft } from '@/lib/api/hackathons/draft';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { toast } from 'sonner';
+
+type DeleteType = 'draft' | 'hackathon';
 
 interface UseDeleteHackathonOptions {
   organizationId: string;
   hackathonId: string;
+  type: DeleteType;
   onSuccess?: () => void;
   onError?: (error: string) => void;
 }
@@ -15,6 +19,7 @@ interface UseDeleteHackathonOptions {
 export function useDeleteHackathon({
   organizationId,
   hackathonId,
+  type,
   onSuccess,
   onError,
 }: UseDeleteHackathonOptions) {
@@ -37,7 +42,13 @@ export function useDeleteHackathon({
     setError(null);
 
     try {
-      const response = await deleteHackathon(hackathonId);
+      let response;
+
+      if (type === 'draft') {
+        response = await deleteDraft(hackathonId, organizationId);
+      } else {
+        response = await deleteHackathon(hackathonId);
+      }
 
       if (response.success) {
         toast.success('Hackathon deleted successfully');
