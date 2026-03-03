@@ -70,14 +70,15 @@ export const ParticipantSubmission: React.FC<ParticipantSubmissionProps> = ({
       </p>
       <div className='flex items-center justify-between gap-2'>
         <span className='text-sm text-gray-500'>
-          {new Date(participant.submission.submissionDate).toLocaleDateString(
-            'en-US',
-            {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            }
-          )}
+          {new Date(
+            participant.submission.submissionDate ??
+              participant.submission.submittedAt ??
+              ''
+          ).toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })}
         </span>
         <div className='flex items-center gap-2'>
           {isShortlisted && organizationId && hackathonId && (

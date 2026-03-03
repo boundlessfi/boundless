@@ -146,7 +146,7 @@ export function SubmissionDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-h-[90vh] max-w-4xl overflow-y-auto bg-[#030303] text-white'>
+      <DialogContent className='bg-background-main-bg max-h-[90vh] max-w-4xl overflow-y-auto text-white'>
         <DialogHeader>
           <DialogTitle className='text-2xl font-bold'>
             {isLoading ? 'Loading...' : submission?.projectName}
@@ -272,7 +272,12 @@ export function SubmissionDetailModal({
             <div className='flex items-center gap-6 text-sm text-gray-400'>
               <div className='flex items-center gap-2'>
                 <Calendar className='h-4 w-4' />
-                <span>Submitted: {formatDate(submission.submissionDate)}</span>
+                <span>
+                  Submitted:{' '}
+                  {formatDate(
+                    submission.submissionDate ?? submission.submittedAt ?? ''
+                  )}
+                </span>
               </div>
               <div className='flex items-center gap-2'>
                 <MessageCircle className='h-4 w-4' />

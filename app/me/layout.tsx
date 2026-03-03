@@ -7,43 +7,60 @@ import { useAuthStatus } from '@/hooks/use-auth';
 import React, { useMemo } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
-export default function MeLayout({ children }: { children: React.ReactNode }) {
+interface MeLayoutProps {
+  children: React.ReactNode;
+}
+
+/** Item with optional id or _id for join/submission arrays from profile API. */
+interface ProfileItemWithId {
+  id?: string;
+  _id?: string;
+}
+
+/** Profile shape used by layout: user + optional root-level submission list. */
+interface MeLayoutProfile {
+  user?: {
+    image?: string;
+    joinedHackathons?: ProfileItemWithId[];
+    hackathonSubmissionsAsParticipant?: ProfileItemWithId[];
+  };
+  image?: string;
+  hackathonSubmissionsAsParticipant?: ProfileItemWithId[];
+}
+
+const getId = (item: ProfileItemWithId): string | undefined =>
+  item.id ?? item._id;
+
+const MeLayout = ({ children }: MeLayoutProps): React.ReactElement => {
   const { user, isLoading } = useAuthStatus();
 
   const { name = '', email = '', profile, image: userImage = '' } = user || {};
+  const typedProfile = profile as MeLayoutProfile | null | undefined;
 
   const userData = {
     name: name || '',
     email,
-    image:
-      (profile as any)?.user?.image || (profile as any)?.image || userImage,
+    image: typedProfile?.user?.image ?? typedProfile?.image ?? userImage ?? '',
   };
 
   const hackathonsCount = useMemo(() => {
-    if (!profile) return 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const joined = (profile as any)?.user?.joinedHackathons || [];
-    return joined.length;
-  }, [profile]);
+    if (!typedProfile?.user?.joinedHackathons) return 0;
+    return typedProfile.user.joinedHackathons.length;
+  }, [typedProfile]);
 
   const submissionsCount = useMemo(() => {
-    if (!profile) return 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fromUser =
-      (profile as any)?.user?.hackathonSubmissionsAsParticipant || [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fromProfile =
-      (profile as any)?.hackathonSubmissionsAsParticipant || [];
-    // Deduplicate by id before counting
-    const merged = [...fromUser, ...fromProfile];
+    if (!typedProfile) return 0;
+    const fromUser = typedProfile.user?.hackathonSubmissionsAsParticipant ?? [];
+    const fromProfile = typedProfile.hackathonSubmissionsAsParticipant ?? [];
+    const merged: ProfileItemWithId[] = [...fromUser, ...fromProfile];
     const seen = new Set<string>();
-    return merged.filter((s: any) => {
-      const id = s?.id || s?._id;
+    return merged.filter(s => {
+      const id = getId(s);
       if (!id || seen.has(id)) return false;
       seen.add(id);
       return true;
     }).length;
-  }, [profile]);
+  }, [typedProfile]);
 
   if (isLoading) {
     return (
@@ -76,4 +93,6 @@ export default function MeLayout({ children }: { children: React.ReactNode }) {
       </SidebarInset>
     </SidebarProvider>
   );
-}
+};
+
+export default MeLayout;

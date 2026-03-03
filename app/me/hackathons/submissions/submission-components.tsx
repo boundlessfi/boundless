@@ -17,11 +17,13 @@ import { Separator } from '@/components/ui/separator';
 import { TableCell, TableRow as ShadcnTableRow } from '@/components/ui/table';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 // ─────────────────────────── Url Sanitization ───────────────────────────
 
-export function getSafeUrl(urlString?: string): string | undefined {
+export const getSafeUrl: (
+  urlString?: string
+) => string | undefined = urlString => {
   if (!urlString) return undefined;
   try {
     const parsed = new URL(urlString);
@@ -32,7 +34,16 @@ export function getSafeUrl(urlString?: string): string | undefined {
   } catch {
     return undefined;
   }
-}
+};
+
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return '—';
+  try {
+    return format(new Date(dateString), 'MMM d, yyyy');
+  } catch {
+    return dateString;
+  }
+};
 
 export type SortField =
   | 'projectName'
@@ -54,8 +65,8 @@ export type SubmissionRow = {
   status: string;
   rank?: number | null;
   submittedAt: string;
-  votes?: number | any[];
-  comments?: number | any[];
+  votes?: number | unknown[];
+  comments?: number | unknown[];
   hackathon?: {
     id?: string;
     title?: string;
@@ -64,14 +75,15 @@ export type SubmissionRow = {
     submissionDeadline?: string;
     banner?: string;
   };
+  disqualificationReason?: string;
 };
 
 // ─────────────────────────── Status badge ───────────────────────────
 
-export function getStatusConfig(status: string): {
+export const getStatusConfig: (status: string) => {
   label: string;
   className: string;
-} {
+} = status => {
   const s = (status || '').toLowerCase();
 
   if (
@@ -112,9 +124,9 @@ export function getStatusConfig(status: string): {
         : s.charAt(0).toUpperCase() + s.slice(1) || 'Draft',
     className: 'text-gray-400 bg-gray-800/20',
   };
-}
+};
 
-export function StatusBadge({ status }: { status: string }) {
+export const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const cfg = getStatusConfig(status);
   return (
     <span
@@ -123,7 +135,7 @@ export function StatusBadge({ status }: { status: string }) {
       {cfg.label}
     </span>
   );
-}
+};
 
 // ─────────────────────────── Sort icon ───────────────────────────
 
@@ -169,16 +181,15 @@ export function SubmissionsSheetContent({
         ? submission.comments.length
         : 0;
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '—';
-    try {
-      return format(new Date(dateString), 'MMM d, yyyy');
-    } catch {
-      return dateString;
-    }
-  };
-
   const viewUrl = `/projects/${submission.id}?type=submission`;
+
+  const safeVideoUrl = submission.videoUrl
+    ? getSafeUrl(submission.videoUrl)
+    : null;
+
+  const handleViewClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
 
   return (
     <div className='space-y-6 px-6 pt-2 pb-8 md:px-10'>
@@ -199,7 +210,7 @@ export function SubmissionsSheetContent({
             href={viewUrl}
             target='_blank'
             rel='noopener noreferrer'
-            onClick={e => e.stopPropagation()}
+            onClick={handleViewClick}
             className='inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-white/20 hover:text-white'
             aria-label='View submission page'
           >
@@ -234,7 +245,7 @@ export function SubmissionsSheetContent({
       )}
 
       {/* Metadata strip */}
-      <div className='flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3 text-sm text-zinc-400'>
+      <div className='flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-white/5 bg-white/3 px-4 py-3 text-sm text-zinc-400'>
         {submission.rank != null && (
           <span className='flex items-center gap-1.5'>
             <Trophy className='h-4 w-4 text-amber-400' />
@@ -272,7 +283,7 @@ export function SubmissionsSheetContent({
         submission.hackathon?.submissionDeadline) && (
         <div className='flex flex-wrap gap-4 text-sm'>
           {submission.hackathon.startDate && (
-            <div className='rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2'>
+            <div className='rounded-lg border border-white/5 bg-white/3 px-3 py-2'>
               <p className='text-xs text-zinc-500'>Hackathon Start</p>
               <p className='font-medium text-white'>
                 {formatDate(submission.hackathon.startDate)}
@@ -280,7 +291,7 @@ export function SubmissionsSheetContent({
             </div>
           )}
           {submission.hackathon.submissionDeadline && (
-            <div className='rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2'>
+            <div className='rounded-lg border border-white/5 bg-white/3 px-3 py-2'>
               <p className='text-xs text-zinc-500'>Submission Deadline</p>
               <p className='font-medium text-white'>
                 {formatDate(submission.hackathon.submissionDeadline)}
@@ -317,13 +328,13 @@ export function SubmissionsSheetContent({
       )}
 
       {/* Video link */}
-      {submission.videoUrl && getSafeUrl(submission.videoUrl) && (
+      {safeVideoUrl && (
         <div className='space-y-2'>
           <h3 className='text-sm font-semibold tracking-wider text-zinc-500 uppercase'>
             Demo Video
           </h3>
           <a
-            href={getSafeUrl(submission.videoUrl)}
+            href={safeVideoUrl}
             target='_blank'
             rel='noopener noreferrer'
             className='inline-flex items-center gap-2 rounded-lg border border-[#a7f950]/30 bg-[#a7f950]/5 px-3 py-2 text-sm text-[#a7f950] transition-colors hover:bg-[#a7f950]/10'
@@ -350,7 +361,7 @@ export function SubmissionsSheetContent({
                   href={safeUrl}
                   target='_blank'
                   rel='noopener noreferrer'
-                  className='inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:border-white/20 hover:text-white'
+                  className='inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/4 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:border-white/20 hover:text-white'
                 >
                   <ExternalLink className='h-3.5 w-3.5 shrink-0' />
                   {link.type || link.url}
@@ -363,13 +374,13 @@ export function SubmissionsSheetContent({
 
       {/* Disqualification reason */}
       {(submission.status || '').toLowerCase() === 'disqualified' &&
-        (submission as any).disqualificationReason && (
+        submission.disqualificationReason && (
           <div className='rounded-xl border border-red-500/30 bg-red-500/10 p-4'>
             <h4 className='mb-1.5 font-semibold text-red-400'>
               Disqualification Reason
             </h4>
             <p className='text-sm text-red-300'>
-              {(submission as any).disqualificationReason}
+              {submission.disqualificationReason}
             </p>
           </div>
         )}
@@ -391,15 +402,6 @@ export function TableRow({
 
   const viewUrl = `/projects/${submission.id}?type=submission`;
   const [isHoverOrFocus, setIsHoverOrFocus] = useState(false);
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '—';
-    try {
-      return format(new Date(dateString), 'MMM d, yyyy');
-    } catch {
-      return dateString;
-    }
-  };
 
   const handleLeftClick = (e: React.MouseEvent) => {
     // Left click only
@@ -431,7 +433,7 @@ export function TableRow({
       transition={{ delay: index * 0.03, duration: 0.25 }}
       onClick={handleLeftClick}
       onAuxClick={handleAuxClick}
-      className='group cursor-pointer border-b border-white/5 transition-colors duration-150 hover:bg-white/[0.04]'
+      className='group cursor-pointer border-b border-white/5 transition-colors duration-150 hover:bg-white/4'
       onMouseEnter={() => setIsHoverOrFocus(true)}
       onMouseLeave={() => setIsHoverOrFocus(false)}
       role='button'

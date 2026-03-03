@@ -102,13 +102,8 @@ export default function HackathonPageClient() {
     const participantType = currentHackathon?.participantType;
     const isTeamHackathon =
       participantType === 'TEAM' || participantType === 'TEAM_OR_INDIVIDUAL';
-    const isTabEnabled =
-      currentHackathon?.enabledTabs?.includes('joinATeamTab') !== false;
 
     const hasWinners = winners && winners.length > 0;
-
-    const isWinnersTabEnabled =
-      currentHackathon?.enabledTabs?.includes('winnersTab') !== false;
 
     const tabs = [
       { id: 'overview', label: 'Overview' },
@@ -152,7 +147,7 @@ export default function HackathonPageClient() {
       },
     ];
 
-    if (isTeamHackathon && isTabEnabled) {
+    if (isTeamHackathon) {
       tabs.push({
         id: 'team-formation',
         label: 'Find Team',
@@ -160,7 +155,7 @@ export default function HackathonPageClient() {
       });
     }
 
-    if (hasWinners && isWinnersTabEnabled) {
+    if (hasWinners) {
       tabs.push({
         id: 'winners',
         label: 'Winners',
@@ -170,7 +165,10 @@ export default function HackathonPageClient() {
     // Filter tabs against enabledTabs so only explicitly enabled tabs are shown.
     // 'overview' is always kept as it is the default fallback tab.
     // If enabledTabs is undefined/null (not configured), all tabs are shown as before.
-    // Map UI tab ids to backend enabledTabs keys where they differ.
+    //
+    // IMPORTANT: Any new tab id added to the tabs array above must have a corresponding
+    // entry in tabIdToEnabledKey below; otherwise it falls back to tab.id and may be
+    // hidden when enabledTabs is set.
     const tabIdToEnabledKey: Record<string, string> = {
       'team-formation': 'joinATeamTab',
       winners: 'winnersTab',
@@ -181,6 +179,7 @@ export default function HackathonPageClient() {
       discussions: 'discussionTab',
     };
 
+    /** Backend enabledTabs entry type; keys in tabIdToEnabledKey must align with this. */
     type EnabledTab = NonNullable<
       typeof currentHackathon
     >['enabledTabs'][number];
@@ -191,7 +190,17 @@ export default function HackathonPageClient() {
       return tabs.filter(tab => {
         if (tab.id === 'overview') return true;
         const key = (tabIdToEnabledKey[tab.id] ?? tab.id) as EnabledTab;
-        return enabledSet.has(key);
+        const isVisible = enabledSet.has(key);
+        if (
+          !isVisible &&
+          process.env.NODE_ENV === 'development' &&
+          currentHackathon?.enabledTabs
+        ) {
+          console.warn(
+            `[HackathonPageClient] Tab "${tab.id}" (enabled key: ${key}) is not in currentHackathon.enabledTabs and will be hidden. Add the tab id to tabIdToEnabledKey and ensure the backend includes the key in enabledTabs when the tab should be visible.`
+          );
+        }
+        return isVisible;
       });
     }
     return tabs;
@@ -303,6 +312,8 @@ export default function HackathonPageClient() {
   // Now also defaults to 'overview' if the URL tab is not in the filtered hackathonTabs list.
   // This handles direct URL access to a disabled tab — user is silently redirected to overview.
   useEffect(() => {
+    if (loading || !currentHackathon) return;
+
     const tabFromUrl = searchParams.get('tab');
 
     // No tab in URL — default to overview
@@ -322,7 +333,7 @@ export default function HackathonPageClient() {
     const queryParams = new URLSearchParams(searchParams.toString());
     queryParams.set('tab', 'overview');
     router.replace(`?${queryParams.toString()}`, { scroll: false });
-  }, [searchParams, hackathonTabs, router]);
+  }, [searchParams, hackathonTabs, router, loading, currentHackathon]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -354,7 +365,7 @@ export default function HackathonPageClient() {
 
   // Helper: checks if a tab id is present in the filtered hackathonTabs array.
   // Used below to guard each tab's content from rendering if the tab is disabled.
-  const isTabVisible = (tabId: string) =>
+  const isTabVisible = (tabId: string): boolean =>
     hackathonTabs.some(tab => tab.id === tabId);
 
   // Shared props for banner and sticky card

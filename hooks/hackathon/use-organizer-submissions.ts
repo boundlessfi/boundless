@@ -15,10 +15,30 @@ const DEFAULT_PAGINATION = (limit: number) => ({
   totalPages: 0,
 });
 
+export interface UseOrganizerSubmissionsReturn {
+  submissions: ParticipantSubmission[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  filters: OrganizerSubmissionFilters;
+  updateFilters: (next: OrganizerSubmissionFilters) => void;
+  loading: boolean;
+  error: string | null;
+  fetchSubmissions: (
+    page?: number,
+    filterOverrides?: OrganizerSubmissionFilters
+  ) => Promise<void>;
+  goToPage: (page: number) => void;
+  refresh: () => void;
+}
+
 export function useOrganizerSubmissions(
   hackathonId: string,
   initialLimit = 12
-) {
+): UseOrganizerSubmissionsReturn {
   const [submissions, setSubmissions] = useState<ParticipantSubmission[]>([]);
   const [pagination, setPagination] = useState(() =>
     DEFAULT_PAGINATION(initialLimit)

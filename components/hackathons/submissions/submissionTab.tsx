@@ -81,7 +81,7 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
     setSelectedSort,
     setSelectedCategory,
   } = useSubmissions();
-
+  console.log({ submissions });
   const { currentHackathon } = useHackathonData();
   const { status } = useHackathonStatus(
     currentHackathon?.startDate,

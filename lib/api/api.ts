@@ -32,6 +32,7 @@ export interface ApiError {
 export interface RequestConfig {
   headers?: Record<string, string>;
   timeout?: number;
+  signal?: AbortSignal;
 }
 
 const createClientApi = (): AxiosInstance => {
@@ -171,12 +172,13 @@ const convertRequestConfig = (config?: RequestConfig): AxiosRequestConfig => {
     ...config?.headers, // Custom headers override defaults
   };
 
-  const axiosConfig = {
+  const axiosConfig: AxiosRequestConfig = {
     headers: mergedHeaders,
     timeout: config?.timeout,
+    signal: config?.signal,
     // Credentials are handled by Next.js proxy automatically
     withCredentials: false,
-  } as AxiosRequestConfig;
+  };
   return axiosConfig;
 };
 

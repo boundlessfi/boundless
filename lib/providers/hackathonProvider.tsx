@@ -249,13 +249,20 @@ export function HackathonDataProvider({
         projectName: sub.projectName,
         description: sub.description,
         submitterName:
-          sub.teamName || sub.teamMembers?.[0]?.name || 'Unknown Participant',
-        submitterAvatar: sub.teamMembers?.[0]?.avatar || sub.logo || '',
+          sub.participant?.name ??
+          sub.teamName ??
+          sub.teamMembers?.[0]?.name ??
+          'Unknown Participant',
+        submitterAvatar:
+          sub.participant?.image ??
+          sub.teamMembers?.[0]?.avatar ??
+          sub.logo ??
+          '',
         category: sub.category,
         status: mapSubmissionStatus(sub.status),
         upvotes: 0,
-        submittedDate: sub.submittedAt,
-        image: sub.logo || '/placeholder.svg',
+        submittedDate: sub.submittedAt ?? sub.submissionDate ?? '',
+        logo: sub.logo ?? '/placeholder.svg',
       }));
       setExploreSubmissions(mappedSubmissions);
     } catch {

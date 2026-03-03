@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type FC } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStatus } from '@/hooks/use-auth';
 import BoundlessSheet from '@/components/sheet/boundless-sheet';
@@ -23,7 +23,39 @@ import {
   TableRow,
 } from './submission-components';
 
-export default function SubmissionsPage() {
+/** API shape for a submission as returned from profile / user endpoints. */
+interface RawSubmission {
+  id?: string;
+  _id?: string;
+  projectName?: string;
+  title?: string;
+  name?: string;
+  description?: string;
+  introduction?: string;
+  logo?: string;
+  videoUrl?: string;
+  category?: string;
+  links?: Array<{ type: string; url: string }>;
+  status?: string;
+  rank?: number | null;
+  submittedAt?: string;
+  submissionDate?: string;
+  createdAt?: string;
+  votes?: number | unknown[];
+  comments?: number | unknown[];
+  hackathon?: SubmissionRow['hackathon'];
+  disqualificationReason?: string;
+}
+
+/** Profile shape that may expose submissions under user or at profile level. */
+interface UserProfile {
+  user?: {
+    hackathonSubmissionsAsParticipant?: RawSubmission[];
+  };
+  hackathonSubmissionsAsParticipant?: RawSubmission[];
+}
+
+const SubmissionsPage: FC = () => {
   const router = useRouter();
   const { user, isLoading } = useAuthStatus();
 
@@ -35,42 +67,43 @@ export default function SubmissionsPage() {
 
   // Pull submissions data from auth state — no extra API calls
   const rawSubmissions: SubmissionRow[] = useMemo(() => {
-    const profile = (user as any)?.profile;
+    const profile = (user?.profile ?? undefined) as UserProfile | undefined;
     if (!profile) return [];
 
-    // Primary path: profile.user.hackathonSubmissionsAsParticipant
-    const fromUser: any[] =
-      profile?.user?.hackathonSubmissionsAsParticipant || [];
-    // Secondary alias (some API shapes expose it at profile level)
-    const fromProfile: any[] = profile?.hackathonSubmissionsAsParticipant || [];
+    const fromUser: RawSubmission[] =
+      profile.user?.hackathonSubmissionsAsParticipant ?? [];
+    const fromProfile: RawSubmission[] =
+      profile.hackathonSubmissionsAsParticipant ?? [];
 
-    // Merge & deduplicate by id
-    const merged = [...fromUser, ...fromProfile];
+    const merged: RawSubmission[] = [...fromUser, ...fromProfile];
     const seen = new Set<string>();
-    const deduped = merged.filter(s => {
-      const id = s?.id || s?._id;
+    const deduped = merged.filter((s: RawSubmission) => {
+      const id = s.id ?? s._id;
       if (!id || seen.has(id)) return false;
       seen.add(id);
       return true;
     });
 
-    return deduped.map((s: any) => ({
-      id: s.id || s._id || '',
-      projectName: s.projectName || s.title || s.name || 'Untitled Submission',
-      description: s.description,
-      introduction: s.introduction,
-      logo: s.logo,
-      videoUrl: s.videoUrl,
-      category: s.category,
-      links: s.links,
-      status: s.status || 'draft',
-      rank: s.rank ?? null,
-      submittedAt: s.submittedAt || s.submissionDate || s.createdAt || '',
-      votes: s.votes,
-      comments: s.comments,
-      hackathon: s.hackathon,
-      disqualificationReason: s.disqualificationReason,
-    }));
+    return deduped.map(
+      (s: RawSubmission): SubmissionRow => ({
+        id: s.id ?? s._id ?? '',
+        projectName:
+          s.projectName ?? s.title ?? s.name ?? 'Untitled Submission',
+        description: s.description,
+        introduction: s.introduction,
+        logo: s.logo,
+        videoUrl: s.videoUrl,
+        category: s.category,
+        links: s.links,
+        status: s.status ?? 'draft',
+        rank: s.rank ?? null,
+        submittedAt: s.submittedAt ?? s.submissionDate ?? s.createdAt ?? '',
+        votes: s.votes,
+        comments: s.comments,
+        hackathon: s.hackathon,
+        disqualificationReason: s.disqualificationReason,
+      })
+    );
   }, [user]);
 
   const sorted = useMemo(() => {
@@ -108,6 +141,30 @@ export default function SubmissionsPage() {
       return 0;
     });
   }, [rawSubmissions, sortField, sortDir]);
+
+  const summaryStats = useMemo(() => {
+    const ranked = rawSubmissions.filter(s => {
+      const st = (s.status || '').toLowerCase();
+      return st === 'ranked' || st === 'shortlisted' || st === 'winner';
+    }).length;
+    const underReview = rawSubmissions.filter(s => {
+      const st = (s.status || '').toLowerCase().replace(/[\s\-_]+/g, '_');
+      return st === 'under_review' || st === 'submitted';
+    }).length;
+    const draft = rawSubmissions.filter(
+      s => (s.status || '').toLowerCase() === 'draft'
+    ).length;
+    return [
+      {
+        label: 'Total',
+        value: rawSubmissions.length,
+        color: 'text-white',
+      },
+      { label: 'Ranked', value: ranked, color: 'text-primary' },
+      { label: 'Under Review', value: underReview, color: 'text-amber-400' },
+      { label: 'Draft', value: draft, color: 'text-zinc-400' },
+    ] as const;
+  }, [rawSubmissions]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -165,45 +222,10 @@ export default function SubmissionsPage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15 }}
         >
-          {(
-            [
-              {
-                label: 'Total',
-                value: rawSubmissions.length,
-                color: 'text-white',
-              },
-              {
-                label: 'Ranked',
-                value: rawSubmissions.filter(s => {
-                  const st = (s.status || '').toLowerCase();
-                  return (
-                    st === 'ranked' || st === 'shortlisted' || st === 'winner'
-                  );
-                }).length,
-                color: 'text-primary',
-              },
-              {
-                label: 'Under Review',
-                value: rawSubmissions.filter(s => {
-                  const st = (s.status || '')
-                    .toLowerCase()
-                    .replace(/[\s\-_]+/g, '_');
-                  return st === 'under_review' || st === 'submitted';
-                }).length,
-                color: 'text-amber-400',
-              },
-              {
-                label: 'Draft',
-                value: rawSubmissions.filter(
-                  s => (s.status || '').toLowerCase() === 'draft'
-                ).length,
-                color: 'text-zinc-400',
-              },
-            ] as const
-          ).map(stat => (
+          {summaryStats.map(stat => (
             <div
               key={stat.label}
-              className='flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.03] px-4 py-2 text-sm'
+              className='flex items-center gap-2 rounded-lg border border-white/5 bg-white/3 px-4 py-2 text-sm'
             >
               <span className={`text-lg font-bold ${stat.color}`}>
                 {stat.value}
@@ -223,7 +245,7 @@ export default function SubmissionsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className='overflow-hidden rounded-xl border border-white/5 bg-white/[0.025]'
+            className='overflow-hidden rounded-xl border border-white/5 bg-white/2.5'
           >
             <div className='overflow-x-auto'>
               <Table className='min-w-[560px]'>
@@ -367,4 +389,6 @@ export default function SubmissionsPage() {
       </BoundlessSheet>
     </div>
   );
-}
+};
+
+export default SubmissionsPage;

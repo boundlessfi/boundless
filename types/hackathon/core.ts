@@ -102,11 +102,14 @@ export interface HackathonParticipation {
 
 export interface PrizeTier {
   id?: string;
+  name?: string;
   place?: string;
   currency?: string;
   passMark?: number; // 0-100
   description?: string;
   prizeAmount?: string;
+  /** @deprecated Use prizeAmount. Kept for API compatibility. */
+  amount?: string;
 }
 
 export interface HackathonRewards {

@@ -1,5 +1,5 @@
 'use client';
-import { useRouter } from 'nextjs-toploader/app';
+import Link from 'next/link';
 import Image from 'next/image';
 import { MapPinIcon } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
@@ -118,6 +118,38 @@ import { cn } from '@/lib/utils';
 const formatFullNumber = (num: number): string =>
   new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(num);
 
+const MAX_VISIBLE_CATEGORIES = 3;
+
+interface CategoriesDisplayProps {
+  categoriesList?: string[];
+}
+
+const CategoriesDisplay = ({ categoriesList = [] }: CategoriesDisplayProps) => {
+  const visible = categoriesList.slice(0, MAX_VISIBLE_CATEGORIES);
+  const remainingCount = categoriesList.length - MAX_VISIBLE_CATEGORIES;
+
+  return (
+    <div className='relative flex items-center'>
+      <div className='flex gap-1.5'>
+        {visible.map((cat, i) => (
+          <span
+            key={i}
+            className='rounded-md bg-neutral-800/70 px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-gray-300'
+          >
+            {cat}
+          </span>
+        ))}
+
+        {remainingCount > 0 && (
+          <span className='rounded-md bg-neutral-800/70 px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-gray-400'>
+            +{remainingCount}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 interface TimeRemaining {
   days: number;
   hours: number;
@@ -186,7 +218,6 @@ export const HackathonCard = ({
   className,
   target,
 }: HackathonCardProps) => {
-  const router = useRouter();
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>({
     days: 0,
     hours: 0,
@@ -194,15 +225,6 @@ export const HackathonCard = ({
     seconds: 0,
     total: 0,
   });
-  const handleClick = () => {
-    const slugPath = slug || id || '';
-    const url = `/hackathons/${slugPath}`;
-    if (target === '_blank') {
-      window.open(url, '_blank');
-    } else {
-      router.push(url);
-    }
-  };
 
   // Determine top badge status using raw dates — memoised so it can safely
   // appear in the useEffect dependency array without triggering infinite loops.
@@ -345,7 +367,7 @@ export const HackathonCard = ({
 
       return () => clearInterval(interval);
     }
-  }, [status, startDate, submissionDeadline, getTopBadgeStatus]);
+  }, [startDate, submissionDeadline, getTopBadgeStatus]);
 
   const bottomStatusInfo = getBottomStatusInfo();
   const topBadgeStatus = getTopBadgeStatus();
@@ -364,46 +386,19 @@ export const HackathonCard = ({
   //   return undefined;
   // })();
 
-  const CategoriesDisplay = ({
-    categoriesList = [],
-  }: {
-    categoriesList?: string[];
-  }) => {
-    const MAX_VISIBLE = 3;
-
-    const visible = categoriesList.slice(0, MAX_VISIBLE);
-    const remainingCount = categoriesList.length - MAX_VISIBLE;
-
-    return (
-      <div className='relative flex items-center'>
-        <div className='flex gap-1.5'>
-          {visible.map((cat, i) => (
-            <span
-              key={i}
-              className='rounded-md bg-neutral-800/70 px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-gray-300'
-            >
-              {cat}
-            </span>
-          ))}
-
-          {remainingCount > 0 && (
-            <span className='rounded-md bg-neutral-800/70 px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-gray-400'>
-              +{remainingCount}
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  };
+  const href = `/hackathons/${slug || id || ''}`;
 
   return (
-    <div
-      onClick={handleClick}
+    <Link
+      href={href}
+      target={target === '_blank' ? '_blank' : undefined}
+      rel={target === '_blank' ? 'noopener noreferrer' : undefined}
       className={cn(
         'group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-neutral-800 bg-[#0c0c0c] transition-all duration-300 hover:border-neutral-700 hover:shadow-lg hover:shadow-black/40',
         isFullWidth ? 'w-full' : 'max-w-[400px]',
         className
       )}
+      aria-label={`View hackathon: ${name}`}
     >
       {/* Image */}
       <div className='relative h-44 overflow-hidden sm:h-52'>
@@ -495,7 +490,7 @@ export const HackathonCard = ({
           )} */}
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 

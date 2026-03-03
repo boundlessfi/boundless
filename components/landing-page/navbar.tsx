@@ -55,11 +55,13 @@ interface UserProfile {
 }
 
 interface User {
+  id?: string;
   username?: string | null;
   name?: string | null;
   email?: string | null;
   image?: string | null;
-  profile?: UserProfile;
+  role?: string;
+  profile?: UserProfile | import('@/lib/api/types').GetMeResponse | null;
 }
 
 export function Navbar() {
@@ -72,7 +74,7 @@ export function Navbar() {
   }
 
   return (
-    <nav className='sticky top-0 z-50 border-b border-white/10 bg-[#030303]/95 shadow-lg shadow-black/20 backdrop-blur-xl'>
+    <nav className='bg-background-main-bg/95 sticky top-0 z-50 border-b border-white/10 shadow-lg shadow-black/20 backdrop-blur-xl'>
       <div className='mx-auto px-5 md:px-[50px]'>
         <div className='flex h-16 items-center justify-between gap-4'>
           {/* Logo */}
@@ -83,7 +85,7 @@ export function Navbar() {
 
           {/* Desktop Actions - Updated with better alignment */}
           {/* <div className='flex items-center gap-2'> */}
-          <div className='hidden flex-shrink-0 min-[990px]:flex md:items-center md:gap-3'>
+          <div className='hidden shrink-0 min-[990px]:flex md:items-center md:gap-3'>
             {isLoading ? (
               <LoadingSkeleton />
             ) : isAuthenticated ? (
@@ -110,7 +112,7 @@ function Logo() {
   return (
     <Link
       href='/'
-      className='flex-shrink-0 transition-opacity hover:opacity-80'
+      className='shrink-0 transition-opacity hover:opacity-80'
       aria-label='Go to homepage'
     >
       <Image
@@ -217,7 +219,7 @@ function AuthenticatedActions() {
               variant='outline'
               size='sm'
               aria-label='Create new content'
-              className='group relative flex items-center gap-2 overflow-hidden rounded-lg border-white/20 bg-gradient-to-r from-transparent via-white/5 to-transparent py-4 text-sm font-medium text-white/90 transition-all duration-300'
+              className='group relative flex items-center gap-2 overflow-hidden rounded-lg border-white/20 bg-linear-to-r from-transparent via-white/5 to-transparent py-4 text-sm font-medium text-white/90 transition-all duration-300'
               onMouseEnter={e => {
                 setIsHovered(true);
                 e.currentTarget.style.backgroundColor = `${BRAND_COLOR}1A`;
@@ -244,7 +246,7 @@ function AuthenticatedActions() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align='end'
-            className='w-56 border-white/10 bg-[#030303]/98 shadow-xl shadow-black/40 backdrop-blur-xl'
+            className='bg-background-main-bg/98 w-56 border-white/10 shadow-xl shadow-black/40 backdrop-blur-xl'
           >
             <DropdownMenuItem
               onClick={() =>
@@ -383,7 +385,7 @@ const MobileMenu = ({
 
         <SheetContent
           side='right'
-          className='flex w-full flex-col border-l border-white/10 bg-[#030303] px-5 pt-10 sm:max-w-md'
+          className='bg-background-main-bg flex w-full flex-col border-l border-white/10 px-5 pt-10 sm:max-w-md'
           showCloseButton={true}
         >
           <div className='flex flex-1 flex-col gap-6 overflow-y-auto pb-6'>

@@ -159,10 +159,10 @@ const Participant = ({
               description: participant.submission.description,
               votes: Array.isArray(participant.submission.votes)
                 ? participant.submission.votes.length
-                : participant.submission.votes,
+                : (participant.submission.votes ?? 0),
               comments: Array.isArray(participant.submission.comments)
                 ? participant.submission.comments.length
-                : participant.submission.comments || 0,
+                : (participant.submission.comments ?? 0),
               logo: participant.submission.logo,
             }}
             onSuccess={() => {

@@ -205,7 +205,7 @@ export default function HackathonPage() {
                               {phase.description}
                             </p>
                           </div>
-                          <div className='flex-shrink-0 text-xs whitespace-nowrap text-white/60 sm:text-sm'>
+                          <div className='shrink-0 text-xs whitespace-nowrap text-white/60 sm:text-sm'>
                             {new Date(phase.date).toLocaleDateString()}
                           </div>
                         </div>

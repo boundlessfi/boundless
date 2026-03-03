@@ -83,6 +83,9 @@ export default function HackathonSelector({
 
   const handleNewHackathonClick = () => {
     if (!organizationId) return;
+    setIsNavigating(true);
+    setIsOpen(false);
+    onToggle?.(false);
     router.push(`/organizations/${organizationId}/hackathons/new`);
   };
 
@@ -161,14 +164,18 @@ export default function HackathonSelector({
           </DropdownMenuItem>
         ))}
 
-        <DropdownMenuSeparator className='bg-[#2B2B2B]' />
-        <DropdownMenuItem
-          onClick={handleNewHackathonClick}
-          className='text-primary flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 hover:bg-[#252525] focus:bg-[#252525]'
-        >
-          <Plus className='h-4 w-4 shrink-0' />
-          <span className='text-sm font-medium'>New Hackathon</span>
-        </DropdownMenuItem>
+        {organizationId && (
+          <>
+            <DropdownMenuSeparator className='bg-[#2B2B2B]' />
+            <DropdownMenuItem
+              onClick={handleNewHackathonClick}
+              className='text-primary flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 hover:bg-[#252525] focus:bg-[#252525]'
+            >
+              <Plus className='h-4 w-4 shrink-0' />
+              <span className='text-sm font-medium'>New Hackathon</span>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

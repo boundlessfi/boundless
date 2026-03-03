@@ -23,10 +23,10 @@ export function useSubmissions() {
   // If we're an organizer, we might want to see the full list of private submissions.
   const allSubmissions =
     exploreSubmissions.length > 0 ? exploreSubmissions : privateSubmissions;
-
+  console.log({ exploreSubmissions });
   const submissions = useMemo(() => {
     if (isOrganizer) return allSubmissions;
-
+    console.log({ allSubmissions });
     let filtered = allSubmissions;
 
     // Check who can view submissions
@@ -86,6 +86,7 @@ export function useSubmissions() {
   }, [submissions]);
 
   const filteredAndSortedSubmissions = useMemo(() => {
+    console.log({ submissions });
     let filtered = submissions;
 
     // Filter by search term

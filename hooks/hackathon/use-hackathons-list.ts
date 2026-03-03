@@ -79,7 +79,11 @@ export const useHackathonsList: (
     (hackathon: Hackathon): number => {
       if (hackathon?.prizeTiers && hackathon?.prizeTiers.length > 0) {
         return hackathon?.prizeTiers.reduce(
-          (sum, tier) => sum + Number(tier.prizeAmount || 0),
+          (sum, tier) =>
+            sum +
+            Number(
+              tier.prizeAmount ?? (tier as { amount?: string }).amount ?? 0
+            ),
           0
         );
       }

@@ -36,10 +36,10 @@ const STAGE_CONFIG: Record<SubmissionStage, { color: string; label: string }> =
     },
   };
 
-export function ProgressIndicator({
+export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
   stage,
   className,
-}: ProgressIndicatorProps) {
+}) => {
   const config = STAGE_CONFIG[stage];
 
   return (
@@ -54,4 +54,4 @@ export function ProgressIndicator({
       {config.label}
     </div>
   );
-}
+};

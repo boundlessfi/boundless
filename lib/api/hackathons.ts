@@ -109,11 +109,14 @@ export interface HackathonParticipation {
 // Rewards Tab Types
 export interface PrizeTier {
   id?: string;
+  name?: string;
   place?: string; // Changed from position to place
   currency?: string;
   passMark?: number; // 0-100
   description?: string;
   prizeAmount?: string; // Changed from number to string to match API
+  /** @deprecated Use prizeAmount. Kept for API compatibility. */
+  amount?: string;
 }
 
 export interface HackathonRewards {
@@ -683,10 +686,11 @@ export interface ParticipantSubmission {
   videoUrl?: string;
   introduction?: string;
   links?: Array<{ type: string; url: string }>;
-  votes: number | ParticipantVote[]; // Can be a number or array of vote objects
-  comments: number | ParticipantComment[]; // Can be a number or array of comment objects
-  submissionDate: string;
-  status: 'submitted' | 'shortlisted' | 'disqualified';
+  votes?: number | ParticipantVote[];
+  comments?: number | ParticipantComment[];
+  submissionDate?: string;
+  submittedAt?: string;
+  status: 'submitted' | 'shortlisted' | 'disqualified' | string;
   disqualificationReason?: string | null;
   reviewedBy?: {
     id: string;
@@ -708,8 +712,8 @@ export interface ExploreSubmissionsResponse {
   participantId: string;
   organizationId: string;
   participationType: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
-  teamId?: string;
-  teamName?: string;
+  teamId?: string | null;
+  teamName?: string | null;
   teamMembers?: Array<{
     userId: string;
     name: string;
@@ -720,25 +724,33 @@ export interface ExploreSubmissionsResponse {
   projectName: string;
   category: string;
   description: string;
-  logo?: string;
-  videoUrl?: string;
-  introduction?: string;
-  links: Array<{
-    type: string;
-    url: string;
-  }>;
-  socialLinks: {
-    github?: string;
-    telegram?: string;
-    twitter?: string;
-    email?: string;
-  };
+  logo?: string | null;
+  videoUrl?: string | null;
+  introduction?: string | null;
+  links?: Array<{ type: string; url: string }>;
+  socialLinks?: Record<string, unknown>;
+  comments?: number;
+  submissionDate?: string;
   status: string;
-  rank?: number;
+  disqualificationReason?: string | null;
+  reviewedById?: string | null;
+  rank?: number | null;
   registeredAt: string;
   submittedAt: string;
   createdAt: string;
   updatedAt: string;
+  project?: {
+    id: string;
+    title: string;
+    banner?: string | null;
+    logo?: string | null;
+  };
+  participant?: {
+    id: string;
+    name: string;
+    username: string;
+    image?: string;
+  };
 }
 
 export interface Participant {
@@ -1690,6 +1702,24 @@ export const getHackathonSubmissions = async (
   return res.data;
 };
 
+/** API response envelope for explore submissions endpoint. */
+export interface ExploreSubmissionsApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    submissions: ExploreSubmissionsResponse[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  };
+  meta?: { timestamp?: string; requestId?: string };
+}
+
 /**
  * Explore hackathon submissions (Public showcase, for normal users)
  *
@@ -1709,11 +1739,13 @@ export const getExploreSubmissions = async (
   if (page) params.append('page', page.toString());
   if (limit) params.append('limit', limit.toString());
 
-  const res = await api.get(
+  const res = await api.get<ExploreSubmissionsApiResponse>(
     `/hackathons/${hackathonId}/submissions/explore${params.toString() ? `?${params.toString()}` : ''}`
   );
 
-  return res.data;
+  const body = res.data;
+  if (!body?.data?.submissions) return [];
+  return body.data.submissions;
 };
 
 /**
