@@ -25,9 +25,9 @@ interface DateTimeInputProps {
 
 const formatTimeValue = (date?: Date): string => {
   if (!date) return '';
-  const hours = `${date.getHours()}`.padStart(2, '0');
-  const minutes = `${date.getMinutes()}`.padStart(2, '0');
-  const seconds = `${date.getSeconds()}`.padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
   return `${hours}:${minutes}:${seconds}`;
 };
 
@@ -100,7 +100,7 @@ export default function DateTimeInput({
         <Input
           type='time'
           step='1'
-          className='bg-background-card h-12 w-32 shrink-0 appearance-none rounded-[12px] border border-gray-900 px-4 text-sm text-white [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
+          className='bg-background-card selection:bg-primary/30 h-12 w-40 shrink-0 rounded-[12px] border border-gray-900 px-4 text-sm text-white [&::-webkit-calendar-picker-indicator]:hidden'
           value={formatTimeValue(field.value)}
           onChange={event => {
             const timeValue = event.target.value;

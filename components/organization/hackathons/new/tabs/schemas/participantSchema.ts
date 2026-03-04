@@ -52,6 +52,19 @@ export const participantSchema = z
         });
       }
     }
+
+    // New validation: At least one submission requirement must be selected
+    if (
+      !data.require_github &&
+      !data.require_demo_video &&
+      !data.require_other_links
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'At least one submission requirement must be selected',
+        path: ['require_github'],
+      });
+    }
   });
 
 export type ParticipantFormData = z.input<typeof participantSchema>;

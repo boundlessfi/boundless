@@ -300,7 +300,8 @@ export default function ParticipantTab({
           />
 
           {/* Team Size Settings */}
-          {participantType === 'team' && (
+          {(participantType === 'team' ||
+            participantType === 'team_or_individual') && (
             <div className='rounded-lg border border-zinc-800 bg-zinc-900/30 p-6'>
               <h4 className='mb-1 text-sm font-medium text-white'>Team Size</h4>
               <p className='mb-4 text-sm text-zinc-500'>
