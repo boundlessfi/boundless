@@ -2,11 +2,6 @@ import api from './api';
 import { ApiResponse, ErrorResponse, PaginatedResponse } from './types';
 // Discussion type removed - using generic Comment type from @/types/comment
 
-export type RegistrationDeadlinePolicy =
-  | 'custom'
-  | 'before_start'
-  | 'before_submission_deadline';
-
 // Enums matching backend models
 export enum HackathonCategory {
   DEFI = 'DeFi',
@@ -75,14 +70,9 @@ export interface HackathonPhase {
 export interface HackathonTimeline {
   startDate: string; // ISO 8601 date
   submissionDeadline: string; // ISO 8601 date
-  judgingStart: string; // ISO 8601 date
-  endDate: string; // ISO 8601 date
-  judgingEnd?: string; // ISO 8601 date
-  winnersAnnouncedAt?: string; // ISO 8601 date
-  // Legacy fields for backward compatibility
-  judgingDate?: string; // ISO 8601 date
-  winnerAnnouncementDate?: string; // ISO 8601 date
   timezone: string;
+  registrationDeadline?: string; // ISO 8601 date — optional pre-registration end time
+  judgingDeadline?: string; // ISO 8601 date — maps to backend judgingEnd
   phases?: HackathonPhase[];
 }
 
@@ -111,8 +101,7 @@ export interface HackathonParticipation {
   teamMin?: number;
   teamMax?: number;
   about?: string;
-  registrationDeadlinePolicy?: RegistrationDeadlinePolicy;
-  registrationDeadline?: string;
+  maxParticipants?: number; // null = unlimited
   submissionRequirements?: SubmissionRequirements;
   tabVisibility?: TabVisibility;
 }
@@ -120,11 +109,14 @@ export interface HackathonParticipation {
 // Rewards Tab Types
 export interface PrizeTier {
   id?: string;
+  name?: string;
   place?: string; // Changed from position to place
   currency?: string;
   passMark?: number; // 0-100
   description?: string;
   prizeAmount?: string; // Changed from number to string to match API
+  /** @deprecated Use prizeAmount. Kept for API compatibility. */
+  amount?: string;
 }
 
 export interface HackathonRewards {
@@ -329,13 +321,19 @@ export type Hackathon = {
 
   status:
     | 'DRAFT'
-    | 'PUBLISHED'
-    | 'ARCHIVED'
-    | 'ONGOING'
-    | 'COMPLETED'
-    | 'CANCELLED'
     | 'UPCOMING'
-    | 'ENDED';
+    | 'ACTIVE'
+    | 'JUDGING'
+    | 'COMPLETED'
+    | 'ARCHIVED'
+    | 'CANCELLED';
+  currentPhase?:
+    | 'upcoming'
+    | 'active'
+    | 'judging'
+    | 'awaiting_results'
+    | 'completed';
+  maxParticipants?: number | null;
   isActive: boolean;
   isParticipant: boolean;
 
@@ -348,22 +346,13 @@ export type Hackathon = {
   timezone: string;
 
   startDate: string; // ISO date
-  endDate: string; // ISO date
   submissionDeadline: string; // ISO date
   registrationDeadline: string; // ISO date
-  judgingStart: string; // ISO date
-  judgingEnd?: string; // ISO date
-  winnersAnnouncedAt?: string; // ISO date
-  customRegistrationDeadline: string | null;
+  judgingDeadline?: string; // ISO date
 
   registrationOpen: boolean;
-  registrationDeadlinePolicy:
-    | 'BEFORE_START'
-    | 'BEFORE_SUBMISSION_DEADLINE'
-    | 'CUSTOM';
 
   daysUntilStart: number;
-  daysUntilEnd: number;
 
   participantType: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
   teamMin: number;
@@ -394,7 +383,7 @@ export type Hackathon = {
   prizeTiers: Array<{
     id?: string;
     name?: string;
-    amount?: string;
+    prizeAmount?: string;
     currency?: string;
     description?: string;
     passMark?: number;
@@ -697,10 +686,11 @@ export interface ParticipantSubmission {
   videoUrl?: string;
   introduction?: string;
   links?: Array<{ type: string; url: string }>;
-  votes: number | ParticipantVote[]; // Can be a number or array of vote objects
-  comments: number | ParticipantComment[]; // Can be a number or array of comment objects
-  submissionDate: string;
-  status: 'submitted' | 'shortlisted' | 'disqualified';
+  votes?: number | ParticipantVote[];
+  comments?: number | ParticipantComment[];
+  submissionDate?: string;
+  submittedAt?: string;
+  status: 'submitted' | 'shortlisted' | 'disqualified' | string;
   disqualificationReason?: string | null;
   reviewedBy?: {
     id: string;
@@ -722,8 +712,8 @@ export interface ExploreSubmissionsResponse {
   participantId: string;
   organizationId: string;
   participationType: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
-  teamId?: string;
-  teamName?: string;
+  teamId?: string | null;
+  teamName?: string | null;
   teamMembers?: Array<{
     userId: string;
     name: string;
@@ -734,25 +724,33 @@ export interface ExploreSubmissionsResponse {
   projectName: string;
   category: string;
   description: string;
-  logo?: string;
-  videoUrl?: string;
-  introduction?: string;
-  links: Array<{
-    type: string;
-    url: string;
-  }>;
-  socialLinks: {
-    github?: string;
-    telegram?: string;
-    twitter?: string;
-    email?: string;
-  };
+  logo?: string | null;
+  videoUrl?: string | null;
+  introduction?: string | null;
+  links?: Array<{ type: string; url: string }>;
+  socialLinks?: Record<string, unknown>;
+  comments?: number;
+  submissionDate?: string;
   status: string;
-  rank?: number;
+  disqualificationReason?: string | null;
+  reviewedById?: string | null;
+  rank?: number | null;
   registeredAt: string;
   submittedAt: string;
   createdAt: string;
   updatedAt: string;
+  project?: {
+    id: string;
+    title: string;
+    banner?: string | null;
+    logo?: string | null;
+  };
+  participant?: {
+    id: string;
+    name: string;
+    username: string;
+    image?: string;
+  };
 }
 
 export interface Participant {
@@ -1704,8 +1702,33 @@ export const getHackathonSubmissions = async (
   return res.data;
 };
 
+/** API response envelope for explore submissions endpoint. */
+export interface ExploreSubmissionsApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    submissions: ExploreSubmissionsResponse[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  };
+  meta?: { timestamp?: string; requestId?: string };
+}
+
 /**
- * Explore hackathon submissions (Public showcase)
+ * Explore hackathon submissions (Public showcase, for normal users)
+ *
+ * Retrieves all public submissions for a hackathon for public/user viewing.
+ *
+ * @param hackathonId - Hackathon ID or slug
+ * @param page - Page number (optional)
+ * @param limit - Items per page (optional)
+ * @returns Array of ExploreSubmissionsResponse
  */
 export const getExploreSubmissions = async (
   hackathonId: string,
@@ -1716,11 +1739,13 @@ export const getExploreSubmissions = async (
   if (page) params.append('page', page.toString());
   if (limit) params.append('limit', limit.toString());
 
-  const res = await api.get(
+  const res = await api.get<ExploreSubmissionsApiResponse>(
     `/hackathons/${hackathonId}/submissions/explore${params.toString() ? `?${params.toString()}` : ''}`
   );
 
-  return res.data;
+  const body = res.data;
+  if (!body?.data?.submissions) return [];
+  return body.data.submissions;
 };
 
 /**

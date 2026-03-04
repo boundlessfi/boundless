@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+import { cn, slugify } from '@/lib/utils';
 import { useOrganization } from '@/lib/providers/OrganizationProvider';
 import { BoundlessButton } from '@/components/buttons';
 import { toast } from 'sonner';
@@ -78,6 +78,7 @@ export default function ProfileTab({
   const [isSlugAvailable, setIsSlugAvailable] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previousOrgIdRef = useRef<string | null>(null);
+  const slugManuallyEditedRef = useRef(false);
   const router = useRouter();
   const debouncedSlug = useDebounce(formData.slug, 500);
 
@@ -195,13 +196,22 @@ export default function ProfileTab({
         setLogoPreview(activeOrg.logo || '');
         setHasUserChanges(false);
         previousOrgIdRef.current = currentOrgId;
+        slugManuallyEditedRef.current = true; // existing org: don't overwrite slug when name changes
       }
     }
   }, [activeOrg, isInitialized, isCreating]);
 
   const handleInputChange = (field: string, value: string) => {
     if (field === 'slug') {
+      slugManuallyEditedRef.current = true;
       setFormData(prev => ({ ...prev, slug: value }));
+    } else if (field === 'name') {
+      const slugFromName = slugify(value);
+      setFormData(prev => ({
+        ...prev,
+        name: value,
+        ...(slugManuallyEditedRef.current ? {} : { slug: slugFromName }),
+      }));
     } else if (field === 'tagline') {
       setFormData(prev => ({
         ...prev,
@@ -220,8 +230,6 @@ export default function ProfileTab({
           links: { ...prev.metadata.links, [field]: value },
         },
       }));
-    } else if (field === 'name') {
-      setFormData(prev => ({ ...prev, name: value }));
     } else if (field === 'logo') {
       setFormData(prev => ({ ...prev, logo: value }));
     } else {
@@ -409,7 +417,7 @@ export default function ProfileTab({
         }, 500);
       } else if (organizationId || activeOrgId) {
         const orgId = organizationId || activeOrgId;
-        await updateOrganization(orgId as string, {
+        const updatedOrg = await updateOrganization(orgId as string, {
           name: formData.name,
           logo: formData.logo,
           metadata: {
@@ -423,6 +431,37 @@ export default function ProfileTab({
             },
           },
         });
+
+        if (updatedOrg) {
+          const activeLinks =
+            updatedOrg.links ||
+            (updatedOrg as { metadata?: { links?: Record<string, string> } })
+              .metadata?.links;
+          setFormData({
+            name: updatedOrg.name || '',
+            slug: updatedOrg.slug || '',
+            logo: updatedOrg.logo || '',
+            metadata: {
+              tagline:
+                updatedOrg.tagline ||
+                (updatedOrg as { metadata?: { tagline?: string } }).metadata
+                  ?.tagline ||
+                '',
+              about:
+                updatedOrg.about ||
+                (updatedOrg as { metadata?: { about?: string } }).metadata
+                  ?.about ||
+                '',
+              links: {
+                website: activeLinks?.website || '',
+                x: activeLinks?.x || '',
+                github: activeLinks?.github || '',
+                others: activeLinks?.others || '',
+              },
+            },
+          });
+          setLogoPreview(updatedOrg.logo || '');
+        }
 
         toast.success('Organization profile updated successfully');
         setHasUserChanges(false);
@@ -527,6 +566,11 @@ export default function ProfileTab({
           )}
           {isSlugAvailable === true && (
             <p className='text-xs text-green-500'>Slug is available</p>
+          )}
+          {isCreating && (
+            <p className='text-xs text-zinc-500'>
+              Generated from name; you can edit it.
+            </p>
           )}
         </div>
       </div>

@@ -63,15 +63,13 @@ export const transformToApiFormat = (stepData: {
     timeline: {
       startDate: timeline?.startDate?.toISOString() || '',
       submissionDeadline: timeline?.submissionDeadline?.toISOString() || '',
-      judgingStart: timeline?.judgingStart?.toISOString() || '',
-      endDate: timeline?.endDate?.toISOString() || '',
-      ...(timeline?.judgingEnd
-        ? { judgingEnd: timeline.judgingEnd.toISOString() }
-        : {}),
-      ...(timeline?.winnersAnnouncedAt
-        ? { winnersAnnouncedAt: timeline.winnersAnnouncedAt.toISOString() }
-        : {}),
       timezone: timeline?.timezone || 'UTC',
+      ...(timeline?.registrationDeadline
+        ? { registrationDeadline: timeline.registrationDeadline.toISOString() }
+        : {}),
+      ...(timeline?.judgingDeadline
+        ? { judgingDeadline: timeline.judgingDeadline.toISOString() }
+        : {}),
       phases: timeline?.phases?.map(phase => ({
         name: phase.name,
         startDate: phase.startDate.toISOString(),
@@ -85,8 +83,9 @@ export const transformToApiFormat = (stepData: {
         ParticipantType.INDIVIDUAL,
       teamMin: participation?.teamMin,
       teamMax: participation?.teamMax,
-      registrationDeadlinePolicy: participation?.registrationDeadlinePolicy,
-      registrationDeadline: participation?.registrationDeadline,
+      ...(participation?.maxParticipants
+        ? { maxParticipants: participation.maxParticipants }
+        : {}),
       submissionRequirements: {
         requireGithub: participation?.require_github,
         requireDemoVideo: participation?.require_demo_video,
@@ -183,21 +182,13 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
       submissionDeadline: timeline?.submissionDeadline
         ? new Date(timeline.submissionDeadline)
         : undefined,
-      judgingStart: timeline?.judgingStart
-        ? new Date(timeline.judgingStart)
-        : timeline?.judgingDate
-          ? new Date(timeline.judgingDate)
-          : undefined,
-      endDate: timeline?.endDate ? new Date(timeline.endDate) : undefined,
-      judgingEnd: timeline?.judgingEnd
-        ? new Date(timeline.judgingEnd)
-        : undefined,
-      winnersAnnouncedAt: timeline?.winnersAnnouncedAt
-        ? new Date(timeline.winnersAnnouncedAt)
-        : timeline?.winnerAnnouncementDate
-          ? new Date(timeline.winnerAnnouncementDate)
-          : undefined,
       timezone: timeline?.timezone || 'UTC',
+      registrationDeadline: timeline?.registrationDeadline
+        ? new Date(timeline.registrationDeadline)
+        : undefined,
+      judgingDeadline: timeline?.judgingDeadline
+        ? new Date(timeline.judgingDeadline)
+        : undefined,
       phases:
         timeline?.phases?.map(phase => ({
           name: phase.name,
@@ -210,10 +201,7 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
       participantType: participation?.participantType || 'individual',
       teamMin: participation?.teamMin,
       teamMax: participation?.teamMax,
-      registrationDeadlinePolicy:
-        participation?.registrationDeadlinePolicy ||
-        'before_submission_deadline',
-      registrationDeadline: participation?.registrationDeadline,
+      maxParticipants: participation?.maxParticipants,
       require_github:
         participation?.submissionRequirements?.requireGithub || false,
       require_demo_video:
@@ -233,14 +221,24 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
     } as ParticipantFormData,
     rewards: {
       prizeTiers:
-        rewards?.prizeTiers?.map((tier, index) => ({
-          id: `tier-${index}`,
-          place: tier.place,
-          prizeAmount: tier.prizeAmount || '0',
-          currency: tier.currency || 'USDC',
-          description: tier.description || '',
-          passMark: tier.passMark,
-        })) || [],
+        rewards?.prizeTiers?.map((tier, index) => {
+          const defaultPassMarks = [80, 70, 50, 40, 30];
+          const passMark =
+            tier.passMark != null && tier.passMark >= 0 && tier.passMark <= 100
+              ? tier.passMark
+              : (defaultPassMarks[index] ?? 50);
+          return {
+            id: tier.id ?? `tier-${index}`,
+            place:
+              tier.place ||
+              `${index + 1}${['st', 'nd', 'rd'][index] ?? 'th'} Place`,
+            prizeAmount: tier.prizeAmount ?? '0',
+            currency: tier.currency || 'USDC',
+            description: tier.description || '',
+            rank: index + 1,
+            passMark,
+          };
+        }) || [],
     } as RewardsFormData,
     resources: {
       resources:
@@ -258,12 +256,21 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
     } as ResourcesFormData,
     judging: {
       criteria:
-        judging?.criteria?.map((criterion, index) => ({
-          id: `criterion-${index}`,
-          name: criterion.title,
-          weight: criterion.weight,
-          description: criterion.description || '',
-        })) || [],
+        judging?.criteria?.map((criterion, index) => {
+          const c = criterion as {
+            title?: string;
+            name?: string;
+            weight?: number;
+            description?: string;
+          };
+          const titleOrName = (c.title ?? c.name ?? '').trim();
+          return {
+            id: `criterion-${index}`,
+            name: titleOrName || `Criterion ${index + 1}`,
+            weight: typeof criterion.weight === 'number' ? criterion.weight : 0,
+            description: criterion.description || '',
+          };
+        }) || [],
     } as JudgingFormData,
     collaboration: {
       contactEmail: collaboration?.contactEmail || '',

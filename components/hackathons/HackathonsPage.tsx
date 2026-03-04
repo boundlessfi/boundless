@@ -38,8 +38,6 @@ const HackathonsPage: React.FC<HackathonsPageProps> = ({ className } = {}) => {
     totalCount,
     loadMore,
   } = useHackathonsList({ initialFilters: filters });
-
-  const { transformHackathonForCard } = useHackathonTransform();
   const hackathonCards = React.useMemo(() => {
     return hackathons.map(hackathon => {
       return (
@@ -50,7 +48,7 @@ const HackathonsPage: React.FC<HackathonsPageProps> = ({ className } = {}) => {
         />
       );
     });
-  }, [hackathons, transformHackathonForCard]);
+  }, [hackathons]);
 
   const [loadMoreSentinelEl, setLoadMoreSentinelRef] =
     useState<HTMLDivElement | null>(null);

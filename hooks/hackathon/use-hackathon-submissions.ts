@@ -1,57 +1,39 @@
 import { useState, useCallback } from 'react';
-import { getHackathonSubmissions } from '@/lib/api/hackathons';
-import type { ParticipantSubmission } from '@/lib/api/hackathons';
-
-interface Filters {
-  status?: 'SUBMITTED' | 'SHORTLISTED' | 'DISQUALIFIED' | 'WITHDRAWN';
-  type?: 'INDIVIDUAL' | 'TEAM';
-  search?: string;
-}
-
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+import { getExploreSubmissions } from '@/lib/api/hackathons';
+import type { ExploreSubmissionsResponse } from '@/lib/api/hackathons';
 
 export function useHackathonSubmissions(
   hackathonId: string,
   initialLimit = 12
 ) {
-  const [submissions, setSubmissions] = useState<ParticipantSubmission[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({
+  const [submissions, setSubmissions] = useState<ExploreSubmissionsResponse[]>(
+    []
+  );
+  const [pagination, setPagination] = useState({
     page: 1,
     limit: initialLimit,
     total: 0,
     totalPages: 0,
   });
-  const [filters, setFilters] = useState<Filters>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSubmissions = useCallback(
-    async (page = 1, newFilters?: Filters) => {
+    async (page = 1) => {
       if (!hackathonId) return;
 
       setLoading(true);
       setError(null);
 
       try {
-        const activeFilters = newFilters !== undefined ? newFilters : filters;
-        const response = await getHackathonSubmissions(
+        const data = await getExploreSubmissions(
           hackathonId,
           page,
-          pagination.limit,
-          activeFilters
+          pagination.limit
         );
-
-        if (response.success && response.data) {
-          setSubmissions(response.data.submissions);
-          setPagination(response.data.pagination);
-        } else {
-          setError(response.message || 'Failed to fetch submissions');
-        }
+        setSubmissions(data);
+        // No pagination info from getExploreSubmissions, so just update page/limit
+        setPagination(prev => ({ ...prev, page }));
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Failed to fetch submissions'
@@ -60,15 +42,7 @@ export function useHackathonSubmissions(
         setLoading(false);
       }
     },
-    [hackathonId, pagination.limit, filters]
-  );
-
-  const updateFilters = useCallback(
-    (newFilters: Filters) => {
-      setFilters(newFilters);
-      fetchSubmissions(1, newFilters);
-    },
-    [fetchSubmissions]
+    [hackathonId, pagination.limit]
   );
 
   const goToPage = useCallback(
@@ -85,11 +59,9 @@ export function useHackathonSubmissions(
   return {
     submissions,
     pagination,
-    filters,
     loading,
     error,
     fetchSubmissions,
-    updateFilters,
     goToPage,
     refresh,
   };

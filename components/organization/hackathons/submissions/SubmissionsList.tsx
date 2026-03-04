@@ -191,7 +191,7 @@ export function SubmissionsList({
                 )}
                 onClick={() => handleSubmissionClick(subData.id)}
               >
-                <CardContent className='p-4'>
+                <CardContent className='p-2 py-0'>
                   {/* Selection Checkbox (Absolute positioning) */}
                   {onSelectionChange && (
                     <div

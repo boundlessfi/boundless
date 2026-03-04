@@ -1,4 +1,5 @@
 import { CrowdfundingProject, Crowdfunding } from '@/features/projects/types';
+import type { Hackathon } from '@/types/hackathon/core';
 
 // Backend API Response Structure
 export interface ApiResponse<T = unknown> {
@@ -112,14 +113,14 @@ export interface User {
     rank?: number | null;
     submittedAt: string;
     hackathonId: string;
-    hackathon?: any;
+    hackathon?: Hackathon;
   }>;
   joinedHackathons?: Array<{
     id: string;
     userId: string;
     hackathonId: string;
     registrationDate: string;
-    hackathon?: any;
+    hackathon?: Hackathon;
   }>;
   profile?: Record<string, unknown>;
   stats?: {
@@ -234,6 +235,12 @@ export type GoogleAuthResponse = AuthTokens;
 // GetMe
 export interface GetMeResponse {
   user: User;
+  /** Optional profile display fields (may be populated from user or nested profile). */
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  image?: string;
+  isVerified?: boolean;
   stats: {
     projectsCreated: number;
     projectsFunded: number;
@@ -266,7 +273,7 @@ export interface GetMeResponse {
     hackathonId: string;
     participantId: string;
     status: string;
-    hackathon?: any;
+    hackathon?: Hackathon;
   }>;
 }
 

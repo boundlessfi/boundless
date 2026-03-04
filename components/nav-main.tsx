@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { type Icon } from '@tabler/icons-react';
 
 import {
@@ -15,19 +16,23 @@ import { Badge } from './ui/badge';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-export function NavMain({
-  items,
-  label,
-}: {
-  items: {
-    title: string;
-    url: string;
-    icon?: Icon;
-    badge?: string;
-    badgeVariant?: 'default' | 'destructive' | 'outline';
-  }[];
+/** Route that matches only exactly (no prefix match for sub-routes). */
+const PROFILE_ROUTE = '/me';
+
+export interface NavMainItem {
+  title: string;
+  url: string;
+  icon?: Icon;
+  badge?: string;
+  badgeVariant?: 'default' | 'destructive' | 'outline';
+}
+
+export interface NavMainProps {
+  items: NavMainItem[];
   label?: string;
-}) {
+}
+
+export const NavMain = ({ items, label }: NavMainProps): React.ReactElement => {
   const pathname = usePathname();
 
   return (
@@ -40,9 +45,14 @@ export function NavMain({
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map(item => {
+            const normalizedUrl =
+              item.url !== '/' && item.url.endsWith('/')
+                ? item.url.slice(0, -1)
+                : item.url;
             const isActive =
-              pathname === item.url ||
-              (item.url !== '/me' && pathname?.startsWith(`${item.url}/`));
+              pathname === normalizedUrl ||
+              (normalizedUrl !== PROFILE_ROUTE &&
+                pathname?.startsWith(`${normalizedUrl}/`));
 
             return (
               <SidebarMenuItem key={item.title}>
@@ -83,4 +93,4 @@ export function NavMain({
       </SidebarGroupContent>
     </SidebarGroup>
   );
-}
+};

@@ -35,50 +35,15 @@ export const useInfiniteScroll: (
 
   useEffect(() => {
     if (!sentinel) {
-      if (debug) {
-        console.log(
-          '[useInfiniteScroll] No sentinel element yet, skipping observer'
-        );
-      }
       return;
-    }
-
-    if (debug) {
-      console.log('[useInfiniteScroll] Observer attached to sentinel', {
-        hasMore,
-        loading,
-        rootMargin,
-      });
     }
 
     const observer = new IntersectionObserver(
       entries => {
         const [entry] = entries;
         const isIntersecting = !!entry?.isIntersecting;
-        if (debug) {
-          console.log('[useInfiniteScroll] Observer callback', {
-            isIntersecting,
-            hasMore,
-            loading,
-          });
-        }
 
-        if (!entry?.isIntersecting) return;
-        if (!hasMore) {
-          if (debug) {
-            console.log('[useInfiniteScroll] Skipped: hasMore is false');
-          }
-          return;
-        }
-        if (loading) {
-          if (debug) {
-            console.log('[useInfiniteScroll] Skipped: already loading');
-          }
-          return;
-        }
-        if (debug) {
-          console.log('[useInfiniteScroll] Calling onLoadMore()');
-        }
+        if (!isIntersecting) return;
         onLoadMoreRef.current?.();
       },
       {
@@ -90,9 +55,6 @@ export const useInfiniteScroll: (
 
     observer.observe(sentinel);
     return () => {
-      if (debug) {
-        console.log('[useInfiniteScroll] Observer disconnected');
-      }
       observer.disconnect();
     };
   }, [sentinel, hasMore, loading, rootMargin, debug]);

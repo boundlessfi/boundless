@@ -109,43 +109,24 @@ export const calculateTimelineStatus = (
       'Participants are submitting their projects for review before the deadline.',
   });
 
-  const judgingStart = timeline.judgingStart || timeline.judgingDate;
-  const judgingEnd = timeline.judgingEnd || judgingStart;
-  const winnersAnnouncedAt =
-    timeline.winnersAnnouncedAt ||
-    timeline.winnerAnnouncementDate ||
-    judgingEnd;
-
-  // Judging phase (from judgingStart to judgingEnd)
-  // Only create if explicitly set and has non-zero duration
-  if (judgingStart && judgingEnd && judgingStart !== judgingEnd) {
+  // Judging phase (from submissionDeadline to judgingDeadline)
+  // Only created if judgingDeadline is explicitly set
+  if (timeline.judgingDeadline) {
     phases.push({
       name: 'Judging',
-      startDate: judgingStart,
-      endDate: judgingEnd,
-      status: isPhaseCompleted(judgingEnd, currentDate)
+      startDate: timeline.submissionDeadline,
+      endDate: timeline.judgingDeadline,
+      status: isPhaseCompleted(timeline.judgingDeadline, currentDate)
         ? 'completed'
-        : isPhaseActive(judgingStart, judgingEnd, currentDate)
+        : isPhaseActive(
+              timeline.submissionDeadline,
+              timeline.judgingDeadline,
+              currentDate
+            )
           ? 'active'
           : 'upcoming',
       description:
         'Judges are currently reviewing and scoring all submitted projects.',
-    });
-  }
-
-  // Winner Announcement phase (from judgingEnd to winnersAnnouncedAt)
-  // Only create if explicitly set and has non-zero duration
-  if (judgingEnd && winnersAnnouncedAt && judgingEnd !== winnersAnnouncedAt) {
-    phases.push({
-      name: 'Winner Announcement',
-      startDate: judgingEnd,
-      endDate: winnersAnnouncedAt,
-      status: isPhaseCompleted(winnersAnnouncedAt, currentDate)
-        ? 'completed'
-        : isPhaseActive(judgingEnd, winnersAnnouncedAt, currentDate)
-          ? 'active'
-          : 'upcoming',
-      description: 'Final results published and prizes distributed to winners.',
     });
   }
 

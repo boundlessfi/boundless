@@ -18,6 +18,7 @@ import {
 } from '@/types/earnings';
 import { getPublicEarnings } from '@/lib/api/earnings';
 import EmptyState from '@/components/EmptyState';
+import clsx from 'clsx';
 
 interface PublicEarningsTabProps {
   username: string;
@@ -25,12 +26,32 @@ interface PublicEarningsTabProps {
 
 const SOURCE_CONFIG: Record<
   EarningSource,
-  { label: string; icon: typeof Trophy; color: string }
+  { label: string; icon: typeof Trophy; color: string; bgColor: string }
 > = {
-  hackathons: { label: 'Hackathons', icon: Trophy, color: 'text-amber-400' },
-  grants: { label: 'Grants', icon: Award, color: 'text-green-400' },
-  crowdfunding: { label: 'Crowdfunding', icon: Users, color: 'text-blue-400' },
-  bounties: { label: 'Bounties', icon: Target, color: 'text-purple-400' },
+  hackathons: {
+    label: 'Hackathons',
+    icon: Trophy,
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-400',
+  },
+  grants: {
+    label: 'Grants',
+    icon: Award,
+    color: 'text-green-400',
+    bgColor: 'bg-green-400',
+  },
+  crowdfunding: {
+    label: 'Crowdfunding',
+    icon: Users,
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-400',
+  },
+  bounties: {
+    label: 'Bounties',
+    icon: Target,
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-400',
+  },
 };
 
 const formatCurrency = (amount: number, currency = 'USD'): string => {
@@ -55,7 +76,10 @@ const EarningActivityItem = ({
   return (
     <div className='flex items-start gap-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4'>
       <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800 ${config.color}`}
+        className={clsx(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800',
+          config.color
+        )}
       >
         <Icon className='h-5 w-5' />
       </div>
@@ -91,7 +115,10 @@ const PublicEarningsTab = ({
       try {
         setLoading(true);
         setError(null);
-        const response = await getPublicEarnings({ username });
+        const response = await getPublicEarnings({
+          username,
+          signal: controller.signal,
+        });
         if (!controller.signal.aborted) {
           setEarnings(response.data);
         }
@@ -128,7 +155,6 @@ const PublicEarningsTab = ({
         type='compact'
         title='No Earnings Data'
         description={error || 'No earnings data available for this user yet.'}
-        action={<></>}
       />
     );
   }
@@ -187,7 +213,10 @@ const PublicEarningsTab = ({
           return (
             <span key={source} className='flex items-center gap-2'>
               <i
-                className={`inline-block h-2 w-2 rounded-full ${config.color.replace('text-', 'bg-')}`}
+                className={clsx(
+                  'inline-block h-2 w-2 rounded-full',
+                  config.bgColor
+                )}
               />
               {config.label}
             </span>

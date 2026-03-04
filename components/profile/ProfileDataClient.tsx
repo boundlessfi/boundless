@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Filter } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ProfileOverview from './ProfileOverview';
@@ -33,7 +33,7 @@ const FILTER_OPTIONS = [
   'All Time',
 ];
 
-export default function ProfileDataClient({ user }: ProfileDataClientProps) {
+const ProfileDataClient: React.FC<ProfileDataClientProps> = ({ user }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
   // Get current session user to determine if it's the user's own profile
   const { data: session } = authClient.useSession();
@@ -49,6 +49,10 @@ export default function ProfileDataClient({ user }: ProfileDataClientProps) {
       name: org.organization?.name || 'Unknown Organization',
       avatarUrl: org.organization?.logo || '/blog1.jpg',
     })) || [];
+
+  const handleSelectFilter = (filter: string) => {
+    setSelectedFilter(filter);
+  };
 
   return (
     <div className='mt-14 flex flex-col gap-8 lg:flex-row lg:gap-16'>
@@ -105,11 +109,11 @@ export default function ProfileDataClient({ user }: ProfileDataClientProps) {
                   {FILTER_OPTIONS.map(filter => (
                     <DropdownMenuItem
                       key={filter}
-                      onClick={() => setSelectedFilter(filter)}
+                      onClick={() => handleSelectFilter(filter)}
                       className={
                         selectedFilter === filter
                           ? 'bg-zinc-800'
-                          : 'hover:!bg-zinc-600/50 hover:!text-white'
+                          : 'hover:bg-zinc-600/50! hover:text-white!'
                       }
                     >
                       {filter}
@@ -136,4 +140,6 @@ export default function ProfileDataClient({ user }: ProfileDataClientProps) {
       </div>
     </div>
   );
-}
+};
+
+export default ProfileDataClient;

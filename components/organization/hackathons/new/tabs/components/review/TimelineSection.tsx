@@ -28,7 +28,7 @@ export default function TimelineSection({
     <div className='space-y-4'>
       <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
         <div className='space-y-1'>
-          <p className='text-xs font-medium text-gray-500'>Start Date:</p>
+          <p className='text-xs font-medium text-gray-500'>Start Time:</p>
           <p className='text-sm font-medium text-white'>
             {formatDateShort(data.startDate)}
           </p>
@@ -42,32 +42,28 @@ export default function TimelineSection({
           </p>
         </div>
         <div className='space-y-1'>
-          <p className='text-xs font-medium text-gray-500'>Judging Start:</p>
+          <p className='text-xs font-medium text-gray-500'>Timezone:</p>
           <p className='text-sm font-medium text-white'>
-            {formatDateShort(data.judgingStart)}
+            {data.timezone || 'UTC'}
           </p>
         </div>
-        <div className='space-y-1'>
-          <p className='text-xs font-medium text-gray-500'>End Date:</p>
-          <p className='text-sm font-medium text-white'>
-            {formatDateShort(data.endDate)}
-          </p>
-        </div>
-        {data.judgingEnd && (
+        {data.registrationDeadline && (
           <div className='space-y-1'>
-            <p className='text-xs font-medium text-gray-500'>Judging End:</p>
+            <p className='text-xs font-medium text-gray-500'>
+              Pre-registration End Time:
+            </p>
             <p className='text-sm font-medium text-white'>
-              {formatDateShort(data.judgingEnd)}
+              {formatDateShort(data.registrationDeadline)}
             </p>
           </div>
         )}
-        {data.winnersAnnouncedAt && (
+        {data.judgingDeadline && (
           <div className='space-y-1'>
             <p className='text-xs font-medium text-gray-500'>
-              Winner Announcement:
+              Judging Deadline:
             </p>
             <p className='text-sm font-medium text-white'>
-              {formatDateShort(data.winnersAnnouncedAt)}
+              {formatDateShort(data.judgingDeadline)}
             </p>
           </div>
         )}

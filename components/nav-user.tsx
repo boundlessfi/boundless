@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import {
   IconBell,
   IconCreditCard,
@@ -26,15 +27,15 @@ import {
 } from '@/components/ui/sidebar';
 import { Badge } from './ui/badge';
 
-export function NavUser({
-  user,
-}: {
+export interface NavUserProps {
   user: {
     name: string;
     email: string;
     image: string | null;
   };
-}) {
+}
+
+export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
   const { isMobile } = useSidebar();
 
   return (
@@ -48,7 +49,7 @@ export function NavUser({
             >
               <Avatar className='border-sidebar-border h-9 w-9 rounded-lg border-2'>
                 <AvatarImage src={user.image || undefined} alt={user.name} />
-                <AvatarFallback className='from-primary/20 to-primary/10 text-primary rounded-lg bg-gradient-to-br font-semibold'>
+                <AvatarFallback className='from-primary/20 to-primary/10 text-primary rounded-lg bg-linear-to-br font-semibold'>
                   {user.name
                     .split(' ')
                     .map(n => n[0])
@@ -76,7 +77,7 @@ export function NavUser({
               <div className='flex items-center gap-3 px-2 py-2 text-left'>
                 <Avatar className='border-border h-10 w-10 rounded-lg border-2'>
                   <AvatarImage src={user.image || undefined} alt={user.name} />
-                  <AvatarFallback className='from-primary/20 to-primary/10 text-primary rounded-lg bg-gradient-to-br font-semibold'>
+                  <AvatarFallback className='from-primary/20 to-primary/10 text-primary rounded-lg bg-linear-to-br font-semibold'>
                     {user.name
                       .split(' ')
                       .map(n => n[0])
@@ -119,4 +120,4 @@ export function NavUser({
       </SidebarMenuItem>
     </SidebarMenu>
   );
-}
+};

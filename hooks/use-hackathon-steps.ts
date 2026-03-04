@@ -10,6 +10,10 @@ interface UseHackathonStepsReturn {
   activeTab: StepKey;
   steps: Record<StepKey, StepData>;
   setActiveTab: (tab: StepKey) => void;
+  setStepsFromDraft: (
+    steps: Record<StepKey, StepData>,
+    activeStep: StepKey
+  ) => void;
   navigateToStep: (stepKey: StepKey, skipAccessCheck?: boolean) => void;
   canAccessStep: (stepKey: StepKey) => boolean;
   updateStepCompletion: (
@@ -91,6 +95,14 @@ export const useHackathonSteps = (
     [canAccessStep, getCurrentStepIndex]
   );
 
+  const setStepsFromDraft = useCallback(
+    (stepsState: Record<StepKey, StepData>, activeStep: StepKey) => {
+      setSteps(stepsState);
+      setActiveTab(activeStep);
+    },
+    []
+  );
+
   const updateStepCompletion = useCallback(
     (stepKey: StepKey, isCompleted: boolean, nextStep?: StepKey) => {
       setSteps(prev => {
@@ -124,6 +136,7 @@ export const useHackathonSteps = (
     activeTab,
     steps,
     setActiveTab,
+    setStepsFromDraft,
     navigateToStep,
     canAccessStep,
     updateStepCompletion,

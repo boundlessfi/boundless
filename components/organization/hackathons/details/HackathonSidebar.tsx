@@ -233,10 +233,13 @@ export default function HackathonSidebar({
       items.push({
         id: `hackathon-${hackathon.id}`,
         name: title,
-        status:
-          hackathon.status === 'PUBLISHED'
-            ? 'ongoing'
-            : (hackathon.status as 'draft' | 'ongoing' | 'completed'),
+        status: (['UPCOMING', 'ACTIVE', 'JUDGING'].includes(hackathon.status)
+          ? 'ongoing'
+          : hackathon.status === 'DRAFT'
+            ? 'draft'
+            : hackathon.status === 'COMPLETED'
+              ? 'completed'
+              : 'ongoing') as 'draft' | 'ongoing' | 'completed',
         href: derivedOrgId
           ? `/organizations/${derivedOrgId}/hackathons/${hackathon.id}`
           : '#',

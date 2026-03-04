@@ -70,7 +70,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
       case 'custom':
         return `${baseStyle} px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-md`;
       default:
-        return `${baseStyle} px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary shadow-[0_2px_8px_rgba(167,249,80,0.2)]`;
+        return `${baseStyle} px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary shadow-[var(--primary-shadow)]`;
     }
   };
 

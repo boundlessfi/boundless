@@ -66,9 +66,6 @@ export const useHackathonsList: (
         if (hackathon?.submissionDeadline) {
           return new Date(hackathon?.submissionDeadline).getTime();
         }
-        if (hackathon?.endDate) {
-          return new Date(hackathon?.endDate).getTime();
-        }
       } catch {
         // Handle error silently
       }
@@ -81,10 +78,11 @@ export const useHackathonsList: (
   const getPrizePoolTotal = React.useCallback(
     (hackathon: Hackathon): number => {
       if (hackathon?.prizeTiers && hackathon?.prizeTiers.length > 0) {
-        return hackathon?.prizeTiers.reduce(
-          (sum, tier) => sum + Number(tier.amount || 0),
-          0
-        );
+        return hackathon?.prizeTiers.reduce((sum, tier) => {
+          const raw = tier.prizeAmount ?? (tier as { amount?: string }).amount;
+          const parsed = Number(raw);
+          return sum + (Number.isFinite(parsed) ? parsed : 0);
+        }, 0);
       }
       return 0;
     },

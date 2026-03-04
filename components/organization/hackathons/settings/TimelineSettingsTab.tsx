@@ -16,18 +16,8 @@ import {
   TimelineFormData,
 } from '@/components/organization/hackathons/new/tabs/schemas/timelineSchema';
 import { BoundlessButton } from '@/components/buttons';
-import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
+import DateTimeInput from '@/components/organization/hackathons/new/tabs/components/timeline/DateTimeInput';
 import {
   Select,
   SelectContent,
@@ -60,46 +50,30 @@ export default function TimelineSettingsTab({
     defaultValues: {
       startDate: initialData?.startDate || undefined,
       submissionDeadline: initialData?.submissionDeadline || undefined,
-      judgingStart: initialData?.judgingStart || undefined,
-      endDate: initialData?.endDate || undefined,
-      judgingEnd: initialData?.judgingEnd || undefined,
-      winnersAnnouncedAt: initialData?.winnersAnnouncedAt || undefined,
+      registrationDeadline: initialData?.registrationDeadline || undefined,
+      judgingDeadline: initialData?.judgingDeadline || undefined,
       timezone: initialData?.timezone || 'UTC',
       phases: initialData?.phases || [],
     },
   });
+
+  const { dirtyFields, isDirty } = form.formState;
 
   useEffect(() => {
     if (initialData) {
       form.reset({
         startDate: initialData.startDate || undefined,
         submissionDeadline: initialData.submissionDeadline || undefined,
-        judgingStart: initialData.judgingStart || undefined,
-        endDate: initialData.endDate || undefined,
-        judgingEnd: initialData.judgingEnd || undefined,
-        winnersAnnouncedAt: initialData.winnersAnnouncedAt || undefined,
+        registrationDeadline: initialData.registrationDeadline || undefined,
+        judgingDeadline: initialData.judgingDeadline || undefined,
         timezone: initialData.timezone || 'UTC',
         phases: initialData.phases || [],
       });
     }
   }, [initialData, form]);
 
-  const hasJudgingEnd = !!form.watch('judgingEnd');
-  const hasWinnersAnnouncedAt = !!form.watch('winnersAnnouncedAt');
-
-  const formatTimeValue = (date?: Date) => {
-    if (!date) return '';
-    const hours = `${date.getHours()}`.padStart(2, '0');
-    const minutes = `${date.getMinutes()}`.padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
-
-  const applyTimeToDate = (date: Date, timeValue: string) => {
-    const [hours, minutes] = timeValue.split(':').map(Number);
-    const next = new Date(date);
-    next.setHours(hours || 0, minutes || 0, 0, 0);
-    return next;
-  };
+  const hasRegistrationDeadline = !!form.watch('registrationDeadline');
+  const hasJudgingDeadline = !!form.watch('judgingDeadline');
 
   const onSubmit = async (data: TimelineFormData) => {
     setIsSaving(true);
@@ -110,36 +84,46 @@ export default function TimelineSettingsTab({
         return isNaN(d.getTime()) ? undefined : d.toISOString();
       };
 
-      const payload = {
-        timeline: {
-          startDate: formatDate(data.startDate),
-          submissionDeadline: formatDate(data.submissionDeadline),
-          judgingStart: formatDate(data.judgingStart),
-          endDate: formatDate(data.endDate),
-          judgingEnd: formatDate(data.judgingEnd),
-          winnersAnnouncedAt: formatDate(data.winnersAnnouncedAt),
-          timezone: data.timezone,
-          phases: data.phases?.map(phase => ({
-            name: phase.name,
-            description: phase.description,
-            startDate: formatDate(phase.startDate),
-            endDate: formatDate(phase.endDate),
-          })),
-        },
-      };
+      const timelineChanges: Record<string, unknown> = {};
+
+      if (dirtyFields.startDate)
+        timelineChanges.startDate = formatDate(data.startDate);
+      if (dirtyFields.submissionDeadline)
+        timelineChanges.submissionDeadline = formatDate(
+          data.submissionDeadline
+        );
+      if (dirtyFields.registrationDeadline)
+        timelineChanges.registrationDeadline = data.registrationDeadline
+          ? formatDate(data.registrationDeadline)
+          : null;
+      if (dirtyFields.judgingDeadline)
+        timelineChanges.judgingDeadline = data.judgingDeadline
+          ? formatDate(data.judgingDeadline)
+          : null;
+      if (dirtyFields.timezone) timelineChanges.timezone = data.timezone;
+      if (dirtyFields.phases)
+        timelineChanges.phases = data.phases?.map(phase => ({
+          name: phase.name,
+          description: phase.description,
+          startDate: formatDate(phase.startDate),
+          endDate: formatDate(phase.endDate),
+        }));
 
       await api.patch(
         `/organizations/${organizationId}/hackathons/${hackathonId}/schedule`,
-        payload
+        { timeline: timelineChanges }
       );
       toast.success('Timeline settings saved successfully!');
-      // Reset form with current data to clear dirty state
       form.reset(data);
       if (onSaveSuccess) {
         await onSaveSuccess();
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || error.message;
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string | string[] } };
+        message?: string;
+      };
+      const message = err.response?.data?.message || err.message;
       const errorMessage = Array.isArray(message) ? message[0] : message;
       toast.error(
         errorMessage || 'Failed to save timeline settings. Please try again.'
@@ -169,53 +153,12 @@ export default function TimelineSettingsTab({
               render={({ field }) => (
                 <FormItem className='gap-3'>
                   <FormLabel className='text-sm'>
-                    Start Date <span className='text-error-400'>*</span>
+                    Start Time <span className='text-error-400'>*</span>
                   </FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant='outline'
-                          className={cn(
-                            'bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 text-left font-normal',
-                            !field.value && 'text-gray-600'
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Select start date</span>
-                          )}
-                          <CalendarIcon className='ml-auto h-4 w-4 text-gray-400' />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className='bg-background-card w-auto border-gray-900 p-0 text-white'
-                      align='start'
-                    >
-                      <Calendar
-                        mode='single'
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormControl>
-                    <Input
-                      type='time'
-                      className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 px-4 text-sm text-white'
-                      value={formatTimeValue(field.value)}
-                      onChange={event => {
-                        if (!field.value) return;
-                        field.onChange(
-                          applyTimeToDate(field.value, event.target.value)
-                        );
-                      }}
-                      disabled={!field.value}
-                    />
-                  </FormControl>
+                  <DateTimeInput
+                    field={field}
+                    placeholder='Select start date'
+                  />
                   <FormMessage className='text-error-400 text-xs' />
                 </FormItem>
               )}
@@ -230,51 +173,10 @@ export default function TimelineSettingsTab({
                     Submission Deadline{' '}
                     <span className='text-error-400'>*</span>
                   </FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant='outline'
-                          className={cn(
-                            'bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 text-left font-normal',
-                            !field.value && 'text-gray-600'
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Select submission deadline</span>
-                          )}
-                          <CalendarIcon className='ml-auto h-4 w-4 text-gray-400' />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className='bg-background-card w-auto border-gray-900 p-0 text-white'
-                      align='start'
-                    >
-                      <Calendar
-                        mode='single'
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormControl>
-                    <Input
-                      type='time'
-                      className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 px-4 text-sm text-white'
-                      value={formatTimeValue(field.value)}
-                      onChange={event => {
-                        if (!field.value) return;
-                        field.onChange(
-                          applyTimeToDate(field.value, event.target.value)
-                        );
-                      }}
-                      disabled={!field.value}
-                    />
-                  </FormControl>
+                  <DateTimeInput
+                    field={field}
+                    placeholder='Select submission deadline'
+                  />
                   <FormMessage className='text-error-400 text-xs' />
                 </FormItem>
               )}
@@ -282,114 +184,28 @@ export default function TimelineSettingsTab({
 
             <FormField
               control={form.control}
-              name='judgingStart'
+              name='timezone'
               render={({ field }) => (
-                <FormItem className='gap-3'>
+                <FormItem className='gap-3 md:col-span-2'>
                   <FormLabel className='text-sm'>
-                    Judging Start <span className='text-error-400'>*</span>
+                    Timezone <span className='text-error-400'>*</span>
                   </FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant='outline'
-                          className={cn(
-                            'bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 text-left font-normal',
-                            !field.value && 'text-gray-600'
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Select judging start</span>
-                          )}
-                          <CalendarIcon className='ml-auto h-4 w-4 text-gray-400' />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className='bg-background-card w-auto border-gray-900 p-0 text-white'
-                      align='start'
-                    >
-                      <Calendar
-                        mode='single'
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
                   <FormControl>
-                    <Input
-                      type='time'
-                      className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 px-4 text-sm text-white'
-                      value={formatTimeValue(field.value)}
-                      onChange={event => {
-                        if (!field.value) return;
-                        field.onChange(
-                          applyTimeToDate(field.value, event.target.value)
-                        );
-                      }}
-                      disabled={!field.value}
-                    />
-                  </FormControl>
-                  <FormMessage className='text-error-400 text-xs' />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='endDate'
-              render={({ field }) => (
-                <FormItem className='gap-3'>
-                  <FormLabel className='text-sm'>
-                    End Date <span className='text-error-400'>*</span>
-                  </FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant='outline'
-                          className={cn(
-                            'bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 text-left font-normal',
-                            !field.value && 'text-gray-600'
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Select end date</span>
-                          )}
-                          <CalendarIcon className='ml-auto h-4 w-4 text-gray-400' />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className='bg-background-card w-auto border-gray-900 p-0 text-white'
-                      align='start'
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={field.onChange}
                     >
-                      <Calendar
-                        mode='single'
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormControl>
-                    <Input
-                      type='time'
-                      className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 px-4 text-sm text-white'
-                      value={formatTimeValue(field.value)}
-                      onChange={event => {
-                        if (!field.value) return;
-                        field.onChange(
-                          applyTimeToDate(field.value, event.target.value)
-                        );
-                      }}
-                      disabled={!field.value}
-                    />
+                      <SelectTrigger className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'>
+                        <SelectValue placeholder='Select a timezone' />
+                      </SelectTrigger>
+                      <SelectContent className='max-h-72'>
+                        {TIMEZONES.map(tz => (
+                          <SelectItem key={tz.value} value={tz.value}>
+                            {tz.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage className='text-error-400 text-xs' />
                 </FormItem>
@@ -397,116 +213,28 @@ export default function TimelineSettingsTab({
             />
           </div>
 
-          <div className='space-y-4'>
-            <div className='bg-background-card flex items-center justify-between rounded-[12px] border border-gray-900 p-4'>
-              <div>
-                <p className='text-sm font-medium text-white'>Judging End</p>
-                <p className='text-xs text-gray-400'>
-                  Add an end date for judging.
-                </p>
-              </div>
-              <Switch
-                checked={hasJudgingEnd}
-                onCheckedChange={checked => {
-                  if (checked) {
-                    const fallbackDate =
-                      form.getValues('judgingStart') ||
-                      form.getValues('submissionDeadline') ||
-                      new Date();
-                    form.setValue('judgingEnd', fallbackDate, {
-                      shouldValidate: true,
-                    });
-                  } else {
-                    form.setValue('judgingEnd', undefined, {
-                      shouldValidate: true,
-                    });
-                  }
-                }}
-              />
-            </div>
-
-            {hasJudgingEnd && (
-              <FormField
-                control={form.control}
-                name='judgingEnd'
-                render={({ field }) => (
-                  <FormItem className='gap-3'>
-                    <FormLabel className='text-sm'>Judging End</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant='outline'
-                            className={cn(
-                              'bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 text-left font-normal',
-                              !field.value && 'text-gray-600'
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, 'PPP')
-                            ) : (
-                              <span>Select judging end</span>
-                            )}
-                            <CalendarIcon className='ml-auto h-4 w-4 text-gray-400' />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className='bg-background-card w-auto border-gray-900 p-0 text-white'
-                        align='start'
-                      >
-                        <Calendar
-                          mode='single'
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormControl>
-                      <Input
-                        type='time'
-                        className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 px-4 text-sm text-white'
-                        value={formatTimeValue(field.value)}
-                        onChange={event => {
-                          if (!field.value) return;
-                          field.onChange(
-                            applyTimeToDate(field.value, event.target.value)
-                          );
-                        }}
-                        disabled={!field.value}
-                      />
-                    </FormControl>
-                    <FormMessage className='text-error-400 text-xs' />
-                  </FormItem>
-                )}
-              />
-            )}
-          </div>
-
+          {/* Pre-Registration End Time Section */}
           <div className='space-y-4'>
             <div className='bg-background-card flex items-center justify-between rounded-[12px] border border-gray-900 p-4'>
               <div>
                 <p className='text-sm font-medium text-white'>
-                  Winner Announcement
+                  Pre-registration End Time
                 </p>
                 <p className='text-xs text-gray-400'>
-                  Set a public results date.
+                  Set a specific date when pre-registration closes (optional).
                 </p>
               </div>
               <Switch
-                checked={hasWinnersAnnouncedAt}
+                checked={hasRegistrationDeadline}
                 onCheckedChange={checked => {
                   if (checked) {
-                    const fallbackDate =
-                      form.getValues('judgingEnd') ||
-                      form.getValues('judgingStart') ||
-                      new Date();
-                    form.setValue('winnersAnnouncedAt', fallbackDate, {
+                    const fallback =
+                      form.getValues('submissionDeadline') || new Date();
+                    form.setValue('registrationDeadline', fallback, {
                       shouldValidate: true,
                     });
                   } else {
-                    form.setValue('winnersAnnouncedAt', undefined, {
+                    form.setValue('registrationDeadline', undefined, {
                       shouldValidate: true,
                     });
                   }
@@ -514,60 +242,22 @@ export default function TimelineSettingsTab({
               />
             </div>
 
-            {hasWinnersAnnouncedAt && (
+            {hasRegistrationDeadline && (
               <FormField
                 control={form.control}
-                name='winnersAnnouncedAt'
+                name='registrationDeadline'
                 render={({ field }) => (
                   <FormItem className='gap-3'>
                     <FormLabel className='text-sm'>
-                      Winner Announcement
+                      Pre-registration End Time
                     </FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant='outline'
-                            className={cn(
-                              'bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 text-left font-normal',
-                              !field.value && 'text-gray-600'
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, 'PPP')
-                            ) : (
-                              <span>Select announcement date</span>
-                            )}
-                            <CalendarIcon className='ml-auto h-4 w-4 text-gray-400' />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className='bg-background-card w-auto border-gray-900 p-0 text-white'
-                        align='start'
-                      >
-                        <Calendar
-                          mode='single'
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormControl>
-                      <Input
-                        type='time'
-                        className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 px-4 text-sm text-white'
-                        value={formatTimeValue(field.value)}
-                        onChange={event => {
-                          if (!field.value) return;
-                          field.onChange(
-                            applyTimeToDate(field.value, event.target.value)
-                          );
-                        }}
-                        disabled={!field.value}
-                      />
-                    </FormControl>
+                    <p className='text-xs text-gray-400'>
+                      Must be on or before the submission deadline.
+                    </p>
+                    <DateTimeInput
+                      field={field}
+                      placeholder='Select pre-registration end time'
+                    />
                     <FormMessage className='text-error-400 text-xs' />
                   </FormItem>
                 )}
@@ -575,42 +265,63 @@ export default function TimelineSettingsTab({
             )}
           </div>
 
-          <FormField
-            control={form.control}
-            name='timezone'
-            render={({ field }) => (
-              <FormItem className='gap-3'>
-                <FormLabel className='text-sm'>
-                  Timezone <span className='text-error-400'>*</span>
-                </FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value || ''}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'>
-                      <SelectValue placeholder='Select a timezone' />
-                    </SelectTrigger>
-                    <SelectContent className='max-h-72'>
-                      {TIMEZONES.map(tz => (
-                        <SelectItem key={tz.value} value={tz.value}>
-                          {tz.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage className='text-error-400 text-xs' />
-              </FormItem>
+          {/* Judging Deadline Section */}
+          <div className='space-y-4'>
+            <div className='bg-background-card flex items-center justify-between rounded-[12px] border border-gray-900 p-4'>
+              <div>
+                <p className='text-sm font-medium text-white'>
+                  Judging Deadline
+                </p>
+                <p className='text-xs text-gray-400'>
+                  Set a deadline for when all judging must be completed
+                  (optional).
+                </p>
+              </div>
+              <Switch
+                checked={hasJudgingDeadline}
+                onCheckedChange={checked => {
+                  if (checked) {
+                    const fallback =
+                      form.getValues('submissionDeadline') || new Date();
+                    form.setValue('judgingDeadline', fallback, {
+                      shouldValidate: true,
+                    });
+                  } else {
+                    form.setValue('judgingDeadline', undefined, {
+                      shouldValidate: true,
+                    });
+                  }
+                }}
+              />
+            </div>
+
+            {hasJudgingDeadline && (
+              <FormField
+                control={form.control}
+                name='judgingDeadline'
+                render={({ field }) => (
+                  <FormItem className='gap-3'>
+                    <FormLabel className='text-sm'>Judging Deadline</FormLabel>
+                    <p className='text-xs text-gray-400'>
+                      Must be on or after the submission deadline.
+                    </p>
+                    <DateTimeInput
+                      field={field}
+                      placeholder='Select judging deadline'
+                    />
+                    <FormMessage className='text-error-400 text-xs' />
+                  </FormItem>
+                )}
+              />
             )}
-          />
+          </div>
 
           <div className='flex justify-end pt-4'>
             <BoundlessButton
               type='submit'
               variant='default'
               size='lg'
-              disabled={isSaving}
+              disabled={isSaving || !isDirty}
               className='min-w-[120px]'
             >
               {isSaving ? 'Saving...' : 'Save Changes'}

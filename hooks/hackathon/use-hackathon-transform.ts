@@ -53,28 +53,35 @@ export function useHackathonTransform() {
           deadlineInDays = Math.ceil(
             (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
           );
-        } else if (hackathon.endDate) {
-          const now = new Date();
-          const end = new Date(hackathon.endDate);
-          deadlineInDays = Math.ceil(
-            (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-          );
         }
       } catch {
         deadlineInDays = 0;
       }
 
       // Map hackathon status to card status
+      const isLive = (
+        ['UPCOMING', 'ACTIVE', 'JUDGING', 'COMPLETED'] as const
+      ).includes(
+        hackathon.status as 'UPCOMING' | 'ACTIVE' | 'JUDGING' | 'COMPLETED'
+      );
       let cardStatus: 'Published' | 'Ongoing' | 'Completed' | 'Cancelled' =
         'Published';
-      if (hackathon.status === 'PUBLISHED') {
+      if (hackathon.status === 'UPCOMING') {
         cardStatus = 'Published';
-      } else if (hackathon.status === 'ONGOING') {
+      } else if (
+        hackathon.status === 'ACTIVE' ||
+        hackathon.status === 'JUDGING'
+      ) {
         cardStatus = 'Ongoing';
       } else if (hackathon.status === 'COMPLETED') {
         cardStatus = 'Completed';
-      } else if (hackathon.status === 'ARCHIVED') {
+      } else if (
+        hackathon.status === 'ARCHIVED' ||
+        hackathon.status === 'CANCELLED'
+      ) {
         cardStatus = 'Cancelled';
+      } else if (isLive) {
+        cardStatus = 'Published';
       }
 
       // Extract location information
@@ -100,7 +107,11 @@ export function useHackathonTransform() {
       let prizeCurrency = 'USDC';
       if (hackathon.prizeTiers && hackathon.prizeTiers.length > 0) {
         prizePoolTotal = hackathon.prizeTiers.reduce(
-          (sum, tier) => sum + Number(tier.amount || 0),
+          (sum, tier) =>
+            sum +
+            Number(
+              tier.prizeAmount ?? (tier as { amount?: string }).amount ?? 0
+            ),
           0
         );
         prizeCurrency = hackathon.prizeTiers[0]?.currency || 'USDC';

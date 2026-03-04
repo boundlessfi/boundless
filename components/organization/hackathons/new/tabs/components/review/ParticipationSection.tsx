@@ -28,15 +28,16 @@ interface ParticipationSectionProps {
 // }
 
 const tabVisibilityLabels: Record<string, string> = {
-  details_tab: 'Details Tab',
-  schedule_tab: 'Schedule Tab',
-  rules_tab: 'Rules Tab',
-  reward_tab: 'Rewards',
-  announcements_tab: 'Announcements Tab',
-  partners_tab: 'Partners Tab',
-  join_a_team_tab: 'Join a Team Tab',
-  projects_tab: 'Projects Tab',
-  participants_tab: 'Participants Tab',
+  detailsTab: 'Details Tab',
+  participantsTab: 'Participants Tab',
+  resourcesTab: 'Resources Tab',
+  submissionTab: 'Submission Tab',
+  announcementsTab: 'Announcements Tab',
+  discussionTab: 'Discussion Tab',
+  winnersTab: 'Winners Tab',
+  sponsorsTab: 'Sponsors Tab',
+  joinATeamTab: 'Join a Team Tab',
+  rulesTab: 'Rules Tab',
 };
 
 const TeamSizeSection: React.FC<{

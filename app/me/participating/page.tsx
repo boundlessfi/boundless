@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,11 +16,24 @@ import EmptyState from '@/components/EmptyState';
 
 type TabType = 'all' | 'hackathons' | 'projects';
 
+/** API shape: joined hackathon can be wrapper or raw hackathon. */
+type JoinedHackathonRow = { hackathon?: Hackathon } | Hackathon;
+
+/** API shape: participant record with nested hackathon. */
+interface HackathonParticipantRow {
+  hackathon: Hackathon;
+}
+
+/** API shape: submission record with nested hackathon. */
+interface HackathonSubmissionRow {
+  hackathon: Hackathon;
+}
+
 interface UnifiedItem extends Hackathon {
   type: 'hackathon';
 }
 
-export default function ParticipatingPage() {
+const ParticipatingPage: React.FC = () => {
   const router = useRouter();
   const { user, isLoading } = useAuthStatus();
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -35,42 +48,38 @@ export default function ParticipatingPage() {
       return [];
     }
 
-    const joinedHackathons = profile.user?.joinedHackathons || [];
-    const hackathonsAsParticipant = profile.hackathonsAsParticipant || [];
-    const submissions = profile.user?.hackathonSubmissionsAsParticipant || [];
+    const joinedHackathons = (profile.user?.joinedHackathons ||
+      []) as JoinedHackathonRow[];
+    const hackathonsAsParticipant = (profile.hackathonsAsParticipant ||
+      []) as HackathonParticipantRow[];
+    const submissions = (profile.user?.hackathonSubmissionsAsParticipant ||
+      []) as HackathonSubmissionRow[];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const typedJoinedHackathons: UnifiedItem[] = joinedHackathons
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((h: any) => {
-        const data = h?.hackathon || h;
-        return data && data.id;
+      .filter((h: JoinedHackathonRow) => {
+        const data =
+          (h as { hackathon?: Hackathon }).hackathon ?? (h as Hackathon);
+        return data?.id != null;
       })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((h: any) => {
-        const hackathonData = h.hackathon || h;
+      .map((h: JoinedHackathonRow) => {
+        const hackathonData =
+          (h as { hackathon?: Hackathon }).hackathon ?? (h as Hackathon);
         return {
           ...hackathonData,
           type: 'hackathon' as const,
         };
       });
 
-    // Map hackathons from participating list — filter first to ensure p.hackathon is defined
     const typedParticipatingHackathons: UnifiedItem[] = hackathonsAsParticipant
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((p: any) => p && p.hackathon && p.hackathon.id)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((p: any) => ({
+      .filter((p: HackathonParticipantRow) => p?.hackathon?.id != null)
+      .map((p: HackathonParticipantRow) => ({
         ...p.hackathon,
         type: 'hackathon' as const,
       }));
 
-    // Map hackathons from submissions
     const typedSubmissionHackathons: UnifiedItem[] = submissions
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((s: any) => s.hackathon)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((s: any) => ({
+      .filter((s: HackathonSubmissionRow) => s?.hackathon != null)
+      .map((s: HackathonSubmissionRow) => ({
         ...s.hackathon,
         type: 'hackathon' as const,
       }));
@@ -89,9 +98,9 @@ export default function ParticipatingPage() {
       return true;
     });
 
+    const now = Date.now();
     const sorted = deduplicated.sort((a, b) => {
       const getPriority = (h: UnifiedItem) => {
-        const now = new Date().getTime();
         if (!h.startDate || !h.submissionDeadline) return 1;
 
         const start = new Date(h.startDate).getTime();
@@ -112,6 +121,7 @@ export default function ParticipatingPage() {
     if (activeTab === 'projects') return [];
 
     let result = unifiedList;
+    // Intentional: filter by type so that when UnifiedItem gains 'project' entries, this tab shows only hackathons.
     if (activeTab === 'hackathons') {
       result = unifiedList.filter(item => item.type === 'hackathon');
     }
@@ -253,4 +263,6 @@ export default function ParticipatingPage() {
       </AnimatePresence>
     </div>
   );
-}
+};
+
+export default ParticipatingPage;

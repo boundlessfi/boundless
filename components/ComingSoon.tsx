@@ -60,7 +60,7 @@ const FeatureBlock = ({
       transition={{ duration: 0.6, delay: index * 0.12 }}
       viewport={{ once: true }}
       whileHover={{ scale: 1.02 }}
-      className='relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0e0e0e] to-[#1a1a1a] p-10'
+      className='relative overflow-hidden rounded-3xl bg-linear-to-br from-[#0e0e0e] to-[#1a1a1a] p-10'
     >
       <div className='pointer-events-none absolute -top-16 -right-16 opacity-5'>
         <Icon className='h-64 w-64' />

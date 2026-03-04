@@ -9,7 +9,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useHackathons } from '@/hooks/use-hackathons';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useHackathonAnalytics } from '@/hooks/use-hackathon-analytics';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { HackathonStatistics } from '@/components/organization/hackathons/details/HackathonStatistics';
@@ -17,11 +17,20 @@ import { HackathonCharts } from '@/components/organization/hackathons/details/Ha
 import { HackathonTimeline } from '@/components/organization/hackathons/details/HackathonTimeline';
 import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
+import HackathonPublishedModal from '@/components/organization/hackathons/new/tabs/components/review/HackathonPublishedModal';
+import type { PublishResponseData } from '@/hooks/use-hackathon-publish';
+
+const STORAGE_KEY = 'boundless_hackathon_published';
 
 export default function HackathonPage() {
   const params = useParams();
   const organizationId = params.id as string;
   const hackathonId = params.hackathonId as string;
+
+  const [publishedModalData, setPublishedModalData] = useState<{
+    publishResponse: PublishResponseData;
+    organizationId: string;
+  } | null>(null);
 
   const { currentHackathon, currentLoading, currentError, fetchHackathon } =
     useHackathons({
@@ -40,6 +49,37 @@ export default function HackathonPage() {
       void fetchHackathon(hackathonId);
     }
   }, [organizationId, hackathonId, fetchHackathon]);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const payload = JSON.parse(raw) as {
+        organizationId: string;
+        id: string;
+        slug: string;
+        publishedAt: string;
+        message: string;
+        escrowAddress: string;
+        transactionHash: string | null;
+      };
+      if (payload.id !== hackathonId) return;
+      sessionStorage.removeItem(STORAGE_KEY);
+      setPublishedModalData({
+        publishResponse: {
+          id: payload.id,
+          slug: payload.slug,
+          publishedAt: payload.publishedAt,
+          message: payload.message,
+          escrowAddress: payload.escrowAddress,
+          transactionHash: payload.transactionHash,
+        },
+        organizationId: payload.organizationId,
+      });
+    } catch {
+      // ignore
+    }
+  }, [hackathonId]);
 
   if (currentLoading) {
     return (
@@ -95,6 +135,15 @@ export default function HackathonPage() {
   return (
     <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
       <div className='min-h-screen bg-black'>
+        <HackathonPublishedModal
+          open={!!publishedModalData}
+          onOpenChange={open => {
+            if (!open) setPublishedModalData(null);
+          }}
+          publishResponse={publishedModalData?.publishResponse ?? null}
+          organizationId={publishedModalData?.organizationId}
+        />
+
         {/* Hero Section with Hackathon Name */}
         <div className='border-b border-gray-900 p-4'>
           <div className='mx-auto max-w-7xl'>
@@ -158,31 +207,7 @@ export default function HackathonPage() {
                     e => e.phase === 'Winner Announcement'
                   );
 
-                  // Manually append Winner Announcement if missing and date exists
                   const fullTimeline = [...timelineEvents];
-                  if (!hasWinnerAnnouncement && currentHackathon?.endDate) {
-                    const winnerDate = new Date(currentHackathon.endDate);
-                    const now = new Date();
-                    // Simple status logic for single date event
-                    // If date is passed, completed. If today (roughly), ongoing?
-                    // Or just use 'upcoming' if future, 'completed' if past.
-                    // Ideally we'd match the phase logic, but for a single date event:
-                    let status: 'completed' | 'ongoing' | 'upcoming' =
-                      'upcoming';
-                    if (now > winnerDate) {
-                      status = 'completed';
-                    }
-                    // For "Winner Announcement", it might be "ongoing" on the day of?
-                    // keeping simple for now.
-
-                    fullTimeline.push({
-                      phase: 'Winner Announcement',
-                      description:
-                        'Final results published and prizes distributed to winners.',
-                      date: currentHackathon.endDate,
-                      status: status,
-                    });
-                  }
 
                   return fullTimeline.map((phase, index) => {
                     const isLast = index === fullTimeline.length - 1;
@@ -229,7 +254,7 @@ export default function HackathonPage() {
                               {phase.description}
                             </p>
                           </div>
-                          <div className='flex-shrink-0 text-xs whitespace-nowrap text-white/60 sm:text-sm'>
+                          <div className='shrink-0 text-xs whitespace-nowrap text-white/60 sm:text-sm'>
                             {new Date(phase.date).toLocaleDateString()}
                           </div>
                         </div>

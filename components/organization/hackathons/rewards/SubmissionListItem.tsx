@@ -33,7 +33,7 @@ export default function SubmissionListItem({
   return (
     <div className='bg-background-card flex flex-col gap-3 rounded-lg border border-gray-900 p-3 transition-colors hover:bg-gray-900/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4'>
       <div className='flex min-w-0 flex-1 items-center gap-3'>
-        <Avatar className='h-10 w-10 flex-shrink-0'>
+        <Avatar className='h-10 w-10 shrink-0'>
           <AvatarImage src={submission.avatar} />
           <AvatarFallback>
             {submission.name.charAt(0).toUpperCase()}

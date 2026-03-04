@@ -185,12 +185,10 @@ export const useComments = (options: UseCommentsOptions): UseCommentsReturn => {
 
 // Legacy hook for backward compatibility with project-specific comments
 export const useCommentManagement = (projectId: string) => {
-  console.log('useCommentManagement', projectId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createComment = useCallback(async (data: CreateCommentRequest) => {
-    console.log('createComment', data);
     setLoading(true);
     setError(null);
     try {
@@ -207,7 +205,6 @@ export const useCommentManagement = (projectId: string) => {
 
   const updateComment = useCallback(
     async (commentId: string, data: UpdateCommentRequest) => {
-      console.log('updateComment', commentId, data);
       setLoading(true);
       setError(null);
       try {
@@ -226,7 +223,6 @@ export const useCommentManagement = (projectId: string) => {
   );
 
   const deleteComment = useCallback(async (commentId: string) => {
-    console.log('deleteComment', commentId);
     setLoading(true);
     setError(null);
     try {
@@ -242,7 +238,6 @@ export const useCommentManagement = (projectId: string) => {
 
   const reportComment = useCallback(
     async (commentId: string, data: ReportCommentRequest) => {
-      console.log('reportComment', commentId, data);
       setLoading(true);
       setError(null);
       try {

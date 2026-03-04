@@ -40,7 +40,6 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
   // Handle milestone click - open in new tab
   const handleMilestoneClick = () => {
     // eslint-disable-next-line no-console
-    console.log('Milestone clicked:', item.id);
     if (isClickable && projectSlug) {
       const milestoneUrl = `/projects/${projectSlug}/milestone/${item.id}`;
       window.open(milestoneUrl, '_blank');

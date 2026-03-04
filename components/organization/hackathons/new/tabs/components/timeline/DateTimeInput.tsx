@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import { FormControl, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -8,7 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { ChevronDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -21,54 +23,66 @@ interface DateTimeInputProps {
   disabledPast?: boolean;
 }
 
+const formatTimeValue = (date?: Date): string => {
+  if (!date) return '';
+  const hours = `${date.getHours()}`.padStart(2, '0');
+  const minutes = `${date.getMinutes()}`.padStart(2, '0');
+  const seconds = `${date.getSeconds()}`.padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+};
+
+const applyTimeToDate = (date: Date, timeValue: string): Date => {
+  const parts = timeValue.split(':').map(Number);
+  const [hours = 0, minutes = 0, seconds = 0] = parts;
+  const next = new Date(date);
+  next.setHours(hours, minutes, seconds, 0);
+  return next;
+};
+
 export default function DateTimeInput({
   field,
   placeholder,
   disabledPast = true,
 }: DateTimeInputProps) {
-  const formatTimeValue = (date?: Date) => {
-    if (!date) return '';
-    const hours = `${date.getHours()}`.padStart(2, '0');
-    const minutes = `${date.getMinutes()}`.padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
-
-  const applyTimeToDate = (date: Date, timeValue: string) => {
-    const [hours, minutes] = timeValue.split(':').map(Number);
-    const next = new Date(date);
-    next.setHours(hours || 0, minutes || 0, 0, 0);
-    return next;
-  };
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className='grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px]'>
-      <Popover>
+    <div className='flex w-full flex-row flex-wrap gap-3 sm:flex-nowrap'>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <FormControl>
             <Button
               variant='outline'
               className={cn(
-                'bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 text-left font-normal',
+                'bg-background-card h-12 min-w-0 flex-1 rounded-[12px] border border-gray-900 p-4 text-left font-normal sm:w-32',
                 !field.value && 'text-gray-600'
               )}
             >
-              {field.value ? (
-                format(field.value, 'PPP')
-              ) : (
-                <span>{placeholder}</span>
-              )}
-              <CalendarIcon className='ml-auto h-4 w-4 text-gray-400' />
+              {field.value ? format(field.value, 'PPP') : placeholder}
+              <ChevronDownIcon className='ml-auto h-4 w-4 shrink-0 text-gray-400' />
             </Button>
           </FormControl>
         </PopoverTrigger>
         <PopoverContent
-          className='bg-background-card w-auto border-gray-900 p-0 !text-white'
+          className='bg-background-card w-auto overflow-hidden border-gray-900 p-0 text-white!'
           align='start'
         >
           <Calendar
             mode='single'
             selected={field.value}
-            onSelect={field.onChange}
+            captionLayout='dropdown'
+            defaultMonth={field.value}
+            onSelect={date => {
+              if (date) {
+                const withTime = field.value
+                  ? applyTimeToDate(date, formatTimeValue(field.value))
+                  : date;
+                field.onChange(withTime);
+              } else {
+                field.onChange(undefined);
+              }
+              setOpen(false);
+            }}
             disabled={
               disabledPast
                 ? date => {
@@ -85,11 +99,14 @@ export default function DateTimeInput({
       <FormControl>
         <Input
           type='time'
-          className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 px-4 text-sm text-white'
+          step='1'
+          className='bg-background-card h-12 w-32 shrink-0 appearance-none rounded-[12px] border border-gray-900 px-4 text-sm text-white [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
           value={formatTimeValue(field.value)}
           onChange={event => {
-            if (!field.value) return;
-            field.onChange(applyTimeToDate(field.value, event.target.value));
+            const timeValue = event.target.value;
+            if (!timeValue) return;
+            const base = field.value ?? new Date();
+            field.onChange(applyTimeToDate(base, timeValue));
           }}
           disabled={!field.value}
         />

@@ -34,8 +34,6 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
     enabled: true,
   });
 
-  console.log('commentSystem comments:', commentSystem.comments.comments);
-
   // Real-time updates
   useCommentRealtime(
     {
@@ -48,27 +46,21 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
       onCommentCreated: comment => {
         // For replies, we might need to fetch the parent comment with replies
         // For now, refetch all comments to ensure proper nesting
-        console.log('comment created', comment);
         commentSystem.comments.refetch();
       },
       onCommentUpdated: comment => {
-        console.log('comment updated', comment);
         commentSystem.comments.refetch();
       },
       onCommentDeleted: commentId => {
-        console.log('comment deleted', commentId);
         commentSystem.comments.refetch();
       },
       onReactionAdded: data => {
-        console.log('reaction added', data);
         commentSystem.comments.refetch();
       },
       onReactionRemoved: data => {
-        console.log('reaction removed', data);
         commentSystem.comments.refetch();
       },
       onCommentStatusChanged: data => {
-        console.log('comment status changed', data);
         commentSystem.comments.refetch();
       },
     }
@@ -166,10 +158,6 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
 
     return topLevelComments;
   };
-  console.log(
-    'Rendering ProjectComments component',
-    nestComments(commentSystem.comments.comments)
-  );
 
   if (
     commentSystem.comments.loading &&

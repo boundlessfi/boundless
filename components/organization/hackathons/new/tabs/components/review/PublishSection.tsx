@@ -35,7 +35,7 @@ export const PublishSection: React.FC<PublishSectionProps> = ({
   const canPreview = organizationId && draftId;
 
   return (
-    <div className='from-primary/10 to-primary/5 border-primary/20 rounded-xl border bg-gradient-to-br p-6'>
+    <div className='from-primary/10 to-primary/5 border-primary/20 rounded-xl border bg-linear-to-br p-6'>
       <div className='flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center'>
         <div className='flex-1'>
           <h3 className='mb-1 text-lg font-semibold text-white'>

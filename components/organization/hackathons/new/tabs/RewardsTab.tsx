@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { BoundlessButton } from '@/components/buttons';
 import { toast } from 'sonner';
 import {
@@ -18,6 +18,10 @@ import {
   RewardsFormData,
   PrizeTier,
 } from './schemas/rewardsSchema';
+import {
+  getFeeEstimate,
+  type FeeEstimateData,
+} from '@/lib/api/hackathons/rewards';
 import { cn } from '@/lib/utils';
 import type { Control } from 'react-hook-form';
 import {
@@ -208,21 +212,21 @@ const PrizeTierComponent = ({
 
 interface PrizeSummaryProps {
   totalPool: number;
-  platformFee: number;
-  totalFunds: number;
+  feeEstimate: FeeEstimateData | null;
+  feeEstimateLoading: boolean;
 }
 
-// Summary Card Component
+// Summary Card Component – fee breakdown from backend
 const PrizeSummary = ({
   totalPool,
-  platformFee,
-  totalFunds,
+  feeEstimate,
+  feeEstimateLoading,
 }: PrizeSummaryProps) => {
   const formatCurrency = (amount: number) =>
     amount.toLocaleString('en-US', { minimumFractionDigits: 0 });
 
   return (
-    <div className='border-primary/20 from-primary/10 to-primary/5 rounded-xl border bg-gradient-to-br p-4'>
+    <div className='border-primary/20 from-primary/10 to-primary/5 rounded-xl border bg-linear-to-br p-4'>
       <div className='text-primary mb-3 flex items-center gap-2'>
         <Trophy className='h-4 w-4' />
         <span className='text-xs font-semibold tracking-wide uppercase'>
@@ -239,8 +243,20 @@ const PrizeSummary = ({
         </div>
 
         <div className='flex items-center justify-between text-xs'>
-          <span className='text-zinc-500'>Platform Fee (4%)</span>
-          <span className='text-zinc-400'>${formatCurrency(platformFee)}</span>
+          <span className='text-zinc-500'>
+            {feeEstimateLoading
+              ? 'Calculating...'
+              : (feeEstimate?.feeLabel ?? 'Platform Fee')}
+          </span>
+          <span className='text-zinc-400'>
+            {feeEstimateLoading ? (
+              <Loader2 className='inline h-3.5 w-3.5 animate-spin' />
+            ) : feeEstimate ? (
+              `$${formatCurrency(feeEstimate.feeAmount)}`
+            ) : totalPool > 0 && totalPool < 5 ? (
+              'Min. $5 for estimate'
+            ) : null}
+          </span>
         </div>
 
         <div className='bg-primary/20 h-px' />
@@ -248,7 +264,13 @@ const PrizeSummary = ({
         <div className='flex items-baseline justify-between'>
           <span className='text-sm font-medium text-zinc-300'>You'll Pay</span>
           <span className='text-primary text-xl font-bold'>
-            ${formatCurrency(totalFunds)}
+            {feeEstimateLoading ? (
+              <Loader2 className='inline h-5 w-5 animate-spin' />
+            ) : feeEstimate ? (
+              `$${formatCurrency(feeEstimate.totalFunds)}`
+            ) : (
+              `$${formatCurrency(totalPool)}`
+            )}
           </span>
         </div>
 
@@ -356,7 +378,7 @@ export default function RewardsTab({
     defaultValue: form.getValues('prizeTiers') || [],
   });
 
-  // Calculate totals - updates in real-time as user types
+  // Total prize pool from tiers (client-side sum)
   const totalPool = useMemo(() => {
     return prizeTiers.reduce((sum, tier) => {
       const amount = parseFloat(
@@ -366,14 +388,44 @@ export default function RewardsTab({
     }, 0);
   }, [prizeTiers]);
 
-  const platformFee = useMemo(
-    () => Math.round(totalPool * 0.04 * 100) / 100,
-    [totalPool]
+  const [feeEstimate, setFeeEstimate] = useState<FeeEstimateData | null>(null);
+  const [feeEstimateLoading, setFeeEstimateLoading] = useState(false);
+  const feeEstimateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
   );
-  const totalFunds = useMemo(
-    () => totalPool + platformFee,
-    [totalPool, platformFee]
-  );
+
+  useEffect(() => {
+    if (totalPool < 5) {
+      setFeeEstimate(null);
+      setFeeEstimateLoading(false);
+      if (feeEstimateTimeoutRef.current) {
+        clearTimeout(feeEstimateTimeoutRef.current);
+        feeEstimateTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    feeEstimateTimeoutRef.current = setTimeout(() => {
+      setFeeEstimateLoading(true);
+      getFeeEstimate(totalPool)
+        .then(data => {
+          setFeeEstimate(data);
+        })
+        .catch(() => {
+          setFeeEstimate(null);
+        })
+        .finally(() => {
+          setFeeEstimateLoading(false);
+        });
+    }, 400);
+
+    return () => {
+      if (feeEstimateTimeoutRef.current) {
+        clearTimeout(feeEstimateTimeoutRef.current);
+        feeEstimateTimeoutRef.current = null;
+      }
+    };
+  }, [totalPool]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -456,11 +508,11 @@ export default function RewardsTab({
           </p>
         </div>
 
-        {/* Summary Card */}
+        {/* Summary Card – fee from backend GET /api/hackathons/fee-estimate */}
         <PrizeSummary
           totalPool={totalPool}
-          platformFee={platformFee}
-          totalFunds={totalFunds}
+          feeEstimate={feeEstimate}
+          feeEstimateLoading={feeEstimateLoading}
         />
 
         {/* Validation */}

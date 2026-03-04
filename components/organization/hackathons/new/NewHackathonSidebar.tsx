@@ -232,7 +232,7 @@ export default function NewHackathonSidebar({
           typeof title === 'string'
             ? title.trim() || 'Untitled Hackathon'
             : 'Untitled Hackathon',
-        status: hackathon.status === 'PUBLISHED' ? 'ONGOING' : hackathon.status,
+        status: hackathon.status,
         href: derivedOrgId
           ? `/organizations/${derivedOrgId}/hackathons/${hackathon.id}`
           : '#',

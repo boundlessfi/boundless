@@ -80,16 +80,16 @@ export default function SettingsPage() {
     if (!h) return undefined;
     return {
       startDate: h.startDate ? new Date(h.startDate) : undefined,
-      endDate: h.endDate ? new Date(h.endDate) : undefined,
       submissionDeadline: h.submissionDeadline
         ? new Date(h.submissionDeadline)
         : undefined,
-      judgingStart: h.judgingStart ? new Date(h.judgingStart) : undefined,
-      judgingEnd: h.judgingEnd ? new Date(h.judgingEnd) : undefined,
-      winnersAnnouncedAt: h.winnersAnnouncedAt
-        ? new Date(h.winnersAnnouncedAt)
-        : undefined,
       timezone: h.timezone || 'UTC',
+      registrationDeadline: h.registrationDeadline
+        ? new Date(h.registrationDeadline)
+        : undefined,
+      judgingDeadline: h.judgingDeadline
+        ? new Date(h.judgingDeadline)
+        : undefined,
       phases: h.phases?.map(p => ({
         ...p,
         startDate: p.startDate ? new Date(p.startDate) : undefined,
@@ -107,9 +107,6 @@ export default function SettingsPage() {
       require_github: h.requireGithub,
       require_demo_video: h.requireDemoVideo,
       require_other_links: h.requireOtherLinks,
-      registrationDeadlinePolicy:
-        h.registrationDeadlinePolicy?.toLowerCase() as any,
-      registrationDeadline: h.customRegistrationDeadline || undefined,
       detailsTab: h.enabledTabs.includes('detailsTab'),
       participantsTab: h.enabledTabs.includes('participantsTab'),
       resourcesTab: h.enabledTabs.includes('resourcesTab'),
@@ -269,7 +266,12 @@ export default function SettingsPage() {
                   await handleSave('General', data);
                 }}
                 isLoading={isSaving}
-                isPublished={hackathon?.status === 'PUBLISHED'}
+                isPublished={[
+                  'UPCOMING',
+                  'ACTIVE',
+                  'JUDGING',
+                  'COMPLETED',
+                ].includes(hackathon?.status ?? '')}
               />
             </TabsContent>
 

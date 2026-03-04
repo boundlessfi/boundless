@@ -2,6 +2,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useCallback, useState } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { getMe } from '@/lib/api/auth';
+import { GetMeResponse } from '@/lib/api/types';
 
 export function useAuth(requireAuth = true) {
   const {
@@ -11,8 +12,7 @@ export function useAuth(requireAuth = true) {
   } = authClient.useSession();
 
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<GetMeResponse | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
   const user = useMemo(() => {
@@ -98,8 +98,7 @@ export function useOptionalAuth() {
 
 export function useAuthStatus() {
   const { data: session, isPending: sessionPending } = authClient.useSession();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<GetMeResponse | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
   const user = useMemo(() => {

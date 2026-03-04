@@ -258,7 +258,6 @@ export default function MilestoneDetailPage({ params }: PageProps) {
       </div>
     );
   }
-  console.log(milestone.orderIndex);
   return (
     <div className='px-6 py-8'>
       <MilestoneDetailHeader

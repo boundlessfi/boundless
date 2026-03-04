@@ -85,7 +85,7 @@ export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
   return (
     <section className='mx-auto max-w-[1440px] px-5 py-10 md:px-[50px] lg:px-[100px]'>
       {/* Banner / Header */}
-      <div className='relative mb-8 overflow-hidden rounded-2xl border border-[#a7f950]/20 bg-gradient-to-br from-[#a7f950]/10 via-zinc-900/80 to-zinc-900/40'>
+      <div className='relative mb-8 overflow-hidden rounded-2xl border border-[#a7f950]/20 bg-linear-to-br from-[#a7f950]/10 via-zinc-900/80 to-zinc-900/40'>
         <div className='absolute -top-24 -right-24 h-64 w-64 rounded-full bg-[#a7f950]/5 blur-3xl' />
         <div className='absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-[#a7f950]/5 blur-3xl' />
 

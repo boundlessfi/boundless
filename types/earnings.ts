@@ -12,12 +12,7 @@ export interface EarningActivity {
   occurredAt: string;
 }
 
-export interface EarningsBreakdown {
-  hackathons: number;
-  grants: number;
-  crowdfunding: number;
-  bounties: number;
-}
+export type EarningsBreakdown = Record<EarningSource, number>;
 
 export interface PublicEarningsResponse {
   summary: {

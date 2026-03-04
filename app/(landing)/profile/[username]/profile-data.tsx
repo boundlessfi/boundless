@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { clsx } from 'clsx';
 import ActivityTab from '@/components/profile/ActivityTab';
 import OrganizationsTab from '@/components/profile/OrganizationsTab';
 import ProfileOverviewPublic from '@/components/profile/ProfileOverviewPublic';
@@ -36,9 +37,9 @@ const FILTER_OPTIONS = [
 const TAB_CLASS =
   'data-[state=active]:border-b-primary/45 rounded-none border-b-2 border-transparent bg-transparent px-0 py-3 text-sm font-medium text-zinc-500 data-[state=active]:text-white';
 
-export function ProfileData({
+export const ProfileData = ({
   username,
-}: PublicProfileDataProps): React.ReactElement {
+}: PublicProfileDataProps): React.ReactElement => {
   const [userData, setUserData] = useState<PublicUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +48,7 @@ export function ProfileData({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    async function loadProfile(): Promise<void> {
+    const loadProfile = async (): Promise<void> => {
       try {
         setLoading(true);
         const { data: session } = await authClient.getSession();
@@ -60,10 +61,14 @@ export function ProfileData({
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     loadProfile();
   }, [username]);
+
+  const handleFilterSelect = (filter: string) => {
+    setSelectedFilter(filter);
+  };
 
   if (loading) {
     return (
@@ -118,12 +123,14 @@ export function ProfileData({
               <TabsTrigger value='earnings' className={TAB_CLASS}>
                 Earnings
               </TabsTrigger>
-              <TabsTrigger
-                value='organizations'
-                className={`${TAB_CLASS} md:hidden`}
-              >
-                Organizations
-              </TabsTrigger>
+              {isAuthenticated && isOwnProfile && (
+                <TabsTrigger
+                  value='organizations'
+                  className={clsx(TAB_CLASS, 'md:hidden')}
+                >
+                  Organizations
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -148,12 +155,12 @@ export function ProfileData({
                   {FILTER_OPTIONS.map(filter => (
                     <DropdownMenuItem
                       key={filter}
-                      onClick={() => setSelectedFilter(filter)}
-                      className={
-                        selectedFilter === filter
-                          ? 'bg-zinc-800'
-                          : 'hover:!bg-zinc-600/50 hover:!text-white'
-                      }
+                      onClick={() => handleFilterSelect(filter)}
+                      className={clsx({
+                        'bg-zinc-800': selectedFilter === filter,
+                        'hover:bg-zinc-600/50! hover:text-white!':
+                          selectedFilter !== filter,
+                      })}
                     >
                       {filter}
                     </DropdownMenuItem>
@@ -180,4 +187,4 @@ export function ProfileData({
       </div>
     </section>
   );
-}
+};

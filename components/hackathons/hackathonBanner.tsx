@@ -14,7 +14,6 @@ interface HackathonBannerProps {
   tagline?: string;
   deadline?: string;
   startDate?: string;
-  endDate?: string;
   categories?: string[];
   status?: string;
   participants?: number;
@@ -23,10 +22,6 @@ interface HackathonBannerProps {
   hasSubmitted?: boolean;
   isEnded?: boolean;
   isTeamFormationEnabled?: boolean;
-  registrationDeadlinePolicy?:
-    | 'BEFORE_START'
-    | 'BEFORE_SUBMISSION_DEADLINE'
-    | 'CUSTOM';
   registrationDeadline?: string;
   onJoinClick?: () => void;
   onSubmitClick?: () => void;
@@ -48,7 +43,6 @@ export function HackathonBanner({
   isRegistered = false,
   hasSubmitted = false,
   isTeamFormationEnabled = false,
-  registrationDeadlinePolicy,
   registrationDeadline,
   isLeaving,
   participantType,
@@ -69,61 +63,17 @@ export function HackathonBanner({
   // Determine if registration is allowed
   const canRegister = useMemo(() => {
     const now = new Date();
-    const policy = registrationDeadlinePolicy || 'BEFORE_SUBMISSION_DEADLINE';
-
-    switch (policy) {
-      case 'BEFORE_START':
-        if (startDate) {
-          return now < new Date(startDate);
-        }
-        return false;
-      case 'BEFORE_SUBMISSION_DEADLINE':
-        if (deadline) {
-          return now < new Date(deadline);
-        }
-        return false;
-      case 'CUSTOM':
-        if (registrationDeadline) {
-          return now < new Date(registrationDeadline);
-        }
-        return false;
-      default:
-        return false;
-    }
-  }, [registrationDeadlinePolicy, startDate, deadline, registrationDeadline]);
+    const effectiveDeadline = registrationDeadline || deadline;
+    return effectiveDeadline ? now < new Date(effectiveDeadline) : false;
+  }, [registrationDeadline, deadline]);
 
   // Get appropriate register button text
   const getRegisterButtonText = useMemo(() => {
     if (!canRegister) return null;
-
     const now = new Date();
     const isBeforeStart = startDate && now < new Date(startDate);
-
-    switch (registrationDeadlinePolicy || 'BEFORE_SUBMISSION_DEADLINE') {
-      case 'BEFORE_START':
-        return 'Register Before Start';
-      case 'BEFORE_SUBMISSION_DEADLINE':
-        return isBeforeStart ? 'Early Register' : 'Join Hackathon';
-      case 'CUSTOM':
-        if (registrationDeadline) {
-          const customDeadline = new Date(registrationDeadline);
-          const isBeforeCustomDeadline = now < customDeadline;
-          if (isBeforeStart && isBeforeCustomDeadline) {
-            return 'Register Interest';
-          } else if (!isBeforeStart && isBeforeCustomDeadline) {
-            return 'Late Register';
-          }
-        }
-        return 'Register Now';
-      default:
-        return 'Join Hackathon';
-    }
-  }, [
-    registrationDeadlinePolicy,
-    canRegister,
-    startDate,
-    registrationDeadline,
-  ]);
+    return isBeforeStart ? 'Early Register' : 'Join Hackathon';
+  }, [canRegister, startDate]);
 
   // Redirect to auth screen
   const handleRedirectToAuthScreen = () => {

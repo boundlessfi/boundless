@@ -10,19 +10,11 @@ export const timelineSchema = z
       message: 'Submission deadline is required',
     }),
 
-    judgingStart: z.date({
-      message: 'Judging start date is required',
-    }),
-
-    endDate: z.date({
-      message: 'End date is required',
-    }),
-
-    judgingEnd: z.date().optional(),
-
-    winnersAnnouncedAt: z.date().optional(),
-
     timezone: z.string().min(1, 'Timezone is required'),
+
+    registrationDeadline: z.date().optional(),
+
+    judgingDeadline: z.date().optional(),
 
     phases: z
       .array(
@@ -48,47 +40,27 @@ export const timelineSchema = z
       });
     }
 
-    if (data.judgingStart <= data.submissionDeadline) {
+    if (
+      data.registrationDeadline &&
+      data.registrationDeadline > data.submissionDeadline
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Judging must start after submission deadline',
-        path: ['judgingStart'],
+        message:
+          'Pre-registration end time must be on or before the submission deadline',
+        path: ['registrationDeadline'],
       });
     }
 
-    if (data.endDate <= data.judgingStart) {
+    if (
+      data.judgingDeadline &&
+      data.judgingDeadline < data.submissionDeadline
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'End date must be after judging start',
-        path: ['endDate'],
+        message: 'Judging deadline must be on or after the submission deadline',
+        path: ['judgingDeadline'],
       });
-    }
-
-    if (data.judgingEnd && data.judgingEnd <= data.judgingStart) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Judging end must be after judging start',
-        path: ['judgingEnd'],
-      });
-    }
-
-    if (data.judgingEnd && data.judgingEnd >= data.endDate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Judging end must be before hackathon end date',
-        path: ['judgingEnd'],
-      });
-    }
-
-    if (data.winnersAnnouncedAt) {
-      const judgingEnd = data.judgingEnd ?? data.judgingStart;
-      if (data.winnersAnnouncedAt <= judgingEnd) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Winner announcement must be after judging',
-          path: ['winnersAnnouncedAt'],
-        });
-      }
     }
   });
 

@@ -26,10 +26,6 @@ interface HackathonStickyCardProps {
   isRegistered?: boolean;
   hasSubmitted?: boolean;
   isTeamFormationEnabled?: boolean;
-  registrationDeadlinePolicy?:
-    | 'BEFORE_START'
-    | 'BEFORE_SUBMISSION_DEADLINE'
-    | 'CUSTOM';
   registrationDeadline?: string;
   isLeaving?: boolean;
   onJoinClick?: () => void;
@@ -50,7 +46,6 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
     isRegistered = false,
     hasSubmitted = false,
     isTeamFormationEnabled = false,
-    registrationDeadlinePolicy,
     registrationDeadline,
     onJoinClick,
     onSubmitClick,
@@ -69,39 +64,17 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
   // Determine if registration is allowed
   const canRegister = useMemo(() => {
     const now = new Date();
-    const policy = registrationDeadlinePolicy || 'BEFORE_SUBMISSION_DEADLINE';
-
-    switch (policy) {
-      case 'BEFORE_START':
-        return startDate ? now < new Date(startDate) : false;
-      case 'BEFORE_SUBMISSION_DEADLINE':
-        return deadline ? now < new Date(deadline) : false;
-      case 'CUSTOM':
-        return registrationDeadline
-          ? now < new Date(registrationDeadline)
-          : false;
-      default:
-        return false;
-    }
-  }, [registrationDeadlinePolicy, startDate, deadline, registrationDeadline]);
+    const effectiveDeadline = registrationDeadline || deadline;
+    return effectiveDeadline ? now < new Date(effectiveDeadline) : false;
+  }, [registrationDeadline, deadline]);
 
   // Get appropriate register button text
   const getRegisterButtonText = useMemo(() => {
     if (!canRegister) return null;
     const now = new Date();
     const beforeStart = startDate && now < new Date(startDate);
-
-    switch (registrationDeadlinePolicy || 'BEFORE_SUBMISSION_DEADLINE') {
-      case 'BEFORE_START':
-        return 'Register';
-      case 'BEFORE_SUBMISSION_DEADLINE':
-        return beforeStart ? 'Register' : 'Join';
-      case 'CUSTOM':
-        return 'Register';
-      default:
-        return 'Join';
-    }
-  }, [registrationDeadlinePolicy, canRegister, startDate]);
+    return beforeStart ? 'Register' : 'Join';
+  }, [canRegister, startDate]);
 
   // Redirect to auth if user not authenticated
   const handleRedirectToAuth = () => {

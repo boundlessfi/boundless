@@ -50,8 +50,9 @@ export default function NewHackathonTab({
     steps,
     navigateToStep,
     canAccessStep,
-    updateStepCompletion,
+    setStepsFromDraft,
     setActiveTab,
+    updateStepCompletion,
   } = useHackathonSteps('information');
 
   // Use ref to store the callback to avoid circular dependency
@@ -82,76 +83,42 @@ export default function NewHackathonTab({
   // Define the callback after hooks are initialized
   const onDraftLoaded = useCallback(
     (formData: any, firstIncompleteStep: StepKey) => {
-      console.log('sjcdkformData', formData);
       setStepData(formData);
-      setActiveTab(firstIncompleteStep);
 
-      // Use the validation helper to determine completion status
-      // This checks if the step data has meaningful values, not just empty objects
-      const newSteps: Record<StepKey, (typeof steps)[StepKey]> = {
-        information: {
-          status: isStepDataValid('information', formData)
-            ? 'completed'
-            : 'active',
-          isCompleted: isStepDataValid('information', formData),
-        },
-        timeline: {
-          status: isStepDataValid('timeline', formData)
-            ? 'completed'
-            : 'pending',
-          isCompleted: isStepDataValid('timeline', formData),
-        },
-        participation: {
-          status: isStepDataValid('participation', formData)
-            ? 'completed'
-            : 'pending',
-          isCompleted: isStepDataValid('participation', formData),
-        },
-        rewards: {
-          status: isStepDataValid('rewards', formData)
-            ? 'completed'
-            : 'pending',
-          isCompleted: isStepDataValid('rewards', formData),
-        },
-        resources: {
-          status: isStepDataValid('resources', formData)
-            ? 'completed'
-            : 'pending',
-          isCompleted: isStepDataValid('resources', formData),
-        },
-        judging: {
-          status: isStepDataValid('judging', formData)
-            ? 'completed'
-            : 'pending',
-          isCompleted: isStepDataValid('judging', formData),
-        },
-        collaboration: {
-          status: isStepDataValid('collaboration', formData)
-            ? 'completed'
-            : 'pending',
-          isCompleted: isStepDataValid('collaboration', formData),
-        },
-        review: {
-          status: 'pending',
-          isCompleted: false,
-        },
-      };
+      // Build step state: completed before active, active for firstIncomplete, pending after
+      const stepOrder = [
+        'information',
+        'timeline',
+        'participation',
+        'rewards',
+        'resources',
+        'judging',
+        'collaboration',
+        'review',
+      ] as StepKey[];
+      const activeIndex = stepOrder.indexOf(firstIncompleteStep);
+      const newSteps: Record<StepKey, (typeof steps)[StepKey]> = {} as Record<
+        StepKey,
+        (typeof steps)[StepKey]
+      >;
 
-      // Set the first incomplete step as active
-      newSteps[firstIncompleteStep] = {
-        ...newSteps[firstIncompleteStep],
-        status: 'active',
-      };
-
-      // Update all step completions
-      Object.keys(newSteps).forEach(key => {
-        updateStepCompletion(
-          key as StepKey,
-          newSteps[key as StepKey].isCompleted
-        );
+      stepOrder.forEach((key, index) => {
+        const isCompleted = isStepDataValid(key, formData);
+        if (index < activeIndex) {
+          newSteps[key] = { status: 'completed', isCompleted: true };
+        } else if (index === activeIndex) {
+          newSteps[key] = { status: 'active', isCompleted };
+        } else {
+          newSteps[key] = {
+            status: 'pending',
+            isCompleted: key === 'review' ? false : isCompleted,
+          };
+        }
       });
+
+      setStepsFromDraft(newSteps, firstIncompleteStep);
     },
-    [setStepData, setActiveTab, updateStepCompletion]
+    [setStepData, setStepsFromDraft]
   );
 
   // Update the ref when the callback changes
@@ -323,7 +290,6 @@ export default function NewHackathonTab({
               isSavingDraft={isSavingDraft}
               organizationId={derivedOrgId}
               draftId={draftId}
-              publishResponse={publishResponse}
             />
           </TabsContent>
         </div>

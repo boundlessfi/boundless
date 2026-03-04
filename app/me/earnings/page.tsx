@@ -81,9 +81,7 @@ const BreakdownItem: React.FC<BreakdownItemProps> = ({
       </div>
       <span className='font-medium'>{label}</span>
     </div>
-    <span className='font-semibold'>
-      ${(Number(value) || 0).toLocaleString()}
-    </span>
+    <span className='font-semibold'>${(value ?? 0).toLocaleString()}</span>
   </div>
 );
 
@@ -109,7 +107,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => (
     </div>
     <div className='text-right'>
       <p className='text-lg font-bold'>
-        ${(Number(activity.amount) || 0).toLocaleString()}
+        ${(activity.amount ?? 0).toLocaleString()}
       </p>
       {activity.currency && (
         <p className='text-muted-foreground text-xs'>{activity.currency}</p>

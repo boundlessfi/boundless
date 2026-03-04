@@ -79,6 +79,28 @@ export interface RemoveVoteResponse extends ApiResponse<{ votes: number }> {
   message: string;
 }
 
+export interface GetHackathonSubmissionsResponse extends ApiResponse<{
+  submissions: ParticipantSubmission[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}> {
+  success: boolean;
+  message: string;
+  data?: {
+    submissions: ParticipantSubmission[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
 // ============================================
 // API Functions
 // ============================================
@@ -287,5 +309,45 @@ export const removeVote = async (
   }
 
   const res = await api.delete(url);
+  return res.data;
+};
+
+export type OrganizerSubmissionFilters = {
+  status?: 'SUBMITTED' | 'SHORTLISTED' | 'DISQUALIFIED' | 'WITHDRAWN';
+  type?: 'INDIVIDUAL' | 'TEAM';
+  search?: string;
+};
+
+/**
+ * Get all submissions for a hackathon (organizer view).
+ * Use this for org-facing submission management; use getExploreSubmissions for public/explore view.
+ */
+export const getHackathonSubmissions = async (
+  hackathonId: string,
+  page = 1,
+  limit = 10,
+  filters?: OrganizerSubmissionFilters
+): Promise<GetHackathonSubmissionsResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+
+  if (filters?.status) {
+    params.append('status', filters.status);
+  }
+
+  if (filters?.type) {
+    params.append('type', filters.type);
+  }
+
+  if (filters?.search) {
+    params.append('search', filters.search);
+  }
+
+  const res = await api.get<GetHackathonSubmissionsResponse>(
+    `/hackathons/${hackathonId}/submissions?${params.toString()}`
+  );
+
   return res.data;
 };

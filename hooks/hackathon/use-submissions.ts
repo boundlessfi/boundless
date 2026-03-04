@@ -23,10 +23,8 @@ export function useSubmissions() {
   // If we're an organizer, we might want to see the full list of private submissions.
   const allSubmissions =
     exploreSubmissions.length > 0 ? exploreSubmissions : privateSubmissions;
-
   const submissions = useMemo(() => {
     if (isOrganizer) return allSubmissions;
-
     let filtered = allSubmissions;
 
     // Check who can view submissions
@@ -92,7 +90,7 @@ export function useSubmissions() {
     if (searchTerm) {
       filtered = filtered.filter(
         sub =>
-          sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          sub.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           sub.submitterName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }

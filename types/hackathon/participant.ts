@@ -177,7 +177,7 @@ export interface VoteSubmissionRequest {
 // UI Component Types
 export interface SubmissionCardProps {
   _id?: string;
-  title: string;
+  projectName: string;
   description: string;
   submitterName: string;
   submitterAvatar?: string;
@@ -190,7 +190,7 @@ export interface SubmissionCardProps {
   submittedDate?: string;
   daysLeft?: number;
   score?: number;
-  image?: string;
+  logo?: string;
   onViewClick?: () => void;
   onUpvoteClick?: () => void;
   onCommentClick?: () => void;

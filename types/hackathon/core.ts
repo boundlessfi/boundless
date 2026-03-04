@@ -1,10 +1,5 @@
 // Core Hackathon Types and Enums
 
-export type RegistrationDeadlinePolicy =
-  | 'custom'
-  | 'before_start'
-  | 'before_submission_deadline';
-
 export enum HackathonCategory {
   DEFI = 'DeFi',
   NFTS = 'NFTs',
@@ -70,14 +65,9 @@ export interface HackathonPhase {
 export interface HackathonTimeline {
   startDate: string; // ISO 8601 date
   submissionDeadline: string; // ISO 8601 date
-  judgingStart: string; // ISO 8601 date
-  endDate: string; // ISO 8601 date
-  judgingEnd?: string; // ISO 8601 date
-  winnersAnnouncedAt?: string; // ISO 8601 date
-  // Legacy fields for backward compatibility
-  judgingDate?: string; // ISO 8601 date
-  winnerAnnouncementDate?: string; // ISO 8601 date
   timezone: string;
+  registrationDeadline?: string; // ISO 8601 date — optional pre-registration end time
+  judgingDeadline?: string; // ISO 8601 date — maps to backend judgingEnd
   phases?: HackathonPhase[];
 }
 
@@ -105,19 +95,21 @@ export interface HackathonParticipation {
   teamMin?: number;
   teamMax?: number;
   about?: string;
-  registrationDeadlinePolicy?: RegistrationDeadlinePolicy;
-  registrationDeadline?: string;
+  maxParticipants?: number; // null = unlimited
   submissionRequirements?: SubmissionRequirements;
   tabVisibility?: TabVisibility;
 }
 
 export interface PrizeTier {
   id?: string;
+  name?: string;
   place?: string;
   currency?: string;
   passMark?: number; // 0-100
   description?: string;
   prizeAmount?: string;
+  /** @deprecated Use prizeAmount. Kept for API compatibility. */
+  amount?: string;
 }
 
 export interface HackathonRewards {
@@ -193,13 +185,19 @@ export type Hackathon = {
 
   status:
     | 'DRAFT'
-    | 'PUBLISHED'
-    | 'ARCHIVED'
-    | 'ONGOING'
-    | 'COMPLETED'
-    | 'CANCELLED'
     | 'UPCOMING'
-    | 'ENDED';
+    | 'ACTIVE'
+    | 'JUDGING'
+    | 'COMPLETED'
+    | 'ARCHIVED'
+    | 'CANCELLED';
+  currentPhase?:
+    | 'upcoming'
+    | 'active'
+    | 'judging'
+    | 'awaiting_results'
+    | 'completed';
+  maxParticipants?: number | null;
   isActive: boolean;
   isParticipant: boolean;
 
@@ -212,19 +210,13 @@ export type Hackathon = {
   timezone: string;
 
   startDate: string;
-  endDate: string;
   submissionDeadline: string;
   registrationDeadline: string;
-  customRegistrationDeadline: string | null;
+  judgingDeadline?: string;
 
   registrationOpen: boolean;
-  registrationDeadlinePolicy:
-    | 'BEFORE_START'
-    | 'BEFORE_SUBMISSION_DEADLINE'
-    | 'CUSTOM';
 
   daysUntilStart: number;
-  daysUntilEnd: number;
 
   participantType: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
   teamMin: number;

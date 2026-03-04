@@ -25,7 +25,6 @@ export type {
   HackathonStatistics,
   TimeSeriesDataPoint,
   HackathonTimeSeriesData,
-  RegistrationDeadlinePolicy,
   PublishHackathonRequest,
   UpdateHackathonRequest,
   // Draft types

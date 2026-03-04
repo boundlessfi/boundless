@@ -59,14 +59,18 @@ export default function LinksTab({
   const debouncedX = useDebounce(links.x, 800);
   const debouncedGithub = useDebounce(links.github, 800);
 
+  const activeLinks =
+    activeOrg?.metadata?.links ||
+    (activeOrg as { links?: OrganizationLinks })?.links;
+
   useEffect(() => {
     if (!isInitialized) {
-      if (activeOrg?.metadata?.links) {
+      if (activeLinks) {
         setLinks({
-          website: activeOrg.metadata.links.website || '',
-          x: activeOrg.metadata.links.x || '',
-          github: activeOrg.metadata.links.github || '',
-          others: activeOrg.metadata.links.others || '',
+          website: activeLinks.website || '',
+          x: activeLinks.x || '',
+          github: activeLinks.github || '',
+          others: activeLinks.others || '',
         });
       } else if (initialLinks) {
         setLinks(initialLinks);
@@ -74,17 +78,17 @@ export default function LinksTab({
       setHasUserChanges(false);
       setIsInitialized(true);
     }
-  }, [activeOrg, initialLinks, isInitialized]);
+  }, [activeOrg, initialLinks, isInitialized, activeLinks]);
 
   useEffect(() => {
     if (!isInitialized || hasUserChanges) return;
-    if (!activeOrg?.metadata?.links) return;
+    if (!activeLinks) return;
 
     const newLinks = {
-      website: activeOrg.metadata.links.website || '',
-      x: activeOrg.metadata.links.x || '',
-      github: activeOrg.metadata.links.github || '',
-      others: activeOrg.metadata.links.others || '',
+      website: activeLinks.website || '',
+      x: activeLinks.x || '',
+      github: activeLinks.github || '',
+      others: activeLinks.others || '',
     };
 
     const currentLinksStr = JSON.stringify(links);
@@ -94,7 +98,7 @@ export default function LinksTab({
       setLinks(newLinks);
       setHasUserChanges(false);
     }
-  }, [activeOrg?.metadata?.links, isInitialized, hasUserChanges, links]);
+  }, [activeLinks, isInitialized, hasUserChanges, links]);
 
   // Validate website URL
   useEffect(() => {
@@ -214,13 +218,35 @@ export default function LinksTab({
         others: links.others.trim() || undefined,
       };
 
-      await updateOrganizationLinks(activeOrgId, linksToSend);
+      const updatedOrg = await updateOrganizationLinks(
+        activeOrgId,
+        linksToSend
+      );
+
+      let nextLinks = links;
+      if (updatedOrg) {
+        const fromMetadata = (
+          updatedOrg as { metadata?: { links?: OrganizationLinks } }
+        ).metadata?.links;
+        const fromTopLevel = (updatedOrg as { links?: OrganizationLinks })
+          .links;
+        const resolved = fromMetadata || fromTopLevel;
+        if (resolved) {
+          nextLinks = {
+            website: resolved.website ?? '',
+            x: resolved.x ?? '',
+            github: resolved.github ?? '',
+            others: resolved.others ?? '',
+          };
+          setLinks(nextLinks);
+        }
+      }
 
       toast.success('Organization links updated successfully');
       setHasUserChanges(false);
 
       if (onSave) {
-        onSave(links);
+        onSave(nextLinks);
       }
     } catch (error) {
       // Try to extract the actual backend error message
@@ -285,7 +311,7 @@ export default function LinksTab({
             onChange={e => updateLink('website', e.target.value)}
             placeholder='Enter link to organization website'
             className={cn(
-              'bg-background rounded-[12px] border-gray-900 !p-4 !py-5 pr-10 text-white placeholder:text-gray-700 focus-visible:ring-0',
+              'bg-background rounded-[12px] border-gray-900 p-4! py-5! pr-10 text-white placeholder:text-gray-700 focus-visible:ring-0',
               validationStates.website.isValid === false && 'border-red-500',
               validationStates.website.isValid === true && 'border-green-500'
             )}
@@ -321,7 +347,7 @@ export default function LinksTab({
             onChange={e => updateLink('x', e.target.value)}
             placeholder='Organization X handle'
             className={cn(
-              'bg-background rounded-[12px] border-gray-900 !p-4 !py-5 pr-10 !pl-8 text-white placeholder:text-gray-700 focus-visible:ring-0',
+              'bg-background rounded-[12px] border-gray-900 p-4! py-5! pr-10! pl-8! text-white placeholder:text-gray-700 focus-visible:ring-0',
               validationStates.x.isValid === false && 'border-red-500',
               validationStates.x.isValid === true && 'border-green-500'
             )}
@@ -352,7 +378,7 @@ export default function LinksTab({
             onChange={e => updateLink('github', e.target.value)}
             placeholder='GitHub username or organization'
             className={cn(
-              'bg-background rounded-[12px] border-gray-900 !p-4 !py-5 pr-10 text-white placeholder:text-gray-700 focus-visible:ring-0',
+              'bg-background rounded-[12px] border-gray-900 p-4! py-5! pr-10 text-white placeholder:text-gray-700 focus-visible:ring-0',
               validationStates.github.isValid === false && 'border-red-500',
               validationStates.github.isValid === true && 'border-green-500'
             )}
@@ -385,7 +411,7 @@ export default function LinksTab({
           value={links.others}
           onChange={e => updateLink('others', e.target.value)}
           placeholder='Link URL (newsletters or social account)'
-          className='bg-background rounded-[12px] border-gray-900 !p-4 !py-5 text-white placeholder:text-gray-700 focus-visible:ring-0'
+          className='bg-background rounded-[12px] border-gray-900 p-4! py-5! text-white placeholder:text-gray-700 focus-visible:ring-0'
           disabled={isSaving}
         />
       </div>

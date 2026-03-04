@@ -18,21 +18,13 @@ import {
   UserCheck,
   UsersRound,
   Loader2,
-  CalendarIcon,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import {
   participantSchema,
   ParticipantFormData,
 } from './schemas/participantSchema';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
 
 interface ParticipantTabProps {
   onContinue?: () => void;
@@ -70,25 +62,6 @@ const submissionRequirements = [
   },
 ];
 
-// Add this array after the submissionRequirements array
-const registrationPolicies = [
-  {
-    value: 'before_start' as const,
-    label: 'Before Hackathon Starts',
-    description: 'Registration closes when the hackathon begins',
-  },
-  {
-    value: 'before_submission_deadline' as const,
-    label: 'Before Submission Deadline',
-    description: 'Registration stays open until submission deadline',
-  },
-  {
-    value: 'custom' as const,
-    label: 'Custom Deadline',
-    description: 'Set your own registration deadline',
-  },
-];
-
 const tabVisibility = [
   { name: 'detailsTab' as const, label: 'Details' },
   { name: 'participantsTab' as const, label: 'Participants' },
@@ -102,51 +75,92 @@ const tabVisibility = [
   { name: 'rulesTab' as const, label: 'Rules' },
 ];
 
+const defaultParticipantValues: ParticipantFormData = {
+  participantType: 'individual',
+  teamMin: 2,
+  teamMax: 5,
+  maxParticipants: undefined,
+  require_github: true,
+  require_demo_video: true,
+  require_other_links: true,
+  detailsTab: true,
+  participantsTab: true,
+  resourcesTab: true,
+  submissionTab: true,
+  announcementsTab: true,
+  discussionTab: true,
+  winnersTab: true,
+  sponsorsTab: true,
+  joinATeamTab: true,
+  rulesTab: true,
+};
+
+function normalizeParticipantInitialData(
+  data: ParticipantFormData | undefined
+): ParticipantFormData {
+  if (!data) return defaultParticipantValues;
+  const type = data.participantType;
+  const needsTeamSize = type === 'team' || type === 'team_or_individual';
+  return {
+    ...defaultParticipantValues,
+    ...data,
+    teamMin: needsTeamSize
+      ? data.teamMin && data.teamMin >= 1
+        ? data.teamMin
+        : 2
+      : data.teamMin,
+    teamMax: needsTeamSize
+      ? data.teamMax && data.teamMax >= 1
+        ? data.teamMax
+        : 5
+      : data.teamMax,
+    maxParticipants:
+      data.maxParticipants != null && data.maxParticipants >= 1
+        ? data.maxParticipants
+        : undefined,
+  };
+}
+
 export default function ParticipantTab({
+  onContinue,
   onSave,
   initialData,
   isLoading = false,
   isRegistrationClosed = false,
 }: ParticipantTabProps) {
+  const normalizedInitial = React.useMemo(
+    () => normalizeParticipantInitialData(initialData),
+    [initialData]
+  );
+
   const form = useForm<ParticipantFormData>({
     resolver: zodResolver(participantSchema),
-    defaultValues: initialData || {
-      participantType: 'individual',
-      teamMin: 2,
-      teamMax: 5,
-      registrationDeadlinePolicy: 'before_submission_deadline',
-      registrationDeadline: undefined,
-      require_github: true,
-      require_demo_video: true,
-      require_other_links: true,
-      detailsTab: true,
-      participantsTab: true,
-      resourcesTab: true,
-      submissionTab: true,
-      announcementsTab: true,
-      discussionTab: true,
-      winnersTab: true,
-      sponsorsTab: true,
-      joinATeamTab: true,
-      rulesTab: true,
-    },
+    defaultValues: normalizedInitial,
   });
 
   const participantType = form.watch('participantType');
+  const maxParticipants = form.watch('maxParticipants');
+  const hasParticipantCap =
+    maxParticipants !== undefined && maxParticipants !== null;
 
   React.useEffect(() => {
-    if (initialData) {
-      form.reset(initialData);
-    }
-  }, [initialData, form]);
+    form.reset(normalizedInitial);
+  }, [normalizedInitial, form]);
 
   const onSubmit = async (data: ParticipantFormData) => {
     try {
       if (onSave) {
         await onSave(data);
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || error.message;
+      if (onContinue) {
+        onContinue();
+      }
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string | string[] } };
+        message?: string;
+      };
+      const message = err.response?.data?.message || err.message;
       const errorMessage = Array.isArray(message) ? message[0] : message;
       toast.error(
         errorMessage || 'Failed to save participant settings. Please try again.'
@@ -203,9 +217,23 @@ export default function ParticipantTab({
     </div>
   );
 
+  const handleInvalid = (errors: Record<string, { message?: string }>) => {
+    const firstKey = Object.keys(errors)[0];
+    const firstMessage =
+      firstKey && errors[firstKey]?.message
+        ? errors[firstKey].message
+        : undefined;
+    toast.error('Please fix the errors below before continuing.', {
+      description: firstMessage,
+    });
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+      <form
+        onSubmit={form.handleSubmit(onSubmit, handleInvalid)}
+        className='space-y-8'
+      >
         {/* Participant Type */}
         <div className='space-y-4'>
           <div>
@@ -270,127 +298,6 @@ export default function ParticipantTab({
               </FormItem>
             )}
           />
-
-          {/* Registration Deadline Policy */}
-          <div className='space-y-4'>
-            <div>
-              <h3 className='text-sm font-medium text-white'>
-                Registration Deadline <span className='text-red-500'>*</span>
-              </h3>
-              <p className='mt-1 text-sm text-zinc-500'>
-                Choose when registration should close
-              </p>
-            </div>
-
-            <FormField
-              control={form.control}
-              name='registrationDeadlinePolicy'
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <div className='space-y-3'>
-                      {registrationPolicies.map(
-                        ({ value, label, description }) => {
-                          const isSelected = field.value === value;
-                          return (
-                            <button
-                              key={value}
-                              type='button'
-                              onClick={() =>
-                                !isRegistrationClosed && field.onChange(value)
-                              }
-                              disabled={isRegistrationClosed}
-                              className={cn(
-                                'flex w-full items-start gap-3 rounded-lg border p-4 text-left transition-all',
-                                isSelected
-                                  ? 'border-primary/50 bg-primary/10'
-                                  : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50',
-                                isRegistrationClosed &&
-                                  'cursor-not-allowed opacity-60'
-                              )}
-                            >
-                              <div
-                                className={cn(
-                                  'mt-0.5 h-4 w-4 rounded-full border-2 transition-all',
-                                  isSelected
-                                    ? 'border-primary bg-primary'
-                                    : 'border-zinc-600'
-                                )}
-                              >
-                                {isSelected && (
-                                  <div className='h-full w-full scale-50 rounded-full bg-white' />
-                                )}
-                              </div>
-                              <div className='flex-1'>
-                                <p className='text-sm font-medium text-white'>
-                                  {label}
-                                </p>
-                                <p className='mt-0.5 text-xs text-zinc-500'>
-                                  {description}
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        }
-                      )}
-                    </div>
-                  </FormControl>
-                  <FormMessage className='text-xs text-red-500' />
-                </FormItem>
-              )}
-            />
-
-            {/* Custom Deadline Calendar */}
-            {form.watch('registrationDeadlinePolicy') === 'custom' && (
-              <FormField
-                control={form.control}
-                name='registrationDeadline'
-                render={({ field }) => (
-                  <FormItem className='gap-3'>
-                    <FormControl>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant='outline'
-                            className={cn(
-                              'h-12 w-full rounded-lg border border-zinc-800 bg-zinc-900/30 p-4 text-left font-normal hover:bg-zinc-900/50',
-                              !field.value && 'text-zinc-500'
-                            )}
-                          >
-                            {field.value ? (
-                              format(new Date(field.value), 'PPP')
-                            ) : (
-                              <span>Select custom registration deadline</span>
-                            )}
-                            <CalendarIcon className='ml-auto h-4 w-4 text-zinc-400' />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className='w-auto border-zinc-800 bg-zinc-900 p-0 text-white'
-                          align='start'
-                        >
-                          <Calendar
-                            mode='single'
-                            selected={
-                              field.value ? new Date(field.value) : undefined
-                            }
-                            onSelect={date => {
-                              if (date) {
-                                field.onChange(date.toISOString());
-                              }
-                            }}
-                            disabled={date => date < new Date()}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </FormControl>
-                    <FormMessage className='text-xs text-red-500' />
-                  </FormItem>
-                )}
-              />
-            )}
-          </div>
 
           {/* Team Size Settings */}
           {participantType === 'team' && (
@@ -461,6 +368,66 @@ export default function ParticipantTab({
                 />
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Participant Cap */}
+        <div className='space-y-4'>
+          <div className='flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/30 p-4'>
+            <div>
+              <h3 className='text-sm font-medium text-white'>
+                Limit Participants
+              </h3>
+              <p className='mt-0.5 text-xs text-zinc-500'>
+                Leave off for unlimited. Once the cap is reached, new
+                registrations are automatically rejected.
+              </p>
+            </div>
+            <Switch
+              checked={hasParticipantCap}
+              onCheckedChange={checked => {
+                if (checked) {
+                  form.setValue('maxParticipants', 100, {
+                    shouldValidate: true,
+                  });
+                } else {
+                  form.setValue('maxParticipants', undefined, {
+                    shouldValidate: true,
+                  });
+                }
+              }}
+              disabled={isRegistrationClosed}
+            />
+          </div>
+
+          {hasParticipantCap && (
+            <FormField
+              control={form.control}
+              name='maxParticipants'
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className='rounded-lg border border-zinc-800 bg-zinc-900/30 p-4'>
+                      <label className='mb-2 block text-sm font-medium text-white'>
+                        Maximum Participants
+                      </label>
+                      <Input
+                        type='number'
+                        min={1}
+                        className='h-10 rounded-lg border-zinc-800 bg-zinc-900/50 text-white'
+                        value={field.value ?? ''}
+                        onChange={e => {
+                          const val = parseInt(e.target.value, 10);
+                          field.onChange(isNaN(val) ? undefined : val);
+                        }}
+                        disabled={isRegistrationClosed}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage className='text-xs text-red-500' />
+                </FormItem>
+              )}
+            />
           )}
         </div>
 

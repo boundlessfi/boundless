@@ -18,44 +18,18 @@ interface JudgingSectionProps {
   onEdit?: () => void;
 }
 
-// Mock administrators - in production, this would come from props or API
-const defaultAdministrators: Administrator[] = [
-  {
-    id: '1',
-    name: 'Brooklyn Simmons',
-    email: 'debbie.baker@example.com',
-    role: 'OWNER',
-  },
-  {
-    id: '2',
-    name: 'Annette Black',
-    handle: '@verydarkman',
-    role: 'ADMIN',
-  },
-  {
-    id: '3',
-    name: 'Cody Fisher',
-    handle: '@verydarkman',
-    role: 'ADMIN',
-  },
-  {
-    id: '4',
-    name: 'Ronald Richards',
-    handle: '@verydarkman',
-    role: 'ADMIN',
-  },
-];
-
 export default function JudgingSection({
   data,
-  administrators = defaultAdministrators,
+  administrators,
   onEdit,
 }: JudgingSectionProps) {
   if (!data.criteria || data.criteria.length === 0) return null;
 
+  const adminList = administrators ?? [];
+  const hasAdministrators = adminList.length > 0;
+
   return (
     <div className='space-y-6'>
-      {/* Criteria Section */}
       <div className='space-y-1'>
         <p className='mb-2 text-xs font-medium text-gray-500'>Criteria</p>
         <div className='overflow-hidden rounded-lg border border-gray-800 bg-gray-900/50'>
@@ -104,53 +78,58 @@ export default function JudgingSection({
         </div>
       </div>
 
-      {/* Administrators Section */}
-      <div className='space-y-1'>
-        <p className='mb-2 text-xs font-medium text-gray-500'>Administrators</p>
-        <div className='space-y-0'>
-          {administrators.map((admin, idx) => (
-            <React.Fragment key={admin.id}>
-              {idx > 0 && <Separator className='bg-gray-900' />}
-              <div className='flex items-center justify-between py-3'>
-                <div className='flex items-center gap-3'>
-                  {admin.avatar ? (
-                    <div className='relative h-10 w-10 overflow-hidden rounded-full'>
-                      <Image
-                        src={admin.avatar}
-                        alt={admin.name}
-                        fill
-                        className='object-cover'
-                      />
-                    </div>
-                  ) : (
-                    <div className='flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 font-medium text-white'>
-                      {admin.name.charAt(0)}
-                    </div>
-                  )}
-                  <div>
-                    <p className='text-sm font-medium text-white'>
-                      {admin.name}
-                    </p>
-                    {admin.email && (
-                      <p className='text-xs text-gray-500'>{admin.email}</p>
+      {hasAdministrators && (
+        <div className='space-y-1'>
+          <p className='mb-2 text-xs font-medium text-gray-500'>
+            Administrators
+          </p>
+          <div className='space-y-0'>
+            {adminList.map((admin, idx) => (
+              <React.Fragment key={admin.id}>
+                {idx > 0 && <Separator className='bg-gray-900' />}
+                <div className='flex items-center justify-between py-3'>
+                  <div className='flex items-center gap-3'>
+                    {admin.avatar ? (
+                      <div className='relative h-10 w-10 overflow-hidden rounded-full'>
+                        <Image
+                          src={admin.avatar}
+                          alt={admin.name}
+                          fill
+                          className='object-cover'
+                        />
+                      </div>
+                    ) : (
+                      <div className='flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 font-medium text-white'>
+                        {admin.name.charAt(0)}
+                      </div>
                     )}
-                    {admin.handle && (
-                      <p className='text-xs text-gray-500'>{admin.handle}</p>
-                    )}
+                    <div>
+                      <p className='text-sm font-medium text-white'>
+                        {admin.name}
+                      </p>
+                      {admin.email && (
+                        <p className='text-xs text-gray-500'>{admin.email}</p>
+                      )}
+                      {admin.handle && (
+                        <p className='text-xs text-gray-500'>{admin.handle}</p>
+                      )}
+                    </div>
                   </div>
+                  <span
+                    className={`text-xs font-medium ${
+                      admin.role === 'OWNER'
+                        ? 'text-orange-500'
+                        : 'text-gray-400'
+                    }`}
+                  >
+                    {admin.role}
+                  </span>
                 </div>
-                <span
-                  className={`text-xs font-medium ${
-                    admin.role === 'OWNER' ? 'text-orange-500' : 'text-gray-400'
-                  }`}
-                >
-                  {admin.role}
-                </span>
-              </div>
-            </React.Fragment>
-          ))}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {onEdit && (
         <button

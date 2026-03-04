@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { useHackathonSubmissions } from '@/hooks/hackathon/use-hackathon-submissions';
+import { useOrganizerSubmissions } from '@/hooks/hackathon/use-organizer-submissions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
@@ -26,7 +26,7 @@ export default function SubmissionsPage() {
     updateFilters,
     goToPage,
     refresh,
-  } = useHackathonSubmissions(hackathonId);
+  } = useOrganizerSubmissions(hackathonId);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);

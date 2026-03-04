@@ -24,8 +24,7 @@ export default function ProfileOverview({
   const nameParts = user.name?.split(' ') || [];
   const profileData: UserProfile = {
     username: user.username,
-    displayName:
-      `${nameParts[0] || ''} ${nameParts.slice(1).join(' ') || ''}`.trim(),
+    displayName: `${nameParts[0] || ''} ${nameParts.slice(1).join(' ')}`.trim(),
     bio: user.profile?.bio || 'No bio available',
     avatarUrl: user.image || '/',
     socialLinks: user.profile?.socialLinks || {},

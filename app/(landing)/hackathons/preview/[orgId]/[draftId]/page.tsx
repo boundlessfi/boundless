@@ -145,36 +145,14 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
             timezone: draft.data.timeline?.timezone || 'UTC',
 
             startDate: draft.data.timeline?.startDate || '',
-            endDate:
-              draft.data.timeline?.winnersAnnouncedAt ||
-              draft.data.timeline?.winnerAnnouncementDate ||
-              draft.data.timeline?.judgingEnd ||
-              draft.data.timeline?.judgingDate ||
-              draft.data.timeline?.judgingStart ||
-              draft.data.timeline?.submissionDeadline ||
-              draft.data.timeline?.startDate ||
-              '',
             submissionDeadline: draft.data.timeline?.submissionDeadline || '',
             registrationDeadline:
-              draft.data.participation?.registrationDeadline || '',
-            judgingStart: draft.data.timeline?.judgingStart || '',
-            judgingEnd: draft.data.timeline?.judgingEnd || '',
-            winnersAnnouncedAt:
-              draft.data.timeline?.winnersAnnouncedAt ||
-              draft.data.timeline?.winnerAnnouncementDate ||
-              '',
-            customRegistrationDeadline:
-              draft.data.participation?.registrationDeadline || null,
+              draft.data.timeline?.registrationDeadline || '',
+            judgingDeadline: draft.data.timeline?.judgingDeadline || '',
 
             registrationOpen: false,
-            registrationDeadlinePolicy:
-              (draft.data.participation?.registrationDeadlinePolicy as
-                | 'BEFORE_START'
-                | 'BEFORE_SUBMISSION_DEADLINE'
-                | 'CUSTOM') || 'BEFORE_SUBMISSION_DEADLINE',
 
             daysUntilStart: 0,
-            daysUntilEnd: 0,
 
             participantType: (draft.data.participation?.participantType ===
             'individual'
@@ -527,7 +505,6 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
         participants={0}
         imageUrl={previewHackathon.banner}
         startDate={previewHackathon.startDate}
-        endDate={previewHackathon.endDate}
       />
 
       {/* Tabs */}

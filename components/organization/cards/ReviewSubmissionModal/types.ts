@@ -37,7 +37,7 @@ export interface Submission {
   description: string;
   votes: number;
   comments: number;
-  submissionDate: string;
+  submissionDate?: string;
   videoUrl?: string;
   introduction?: string;
   logo?: string;

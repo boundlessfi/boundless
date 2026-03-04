@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -13,6 +13,7 @@ import {
   TrendingDown,
   AlertCircle,
 } from 'lucide-react';
+import { ShareLinkPopover } from '@/components/ui/share-link-popover';
 import {
   ChartConfig,
   ChartContainer,
@@ -36,6 +37,14 @@ const OrganizationAnalytics = () => {
     useOrganizationProfileCompletion();
   const { analytics, isLoading: isLoadingAnalytics } =
     useOrganizationAnalytics();
+
+  const [profileUrl, setProfileUrl] = useState('');
+
+  useEffect(() => {
+    if (activeOrg?.slug && typeof window !== 'undefined') {
+      setProfileUrl(`${window.location.origin}/org/${activeOrg.slug}`);
+    }
+  }, [activeOrg?.slug]);
 
   const chartData = useMemo(() => {
     if (!analytics?.timeSeries?.hackathons) return [];
@@ -121,11 +130,21 @@ const OrganizationAnalytics = () => {
     <div className='min-h-screen bg-black'>
       <div className='p-10'>
         {/* Header */}
-        <div className='mb-8'>
-          <h1 className='mb-1 text-2xl font-medium text-white'>Analytics</h1>
-          <p className='text-sm text-zinc-500'>
-            Track your organization's performance
-          </p>
+        <div className='mb-8 flex flex-wrap items-start justify-between gap-4'>
+          <div>
+            <h1 className='mb-1 text-2xl font-medium text-white'>Analytics</h1>
+            <p className='text-sm text-zinc-500'>
+              Track your organization's performance
+            </p>
+          </div>
+          {activeOrg?.slug && profileUrl && (
+            <ShareLinkPopover
+              url={profileUrl}
+              title={`${activeOrg.name} on Boundless`}
+              align='end'
+              side='bottom'
+            />
+          )}
         </div>
 
         {/* Stats Grid */}

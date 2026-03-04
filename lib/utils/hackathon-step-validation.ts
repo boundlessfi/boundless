@@ -94,11 +94,10 @@ export const isStepDataValid = (
     }
     case 'timeline': {
       const timeline = stepData as TimelineFormData;
-      // Check if required date fields exist
       return !!(
         timeline.startDate &&
         timeline.submissionDeadline &&
-        timeline.judgingStart
+        timeline.timezone
       );
     }
     case 'participation': {

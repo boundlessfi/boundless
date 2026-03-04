@@ -120,10 +120,20 @@ export const useHackathonPublish = ({
 
       setPublishResponse(responseData);
 
-      // Show success toast with hackathon ID
-      toast.success(`Hackathon published! ID: ${responseData.id}`, {
-        duration: 4000,
-      });
+      // Show success toast and navigate to hackathon page; store payload so the page can open the published modal
+      toast.success(`Hackathon published!`, { duration: 3000 });
+      const payload = { organizationId, ...responseData };
+      try {
+        sessionStorage.setItem(
+          'boundless_hackathon_published',
+          JSON.stringify(payload)
+        );
+      } catch {
+        // ignore
+      }
+      router.push(
+        `/organizations/${organizationId}/hackathons/${responseData.id}`
+      );
 
       return responseData;
     } catch (error) {

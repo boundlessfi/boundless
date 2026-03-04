@@ -13,7 +13,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import DraftSavedModal from './components/review/DraftSavedModal';
-import HackathonPublishedModal from './components/review/HackathonPublishedModal';
 import { ReviewHeader } from './components/review/ReviewHeader';
 import { EscrowSummary } from './components/review/EscrowSummary';
 import { WalletConnectionWarning } from './components/review/WalletConnectionWarning';
@@ -22,7 +21,6 @@ import { SectionRenderer } from './components/review/SectionRenderer';
 import { usePrizePoolCalculations } from '@/hooks/use-prize-pool-calculations';
 import { REVIEW_SECTION_CONFIG } from './constants/review-sections';
 import { toast } from 'sonner';
-import type { PublishResponseData } from '@/hooks/use-hackathon-publish';
 
 interface ReviewTabProps {
   allData: {
@@ -40,7 +38,6 @@ interface ReviewTabProps {
   isSavingDraft?: boolean;
   organizationId?: string;
   draftId?: string | null;
-  publishResponse?: PublishResponseData | null;
 }
 
 export default function ReviewTab({
@@ -52,21 +49,12 @@ export default function ReviewTab({
   isSavingDraft = false,
   organizationId,
   draftId,
-  publishResponse,
 }: ReviewTabProps) {
   const [showDraftModal, setShowDraftModal] = useState(false);
-  const [showPublishedModal, setShowPublishedModal] = useState(false);
   const { walletAddress } = useWalletContext();
 
   const { totalPrizePool, platformFee, totalFunding } =
     usePrizePoolCalculations(allData.rewards);
-
-  // Show published modal only when we have a successful publish response
-  useEffect(() => {
-    if (publishResponse) {
-      setShowPublishedModal(true);
-    }
-  }, [publishResponse]);
 
   const handlePublish = async () => {
     try {
@@ -157,13 +145,6 @@ export default function ReviewTab({
         onContinueEditing={() => {
           // User can continue editing - modal will close
         }}
-      />
-
-      <HackathonPublishedModal
-        open={showPublishedModal}
-        onOpenChange={setShowPublishedModal}
-        publishResponse={publishResponse}
-        organizationId={organizationId}
       />
     </div>
   );

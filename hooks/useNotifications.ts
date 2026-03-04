@@ -45,7 +45,28 @@ export function useNotifications(
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(initialPage);
 
-  // Fetch notifications with pagination
+  // Merge server list with current state: dedupe by id, preserve optimistic read state (short rollback path)
+  const mergeNotifications = useCallback(
+    (prev: Notification[], serverList: Notification[]): Notification[] => {
+      const byId = new Map<string, Notification>();
+      serverList.forEach(n => {
+        const id = n.id ?? (n as any)._id;
+        if (id) byId.set(id, n);
+      });
+      const merged = Array.from(byId.values()).map(server => {
+        const local = prev.find(p => p.id === server.id);
+        const read = local?.read ?? server.read;
+        return { ...server, read };
+      });
+      return merged.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    },
+    []
+  );
+
+  // Fetch notifications with pagination; merge with current state to preserve optimistic read and dedupe by id
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
@@ -53,12 +74,9 @@ export function useNotifications(
       const response = await getNotifications(currentPage, limit);
 
       if (response && Array.isArray(response.notifications)) {
-        // Sort notifications by createdAt desc to ensure correct order
-        const sorted = [...response.notifications].sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        setNotifications(prev =>
+          mergeNotifications(prev, response.notifications)
         );
-        setNotifications(sorted);
         setTotal(response.total || 0);
       }
     } catch (err) {
@@ -69,7 +87,7 @@ export function useNotifications(
     } finally {
       setLoading(false);
     }
-  }, [currentPage, limit]);
+  }, [currentPage, limit, mergeNotifications]);
 
   // Initial fetch
   useEffect(() => {
@@ -172,11 +190,14 @@ export function useNotifications(
   };
 
   const markNotificationAsRead = async (ids: string[]) => {
-    // Optimistic
-    setNotifications(prev =>
-      prev.map(n => (ids.includes(n.id) ? { ...n, read: true } : n))
-    );
-    // Note: unread count update is approximate here, ideally we wait for socket update
+    let markedUnreadCount = 0;
+    setNotifications(prev => {
+      markedUnreadCount = prev.filter(
+        n => ids.includes(n.id) && !n.read
+      ).length;
+      return prev.map(n => (ids.includes(n.id) ? { ...n, read: true } : n));
+    });
+    setUnreadCount(prev => Math.max(0, prev - markedUnreadCount));
 
     if (socket && isConnected) {
       ids.forEach(id => socket.emit('mark-read', { notificationId: id }));

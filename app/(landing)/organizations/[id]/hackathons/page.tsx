@@ -41,7 +41,7 @@ const calculateDraftCompletion = (draft: HackathonDraft): number => {
     draft.data.information?.categories,
     draft.data.timeline?.startDate,
     draft.data.timeline?.submissionDeadline,
-    draft.data.timeline?.judgingStart || draft.data.timeline?.judgingDate,
+    draft.data.timeline?.judgingDeadline,
     draft.data.timeline?.timezone,
     draft.data.participation?.participantType,
     draft.data.rewards?.prizeTiers?.length,
@@ -79,9 +79,7 @@ export default function HackathonsPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'draft'>(
-    'all'
-  );
+  const [tab, setTab] = useState<'published' | 'drafts'>('published');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [hackathonToDelete, setHackathonToDelete] = useState<{
@@ -115,67 +113,56 @@ export default function HackathonsPage() {
     },
   });
 
-  const allHackathons = useMemo(() => {
-    const items: Array<{
-      type: 'draft' | 'hackathon';
-      data: HackathonDraft | Hackathon;
-    }> = [];
-
-    drafts.forEach(draft => {
-      if (statusFilter === 'all' || statusFilter === 'draft') {
-        items.push({ type: 'draft', data: draft });
-      }
-    });
-
-    hackathons.forEach(hackathon => {
-      if (hackathon.status === 'DRAFT') return;
-      if (
-        statusFilter === 'all' ||
-        (statusFilter === 'open' && hackathon.status === 'PUBLISHED')
-      ) {
-        items.push({ type: 'hackathon', data: hackathon });
-      }
-    });
-
-    let filtered = items;
+  const publishedHackathons = useMemo(() => {
+    let items = hackathons.filter(h => h.status !== 'DRAFT');
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = items.filter(item => {
-        const title =
-          item.type === 'draft'
-            ? (
-                item.data as HackathonDraft
-              ).data.information?.name?.toLowerCase() || ''
-            : (item.data as Hackathon).name?.toLowerCase() || '';
-        return title.includes(query);
-      });
+      items = items.filter(h => h.name?.toLowerCase().includes(query));
     }
-
     if (categoryFilter !== 'all') {
-      filtered = filtered.filter(item => {
-        const category =
-          item.type === 'draft'
-            ? (item.data as HackathonDraft).data.information?.categories
-                ?.join(',')
-                ?.toLowerCase() || ''
-            : '';
-        return category.includes(categoryFilter.toLowerCase());
-      });
+      items = items.filter(h =>
+        h.categories
+          ?.map(c => c.toLowerCase())
+          .includes(categoryFilter.toLowerCase())
+      );
     }
-
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.data.createdAt || 0).getTime();
-      const dateB = new Date(b.data.createdAt || 0).getTime();
+    items = items.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
       return sortBy === 'newest' ? dateB - dateA : dateA - dateB;
     });
+    return items;
+  }, [hackathons, searchQuery, categoryFilter, sortBy]);
 
-    return filtered;
-  }, [drafts, hackathons, searchQuery, statusFilter, categoryFilter, sortBy]);
+  const draftHackathons = useMemo(() => {
+    let items = drafts;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      items = items.filter(d =>
+        d.data.information?.name?.toLowerCase().includes(query)
+      );
+    }
+    if (categoryFilter !== 'all') {
+      items = items.filter(d =>
+        d.data.information?.categories
+          ?.map(c => c.toLowerCase())
+          .includes(categoryFilter.toLowerCase())
+      );
+    }
+    items = items.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return sortBy === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+    return items;
+  }, [drafts, searchQuery, categoryFilter, sortBy]);
 
   const isLoading = hackathonsLoading || draftsLoading;
 
   const stats = useMemo(() => {
-    const published = hackathons.filter(h => h.status === 'PUBLISHED').length;
+    const published = hackathons.filter(h =>
+      ['UPCOMING', 'ACTIVE', 'JUDGING', 'COMPLETED'].includes(h.status)
+    ).length;
     const total = hackathons.length + drafts.length;
     return { published, drafts: drafts.length, total };
   }, [hackathons, drafts]);
@@ -189,6 +176,23 @@ export default function HackathonsPage() {
             'Untitled Hackathon'
           : (hackathon.data as Hackathon).name || 'Untitled Hackathon';
       setHackathonToDelete({ id: hackathonId, title, type: hackathon.type });
+    // Try to find in published hackathons
+    const published = publishedHackathons.find(h => h.id === hackathonId);
+    if (published) {
+      setHackathonToDelete({
+        id: hackathonId,
+        title: published.name || 'Untitled Hackathon',
+      });
+      setDeleteDialogOpen(true);
+      return;
+    }
+    // Try to find in drafts
+    const draft = draftHackathons.find(d => d.id === hackathonId);
+    if (draft) {
+      setHackathonToDelete({
+        id: hackathonId,
+        title: draft.data.information?.name || 'Untitled Hackathon',
+      });
       setDeleteDialogOpen(true);
     }
   };
@@ -211,11 +215,11 @@ export default function HackathonsPage() {
     <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
       <div className='min-h-screen bg-black'>
         {/* Header */}
-        <div className='border-b border-zinc-900'>
+        <div className='sticky top-0 z-20 border-b border-zinc-900 bg-black/80 backdrop-blur-xl'>
           <div className='mx-auto max-w-6xl px-6 py-8'>
             <div className='mb-8 flex items-center justify-between'>
               <div>
-                <h1 className='mb-2 text-2xl font-medium text-white'>
+                <h1 className='mb-2 text-3xl font-bold tracking-tight text-white'>
                   Hackathons
                 </h1>
                 <div className='flex items-center gap-6 text-sm text-zinc-500'>
@@ -227,23 +231,39 @@ export default function HackathonsPage() {
                 </div>
               </div>
               <Link href={`/organizations/${organizationId}/hackathons/new`}>
-                <BoundlessButton className='gap-2'>
+                <BoundlessButton className='shadow-primary/20 gap-2 shadow-lg'>
                   <Plus className='h-4 w-4' />
                   Host Hackathon
                 </BoundlessButton>
               </Link>
             </div>
 
+            {/* Tabs */}
+            <div className='mb-6 flex gap-2'>
+              <button
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${tab === 'published' ? 'bg-primary text-black shadow' : 'bg-zinc-900 text-white hover:bg-zinc-800'}`}
+                onClick={() => setTab('published')}
+              >
+                Published
+              </button>
+              <button
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${tab === 'drafts' ? 'bg-primary text-black shadow' : 'bg-zinc-900 text-white hover:bg-zinc-800'}`}
+                onClick={() => setTab('drafts')}
+              >
+                Drafts
+              </button>
+            </div>
+
             {/* Filters */}
-            <div className='flex items-center gap-3'>
-              <div className='relative flex-1'>
+            <div className='sticky top-20 z-10 flex flex-wrap items-center gap-3 bg-black/80 py-2'>
+              <div className='relative min-w-50 flex-1'>
                 <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500' />
                 <Input
                   type='search'
                   placeholder='Search hackathons...'
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className='focus:border-primary focus:ring-primary/20 h-10 border-zinc-800/50 bg-zinc-900/30 pl-10 text-sm text-white transition-all placeholder:text-zinc-500 hover:border-zinc-700 hover:bg-zinc-900/50'
+                  className='focus:border-primary focus:ring-primary/20 h-10 rounded-xl border-zinc-800/50 bg-zinc-900/30 pl-10 text-sm text-white transition-all placeholder:text-zinc-500 hover:border-zinc-700 hover:bg-zinc-900/50'
                 />
               </div>
 
@@ -251,7 +271,7 @@ export default function HackathonsPage() {
                 value={sortBy}
                 onValueChange={value => setSortBy(value as 'newest' | 'oldest')}
               >
-                <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-32 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
+                <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-32 rounded-xl border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
@@ -270,39 +290,8 @@ export default function HackathonsPage() {
                 </SelectContent>
               </Select>
 
-              <Select
-                value={statusFilter}
-                onValueChange={value =>
-                  setStatusFilter(value as 'all' | 'open' | 'draft')
-                }
-              >
-                <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-32 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
-                  <SelectItem
-                    value='all'
-                    className='text-white focus:bg-zinc-900/50 focus:text-white'
-                  >
-                    All Status
-                  </SelectItem>
-                  <SelectItem
-                    value='open'
-                    className='text-white focus:bg-zinc-900/50 focus:text-white'
-                  >
-                    Published
-                  </SelectItem>
-                  <SelectItem
-                    value='draft'
-                    className='text-white focus:bg-zinc-900/50 focus:text-white'
-                  >
-                    Draft
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-36 border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
+                <SelectTrigger className='focus:border-primary focus:ring-primary/20 h-10 w-36 rounded-xl border-zinc-800/50 bg-zinc-900/30 text-sm text-white transition-all hover:border-zinc-700 hover:bg-zinc-900/50'>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className='border-zinc-800/50 bg-zinc-950 backdrop-blur-xl'>
@@ -369,92 +358,232 @@ export default function HackathonsPage() {
                 Loading hackathons...
               </span>
             </div>
-          ) : allHackathons.length === 0 ? (
-            <div className='flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 py-24'>
-              <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-900'>
-                <FileText className='h-8 w-8 text-zinc-600' />
-              </div>
-              <h3 className='mb-2 text-lg font-medium text-white'>
-                No hackathons yet
-              </h3>
-              <p className='mb-6 text-sm text-zinc-500'>
-                Get started by hosting your first hackathon
-              </p>
-              <Link href={`/organizations/${organizationId}/hackathons/new`}>
-                <BoundlessButton className='gap-2'>
-                  <Plus className='h-4 w-4' />
-                  Host Hackathon
-                </BoundlessButton>
-              </Link>
-            </div>
           ) : (
-            <div className='space-y-3'>
-              {allHackathons.map(item => {
-                const isDraft = item.type === 'draft';
-                const hackathon = item.data;
-                const title = isDraft
-                  ? (hackathon as HackathonDraft).data.information?.name ||
-                    'Untitled Hackathon'
-                  : (hackathon as Hackathon).name || 'Untitled Hackathon';
-                const completion = isDraft
-                  ? calculateDraftCompletion(hackathon as HackathonDraft)
-                  : 0;
-                const endDate = isDraft
-                  ? (hackathon as HackathonDraft).data.timeline
-                      ?.submissionDeadline ||
-                    (hackathon as HackathonDraft).data.timeline
-                      ?.winnersAnnouncedAt ||
-                    (hackathon as HackathonDraft).data.timeline
-                      ?.winnerAnnouncementDate ||
-                    (hackathon as HackathonDraft).data.timeline?.judgingEnd ||
-                    (hackathon as HackathonDraft).data.timeline?.judgingDate ||
-                    (hackathon as HackathonDraft).data.timeline?.judgingStart
-                  : (hackathon as Hackathon).submissionDeadline ||
-                    (hackathon as Hackathon).endDate;
-                const totalPrize = isDraft
-                  ? (
-                      hackathon as HackathonDraft
-                    ).data.rewards?.prizeTiers?.reduce(
-                      (sum: number, tier: any) => sum + (tier.amount || 0),
-                      0
-                    ) || 0
-                  : (hackathon as Hackathon).prizeTiers?.reduce(
-                      (sum: number, tier: any) => sum + (tier.amount || 0),
-                      0
-                    ) || 0;
-
-                if (isDraft) {
-                  return (
-                    <div
-                      key={`draft-${hackathon.id}`}
-                      onClick={() =>
-                        router.push(
-                          `/organizations/${organizationId}/hackathons/drafts/${hackathon.id}`
-                        )
-                      }
-                      className='group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'
+            <>
+              {tab === 'published' ? (
+                publishedHackathons.length === 0 ? (
+                  <div className='flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 py-24'>
+                    <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-900'>
+                      <FileText className='h-8 w-8 text-zinc-600' />
+                    </div>
+                    <h3 className='mb-2 text-lg font-medium text-white'>
+                      No published hackathons yet
+                    </h3>
+                    <p className='mb-6 text-sm text-zinc-500'>
+                      Get started by hosting your first hackathon
+                    </p>
+                    <Link
+                      href={`/organizations/${organizationId}/hackathons/new`}
                     >
-                      <div className='mb-4 flex items-center justify-between'>
-                        <div className='flex items-center gap-3'>
-                          <Badge
-                            variant='outline'
-                            className='rounded-full bg-zinc-500 px-3 py-1 text-xs font-medium text-zinc-100'
-                          >
-                            Draft
-                          </Badge>
-                          <span className='text-sm text-white'>
-                            {completion}% complete
-                          </span>
+                      <BoundlessButton className='gap-2'>
+                        <Plus className='h-4 w-4' />
+                        Host Hackathon
+                      </BoundlessButton>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
+                    {publishedHackathons.map(hackathon => {
+                      const endDate = hackathon.submissionDeadline;
+                      const totalPrize =
+                        hackathon.prizeTiers?.reduce(
+                          (sum: number, tier: any) => sum + (tier.amount || 0),
+                          0
+                        ) || 0;
+                      return (
+                        <div
+                          key={hackathon.id}
+                          className='group hover:border-primary/60 hover:shadow-primary/10 relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/30 shadow-lg transition-all'
+                          onClick={() =>
+                            router.push(
+                              `/organizations/${organizationId}/hackathons/${hackathon.id}`
+                            )
+                          }
+                          tabIndex={0}
+                          role='button'
+                          aria-label={`View hackathon ${hackathon.name}`}
+                        >
+                          {hackathon.banner && (
+                            <div className='relative h-32 w-full overflow-hidden rounded-t-2xl'>
+                              <Image
+                                src={hackathon.banner}
+                                alt={hackathon.name}
+                                fill
+                                className='object-cover'
+                              />
+                              <div className='absolute inset-0 bg-linear-to-t from-black/60 to-transparent' />
+                            </div>
+                          )}
+                          <div className='flex flex-1 flex-col gap-2 p-5'>
+                            <div className='mb-1 flex items-center gap-2'>
+                              <Badge
+                                variant='outline'
+                                className={`rounded-full border-none px-3 py-1 text-xs font-semibold ${['UPCOMING', 'ACTIVE', 'JUDGING', 'COMPLETED'].includes(hackathon.status) ? 'bg-green-500/10 text-green-500' : 'bg-secondary-500/10 text-secondary-500'}`}
+                              >
+                                {['UPCOMING', 'ACTIVE', 'JUDGING'].includes(
+                                  hackathon.status
+                                )
+                                  ? 'Live'
+                                  : hackathon.status}
+                              </Badge>
+                              {endDate && (
+                                <span className='flex items-center gap-1.5 text-xs text-zinc-500'>
+                                  <Calendar className='h-3 w-3' />
+                                  {getTimeRemaining(endDate)}
+                                </span>
+                              )}
+                            </div>
+                            <h3 className='truncate text-lg font-bold text-white'>
+                              {hackathon.name}
+                            </h3>
+                            <div className='mt-1 flex items-center gap-4 text-xs text-zinc-400'>
+                              <span className='flex items-center gap-1'>
+                                <Users className='h-4 w-4' />
+                                {hackathon._count?.participants || 0}{' '}
+                                participants
+                              </span>
+                              <span className='flex items-center gap-1'>
+                                <FileText className='h-4 w-4' />
+                                {hackathon._count?.submissions || 0} submissions
+                              </span>
+                              {totalPrize > 0 && (
+                                <span className='text-primary flex items-center gap-1 font-semibold'>
+                                  <Image
+                                    src='/trophy.svg'
+                                    alt='Prize'
+                                    width={16}
+                                    height={16}
+                                  />
+                                  ${totalPrize.toLocaleString()} USDC
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className='absolute top-3 right-3 z-10 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100'>
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/organizations/${organizationId}/hackathons/${hackathon.id}/settings`
+                                );
+                              }}
+                              className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                              title='Settings'
+                            >
+                              <Settings className='h-4 w-4' />
+                            </button>
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleDeleteClick(hackathon.id);
+                              }}
+                              className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:border-red-600 hover:text-red-500'
+                              title='Delete Hackathon'
+                              disabled={isDeleting}
+                            >
+                              <Trash2 className='h-4 w-4' />
+                            </button>
+                          </div>
                         </div>
-                        <div className='flex items-center gap-2'>
+                      );
+                    })}
+                  </div>
+                )
+              ) : draftHackathons.length === 0 ? (
+                <div className='flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 py-24'>
+                  <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-900'>
+                    <FileText className='h-8 w-8 text-zinc-600' />
+                  </div>
+                  <h3 className='mb-2 text-lg font-medium text-white'>
+                    No drafts yet
+                  </h3>
+                  <p className='mb-6 text-sm text-zinc-500'>
+                    Start a new draft to host your first hackathon
+                  </p>
+                  <Link
+                    href={`/organizations/${organizationId}/hackathons/new`}
+                  >
+                    <BoundlessButton className='gap-2'>
+                      <Plus className='h-4 w-4' />
+                      Host Hackathon
+                    </BoundlessButton>
+                  </Link>
+                </div>
+              ) : (
+                <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
+                  {draftHackathons.map(draft => {
+                    const title =
+                      draft.data.information?.name || 'Untitled Hackathon';
+                    const completion = calculateDraftCompletion(draft);
+                    const endDate = draft.data.timeline?.submissionDeadline;
+                    const totalPrize =
+                      draft.data.rewards?.prizeTiers?.reduce(
+                        (sum: number, tier: any) => sum + (tier.amount || 0),
+                        0
+                      ) || 0;
+                    return (
+                      <div
+                        key={draft.id}
+                        className='group hover:border-primary/60 hover:shadow-primary/10 relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/30 shadow-lg transition-all'
+                        onClick={() =>
+                          router.push(
+                            `/organizations/${organizationId}/hackathons/drafts/${draft.id}`
+                          )
+                        }
+                        tabIndex={0}
+                        role='button'
+                        aria-label={`Edit draft ${title}`}
+                      >
+                        <div className='flex flex-1 flex-col gap-2 p-5'>
+                          <div className='mb-1 flex items-center gap-2'>
+                            <Badge
+                              variant='outline'
+                              className='rounded-full bg-zinc-500 px-3 py-1 text-xs font-medium text-zinc-100'
+                            >
+                              Draft
+                            </Badge>
+                            <span className='text-sm text-white'>
+                              {completion}% complete
+                            </span>
+                            {endDate && (
+                              <span className='flex items-center gap-1.5 text-xs text-zinc-500'>
+                                <Calendar className='h-3 w-3' />
+                                {getTimeRemaining(endDate)}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className='truncate text-lg font-bold text-white'>
+                            {title}
+                          </h3>
+                          <div className='mt-1 flex items-center gap-4 text-xs text-zinc-400'>
+                            {totalPrize > 0 && (
+                              <span className='text-primary flex items-center gap-1 font-semibold'>
+                                <Image
+                                  src='/trophy.svg'
+                                  alt='Prize'
+                                  width={16}
+                                  height={16}
+                                />
+                                ${totalPrize.toLocaleString()} USDC
+                              </span>
+                            )}
+                          </div>
+                          <div className='mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-800'>
+                            <div
+                              className='bg-primary h-full rounded-full transition-all'
+                              style={{ width: `${completion}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className='absolute top-3 right-3 z-10 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100'>
                           <button
                             onClick={e => {
                               e.stopPropagation();
                               router.push(
-                                `/hackathons/preview/${organizationId}/${hackathon.id}`
+                                `/hackathons/preview/${organizationId}/${draft.id}`
                               );
                             }}
-                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 opacity-0 transition-all group-hover:opacity-100 hover:border-zinc-700 hover:text-white'
+                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:border-zinc-700 hover:text-white'
                             title='Preview'
                           >
                             <Eye className='h-4 w-4' />
@@ -462,9 +591,9 @@ export default function HackathonsPage() {
                           <button
                             onClick={e => {
                               e.stopPropagation();
-                              handleDeleteClick(hackathon.id);
+                              handleDeleteClick(draft.id);
                             }}
-                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 opacity-0 transition-all group-hover:opacity-100 hover:border-red-600 hover:text-red-500'
+                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:border-red-600 hover:text-red-500'
                             title='Delete Draft'
                             disabled={isDeleting}
                           >
@@ -477,7 +606,7 @@ export default function HackathonsPage() {
                             onClick={e => {
                               e.stopPropagation();
                               router.push(
-                                `/organizations/${organizationId}/hackathons/drafts/${hackathon.id}`
+                                `/organizations/${organizationId}/hackathons/drafts/${draft.id}`
                               );
                             }}
                           >
@@ -485,133 +614,11 @@ export default function HackathonsPage() {
                           </BoundlessButton>
                         </div>
                       </div>
-
-                      <h3 className='mb-3 text-lg font-medium text-white'>
-                        {title}
-                      </h3>
-
-                      <div className='h-1.5 overflow-hidden rounded-full bg-zinc-800'>
-                        <div
-                          className='bg-primary h-full rounded-full transition-all'
-                          style={{ width: `${completion}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                }
-
-                const publishedHackathon = hackathon as Hackathon;
-
-                return (
-                  <div
-                    key={`hackathon-${publishedHackathon.id}`}
-                    className='group rounded-xl border border-zinc-800 bg-zinc-900/30 transition-all hover:border-zinc-700 hover:bg-zinc-900/50'
-                  >
-                    <div className='p-6'>
-                      <div className='mb-4 flex items-start justify-between'>
-                        <div className='flex-1'>
-                          <div className='mb-3 flex items-center gap-3'>
-                            <Badge
-                              variant='outline'
-                              className={`rounded-full border-none px-3 py-1 text-xs font-medium ${
-                                publishedHackathon.status === 'PUBLISHED' ||
-                                publishedHackathon.status === 'ONGOING'
-                                  ? 'bg-green-500/10 text-green-500'
-                                  : 'bg-secondary-500/10 text-secondary-500'
-                              }`}
-                            >
-                              {publishedHackathon.status === 'PUBLISHED'
-                                ? 'Live'
-                                : publishedHackathon.status}
-                            </Badge>
-                            {endDate && (
-                              <div className='flex items-center gap-1.5 text-sm text-zinc-500'>
-                                <Calendar className='h-3.5 w-3.5' />
-                                {getTimeRemaining(endDate)}
-                              </div>
-                            )}
-                          </div>
-
-                          <h3 className='mb-4 text-lg font-medium text-white'>
-                            {title}
-                          </h3>
-
-                          <div className='flex items-center gap-6 text-sm text-zinc-500'>
-                            <div className='flex items-center gap-2'>
-                              <Users className='h-4 w-4' />
-                              <span>
-                                {publishedHackathon.participants?.length ||
-                                  publishedHackathon._count?.participants ||
-                                  0}{' '}
-                                participants
-                              </span>
-                            </div>
-                            <div className='flex items-center gap-2'>
-                              <FileText className='h-4 w-4' />
-                              <span>
-                                {publishedHackathon._count?.submissions || 0}{' '}
-                                submissions
-                              </span>
-                            </div>
-                            {totalPrize > 0 && (
-                              <>
-                                <div className='h-4 w-px bg-zinc-800' />
-                                <div className='flex items-center gap-2'>
-                                  <Image
-                                    src='/trophy.svg'
-                                    alt='Prize'
-                                    width={16}
-                                    height={16}
-                                  />
-                                  <span className='text-primary font-medium'>
-                                    ${totalPrize.toLocaleString()} USDC
-                                  </span>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className='flex items-center gap-2'>
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/organizations/${organizationId}/hackathons/${publishedHackathon.id}`
-                              )
-                            }
-                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-zinc-700 hover:text-white'
-                            title='Preview'
-                          >
-                            <ExternalLink className='h-4 w-4' />
-                          </button>
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/organizations/${organizationId}/hackathons/${publishedHackathon.id}/settings`
-                              )
-                            }
-                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-zinc-700 hover:text-white'
-                            title='Settings'
-                          >
-                            <Settings className='h-4 w-4' />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleDeleteClick(publishedHackathon.id)
-                            }
-                            className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-400 transition-all hover:border-red-600 hover:text-red-500'
-                            title='Delete Hackathon'
-                            disabled={isDeleting}
-                          >
-                            <Trash2 className='h-4 w-4' />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
 

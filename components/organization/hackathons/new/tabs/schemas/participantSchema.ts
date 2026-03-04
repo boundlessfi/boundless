@@ -7,10 +7,10 @@ export const participantSchema = z
       .default('individual'),
     teamMin: z.number().min(1).max(20).optional(),
     teamMax: z.number().min(1).max(20).optional(),
-    registrationDeadlinePolicy: z
-      .enum(['before_start', 'before_submission_deadline', 'custom'])
-      .default('before_submission_deadline'),
-    registrationDeadline: z.string().optional(),
+    maxParticipants: z
+      .union([z.number().int().min(1), z.null()])
+      .optional()
+      .transform(val => (val === null ? undefined : val)),
     require_github: z.boolean().optional(),
     require_demo_video: z.boolean().optional(),
     require_other_links: z.boolean().optional(),
@@ -26,7 +26,6 @@ export const participantSchema = z
     rulesTab: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
-    // Team size validation
     if (
       data.participantType === 'team' ||
       data.participantType === 'team_or_individual'
@@ -50,17 +49,6 @@ export const participantSchema = z
           code: z.ZodIssueCode.custom,
           message: 'Minimum team size cannot be greater than maximum',
           path: ['teamMin'],
-        });
-      }
-    }
-
-    // Custom registration deadline validation
-    if (data.registrationDeadlinePolicy === 'custom') {
-      if (!data.registrationDeadline) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Registration deadline is required for custom policy',
-          path: ['registrationDeadline'],
         });
       }
     }

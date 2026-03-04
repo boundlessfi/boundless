@@ -17,6 +17,7 @@ import {
   OrganizationContextValue,
   OrganizationProviderProps,
   OrganizationContextState,
+  OrganizationFormData,
 } from './organization-types';
 import { Organization } from '../api/types';
 import { getMe } from '../api/auth';
@@ -724,19 +725,10 @@ export function OrganizationProvider({
   }, [fetchOrganizations, fetchActiveOrganization, state.activeOrgId]);
 
   const createOrg = useCallback(
-    async (data: {
-      name: string;
-      slug: string;
-      logo?: string;
-      tagline?: string;
-      about?: string;
-      links?: {
-        website?: string;
-        x?: string;
-        github?: string;
-        others?: string;
-      };
-    }) => {
+    async (data: OrganizationFormData) => {
+      const tagline = data.metadata?.tagline ?? '';
+      const about = data.metadata?.about ?? '';
+      const links = data.metadata?.links ?? {};
       try {
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true } });
         const { data: newOrg, error } = await authClient.organization.create({
@@ -744,13 +736,13 @@ export function OrganizationProvider({
           slug: data.slug,
           logo: data.logo,
           metadata: {
-            tagline: data.tagline,
-            about: data.about,
+            tagline,
+            about,
             links: {
-              website: data.links?.website,
-              x: data.links?.x,
-              github: data.links?.github,
-              others: data.links?.others,
+              website: links?.website,
+              x: links?.x,
+              github: links?.github,
+              others: links?.others,
             },
           },
         });
@@ -850,13 +842,30 @@ export function OrganizationProvider({
     ) => {
       try {
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true } });
+        const current = state.activeOrg;
+        const activeLinks =
+          current?.links ||
+          (current as { metadata?: { links?: Record<string, string> } })
+            ?.metadata?.links;
         const response = await updateOrg(orgId, {
+          name: current?.name,
+          logo: current?.logo,
+          slug: current?.slug,
           metadata: {
+            tagline:
+              current?.tagline ??
+              (current as { metadata?: { tagline?: string } })?.metadata
+                ?.tagline ??
+              '',
+            about:
+              current?.about ??
+              (current as { metadata?: { about?: string } })?.metadata?.about ??
+              '',
             links: {
-              website: links.website,
-              x: links.x,
-              github: links.github,
-              others: links.others,
+              website: links.website ?? activeLinks?.website ?? '',
+              x: links.x ?? activeLinks?.x ?? '',
+              github: links.github ?? activeLinks?.github ?? '',
+              others: links.others ?? activeLinks?.others ?? '',
             },
           },
         });
@@ -884,7 +893,7 @@ export function OrganizationProvider({
         dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
       }
     },
-    [updateOrg]
+    [updateOrg, state.activeOrg]
   );
 
   const updateOrgMembers = useCallback(

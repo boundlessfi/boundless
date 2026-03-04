@@ -21,7 +21,7 @@ export interface BlogPostMetadata extends PageMetadata {
 // Base metadata configuration
 const baseMetadata = {
   siteName: 'Boundless',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://boundlessfi.xyz',
+  siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://boundlessfi.xyz',
   defaultOgImage:
     'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
   twitterHandle: '@boundlessfi',

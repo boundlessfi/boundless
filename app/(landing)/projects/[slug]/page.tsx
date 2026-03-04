@@ -79,13 +79,11 @@ function ProjectContent({
         setLoading(true);
         setError(null);
 
-        // If query param specifies submission, try that first/only
         if (isSubmission) {
           await fetchSubmission(id);
           return;
         }
 
-        // Try fetching as crowdfunding project first
         try {
           const projectData = await getCrowdfundingProject(id);
           if (projectData) {
@@ -93,9 +91,6 @@ function ProjectContent({
             return;
           }
         } catch (e) {
-          // Ignore error and try fetching as submission
-          console.log('Not a crowdfunding project, checking submission...', e);
-          // Fallback to submission check
           await fetchSubmission(id);
         }
       } catch {

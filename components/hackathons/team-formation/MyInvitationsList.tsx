@@ -74,7 +74,6 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
     teamId: teamId || '',
     autoFetch: !!teamId && isLeader,
   });
-  console.log(receivedInvitations, sentInvitations);
 
   const isLoading =
     activeTab === 'received' ? isLoadingReceived : isLoadingSent;

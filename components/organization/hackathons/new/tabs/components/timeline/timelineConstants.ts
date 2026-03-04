@@ -1,18 +1,14 @@
 export const TIMELINE_FIELD_TOOLTIPS = {
   startDate:
     'The date and time when the hackathon officially begins. Participants can join from this date onward (if registration is open).',
-  endDate:
-    'The date and time when the hackathon officially ends. This marks the conclusion of the entire event.',
   submissionDeadline:
     'The final date and time when teams can submit their projects. Submissions after this deadline will not be accepted.',
   timezone:
     'The timezone used for all dates and times in this hackathon. All deadlines and phases are interpreted in this timezone.',
-  judgingStart:
-    'Optional. The date and time when judges begin reviewing and scoring submitted projects. Must be after the submission deadline.',
-  judgingEnd:
-    'Optional. The date and time when the judging period concludes. If set, judgingStart is required and must be before this date.',
-  winnersAnnouncedAt:
-    'Optional. The date and time when winning projects and prize recipients are publicly announced. Must be after judging ends (or after the event end date if judging is not used).',
+  registrationDeadline:
+    'Optional. Set a specific date and time when pre-registration closes. If not set, registration remains open until the submission deadline.',
+  judgingDeadline:
+    'Optional. The date and time by which all judging must be completed. Must be on or after the submission deadline.',
   phases:
     'Optional. Define custom lifecycle phases (e.g., "Kickoff", "Development", "Final Submissions") with specific start/end dates to structure the hackathon timeline.',
 };

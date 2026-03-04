@@ -58,14 +58,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         >
           <Avatar className='h-7 w-7 border border-zinc-800'>
             <AvatarImage
-              src={user?.profile?.image || ''}
-              alt={user?.name || user?.profile?.firstName || ''}
+              src={user?.profile?.user?.image || ''}
+              alt={user?.name || ''}
               className='object-cover'
             />
             <AvatarFallback className='from-primary/20 to-primary/5 text-primary bg-linear-to-br text-xs font-semibold'>
-              {(user?.name || user?.profile?.firstName || 'U')
-                .charAt(0)
-                .toUpperCase()}
+              {(user?.name || 'U').charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <ChevronDown className='mr-1 hidden h-3.5 w-3.5 text-zinc-500 md:block' />
@@ -84,18 +82,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             <Avatar className='h-10 w-10 border border-zinc-800'>
               <AvatarImage
                 className='object-cover'
-                src={user?.profile?.image || ''}
-                alt={user?.name || user?.profile?.firstName || ''}
+                src={user?.profile?.user?.image || ''}
+                alt={user?.name || ''}
               />
               <AvatarFallback className='from-primary/20 to-primary/5 text-primary bg-linear-to-br font-semibold'>
-                {(user?.name || user?.profile?.firstName || 'U')
-                  .charAt(0)
-                  .toUpperCase()}
+                {(user?.name || 'U').charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className='min-w-0 flex-1'>
               <p className='truncate text-sm font-semibold text-white'>
-                {user?.name || user?.profile?.firstName || 'User'}
+                {user?.name || 'User'}
               </p>
               <p className='truncate text-xs text-zinc-500'>{user?.email}</p>
             </div>
@@ -118,7 +114,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           >
             <Link
               href='/me'
-              className='flex items-center gap-3 hover:!text-white'
+              className='flex items-center gap-3 hover:text-white!'
             >
               <User className='h-4 w-4 text-zinc-400' />
               Your Profile
@@ -132,7 +128,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             >
               <Link
                 href='/organizations'
-                className='flex items-center gap-3 hover:!text-white'
+                className='flex items-center gap-3 hover:text-white!'
               >
                 <Building2 className='h-4 w-4 text-zinc-400' />
                 Organizations
@@ -146,7 +142,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           >
             <Link
               href='/me/settings'
-              className='flex items-center gap-3 hover:!text-white'
+              className='flex items-center gap-3 hover:text-white!'
             >
               <Settings className='h-4 w-4 text-zinc-400' />
               Settings
@@ -161,7 +157,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           <DropdownMenuItem
             onClick={() => !isLoading && logout()}
             disabled={isLoading}
-            className='rounded-lg px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:!text-red-400 focus:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50'
+            className='rounded-lg px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-400! focus:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <LogOut className='mr-3 h-4 w-4' />
             {isLoading ? 'Signing out...' : 'Sign out'}

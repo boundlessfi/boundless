@@ -117,11 +117,6 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
   // Check if current user can invite this participant
   const canInvite = useMemo(() => {
     if (!user || !currentUserParticipant || !currentHackathon) {
-      console.log('[DEBUG] canInvite: missing prerequisites', {
-        user: !!user,
-        currentUserParticipant: !!currentUserParticipant,
-        currentHackathon: !!currentHackathon,
-      });
       return false;
     }
 
@@ -150,15 +145,6 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
     const isDirectLeader = teams.some(t => t.leaderId === currentUserId);
 
     const isLeader = isEnrichedLeader || isDirectLeader;
-
-    console.log('[DEBUG] ProfileCard canInvite check:', {
-      target: participant.username,
-      isLeader,
-      isEnrichedLeader,
-      isDirectLeader,
-      currentUserRole: currentUserParticipant.role,
-      currentUserId,
-    });
 
     return isLeader;
   }, [user, currentUserParticipant, participant, currentHackathon, teams]);

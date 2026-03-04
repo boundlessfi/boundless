@@ -44,8 +44,6 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
     loadingDelay: 100,
   });
 
-  console.log(project.demoVideo);
-
   return (
     <div className='space-y-10 text-white'>
       {/* Markdown Content */}
@@ -76,7 +74,7 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
             <div className='h-1 w-1 rounded-full bg-[#a7f950]' />
             <h2 className='text-2xl font-bold text-white'>Media Showcase</h2>
           </div>
-          <Card className='overflow-hidden border border-gray-800/50 bg-gradient-to-br from-gray-900/50 to-gray-950/50 shadow-xl backdrop-blur-sm'>
+          <Card className='overflow-hidden border border-gray-800/50 bg-linear-to-br from-gray-900/50 to-gray-950/50 shadow-xl backdrop-blur-sm'>
             <CardContent className='p-0'>
               <div className='relative aspect-video overflow-hidden bg-black'>
                 {(() => {
@@ -127,7 +125,7 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                       />
                       <MediaPlayerLoading />
                       <MediaPlayerControlsOverlay />
-                      <MediaPlayerControls className='flex-col items-stretch justify-end gap-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12 pb-4'>
+                      <MediaPlayerControls className='flex-col items-stretch justify-end gap-2 bg-linear-to-t from-black/80 via-black/40 to-transparent pt-12 pb-4'>
                         <MediaPlayerSeek />
                         <div className='flex items-center justify-between gap-4'>
                           <div className='flex items-center gap-2'>
@@ -157,12 +155,12 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
       )}
 
       {/* Support Message Section */}
-      <section className='rounded-xl border border-[#a7f950]/20 bg-gradient-to-br from-[#a7f950]/10 to-transparent p-8 backdrop-blur-sm'>
+      <section className='rounded-xl border border-[#a7f950]/20 bg-linear-to-br from-[#a7f950]/10 to-transparent p-8 backdrop-blur-sm'>
         <h2 className='mb-4 text-2xl font-bold text-white'>
           Support {project.title} Today
         </h2>
         <p className='leading-relaxed text-gray-300'>
-          By backing {project.title}, you're contributing to innovative
+          By backing {project.title}, you&apos;re contributing to innovative
           solutions in the{' '}
           <span className='font-semibold text-[#a7f950]'>
             {project.category}

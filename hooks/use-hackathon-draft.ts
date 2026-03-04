@@ -9,7 +9,11 @@ import type { RewardsFormData } from '@/components/organization/hackathons/new/t
 import type { ResourcesFormData } from '@/components/organization/hackathons/new/tabs/schemas/resourcesSchema';
 import type { JudgingFormData } from '@/components/organization/hackathons/new/tabs/schemas/judgingSchema';
 import type { CollaborationFormData } from '@/components/organization/hackathons/new/tabs/schemas/collaborationSchema';
-import type { StepKey } from '@/components/organization/hackathons/new/constants';
+import {
+  type StepKey,
+  STEP_ORDER,
+} from '@/components/organization/hackathons/new/constants';
+import { isStepDataValid } from '@/lib/utils/hackathon-step-validation';
 
 interface StepData {
   information?: InfoFormData;
@@ -68,7 +72,6 @@ export const useHackathonDraft = ({
     loadDraft();
   }, [initialDraftId, organizationId, fetchDraft]);
 
-  // In hooks/use-hackathon-draft.ts useEffect:
   useEffect(() => {
     if (
       currentDraft &&
@@ -80,8 +83,11 @@ export const useHackathonDraft = ({
       setStepData(formData);
       draftInitializedRef.current = currentDraft.id;
 
+      const firstIncompleteStep =
+        STEP_ORDER.find(key => !isStepDataValid(key, formData)) ?? 'review';
+
       if (onDraftLoaded) {
-        onDraftLoaded(formData, 'information' as StepKey);
+        onDraftLoaded(formData, firstIncompleteStep);
       }
     } else if (currentDraft && currentDraft.id === initialDraftId) {
       console.log('⏭️ Draft already initialized, skipping'); // Debug

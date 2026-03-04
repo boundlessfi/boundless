@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { Search, ChevronDown, Plus } from 'lucide-react';
+import {
+  Search,
+  ChevronDown,
+  Plus,
+  LayoutGrid,
+  LayoutList,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import SubmissionCard from './submissionCard';
+import SubmissionCard2 from './submissionCard2';
 import { SubmissionScreenWrapper } from './SubmissionForm';
 import { SubmissionDetailModal } from './SubmissionDetailModal';
 import { useSubmissions } from '@/hooks/hackathon/use-submissions';
@@ -30,6 +37,9 @@ import { Loader2 } from 'lucide-react';
 import { useExpandableScreen } from '@/components/ui/expandable-screen';
 import { toast } from 'sonner';
 import { useHackathonStatus } from '@/hooks/hackathon/use-hackathon-status';
+import { cn } from '@/lib/utils';
+
+type ViewMode = 'grid' | 'list';
 
 interface SubmissionTabProps {
   // hackathonSlugOrId?: string;
@@ -58,6 +68,8 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
   const router = useRouter();
   const { expand } = useExpandableScreen();
 
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+
   const {
     submissions,
     searchTerm,
@@ -69,7 +81,6 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
     setSelectedSort,
     setSelectedCategory,
   } = useSubmissions();
-
   const { currentHackathon } = useHackathonData();
   const { status } = useHackathonStatus(
     currentHackathon?.startDate,
@@ -203,16 +214,48 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
           </DropdownMenu>
         </div>
 
-        {/* Search Input */}
-        <div className='relative w-full md:ml-auto md:max-w-md'>
-          <Search className='absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 transform text-white/40' />
-          <Input
-            type='text'
-            placeholder='Search by project name or participant...'
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className='bg-backgound-main-bg w-full rounded-lg border-gray-900 py-3 pr-4 pl-10 text-base text-white placeholder-gray-400 focus:border-gray-400 focus:ring-1 focus:ring-gray-400'
-          />
+        {/* Search Input + View Toggle */}
+        <div className='flex w-full items-center gap-2 md:ml-auto md:max-w-xl'>
+          <div className='relative flex-1'>
+            <Search className='absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 transform text-white/40' />
+            <Input
+              type='text'
+              placeholder='Search by project name or participant...'
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className='bg-backgound-main-bg w-full rounded-lg border-gray-900 py-3 pr-4 pl-10 text-base text-white placeholder-gray-400 focus:border-gray-400 focus:ring-1 focus:ring-gray-400'
+            />
+          </div>
+
+          {/* View mode toggle */}
+          <div className='flex shrink-0 overflow-hidden rounded-lg border border-zinc-800'>
+            <button
+              type='button'
+              onClick={() => setViewMode('grid')}
+              className={cn(
+                'flex h-10 w-10 items-center justify-center transition-colors',
+                viewMode === 'grid'
+                  ? 'bg-zinc-700 text-white'
+                  : 'bg-transparent text-zinc-500 hover:text-zinc-300'
+              )}
+              title='Grid view'
+            >
+              <LayoutGrid className='h-4 w-4' />
+            </button>
+            <button
+              type='button'
+              onClick={() => setViewMode('list')}
+              className={cn(
+                'flex h-10 w-10 items-center justify-center border-l border-zinc-800 transition-colors',
+                viewMode === 'list'
+                  ? 'bg-zinc-700 text-white'
+                  : 'bg-transparent text-zinc-500 hover:text-zinc-300'
+              )}
+              title='List view'
+            >
+              <LayoutList className='h-4 w-4' />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -238,10 +281,16 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
           </div>
         )}
 
-      {/* Submissions Grid */}
+      {/* Submissions Grid / List */}
       {submissions.length > 0 || mySubmission ? (
-        <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-          {/* Pinned User Submission */}
+        <div
+          className={cn(
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'
+              : 'flex flex-col gap-2'
+          )}
+        >
+          {/* Pinned User Submission — always SubmissionCard (has edit/delete) */}
           {mySubmission && (
             <SubmissionCard
               key='my-submission'
@@ -286,10 +335,13 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
 
           {submissions
             .filter(submission =>
-              // Filter out my own submission if it's already shown as pinned
               mySubmission ? submission._id !== mySubmission.id : true
             )
             .map((submission, index) => {
+              const submissionId =
+                (submission as { _id?: string; id?: string })?._id ||
+                (submission as { id?: string })?.id;
+
               const status =
                 submission.status?.toLowerCase() === 'shortlisted'
                   ? 'Approved'
@@ -297,30 +349,58 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
                     ? 'Rejected'
                     : 'Pending';
 
+              const voteCount =
+                submission.votes?.current ?? submission.upvotes ?? 0;
+              const commentCount = submission.comments ?? 0;
+
+              if (viewMode === 'list') {
+                return (
+                  <SubmissionCard2
+                    key={submissionId || index}
+                    title={submission.projectName}
+                    submitterName={submission.submitterName}
+                    submitterAvatar={submission.submitterAvatar}
+                    image={submission.logo ?? '/placeholder.svg'}
+                    upvotes={voteCount}
+                    comments={commentCount}
+                    submittedDate={submission.submittedDate}
+                    submissionId={submissionId}
+                    onViewClick={() => handleViewSubmission(submissionId)}
+                    onUpvoteClick={() => {
+                      if (!isAuthenticated) return;
+                      handleUpvoteSubmission(submissionId);
+                    }}
+                    onCommentClick={() => {
+                      if (!isAuthenticated) return;
+                      handleCommentSubmission(submissionId);
+                    }}
+                  />
+                );
+              }
+
               return (
                 <SubmissionCard
-                  key={submission._id || index}
-                  {...submission}
+                  key={submissionId || index}
+                  title={submission.projectName}
+                  description={submission.description}
+                  submitterName={submission.submitterName}
+                  submitterAvatar={submission.submitterAvatar}
+                  category={submission.category}
+                  categories={submission.categories}
                   status={status}
-                  submissionId={(submission as { _id?: string })?._id}
-                  onViewClick={() =>
-                    handleViewSubmission((submission as { _id?: string })?._id)
-                  }
+                  upvotes={voteCount}
+                  comments={commentCount}
+                  submittedDate={submission.submittedDate}
+                  image={submission.logo ?? '/placeholder.svg'}
+                  submissionId={submissionId}
+                  onViewClick={() => handleViewSubmission(submissionId)}
                   onUpvoteClick={() => {
-                    if (!isAuthenticated) {
-                      return;
-                    }
-                    handleUpvoteSubmission(
-                      (submission as { _id?: string })?._id
-                    );
+                    if (!isAuthenticated) return;
+                    handleUpvoteSubmission(submissionId);
                   }}
                   onCommentClick={() => {
-                    if (!isAuthenticated) {
-                      return;
-                    }
-                    handleCommentSubmission(
-                      (submission as { _id?: string })?._id
-                    );
+                    if (!isAuthenticated) return;
+                    handleCommentSubmission(submissionId);
                   }}
                 />
               );
@@ -399,6 +479,7 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
 }) => {
   const { currentHackathon } = useHackathonData();
   const hackathonId = currentHackathon?.id || '';
+  const hackathonSlug = currentHackathon?.slug || '';
   const orgId = organizationId || undefined;
   const { isAuthenticated } = useAuthStatus();
 
@@ -408,13 +489,13 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
     fetchMySubmission,
     remove: removeSubmission,
   } = useSubmission({
-    hackathonSlugOrId: hackathonId || '',
+    hackathonSlugOrId: hackathonSlug || '',
     autoFetch: isAuthenticated && !!hackathonId,
   });
 
   return (
     <SubmissionScreenWrapper
-      hackathonSlugOrId={hackathonId}
+      hackathonSlugOrId={hackathonSlug}
       organizationId={orgId}
       initialData={
         mySubmission
