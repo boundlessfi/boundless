@@ -67,7 +67,7 @@ export function useDeleteHackathon({
     } finally {
       setIsDeleting(false);
     }
-  }, [organizationId, hackathonId, isAuthenticated, onSuccess, onError]);
+  }, [organizationId, hackathonId, isAuthenticated, type, onSuccess, onError]);
 
   return {
     isDeleting,

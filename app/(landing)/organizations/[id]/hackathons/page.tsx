@@ -102,9 +102,6 @@ export default function HackathonsPage() {
     onSuccess: () => {
       // Refresh the hackathons list after successful deletion
       refetchAll();
-      toast.success('Hackathon deleted successfully', {
-        description: `"${hackathonToDelete?.title}" has been permanently deleted.`,
-      });
     },
     onError: error => {
       toast.error('Failed to delete hackathon', {
@@ -167,45 +164,47 @@ export default function HackathonsPage() {
     return { published, drafts: drafts.length, total };
   }, [hackathons, drafts]);
 
-  const handleDeleteClick = (hackathonId: string) => {
-    const hackathon = allHackathons.find(item => item.data.id === hackathonId);
-    if (hackathon) {
-      const title =
-        hackathon.type === 'draft'
-          ? (hackathon.data as HackathonDraft).data.information?.name ||
-            'Untitled Hackathon'
-          : (hackathon.data as Hackathon).name || 'Untitled Hackathon';
-      setHackathonToDelete({ id: hackathonId, title, type: hackathon.type });
-    // Try to find in published hackathons
-    const published = publishedHackathons.find(h => h.id === hackathonId);
-    if (published) {
-      setHackathonToDelete({
-        id: hackathonId,
-        title: published.name || 'Untitled Hackathon',
-      });
-      setDeleteDialogOpen(true);
-      return;
-    }
-    // Try to find in drafts
-    const draft = draftHackathons.find(d => d.id === hackathonId);
-    if (draft) {
-      setHackathonToDelete({
-        id: hackathonId,
-        title: draft.data.information?.name || 'Untitled Hackathon',
-      });
-      setDeleteDialogOpen(true);
+  const handleDeleteClick = (
+    hackathonId: string,
+    type: 'draft' | 'hackathon'
+  ) => {
+    if (type === 'hackathon') {
+      const published = publishedHackathons.find(h => h.id === hackathonId);
+      if (published) {
+        setHackathonToDelete({
+          id: hackathonId,
+          title: published.name || 'Untitled Hackathon',
+          type: 'hackathon',
+        });
+        setDeleteDialogOpen(true);
+      }
+    } else {
+      const draft = draftHackathons.find(d => d.id === hackathonId);
+      if (draft) {
+        setHackathonToDelete({
+          id: hackathonId,
+          title: draft.data.information?.name || 'Untitled Hackathon',
+          type: 'draft',
+        });
+        setDeleteDialogOpen(true);
+      }
     }
   };
 
   const handleDeleteConfirm = async () => {
     if (!hackathonToDelete) return;
 
+    const { title } = hackathonToDelete; // ✅ snapshot before state clears
+
     setDeleteDialogOpen(false);
 
     try {
       await deleteHackathon();
+      toast.success('Hackathon deleted successfully', {
+        description: `"${title}" has been permanently deleted.`,
+      });
     } catch {
-      // Error handled by toast in deleteHackathon hook
+      // error toast handled by onError in hook
     } finally {
       setHackathonToDelete(null);
     }
@@ -475,7 +474,7 @@ export default function HackathonsPage() {
                             <button
                               onClick={e => {
                                 e.stopPropagation();
-                                handleDeleteClick(hackathon.id);
+                                handleDeleteClick(hackathon.id, 'hackathon');
                               }}
                               className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:border-red-600 hover:text-red-500'
                               title='Delete Hackathon'
@@ -591,7 +590,7 @@ export default function HackathonsPage() {
                           <button
                             onClick={e => {
                               e.stopPropagation();
-                              handleDeleteClick(draft.id);
+                              handleDeleteClick(draft.id, 'draft');
                             }}
                             className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:border-red-600 hover:text-red-500'
                             title='Delete Draft'

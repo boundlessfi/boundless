@@ -103,7 +103,11 @@ export const deleteDraft = async (
     `/organizations/${organizationId}/hackathons/draft/${draftId}`
   );
 
-  return res.data;
+  if (res.status === 204) {
+    return { success: true, message: 'Deleted successfully', data: null };
+  }
+
+  return res.data as DeleteHackathonResponse;
 };
 
 /**
