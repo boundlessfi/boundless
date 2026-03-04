@@ -14,6 +14,7 @@ import Image from 'next/image';
 import React, { useContext } from 'react';
 import { useAuthActions, useAuthStatus } from '@/hooks/use-auth';
 import { OrganizationContext } from '@/lib/providers/OrganizationProvider';
+import { getKycImageAndAlt } from '@/lib/kyc-status';
 
 interface UserMenuProps {
   /**
@@ -47,8 +48,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   const orgContext = useContext(OrganizationContext);
   const organizations = orgContext?.organizations || [];
-  const isVerified =
-    user?.profile?.user?.identityVerificationStatus === 'Approved';
+  const kycStatus = user?.profile?.user?.identityVerificationStatus;
+  const kycBadge = getKycImageAndAlt(kycStatus);
 
   return (
     <DropdownMenu>
@@ -70,14 +71,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                 {(user?.name || 'U').charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {isVerified && (
+            {kycBadge && (
               <span className='absolute -right-0.5 -bottom-0.5 flex rounded-full bg-black'>
                 <Image
-                  src='/verified.png'
-                  alt='Verified'
+                  src={kycBadge.src}
+                  alt={kycBadge.alt}
                   width={12}
                   height={12}
-                  className='h-4 w-4'
+                  className='h-3 w-3'
                 />
               </span>
             )}
@@ -108,10 +109,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             <div className='min-w-0 flex-1'>
               <p className='flex items-center gap-1.5 truncate text-sm font-semibold text-white'>
                 <span className='truncate'>{user?.name || 'User'}</span>
-                {isVerified && (
+                {kycBadge && (
                   <Image
-                    src='/verified.png'
-                    alt='Verified'
+                    src={kycBadge.src}
+                    alt={kycBadge.alt}
                     width={14}
                     height={14}
                     className='h-3.5 w-3.5 shrink-0'

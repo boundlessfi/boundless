@@ -2,6 +2,7 @@
 import Profile from '@/components/profile/update/Profile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { User } from '@/types/user';
 import { getMe } from '@/lib/api/auth';
 import { GetMeResponse } from '@/lib/api/types';
@@ -11,6 +12,8 @@ import { IdentityVerificationSection } from '@/components/didit/IdentityVerifica
 import { invalidateAuthProfileCache } from '@/hooks/use-auth';
 
 const SettingsContent = () => {
+  const searchParams = useSearchParams();
+  const fromVerification = searchParams.get('verification') === 'complete';
   const [userData, setUserData] = useState<GetMeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -54,7 +57,10 @@ const SettingsContent = () => {
             Manage your personal information and public profile
           </p>
         </div>
-        <Tabs defaultValue='profile' className='w-full'>
+        <Tabs
+          defaultValue={fromVerification ? 'identity' : 'profile'}
+          className='w-full'
+        >
           <TabsList className='inline-flex h-auto gap-6 bg-transparent p-0'>
             <TabsTrigger
               value='profile'

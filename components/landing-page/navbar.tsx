@@ -26,6 +26,8 @@ import {
 } from '../ui/dropdown-menu';
 import { UserMenu } from '../user/UserMenu';
 import { cn } from '@/lib/utils';
+import { getKycImageAndAlt } from '@/lib/kyc-status';
+import type { GetMeResponse } from '@/lib/api/types';
 import { BoundlessButton } from '../buttons';
 import { useProtectedAction } from '@/hooks/use-protected-action';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
@@ -350,6 +352,11 @@ const MobileMenu = ({
   const displayName = useMemo(() => {
     return user?.name || user?.profile?.firstName || 'User';
   }, [user]);
+
+  const kycStatus = (user?.profile as GetMeResponse | undefined)?.user
+    ?.identityVerificationStatus;
+  const kycBadge = getKycImageAndAlt(kycStatus);
+
   return (
     <div className='min-[990px]:hidden'>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -389,18 +396,44 @@ const MobileMenu = ({
           <div className='flex flex-1 flex-col gap-6 overflow-y-auto pb-6'>
             {isAuthenticated && user && (
               <div className='flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-4 transition-colors hover:bg-white/8'>
-                <Avatar className='h-10 w-10 border border-white/10'>
-                  <AvatarImage
-                    src={user.profile?.image || ''}
-                    alt={displayName}
-                  />
-                  <AvatarFallback className='bg-white/10 text-white/80'>
-                    {userInitial}
-                  </AvatarFallback>
-                </Avatar>
+                <span className='relative shrink-0'>
+                  <Avatar className='h-10 w-10 border border-white/10'>
+                    <AvatarImage
+                      src={
+                        (user.profile as GetMeResponse)?.user?.image ||
+                        user.profile?.image ||
+                        ''
+                      }
+                      alt={displayName}
+                    />
+                    <AvatarFallback className='bg-white/10 text-white/80'>
+                      {userInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                  {kycBadge && (
+                    <span className='absolute -right-0.5 -bottom-0.5 flex rounded-full bg-black'>
+                      <Image
+                        src={kycBadge.src}
+                        alt={kycBadge.alt}
+                        width={14}
+                        height={14}
+                        className='h-3.5 w-3.5'
+                      />
+                    </span>
+                  )}
+                </span>
                 <div className='min-w-0 flex-1'>
-                  <p className='truncate text-sm font-medium text-white'>
-                    {displayName}
+                  <p className='flex items-center gap-1.5 truncate text-sm font-medium text-white'>
+                    <span className='truncate'>{displayName}</span>
+                    {kycBadge && (
+                      <Image
+                        src={kycBadge.src}
+                        alt={kycBadge.alt}
+                        width={14}
+                        height={14}
+                        className='h-3.5 w-3.5 shrink-0'
+                      />
+                    )}
                   </p>
                   <p className='truncate text-xs text-white/60'>
                     {user?.email}
