@@ -97,8 +97,9 @@ export default function HackathonsPage() {
   // Use the separate delete hook
   const { isDeleting, deleteHackathon } = useDeleteHackathon({
     organizationId,
-    hackathonId: hackathonToDelete?.id || '', // This will be set when we have a hackathon to delete
+    hackathonId: hackathonToDelete?.id || '',
     type: hackathonToDelete?.type ?? 'hackathon',
+    suppressToast: true,
     onSuccess: () => {
       // Refresh the hackathons list after successful deletion
       refetchAll();
