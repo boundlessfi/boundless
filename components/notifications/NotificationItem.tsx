@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Notification } from '@/types/notifications';
 import { getNotificationIcon } from './NotificationIcon';
 import { cn } from '@/lib/utils';
+import { getProjectUrlFromNotification } from '@/lib/notifications';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -37,12 +38,12 @@ export const NotificationItem = ({
 
     // Team invitation notifications (navigate to project if available)
     if (notification.data.teamInvitationId && notification.data.projectId) {
-      return `/projects/${notification.data.projectId}`;
+      return getProjectUrlFromNotification(notification.data) || '#';
     }
 
     // Project notifications
     if (notification.data.projectId) {
-      return `/projects/${notification.data.projectId}`;
+      return getProjectUrlFromNotification(notification.data) || '#';
     }
 
     // Comment notifications

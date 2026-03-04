@@ -104,6 +104,7 @@ export interface Notification {
     // Project fields
     projectId?: string;
     projectName?: string;
+    projectSlug?: string;
     // Member fields
     memberEmail?: string;
     role?: string;

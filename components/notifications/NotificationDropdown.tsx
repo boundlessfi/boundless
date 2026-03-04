@@ -12,6 +12,7 @@ import { Notification } from '@/types/notifications';
 import { Skeleton } from '@/components/ui/skeleton';
 import { markAsRead } from '@/lib/api/notifications';
 import { toast } from 'sonner';
+import { getProjectUrlFromNotification } from '@/lib/notifications';
 
 interface NotificationDropdownProps {
   notifications: Notification[];
@@ -109,11 +110,17 @@ export const NotificationDropdown = ({
       notification.data.teamInvitationId &&
       notification.data.projectId
     ) {
-      router.push(`/projects/${notification.data.projectId}`);
+      const url = getProjectUrlFromNotification(notification.data);
+      if (url) {
+        router.push(url);
+      }
     }
     // Project notifications
     else if (notification.data.projectId) {
-      router.push(`/projects/${notification.data.projectId}`);
+      const url = getProjectUrlFromNotification(notification.data);
+      if (url) {
+        router.push(url);
+      }
     }
     // Comment notifications
     else if (notification.data.commentId) {
