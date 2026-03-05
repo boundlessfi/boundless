@@ -8,14 +8,19 @@ import { getMe } from '@/lib/api/auth';
 import { GetMeResponse } from '@/lib/api/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Settings from '@/components/profile/update/Settings';
+import TwoFactorTab from '@/components/profile/update/TwoFactorTab';
+import SecurityTab from '@/components/profile/update/SecurityTab';
 import { IdentityVerificationSection } from '@/components/didit/IdentityVerificationSection';
 import { invalidateAuthProfileCache } from '@/hooks/use-auth';
+import { useRef } from 'react';
 
 const SettingsContent = () => {
   const searchParams = useSearchParams();
   const fromVerification = searchParams.get('verification') === 'complete';
   const [userData, setUserData] = useState<GetMeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Prevent unmounting tabs on background refetches (e.g. after 2FA enable)
+  const hasLoadedOnce = useRef(false);
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -25,11 +30,15 @@ const SettingsContent = () => {
       setUserData(null);
     } finally {
       setIsLoading(false);
+      hasLoadedOnce.current = true;
     }
   }, []);
 
   useEffect(() => {
-    setIsLoading(true);
+    // Only set isLoading true on the very first fetch
+    if (!hasLoadedOnce.current) {
+      setIsLoading(true);
+    }
     fetchUserData();
   }, [fetchUserData]);
 
@@ -38,7 +47,8 @@ const SettingsContent = () => {
     invalidateAuthProfileCache();
   }, [fetchUserData]);
 
-  if (isLoading) {
+  // Only show skeleton on first load — not on background refetches
+  if (isLoading && !hasLoadedOnce.current) {
     return (
       <div>
         <Skeleton className='h-full w-full' />
@@ -116,6 +126,15 @@ const SettingsContent = () => {
           </TabsContent>
           <TabsContent value='settings'>
             <Settings />
+          </TabsContent>
+          <TabsContent value='security'>
+            <SecurityTab user={userData?.user as User} />
+          </TabsContent>
+          <TabsContent value='2fa'>
+            <TwoFactorTab
+              user={userData?.user as User}
+              onStatusChange={fetchUserData}
+            />
           </TabsContent>
           <TabsContent value='identity' className='space-y-6'>
             <IdentityVerificationSection

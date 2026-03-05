@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import z from 'zod';
 import LoginForm from './LoginForm';
+import TwoFactorVerify from './TwoFactorVerify';
 import { authClient } from '@/lib/auth-client';
 import { useAuthStore } from '@/lib/stores/auth-store';
 
@@ -32,20 +33,11 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [lastMethod, setLastMethod] = useState<string | null>(null);
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
 
   const callbackUrl = searchParams.get('callbackUrl')
     ? decodeURIComponent(searchParams.get('callbackUrl')!)
     : process.env.NEXT_PUBLIC_APP_URL || '/';
-
-  useEffect(() => {
-    const method = authClient.getLastUsedLoginMethod();
-    setLastMethod(method);
-  }, []);
-
-  useEffect(() => {
-    const method = authClient.getLastUsedLoginMethod();
-    setLastMethod(method);
-  }, []);
 
   useEffect(() => {
     const method = authClient.getLastUsedLoginMethod();
@@ -88,6 +80,17 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
           : 'Authentication failed. Please try again.');
       const errorStatus = error.status;
       const errorCode = error.code;
+
+      // Check for 2FA requirement
+      if (
+        errorStatus === 403 &&
+        (errorMessage === 'two_factor_required' ||
+          errorMessage?.includes('two_factor') ||
+          errorCode === 'TWO_FACTOR_REQUIRED')
+      ) {
+        setTwoFactorRequired(true);
+        return;
+      }
 
       if (errorStatus === 403 || errorCode === 'FORBIDDEN') {
         const message =
@@ -171,8 +174,36 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
       setIsLoading(true);
       setLoadingState(true);
 
+      const syncSession = async () => {
+        const session = await authClient.getSession();
+        if (session && typeof session === 'object' && 'user' in session) {
+          const sessionUser = session.user as
+            | {
+                id: string;
+                email: string;
+                name?: string | null;
+                image?: string | null;
+              }
+            | null
+            | undefined;
+
+          if (sessionUser && sessionUser.id && sessionUser.email) {
+            const authStore = useAuthStore.getState();
+            await authStore.syncWithSession({
+              id: sessionUser.id,
+              email: sessionUser.email,
+              name: sessionUser.name || undefined,
+              image: sessionUser.image || undefined,
+              role: 'USER',
+              username: undefined,
+              accessToken: undefined,
+            });
+          }
+        }
+      };
+
       try {
-        const { error } = await authClient.signIn.email(
+        const { data, error } = await authClient.signIn.email(
           {
             email: values.email,
             password: values.password,
@@ -184,42 +215,20 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
               setIsLoading(true);
               setLoadingState(true);
             },
-            onSuccess: async () => {
-              await new Promise(resolve => setTimeout(resolve, 200));
-
-              const session = await authClient.getSession();
-
-              if (session && typeof session === 'object' && 'user' in session) {
-                const sessionUser = session.user as
-                  | {
-                      id: string;
-                      email: string;
-                      name?: string | null;
-                      image?: string | null;
-                    }
-                  | null
-                  | undefined;
-
-                if (sessionUser && sessionUser.id && sessionUser.email) {
-                  const authStore = useAuthStore.getState();
-                  await authStore.syncWithSession({
-                    id: sessionUser.id,
-                    email: sessionUser.email,
-                    name: sessionUser.name || undefined,
-                    image: sessionUser.image || undefined,
-                    role: 'USER',
-                    username: undefined,
-                    accessToken: undefined,
-                  });
-                }
+            onSuccess: async ctx => {
+              const resData = ctx?.data as any;
+              if (resData?.twoFactorRequired || resData?.twoFactorRedirect) {
+                setTwoFactorRequired(true);
+                setIsLoading(false);
+                setLoadingState(false);
+                return;
               }
 
-              // Keep loading state active during redirect
-              // The page will unmount when redirecting, so no need to set false
+              await new Promise(resolve => setTimeout(resolve, 200));
+              await syncSession();
               window.location.href = callbackUrl;
             },
             onError: ctx => {
-              // Handle error from Better Auth callback
               const errorObj = ctx.error || ctx;
               handleAuthError(
                 typeof errorObj === 'object'
@@ -233,14 +242,19 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
           }
         );
 
-        // Handle error from return value
         if (error) {
           handleAuthError(error, values);
           setIsLoading(false);
           setLoadingState(false);
+        } else if (
+          (data as any)?.twoFactorRequired ||
+          (data as any)?.twoFactorRedirect
+        ) {
+          setTwoFactorRequired(true);
+          setIsLoading(false);
+          setLoadingState(false);
         }
       } catch (error) {
-        // Handle unexpected errors
         const errorObj =
           error instanceof Error
             ? { message: error.message, status: undefined, code: undefined }
@@ -253,6 +267,17 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
     },
     [handleAuthError, setLoadingState, callbackUrl]
   );
+
+  if (twoFactorRequired) {
+    return (
+      <TwoFactorVerify
+        onSuccess={async () => {
+          window.location.href = callbackUrl;
+        }}
+        onCancel={() => setTwoFactorRequired(false)}
+      />
+    );
+  }
 
   return (
     <LoginForm

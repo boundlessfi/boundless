@@ -4,7 +4,7 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useAuthStatus } from '@/hooks/use-auth';
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface MeLayoutProps {
@@ -33,6 +33,13 @@ const getId = (item: ProfileItemWithId): string | undefined =>
 
 const MeLayout = ({ children }: MeLayoutProps): React.ReactElement => {
   const { user, isLoading } = useAuthStatus();
+  // Track whether we've completed the very first load.
+  // This prevents children from unmounting during background session refetches
+  // (e.g. on window focus), which would destroy component state like 2FA steps.
+  const hasLoadedOnce = useRef(false);
+  useEffect(() => {
+    if (!isLoading) hasLoadedOnce.current = true;
+  }, [isLoading]);
 
   const { name = '', email = '', profile, image: userImage = '' } = user || {};
   const typedProfile = profile as MeLayoutProfile | null | undefined;
@@ -62,7 +69,8 @@ const MeLayout = ({ children }: MeLayoutProps): React.ReactElement => {
     }).length;
   }, [typedProfile]);
 
-  if (isLoading) {
+  // Only show full-screen spinner on first load, not on background refetches
+  if (isLoading && !hasLoadedOnce.current) {
     return (
       <div className='flex h-screen items-center justify-center'>
         <LoadingSpinner size='xl' color='white' />

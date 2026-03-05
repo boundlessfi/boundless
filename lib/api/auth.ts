@@ -298,3 +298,112 @@ export const updateUserAvatar = async (
     message: axiosRes.data.message,
   };
 };
+/**
+ * Two-factor authentication interfaces
+ */
+export interface TwoFactorStatusResponse {
+  twoFactorEnabled: boolean;
+}
+
+export interface GetTotpUriResponse {
+  totpURI: string;
+}
+
+export interface VerifyTotpResponse {
+  status: boolean;
+}
+
+export interface EnableTwoFactorResponse {
+  totpURI: string;
+  backupCodes: string[];
+}
+
+export interface GenerateBackupCodesResponse {
+  status: boolean;
+  backupCodes: string[];
+}
+
+/**
+ * Two-factor authentication API methods
+ */
+export const getTotpUri = async (password: string): Promise<string> => {
+  const res = await api.post<GetTotpUriResponse>(
+    '/auth/two-factor/get-totp-uri',
+    { password }
+  );
+  return res.data.totpURI;
+};
+
+export const verifyTotp = async (
+  code: string,
+  trustDevice: boolean | null = null
+): Promise<boolean> => {
+  const res = await api.post<VerifyTotpResponse>(
+    '/auth/two-factor/verify-totp',
+    { code, trustDevice }
+  );
+  return res.data.status;
+};
+
+export const sendTwoFactorOtp = async (): Promise<boolean> => {
+  const res = await api.post<{ status: boolean }>('/auth/two-factor/send-otp');
+  return res.data.status;
+};
+
+export const verifyTwoFactorOtp = async (
+  code: string,
+  trustDevice: boolean | null = null
+): Promise<{ token: string; user: User }> => {
+  const res = await api.post<{ token: string; user: User }>(
+    '/auth/two-factor/verify-otp',
+    { code, trustDevice }
+  );
+  return res.data;
+};
+
+export const verifyBackupCode = async (
+  code: string,
+  trustDevice: boolean | null = null,
+  disableSession: boolean | null = null
+): Promise<{ user: User; session: any }> => {
+  const res = await api.post<{ user: User; session: any }>(
+    '/auth/two-factor/verify-backup-code',
+    {
+      code,
+      trustDevice,
+      disableSession,
+    }
+  );
+  return res.data;
+};
+
+export const generateBackupCodes = async (
+  password: string
+): Promise<string[]> => {
+  const res = await api.post<GenerateBackupCodesResponse>(
+    '/auth/two-factor/generate-backup-codes',
+    { password }
+  );
+  return res.data.backupCodes;
+};
+
+export const enableTwoFactor = async (
+  password: string,
+  issuer: string | null = 'Boundless'
+): Promise<EnableTwoFactorResponse> => {
+  const res = await api.post<EnableTwoFactorResponse>(
+    '/auth/two-factor/enable',
+    {
+      password,
+      issuer: issuer || 'Boundless',
+    }
+  );
+  return res.data;
+};
+
+export const disableTwoFactor = async (password: string): Promise<boolean> => {
+  const res = await api.post<{ status: boolean }>('/auth/two-factor/disable', {
+    password,
+  });
+  return res.data.status;
+};
