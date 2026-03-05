@@ -76,15 +76,6 @@ interface SettingsProps {
 const Settings = ({ visibleSections }: SettingsProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  const sections = visibleSections || [
-    'notifications',
-    'privacy',
-    'appearance',
-    'preferences',
-  ];
-  const showAllSections = !visibleSections || visibleSections.length === 0;
-
   const [settings, setSettings] = useState<UserSettings>({
     notifications: {
       emailNotifications: true,
@@ -254,6 +245,14 @@ const Settings = ({ visibleSections }: SettingsProps) => {
     );
   }
 
+  const showAllSections = !visibleSections;
+  const sections = visibleSections ?? [
+    'notifications',
+    'privacy',
+    'appearance',
+    'preferences',
+  ];
+
   return (
     <div className='flex flex-col gap-6'>
       {showAllSections && (
@@ -268,7 +267,7 @@ const Settings = ({ visibleSections }: SettingsProps) => {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
           {/* Notifications */}
-          {sections.includes('notifications') && (
+          {(!visibleSections || visibleSections.includes('notifications')) && (
             <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
               <div className='mb-4 flex items-center gap-3'>
                 <Bell className='h-5 w-5 text-zinc-400' />
@@ -344,7 +343,7 @@ const Settings = ({ visibleSections }: SettingsProps) => {
           )}
 
           {/* Privacy */}
-          {sections.includes('privacy') && (
+          {(!visibleSections || visibleSections.includes('privacy')) && (
             <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
               <div className='mb-4 flex items-center gap-3'>
                 <Shield className='h-5 w-5 text-zinc-400' />

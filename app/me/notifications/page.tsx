@@ -126,7 +126,7 @@ export default function NotificationsPage() {
         notification.type === NotificationType.DIRECT_MESSAGE &&
         notification.data?.conversationId
       ) {
-        openMessages(notification.data.conversationId as string);
+        openMessages(notification.data?.conversationId as string);
         setSheetOpen(false);
         if (!notification.read) {
           markNotificationAsRead([notification.id]).catch(() => {});

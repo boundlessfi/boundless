@@ -4,6 +4,8 @@
  * Otherwise logs to console in development and no-ops in production.
  */
 
+import type { Scope } from '@sentry/nextjs';
+
 type ReportContext = Record<string, unknown>;
 
 const hasSentry = (): boolean =>
@@ -22,7 +24,7 @@ export const reportError = (error: unknown, context?: ReportContext): void => {
         .then(Sentry => {
           const err = error instanceof Error ? error : new Error(String(error));
           if (context && Object.keys(context).length > 0) {
-            Sentry.withScope(scope => {
+            Sentry.withScope((scope: Scope) => {
               scope.setContext('extra', context);
               Sentry.captureException(err);
             });
@@ -65,7 +67,7 @@ export const reportMessage = (
       import('@sentry/nextjs')
         .then(Sentry => {
           if (context && Object.keys(context).length > 0) {
-            Sentry.withScope(scope => {
+            Sentry.withScope((scope: Scope) => {
               scope.setContext('extra', context);
               Sentry.captureMessage(message, level);
             });

@@ -22,39 +22,30 @@ export const NotificationItem = ({
   const Icon = getNotificationIcon(notification.type);
 
   const getNotificationLink = (): string => {
-    // Organization notifications
-    if (notification.data.organizationId) {
-      return `/organizations/${notification.data.organizationId}`;
-    }
+    const data = notification.data;
+    if (!data) return '#';
 
-    // Hackathon notifications (prefer slug over ID)
-    if (notification.data.hackathonId) {
-      if (notification.data.hackathonSlug) {
-        return `/hackathons/${notification.data.hackathonSlug}`;
+    if (data.organizationId) {
+      return `/organizations/${data.organizationId}`;
+    }
+    if (data.hackathonId) {
+      if (data.hackathonSlug) {
+        return `/hackathons/${data.hackathonSlug}`;
       }
-      return `/hackathons/${notification.data.hackathonId}`;
+      return `/hackathons/${data.hackathonId}`;
     }
-
-    // Team invitation notifications (navigate to project if available)
-    if (notification.data.teamInvitationId && notification.data.projectId) {
-      return `/projects/${notification.data.projectId}`;
+    if (data.teamInvitationId && data.projectId) {
+      return `/projects/${data.projectId}`;
     }
-
-    // Project notifications
-    if (notification.data.projectId) {
-      return `/projects/${notification.data.projectId}`;
+    if (data.projectId) {
+      return `/projects/${data.projectId}`;
     }
-
-    // Comment notifications
-    if (notification.data.commentId) {
-      return `/comments/${notification.data.commentId}`;
+    if (data.commentId) {
+      return `/comments/${data.commentId}`;
     }
-
-    // Milestone notifications
-    if (notification.data.milestoneId) {
-      return `/milestones/${notification.data.milestoneId}`;
+    if (data.milestoneId) {
+      return `/milestones/${data.milestoneId}`;
     }
-
     return '#';
   };
 
@@ -116,10 +107,10 @@ export const NotificationItem = ({
           {notification.message}
         </p>
 
-        {notification.data.amount && (
+        {notification.data?.amount != null && (
           <div className='mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400'>
             <span>$</span>
-            <span>{notification.data.amount.toLocaleString()}</span>
+            <span>{notification.data?.amount.toLocaleString()}</span>
           </div>
         )}
       </div>

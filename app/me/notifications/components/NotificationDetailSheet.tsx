@@ -39,7 +39,7 @@ export const NotificationDetailSheet = ({
   const Icon = getNotificationIcon(notification.type);
   const createdAt = new Date(notification.createdAt);
 
-  const metadata = Object.entries(notification.data).filter(
+  const metadata = Object.entries(notification.data ?? {}).filter(
     ([key, value]) =>
       value !== undefined &&
       value !== null &&

@@ -91,37 +91,29 @@ export const NotificationDropdown = ({
       }
     }
 
-    // Navigate to relevant page based on priority
-    // Organization notifications
-    if (notification.data.organizationId) {
-      router.push(`/organizations/${notification.data.organizationId}`);
+    // Navigate to relevant page based on priority (guard: data may be null from API)
+    const data = notification.data;
+    if (!data) {
+      if (onClose) onClose();
+      return;
     }
-    // Hackathon notifications (prefer slug over ID)
-    else if (notification.data.hackathonId) {
-      if (notification.data.hackathonSlug) {
-        router.push(`/hackathons/${notification.data.hackathonSlug}`);
+
+    if (data.organizationId) {
+      router.push(`/organizations/${data.organizationId}`);
+    } else if (data.hackathonId) {
+      if (data.hackathonSlug) {
+        router.push(`/hackathons/${data.hackathonSlug}`);
       } else {
-        router.push(`/hackathons/${notification.data.hackathonId}`);
+        router.push(`/hackathons/${data.hackathonId}`);
       }
-    }
-    // Team invitation notifications (navigate to project if available)
-    else if (
-      notification.data.teamInvitationId &&
-      notification.data.projectId
-    ) {
-      router.push(`/projects/${notification.data.projectId}`);
-    }
-    // Project notifications
-    else if (notification.data.projectId) {
-      router.push(`/projects/${notification.data.projectId}`);
-    }
-    // Comment notifications
-    else if (notification.data.commentId) {
-      router.push(`/comments/${notification.data.commentId}`);
-    }
-    // Milestone notifications
-    else if (notification.data.milestoneId) {
-      router.push(`/milestones/${notification.data.milestoneId}`);
+    } else if (data.teamInvitationId && data.projectId) {
+      router.push(`/projects/${data.projectId}`);
+    } else if (data.projectId) {
+      router.push(`/projects/${data.projectId}`);
+    } else if (data.commentId) {
+      router.push(`/comments/${data.commentId}`);
+    } else if (data.milestoneId) {
+      router.push(`/milestones/${data.milestoneId}`);
     }
 
     if (onClose) {

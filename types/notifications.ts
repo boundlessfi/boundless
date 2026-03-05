@@ -94,7 +94,7 @@ export interface Notification {
   type: NotificationType;
   title: string;
   message: string;
-  data: {
+  data: null | {
     // Organization fields
     organizationId?: string;
     organizationName?: string;
