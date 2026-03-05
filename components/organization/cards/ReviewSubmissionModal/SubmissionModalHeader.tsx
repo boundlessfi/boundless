@@ -14,6 +14,7 @@ import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 import { toast } from 'sonner';
+import { reportError } from '@/lib/error-reporting';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +46,7 @@ export const SubmissionModalHeader: React.FC<SubmissionModalHeaderProps> = ({
       await navigator.clipboard.writeText(window.location.href);
       toast.success('Link copied to clipboard');
     } catch (err) {
-      console.error('Failed to copy link:', err);
+      reportError(err, { context: 'submission-copyLink' });
       toast.error('Failed to copy link to clipboard');
     }
   };

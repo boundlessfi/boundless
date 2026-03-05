@@ -23,10 +23,16 @@ export interface ApiResponse<T = unknown> {
   statusText: string;
 }
 
+export interface ApiErrorField {
+  field?: string;
+  message: string;
+}
+
 export interface ApiError {
   message: string;
   status: number;
   code?: string;
+  errors?: ApiErrorField[];
 }
 
 export interface RequestConfig {
@@ -134,13 +140,18 @@ const createClientApi = (): AxiosInstance => {
 
       // Handle other errors
       if (error.response) {
-        const errorData = error.response.data;
+        const errorData = error.response.data as
+          | { message?: string; code?: string; errors?: ApiErrorField[] }
+          | undefined;
         const customError: ApiError = {
           message:
             errorData?.message ||
             `HTTP error! status: ${error.response.status}`,
           status: error.response.status,
           code: errorData?.code,
+          errors: Array.isArray(errorData?.errors)
+            ? errorData.errors
+            : undefined,
         };
         return Promise.reject(customError);
       } else if (error.request) {

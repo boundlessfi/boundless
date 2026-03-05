@@ -3,6 +3,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserMenu } from './user/UserMenu';
 import { SmartBreadcrumb } from './smart-breadcrumb';
 import { WalletTrigger } from './wallet/WalletTrigger';
+import { MessagesTrigger } from '@/components/messages/MessagesTrigger';
 
 export function SiteHeader() {
   return (
@@ -17,6 +18,7 @@ export function SiteHeader() {
           <SmartBreadcrumb />
         </div>
         <div className='ml-auto flex items-center gap-2'>
+          <MessagesTrigger />
           <WalletTrigger variant='icon' />
           <UserMenu />
         </div>

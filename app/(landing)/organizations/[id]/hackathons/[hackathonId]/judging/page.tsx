@@ -29,6 +29,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import Loading from '@/components/Loading';
+import { reportError, reportMessage } from '@/lib/error-reporting';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JudgingCriteriaList } from '@/components/organization/hackathons/judging/JudgingCriteriaList';
 import JudgingResultsTable from '@/components/organization/hackathons/judging/JudgingResultsTable';
@@ -87,9 +88,10 @@ export default function JudgingPage() {
           finalMembers = membersRes.data;
         }
       } catch (err) {
-        console.warn(
-          'Legacy member fetch failed, trying Better Auth fallback:',
-          err
+        reportMessage(
+          'Legacy member fetch failed, trying Better Auth fallback',
+          'warning',
+          { error: err instanceof Error ? err.message : String(err) }
         );
       }
 
@@ -111,7 +113,10 @@ export default function JudgingPage() {
         }
       }
     } catch (err) {
-      console.error('All member fetching attempts failed:', err);
+      reportError(err, {
+        context: 'judging-fetchMembers',
+        organizationId: targetOrgId,
+      });
     }
 
     // 2. Fetch judges
@@ -121,7 +126,7 @@ export default function JudgingPage() {
         judges = judgesRes.data || [];
       }
     } catch (err) {
-      console.error('Failed to fetch judges:', err);
+      reportError(err, { context: 'judging-fetchJudges', hackathonId });
     }
 
     setOrgMembers(finalMembers);
@@ -168,7 +173,11 @@ export default function JudgingPage() {
         }
       }
     } catch (error: any) {
-      console.error('Error fetching results:', error);
+      reportError(error, {
+        context: 'judging-fetchResults',
+        organizationId,
+        hackathonId,
+      });
       setJudgingResults([]);
       setJudgingSummary(null);
       toast.error(
@@ -190,7 +199,11 @@ export default function JudgingPage() {
         setWinners(Array.isArray(res.data) ? res.data : []);
       }
     } catch (error) {
-      console.error('Error fetching winners:', error);
+      reportError(error, {
+        context: 'judging-fetchWinners',
+        organizationId,
+        hackathonId,
+      });
     } finally {
       setIsFetchingWinners(false);
     }
@@ -284,10 +297,10 @@ export default function JudgingPage() {
             }
             return sub;
           } catch (err) {
-            console.error(
-              `Failed to fetch details for submission ${sub.id}`,
-              err
-            );
+            reportError(err, {
+              context: 'judging-fetchSubmissionDetails',
+              submissionId: sub.id,
+            });
             return sub;
           }
         });
@@ -301,7 +314,11 @@ export default function JudgingPage() {
       // Handle criteria response safely
       setCriteria(Array.isArray(criteriaRes) ? criteriaRes : []);
     } catch (error) {
-      console.error('Judging data fetch error:', error);
+      reportError(error, {
+        context: 'judging-fetchData',
+        organizationId,
+        hackathonId,
+      });
       toast.error('Failed to load judging data');
     } finally {
       setIsLoading(false);
@@ -331,7 +348,11 @@ export default function JudgingPage() {
         toast.error(res.message || 'Failed to assign judge');
       }
     } catch (error: any) {
-      console.error('Error adding judge:', error);
+      reportError(error, {
+        context: 'judging-addJudge',
+        organizationId,
+        hackathonId,
+      });
       toast.error(
         error.response?.data?.message ||
           error.message ||
@@ -352,7 +373,11 @@ export default function JudgingPage() {
         toast.error(res.message || 'Failed to remove judge');
       }
     } catch (error: any) {
-      console.error('Error removing judge:', error);
+      reportError(error, {
+        context: 'judging-removeJudge',
+        organizationId,
+        hackathonId,
+      });
       toast.error(
         error.response?.data?.message ||
           error.message ||

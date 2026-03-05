@@ -7,6 +7,7 @@ import {
   type CreateTeamPostRequest,
 } from '@/lib/api/hackathons';
 import { toast } from 'sonner';
+import { reportError, reportMessage } from '@/lib/error-reporting';
 
 interface UseTeamInviteOptions {
   hackathonSlugOrId: string;
@@ -69,11 +70,14 @@ export const useTeamInvite = ({
                 );
 
                 if (!res.success) {
-                  console.warn(`Failed to invite ${invitee}: ${res.message}`);
+                  reportMessage(
+                    `Failed to invite ${invitee}: ${res.message}`,
+                    'warning'
+                  );
                 }
                 return res;
               } catch (err) {
-                console.error(`Error inviting ${invitee}:`, err);
+                reportError(err, { context: 'team-invite', invitee });
                 return null;
               }
             })

@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { reportError } from '@/lib/error-reporting';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -131,7 +132,7 @@ export function SubmissionsList({
       // Optional: show success feedback locally or rely on parent refresh
       (e.target as HTMLInputElement).blur();
     } catch (error) {
-      console.error('Failed to update rank', error);
+      reportError(error, { context: 'submissions-updateRank' });
     }
   };
 

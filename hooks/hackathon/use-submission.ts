@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/hackathons';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { toast } from 'sonner';
+import { reportError } from '@/lib/error-reporting';
 
 // Type for submission data from form (without backend-specific fields)
 export type SubmissionFormData = Omit<
@@ -113,6 +114,10 @@ export function useSubmission({
           err instanceof Error ? err.message : 'Failed to create submission';
         setError(errorMessage);
         toast.error(errorMessage);
+        reportError(err, {
+          context: 'hackathon-createSubmission',
+          hackathonSlugOrId,
+        });
         throw err;
       } finally {
         setIsSubmitting(false);
@@ -151,6 +156,10 @@ export function useSubmission({
           err instanceof Error ? err.message : 'Failed to update submission';
         setError(errorMessage);
         toast.error(errorMessage);
+        reportError(err, {
+          context: 'hackathon-updateSubmission',
+          submissionId,
+        });
         throw err;
       } finally {
         setIsSubmitting(false);

@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 export async function GET() {
+  if (isProduction) {
+    return NextResponse.json({ message: 'Not found' }, { status: 404 });
+  }
+
   // Normalize API URL: remove trailing slash and /api if present
   // The env var should be base URL without /api (e.g., https://api.boundlessfi.xyz)
   let apiUrl =
@@ -37,6 +43,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (isProduction) {
+    return NextResponse.json({ message: 'Not found' }, { status: 404 });
+  }
+
   try {
     const body = await req.json();
     const { email, password } = body;

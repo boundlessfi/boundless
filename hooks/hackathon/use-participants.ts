@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { getTeamPosts, type TeamRecruitmentPost } from '@/lib/api/hackathons';
+import { reportError } from '@/lib/error-reporting';
 import { useParams } from 'next/navigation';
 
 export function useParticipants() {
@@ -24,10 +25,7 @@ export function useParticipants() {
           }
         })
         .catch(err => {
-          console.error(
-            'Failed to fetch teams for participant enrichment:',
-            err
-          );
+          reportError(err, { context: 'participants-fetchTeams', hackathonId });
         });
     }
   }, [hackathonId]);

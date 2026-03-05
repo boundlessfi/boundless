@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getDraft, PrizeTier, VenueType } from '@/lib/api/hackathons';
 import { getOrganization } from '@/lib/api/organization';
+import { reportError } from '@/lib/error-reporting';
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
 import { HackathonOverview } from '@/components/hackathons/overview/hackathonOverview';
@@ -104,7 +105,10 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
             };
           }
         } catch (orgErr) {
-          console.error('Failed to fetch organization for preview:', orgErr);
+          reportError(orgErr, {
+            context: 'hackathon-preview-fetchOrg',
+            orgId: resolvedParams.orgId,
+          });
         }
 
         if (response.success && response.data) {

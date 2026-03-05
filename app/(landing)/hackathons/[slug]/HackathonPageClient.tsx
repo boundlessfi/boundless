@@ -29,6 +29,7 @@ import {
 } from '@/lib/api/hackathons/index';
 import { Megaphone } from 'lucide-react';
 import { AnnouncementsTab } from '@/components/hackathons/announcements/AnnouncementsTab';
+import { reportError, reportMessage } from '@/lib/error-reporting';
 
 export default function HackathonPageClient() {
   const router = useRouter();
@@ -84,8 +85,10 @@ export default function HackathonPageClient() {
         // Only show published announcements for public view
         setAnnouncements(data.filter(a => !a.isDraft));
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to fetch announcements:', error);
+        reportError(error, {
+          context: 'hackathon-fetchAnnouncements',
+          hackathonId,
+        });
       } finally {
         setAnnouncementsLoading(false);
       }
@@ -197,8 +200,10 @@ export default function HackathonPageClient() {
           process.env.NODE_ENV === 'development' &&
           currentHackathon?.enabledTabs
         ) {
-          console.warn(
-            `[HackathonPageClient] Tab "${tab.id}" (enabled key: ${key}) is not in currentHackathon.enabledTabs and will be hidden. Add the tab id to tabIdToEnabledKey and ensure the backend includes the key in enabledTabs when the tab should be visible.`
+          reportMessage(
+            `Tab "${tab.id}" (enabled key: ${key}) is not in currentHackathon.enabledTabs and will be hidden`,
+            'warning',
+            { tabId: tab.id, key }
           );
         }
         return isVisible;

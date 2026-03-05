@@ -166,46 +166,63 @@ export interface UpdateUserSettingsResponse {
 }
 
 /**
- * Get user settings
+ * Get user settings from backend. Unwraps { success, data } response.
  */
 export const getUserSettings = async (): Promise<UserSettings> => {
-  const res = await api.get<UserSettings>('/users/settings');
-  return res.data;
+  const res = await api.get<ApiResponse<UserSettings>>('/users/settings');
+  const raw = res.data as ApiResponse<UserSettings>;
+  const data = raw?.data ?? (res.data as unknown as UserSettings);
+  return {
+    notifications: data?.notifications ?? {},
+    privacy: data?.privacy ?? {},
+    appearance: data?.appearance ?? {},
+    preferences: data?.preferences ?? {},
+  };
 };
 
 export const updateAppearanceSettings = async (
   data: UserAppearance
 ): Promise<UserAppearance> => {
-  const res = await api.put<UserAppearance>('/users/settings/appearance', data);
-  return {
-    theme: res.data.theme,
-  };
+  const res = await api.put<ApiResponse<UserAppearance>>(
+    '/users/settings/appearance',
+    data
+  );
+  const raw = res.data as ApiResponse<UserAppearance>;
+  const payload = raw?.data ?? (res.data as unknown as UserAppearance);
+  return { theme: payload?.theme ?? 'light' };
 };
 
 export const updateNotificationsSettings = async (
   data: UserNotifications
 ): Promise<UpdateUserNotificationsResponse> => {
-  const res = await api.put<UserNotifications>(
+  const res = await api.put<ApiResponse<UserNotifications>>(
     '/users/settings/notifications',
     data
   );
+  const raw = res.data as ApiResponse<UserNotifications>;
+  const payload = raw?.data ?? (res.data as unknown as UserNotifications);
   return {
-    emailNotifications: res.data.emailNotifications,
-    pushNotifications: res.data.pushNotifications,
+    emailNotifications: payload?.emailNotifications ?? true,
+    pushNotifications: payload?.pushNotifications ?? true,
   };
 };
 
 export const updatePrivacySettings = async (
   data: UserPrivacy
 ): Promise<UserPrivacy> => {
-  const res = await api.put<UserPrivacy>('/users/settings/privacy', data);
+  const res = await api.put<ApiResponse<UserPrivacy>>(
+    '/users/settings/privacy',
+    data
+  );
+  const raw = res.data as ApiResponse<UserPrivacy>;
+  const payload = raw?.data ?? (res.data as unknown as UserPrivacy);
   return {
-    publicProfile: res.data.publicProfile,
-    emailVisibility: res.data.emailVisibility,
-    locationVisibility: res.data.locationVisibility,
-    companyVisibility: res.data.companyVisibility,
-    websiteVisibility: res.data.websiteVisibility,
-    socialLinksVisibility: res.data.socialLinksVisibility,
+    publicProfile: payload?.publicProfile,
+    emailVisibility: payload?.emailVisibility,
+    locationVisibility: payload?.locationVisibility,
+    companyVisibility: payload?.companyVisibility,
+    websiteVisibility: payload?.websiteVisibility,
+    socialLinksVisibility: payload?.socialLinksVisibility,
   };
 };
 /**

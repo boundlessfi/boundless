@@ -16,6 +16,7 @@ import { BoundlessButton } from '@/components/buttons';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { useSubmissionVote } from '@/hooks/hackathon/use-submission-vote';
+import { reportError } from '@/lib/error-reporting';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,7 +100,7 @@ const SubmissionCard = ({
       await toggleVote();
       onUpvoteClick?.();
     } catch (error) {
-      console.error('Error voting:', error);
+      reportError(error, { context: 'submission-vote', submissionId });
     }
   };
 
@@ -129,7 +130,7 @@ const SubmissionCard = ({
   return (
     <div
       onClick={onViewClick}
-      className={`group hover:border-primary/45 mx-auto w-full max-w-[397px] cursor-pointer overflow-hidden rounded-lg border border-[#2B2B2B] bg-[#030303] p-4 transition-all sm:p-5 ${onViewClick ? 'hover:border-[#A7F950]/50' : ''}`}
+      className={`group hover:border-primary/45 bg-background-main-bg mx-auto w-full max-w-[397px] cursor-pointer overflow-hidden rounded-lg border border-[#2B2B2B] p-4 transition-all sm:p-5 ${onViewClick ? 'hover:border-[#A7F950]/50' : ''}`}
     >
       {isPinned && (
         <div className='mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#A7F950]'>
@@ -153,7 +154,7 @@ const SubmissionCard = ({
 
         <div className='flex items-center gap-2'>
           <Badge
-            className={`flex-shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
+            className={`shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
               status === 'Approved'
                 ? 'border-[#A7F950] bg-[#E5FFE5] text-[#4E9E00]'
                 : status === 'Rejected'
@@ -206,7 +207,7 @@ const SubmissionCard = ({
           {allCategories.slice(0, 3).map((cat, idx) => (
             <Badge
               key={idx}
-              className='flex-shrink-0 rounded-[4px] border border-[#645D5D] bg-[#E4DBDB] px-2 py-0.5 text-xs font-medium text-[#645D5D]'
+              className='shrink-0 rounded-[4px] border border-[#645D5D] bg-[#E4DBDB] px-2 py-0.5 text-xs font-medium text-[#645D5D]'
             >
               {cat}
             </Badge>
@@ -216,7 +217,7 @@ const SubmissionCard = ({
 
       {/* Body - Image and Content */}
       <div className='mb-3 flex items-start space-x-3 sm:mb-4 sm:space-x-4'>
-        <div className='relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl sm:h-[90px] sm:w-[80px]'>
+        <div className='relative h-24 w-24 shrink-0 overflow-hidden rounded-xl sm:h-[90px] sm:w-[80px]'>
           <Image
             src={image}
             alt={title}
@@ -270,7 +271,7 @@ const SubmissionCard = ({
           <Button
             onClick={handleCommentClick}
             variant='outline'
-            className='flex h-12 items-center gap-2 rounded-lg border-[#2B2B2B] bg-[#030303] px-4 text-base font-medium text-white hover:border-white hover:bg-transparent hover:text-white'
+            className='bg-background-main-bg flex h-12 items-center gap-2 rounded-lg border-[#2B2B2B] px-4 text-base font-medium text-white hover:border-white hover:bg-transparent hover:text-white'
           >
             <MessageCircle className='h-5 w-5' />
             <span>{comments}</span>

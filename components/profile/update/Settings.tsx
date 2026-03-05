@@ -112,28 +112,58 @@ const Settings = ({ visibleSections }: SettingsProps) => {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       notifications: {
-        emailNotifications: settings.notifications?.emailNotifications,
-        pushNotifications: settings.notifications?.pushNotifications,
+        emailNotifications: settings.notifications?.emailNotifications ?? true,
+        pushNotifications: settings.notifications?.pushNotifications ?? true,
       },
       privacy: {
-        publicProfile: settings.privacy?.publicProfile,
-        emailVisibility: settings.privacy?.emailVisibility,
-        locationVisibility: settings.privacy?.locationVisibility,
-        companyVisibility: settings.privacy?.companyVisibility,
-        websiteVisibility: settings.privacy?.websiteVisibility,
-        socialLinksVisibility: settings.privacy?.socialLinksVisibility,
+        publicProfile: settings.privacy?.publicProfile ?? true,
+        emailVisibility: settings.privacy?.emailVisibility ?? false,
+        locationVisibility: settings.privacy?.locationVisibility ?? false,
+        companyVisibility: settings.privacy?.companyVisibility ?? false,
+        websiteVisibility: settings.privacy?.websiteVisibility ?? false,
+        socialLinksVisibility: settings.privacy?.socialLinksVisibility ?? false,
       },
       appearance: {
-        theme: settings.appearance?.theme,
+        theme:
+          (settings.appearance?.theme as 'light' | 'dark' | 'auto') ?? 'light',
       },
       preferences: {
-        language: settings.preferences?.language,
-        timezone: settings.preferences?.timezone,
-        categories: settings.preferences?.categories,
-        skills: settings.preferences?.skills,
+        language: settings.preferences?.language ?? null,
+        timezone: settings.preferences?.timezone ?? 'UTC',
+        categories: settings.preferences?.categories ?? [],
+        skills: settings.preferences?.skills ?? [],
       },
     },
   });
+
+  // Sync form with backend data once loaded (so we show API values, not only defaults)
+  useEffect(() => {
+    if (isLoading) return;
+    form.reset({
+      notifications: {
+        emailNotifications: settings.notifications?.emailNotifications ?? true,
+        pushNotifications: settings.notifications?.pushNotifications ?? true,
+      },
+      privacy: {
+        publicProfile: settings.privacy?.publicProfile ?? true,
+        emailVisibility: settings.privacy?.emailVisibility ?? false,
+        locationVisibility: settings.privacy?.locationVisibility ?? false,
+        companyVisibility: settings.privacy?.companyVisibility ?? false,
+        websiteVisibility: settings.privacy?.websiteVisibility ?? false,
+        socialLinksVisibility: settings.privacy?.socialLinksVisibility ?? false,
+      },
+      appearance: {
+        theme:
+          (settings.appearance?.theme as 'light' | 'dark' | 'auto') ?? 'light',
+      },
+      preferences: {
+        language: settings.preferences?.language ?? null,
+        timezone: settings.preferences?.timezone ?? 'UTC',
+        categories: settings.preferences?.categories ?? [],
+        skills: settings.preferences?.skills ?? [],
+      },
+    });
+  }, [isLoading, settings, form]);
 
   const onSubmit = async (data: SettingsFormData) => {
     setIsSaving(true);
@@ -201,8 +231,7 @@ const Settings = ({ visibleSections }: SettingsProps) => {
 
   return (
     <div className='flex flex-col gap-6'>
-      {/* Header - Only show if no specific sections are requested (Main Settings page) */}
-      {!visibleSections && (
+      {showAllSections && (
         <div>
           <h1 className='text-2xl font-bold text-white'>Settings</h1>
           <p className='mt-1 text-zinc-400'>
@@ -559,8 +588,7 @@ const Settings = ({ visibleSections }: SettingsProps) => {
             </Card>
           )}
 
-          {/* Appearance */}
-          {(!visibleSections || visibleSections.includes('appearance')) && (
+          {sections.includes('appearance') && (
             <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
               <div className='mb-4 flex items-center gap-3'>
                 <Monitor className='h-5 w-5 text-zinc-400' />
@@ -624,8 +652,7 @@ const Settings = ({ visibleSections }: SettingsProps) => {
             </Card>
           )}
 
-          {/* Preferences */}
-          {(!visibleSections || visibleSections.includes('preferences')) && (
+          {sections.includes('preferences') && (
             <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
               <div className='mb-4 flex items-center gap-3'>
                 <User className='h-5 w-5 text-zinc-400' />
@@ -767,19 +794,20 @@ const Settings = ({ visibleSections }: SettingsProps) => {
             </Card>
           )}
 
-          {/* Save Button */}
-          <div className='flex justify-end'>
-            <Button type='submit' disabled={isSaving} className='min-w-32'>
-              {isSaving ? (
-                <>
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  Saving...
-                </>
-              ) : (
-                'Save Settings'
-              )}
-            </Button>
-          </div>
+          {showAllSections && (
+            <div className='flex justify-end'>
+              <Button type='submit' disabled={isSaving} className='min-w-32'>
+                {isSaving ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Settings'
+                )}
+              </Button>
+            </div>
+          )}
         </form>
       </Form>
     </div>

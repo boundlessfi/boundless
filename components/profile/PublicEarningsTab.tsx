@@ -17,6 +17,7 @@ import {
   EarningSource,
 } from '@/types/earnings';
 import { getPublicEarnings } from '@/lib/api/earnings';
+import { reportError } from '@/lib/error-reporting';
 import EmptyState from '@/components/EmptyState';
 import clsx from 'clsx';
 
@@ -125,7 +126,7 @@ const PublicEarningsTab = ({
       } catch (err) {
         if (!controller.signal.aborted) {
           setError('Unable to load earnings data');
-          console.error('Failed to load earnings:', err);
+          reportError(err, { context: 'publicEarnings-load', username });
         }
       } finally {
         if (!controller.signal.aborted) {

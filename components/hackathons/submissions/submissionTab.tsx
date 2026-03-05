@@ -37,6 +37,7 @@ import { Loader2 } from 'lucide-react';
 import { useExpandableScreen } from '@/components/ui/expandable-screen';
 import { toast } from 'sonner';
 import { useHackathonStatus } from '@/hooks/hackathon/use-hackathon-status';
+import { reportError } from '@/lib/error-reporting';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'grid' | 'list';
@@ -129,7 +130,10 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
         setSubmissionToDelete(null);
         toast.success('Submission deleted successfully');
       } catch (error) {
-        console.error('Failed to delete submission:', error);
+        reportError(error, {
+          context: 'submission-delete',
+          submissionToDelete,
+        });
         toast.error('Failed to delete submission');
       } finally {
         setIsDeleting(false);

@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: __dirname,
@@ -62,10 +63,37 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'assets.coingecko.com',
+      },
     ],
   },
   async headers() {
+    const securityHeaders = [
+      {
+        key: 'X-Frame-Options',
+        value: 'SAMEORIGIN',
+      },
+      {
+        key: 'X-Content-Type-Options',
+        value: 'nosniff',
+      },
+      {
+        key: 'Referrer-Policy',
+        value: 'strict-origin-when-cross-origin',
+      },
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=()',
+      },
+    ];
+
     return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
       {
         source: '/sitemap.xml',
         headers: [
@@ -73,10 +101,17 @@ const nextConfig: NextConfig = {
             key: 'Content-Encoding',
             value: 'identity',
           },
+          ...securityHeaders,
         ],
       },
     ];
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG ?? '',
+  project: process.env.SENTRY_PROJECT ?? '',
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+});

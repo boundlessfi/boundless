@@ -23,6 +23,7 @@ import {
 import { Participant } from '@/lib/api/hackathons';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
+import { reportError } from '@/lib/error-reporting';
 
 const PAGE_SIZE = 12;
 
@@ -146,7 +147,11 @@ const ParticipantsPage: React.FC = () => {
             submissionsCount: stats.totalSubmissions ?? 0,
           });
         } catch (err) {
-          console.error('Failed to load statistics', err);
+          reportError(err, {
+            context: 'participants-statistics',
+            organizationId,
+            hackathonId: actualHackathonId,
+          });
         } finally {
           setStatisticsLoading(false);
         }
@@ -198,7 +203,11 @@ const ParticipantsPage: React.FC = () => {
         toast.error('Failed to load judging criteria');
       }
     } catch (err) {
-      console.error('Failed to load criteria', err);
+      reportError(err, {
+        context: 'participants-loadCriteria',
+        organizationId,
+        hackathonId,
+      });
       setCriteria([]);
       toast.error('An error occurred while loading judging criteria');
     } finally {

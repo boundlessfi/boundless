@@ -148,6 +148,9 @@ export const getNotificationIcon = (type: NotificationType): LucideIcon => {
     case NotificationType.SECURITY_ALERT:
       return Shield;
 
+    case NotificationType.DIRECT_MESSAGE:
+      return MessageSquare;
+
     default:
       return Bell;
   }

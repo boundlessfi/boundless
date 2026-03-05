@@ -8,6 +8,7 @@ import {
   IconDashboard,
   IconFileText,
   IconFolder,
+  IconMessageCircle,
   IconSettings,
   IconShieldCheck,
   IconUserCircle,
@@ -96,6 +97,11 @@ const getNavigationData = (counts?: {
       title: 'Profile',
       url: '/me/profile',
       icon: IconUserCircle,
+    },
+    {
+      title: 'Messages',
+      url: '/me/messages',
+      icon: IconMessageCircle,
     },
     {
       title: 'Settings',

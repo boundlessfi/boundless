@@ -1,11 +1,12 @@
 import React from 'react';
+import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LottieAnimation from '@/components/LottieAnimation';
 
 const NotFound = () => {
   return (
-    <div className='flex min-h-[80vh] items-center justify-center bg-[#030303]'>
+    <div className='bg-background-main-bg flex min-h-[80vh] items-center justify-center'>
       <div className='mx-auto max-w-md px-6 text-center'>
         <div className='mb-8 flex flex-col items-center justify-center'>
           <LottieAnimation />
@@ -22,9 +23,12 @@ const NotFound = () => {
           <Button
             variant='outline'
             className='bg-background flex w-full items-center gap-2 border-[#ffffff]/24 px-3 text-white md:w-fit'
+            asChild
           >
-            <ArrowLeft className='size-4' />
-            Back to Home
+            <Link href='/'>
+              <ArrowLeft className='size-4' />
+              Back to Home
+            </Link>
           </Button>
         </div>
       </div>

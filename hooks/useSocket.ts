@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { reportError } from '@/lib/error-reporting';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_BETTER_AUTH_URL;
 
@@ -39,7 +40,7 @@ export function useSocket(options: UseSocketOptions = {}) {
     });
 
     socketInstance.on('connect_error', error => {
-      console.error('WebSocket connection error:', error);
+      reportError(error, { context: 'websocket-connection' });
       setIsConnected(false);
     });
 
