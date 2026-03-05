@@ -324,9 +324,17 @@ export interface GenerateBackupCodesResponse {
 }
 
 /**
- * Two-factor authentication API methods
+ * AXIOS-BASED 2FA HELPERS
+ *
+ * Note: These functions use direct axios-based API calls instead of the Better Auth client plugin.
+ * They are preserved for use in internal tools, CLI scripts, or specific out-of-UI contexts
+ * where the standard authClient plugins are not appropriate.
+ *
+ * For standard UI components, prefer using `authClient.twoFactor.*`.
  */
-export const getTotpUri = async (password: string): Promise<string> => {
+
+/**
+ * Get TOTP URI for setup
   const res = await api.post<GetTotpUriResponse>(
     '/auth/two-factor/get-totp-uri',
     { password }
@@ -361,19 +369,25 @@ export const verifyTwoFactorOtp = async (
   return res.data;
 };
 
+/**
+ * Verify backup code
+ */
 export const verifyBackupCode = async (
   code: string,
   trustDevice: boolean | null = null,
   disableSession: boolean | null = null
-): Promise<{ user: User; session: any }> => {
-  const res = await api.post<{ user: User; session: any }>(
-    '/auth/two-factor/verify-backup-code',
-    {
-      code,
-      trustDevice,
-      disableSession,
-    }
-  );
+): Promise<{
+  user: User;
+  session: { id: string; userId: string; token: string; expiresAt: Date };
+}> => {
+  const res = await api.post<{
+    user: User;
+    session: { id: string; userId: string; token: string; expiresAt: Date };
+  }>('/auth/two-factor/verify-backup-code', {
+    code,
+    trustDevice,
+    disableSession,
+  });
   return res.data;
 };
 

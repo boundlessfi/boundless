@@ -9,7 +9,7 @@ import { authClient } from '@/lib/auth-client';
 import { BoundlessButton } from '@/components/buttons';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ShieldCheck, KeyIcon, LockIcon } from 'lucide-react';
+import { ShieldCheck, LockIcon } from 'lucide-react';
 import { User } from '@/types/user';
 
 const passwordSchema = z

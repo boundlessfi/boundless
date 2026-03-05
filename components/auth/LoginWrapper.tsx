@@ -216,7 +216,13 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
               setLoadingState(true);
             },
             onSuccess: async ctx => {
-              const resData = ctx?.data as any;
+              const resData = ctx?.data as
+                | {
+                    twoFactorRequired?: boolean;
+                    twoFactorRedirect?: boolean;
+                  }
+                | undefined;
+
               if (resData?.twoFactorRequired || resData?.twoFactorRedirect) {
                 setTwoFactorRequired(true);
                 setIsLoading(false);
@@ -247,8 +253,10 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
           setIsLoading(false);
           setLoadingState(false);
         } else if (
-          (data as any)?.twoFactorRequired ||
-          (data as any)?.twoFactorRedirect
+          (data as { twoFactorRequired?: boolean; twoFactorRedirect?: boolean })
+            ?.twoFactorRequired ||
+          (data as { twoFactorRequired?: boolean; twoFactorRedirect?: boolean })
+            ?.twoFactorRedirect
         ) {
           setTwoFactorRequired(true);
           setIsLoading(false);

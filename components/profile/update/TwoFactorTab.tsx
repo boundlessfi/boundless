@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { authClient } from '@/lib/auth-client';
 import { BoundlessButton } from '@/components/buttons';
@@ -55,9 +55,15 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
         toast.error(error.message || 'Failed to start 2FA setup');
       } else if (data) {
         setTotpUri(data.totpURI);
-        // Extract secret key from URI (format: otpauth://totp/...secret=KEY&...)
-        const secret = data.totpURI.split('secret=')[1]?.split('&')[0];
-        setSecretKey(secret || '');
+        try {
+          const url = new URL(data.totpURI);
+          const secret = url.searchParams.get('secret');
+          setSecretKey(secret || '');
+        } catch (e) {
+          // Fallback to simple split if URL parsing fails
+          const secret = data.totpURI.split('secret=')[1]?.split('&')[0];
+          setSecretKey(secret || '');
+        }
         setBackupCodes(data.backupCodes);
         setStep('setup');
       }
@@ -146,9 +152,37 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
     }
   };
 
-  const copyBackupCodes = (codes: string[]) => {
-    navigator.clipboard.writeText(codes.join('\n'));
-    toast.success('Backup codes copied to clipboard');
+  const copyBackupCodes = async (codes: string[]) => {
+    const text = codes.join('\n');
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        toast.success('Backup codes copied to clipboard');
+      } else {
+        throw new Error('Clipboard API unavailable');
+      }
+    } catch (err) {
+      // Fallback for older browsers or non-secure contexts
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        textArea.style.top = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (successful) {
+          toast.success('Backup codes copied to clipboard');
+        } else {
+          throw new Error('Fallback copy failed');
+        }
+      } catch (fallbackErr) {
+        toast.error('Unable to copy backup codes');
+      }
+    }
   };
 
   if (user.twoFactorEnabled && step === 'status') {

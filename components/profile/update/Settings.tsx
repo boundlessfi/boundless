@@ -63,7 +63,16 @@ const settingsSchema = z.object({
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
-const Settings = () => {
+interface SettingsProps {
+  visibleSections?: (
+    | 'notifications'
+    | 'privacy'
+    | 'appearance'
+    | 'preferences'
+  )[];
+}
+
+const Settings = ({ visibleSections }: SettingsProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<UserSettings>({
@@ -192,547 +201,419 @@ const Settings = () => {
 
   return (
     <div className='flex flex-col gap-6'>
-      {/* Header */}
-      <div>
-        <h1 className='text-2xl font-bold text-white'>Settings</h1>
-        <p className='mt-1 text-zinc-400'>
-          Manage your account preferences and privacy settings
-        </p>
-      </div>
+      {/* Header - Only show if no specific sections are requested (Main Settings page) */}
+      {!visibleSections && (
+        <div>
+          <h1 className='text-2xl font-bold text-white'>Settings</h1>
+          <p className='mt-1 text-zinc-400'>
+            Manage your account preferences and privacy settings
+          </p>
+        </div>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
           {/* Notifications */}
-          <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
-            <div className='mb-4 flex items-center gap-3'>
-              <Bell className='h-5 w-5 text-zinc-400' />
-              <h2 className='text-lg font-semibold text-white'>
-                Notifications
-              </h2>
-            </div>
+          {(!visibleSections || visibleSections.includes('notifications')) && (
+            <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
+              <div className='mb-4 flex items-center gap-3'>
+                <Bell className='h-5 w-5 text-zinc-400' />
+                <h2 className='text-lg font-semibold text-white'>
+                  Notifications
+                </h2>
+              </div>
 
-            <div className='space-y-4'>
-              <FormField
-                control={form.control}
-                name='notifications.emailNotifications'
-                render={({ field }) => (
-                  <FormItem className='flex items-center justify-between'>
-                    <div className='space-y-0.5'>
-                      <FormLabel className='text-zinc-300'>
-                        Email Notifications
-                      </FormLabel>
-                      <FormDescription className='text-zinc-500'>
-                        Receive email notifications about account activity
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={async (checked: boolean) => {
-                          field.onChange(checked);
-                          await onSubmitNotifications({
-                            emailNotifications: checked,
-                            pushNotifications: form.getValues(
-                              'notifications.pushNotifications'
-                            ),
-                          });
-                        }}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+              <div className='space-y-4'>
+                <FormField
+                  control={form.control}
+                  name='notifications.emailNotifications'
+                  render={({ field }) => (
+                    <FormItem className='flex items-center justify-between'>
+                      <div className='space-y-0.5'>
+                        <FormLabel className='text-zinc-300'>
+                          Email Notifications
+                        </FormLabel>
+                        <FormDescription className='text-zinc-500'>
+                          Receive email notifications about account activity
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={async (checked: boolean) => {
+                            field.onChange(checked);
+                            await onSubmitNotifications({
+                              emailNotifications: checked,
+                              pushNotifications: form.getValues(
+                                'notifications.pushNotifications'
+                              ),
+                            });
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name='notifications.pushNotifications'
-                render={({ field }) => (
-                  <FormItem className='flex items-center justify-between'>
-                    <div className='space-y-0.5'>
-                      <FormLabel className='text-zinc-300'>
-                        Push Notifications
-                      </FormLabel>
-                      <FormDescription className='text-zinc-500'>
-                        Receive push notifications in your browser
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={async (checked: boolean) => {
-                          field.onChange(checked);
-                          await onSubmitNotifications({
-                            pushNotifications: checked,
-                            emailNotifications: form.getValues(
-                              'notifications.emailNotifications'
-                            ),
-                          });
-                        }}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-          </Card>
+                <FormField
+                  control={form.control}
+                  name='notifications.pushNotifications'
+                  render={({ field }) => (
+                    <FormItem className='flex items-center justify-between'>
+                      <div className='space-y-0.5'>
+                        <FormLabel className='text-zinc-300'>
+                          Push Notifications
+                        </FormLabel>
+                        <FormDescription className='text-zinc-500'>
+                          Receive push notifications in your browser
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={async (checked: boolean) => {
+                            field.onChange(checked);
+                            await onSubmitNotifications({
+                              pushNotifications: checked,
+                              emailNotifications: form.getValues(
+                                'notifications.emailNotifications'
+                              ),
+                            });
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </Card>
+          )}
 
           {/* Privacy */}
-          <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
-            <div className='mb-4 flex items-center gap-3'>
-              <Shield className='h-5 w-5 text-zinc-400' />
-              <h2 className='text-lg font-semibold text-white'>Privacy</h2>
-            </div>
+          {(!visibleSections || visibleSections.includes('privacy')) && (
+            <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
+              <div className='mb-4 flex items-center gap-3'>
+                <Shield className='h-5 w-5 text-zinc-400' />
+                <h2 className='text-lg font-semibold text-white'>Privacy</h2>
+              </div>
 
-            <div className='space-y-4'>
-              <FormField
-                control={form.control}
-                name='privacy.publicProfile'
-                render={({ field }) => (
-                  <FormItem className='flex items-center justify-between'>
-                    <div className='space-y-0.5'>
-                      <FormLabel className='text-zinc-300'>
-                        Public Profile
-                      </FormLabel>
-                      <FormDescription className='text-zinc-500'>
-                        Make your profile visible to other users
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={async (checked: boolean) => {
-                          field.onChange(checked);
-                          await onSubmitPrivacy({
-                            publicProfile: checked,
-                            emailVisibility: form.getValues(
-                              'privacy.emailVisibility'
-                            ),
-                            locationVisibility: form.getValues(
-                              'privacy.locationVisibility'
-                            ),
-                            companyVisibility: form.getValues(
-                              'privacy.companyVisibility'
-                            ),
-                            websiteVisibility: form.getValues(
-                              'privacy.websiteVisibility'
-                            ),
-                            socialLinksVisibility: form.getValues(
-                              'privacy.socialLinksVisibility'
-                            ),
-                          });
-                        }}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+              <div className='space-y-4'>
+                <FormField
+                  control={form.control}
+                  name='privacy.publicProfile'
+                  render={({ field }) => (
+                    <FormItem className='flex items-center justify-between'>
+                      <div className='space-y-0.5'>
+                        <FormLabel className='text-zinc-300'>
+                          Public Profile
+                        </FormLabel>
+                        <FormDescription className='text-zinc-500'>
+                          Make your profile visible to other users
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={async (checked: boolean) => {
+                            field.onChange(checked);
+                            await onSubmitPrivacy({
+                              publicProfile: checked,
+                              emailVisibility: form.getValues(
+                                'privacy.emailVisibility'
+                              ),
+                              locationVisibility: form.getValues(
+                                'privacy.locationVisibility'
+                              ),
+                              companyVisibility: form.getValues(
+                                'privacy.companyVisibility'
+                              ),
+                              websiteVisibility: form.getValues(
+                                'privacy.websiteVisibility'
+                              ),
+                              socialLinksVisibility: form.getValues(
+                                'privacy.socialLinksVisibility'
+                              ),
+                            });
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name='privacy.emailVisibility'
-                render={({ field }) => (
-                  <FormItem className='flex items-center justify-between'>
-                    <div className='space-y-0.5'>
-                      <FormLabel className='text-zinc-300'>
-                        Email Visibility
-                      </FormLabel>
-                      <FormDescription className='text-zinc-500'>
-                        Show your email address on your profile
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={async (checked: boolean) => {
-                          field.onChange(checked);
-                          await onSubmitPrivacy({
-                            publicProfile: form.getValues(
-                              'privacy.publicProfile'
-                            ),
-                            emailVisibility: checked,
-                            locationVisibility: form.getValues(
-                              'privacy.locationVisibility'
-                            ),
-                            companyVisibility: form.getValues(
-                              'privacy.companyVisibility'
-                            ),
-                            websiteVisibility: form.getValues(
-                              'privacy.websiteVisibility'
-                            ),
-                            socialLinksVisibility: form.getValues(
-                              'privacy.socialLinksVisibility'
-                            ),
-                          });
-                        }}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name='privacy.emailVisibility'
+                  render={({ field }) => (
+                    <FormItem className='flex items-center justify-between'>
+                      <div className='space-y-0.5'>
+                        <FormLabel className='text-zinc-300'>
+                          Email Visibility
+                        </FormLabel>
+                        <FormDescription className='text-zinc-500'>
+                          Show your email address on your profile
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={async (checked: boolean) => {
+                            field.onChange(checked);
+                            await onSubmitPrivacy({
+                              publicProfile: form.getValues(
+                                'privacy.publicProfile'
+                              ),
+                              emailVisibility: checked,
+                              locationVisibility: form.getValues(
+                                'privacy.locationVisibility'
+                              ),
+                              companyVisibility: form.getValues(
+                                'privacy.companyVisibility'
+                              ),
+                              websiteVisibility: form.getValues(
+                                'privacy.websiteVisibility'
+                              ),
+                              socialLinksVisibility: form.getValues(
+                                'privacy.socialLinksVisibility'
+                              ),
+                            });
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name='privacy.locationVisibility'
-                render={({ field }) => (
-                  <FormItem className='flex items-center justify-between'>
-                    <div className='space-y-0.5'>
-                      <FormLabel className='text-zinc-300'>
-                        Location Visibility
-                      </FormLabel>
-                      <FormDescription className='text-zinc-500'>
-                        Show your location on your profile
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={async (checked: boolean) => {
-                          field.onChange(checked);
-                          await onSubmitPrivacy({
-                            publicProfile: form.getValues(
-                              'privacy.publicProfile'
-                            ),
-                            emailVisibility: form.getValues(
-                              'privacy.emailVisibility'
-                            ),
-                            locationVisibility: checked,
-                            companyVisibility: form.getValues(
-                              'privacy.companyVisibility'
-                            ),
-                            websiteVisibility: form.getValues(
-                              'privacy.websiteVisibility'
-                            ),
-                            socialLinksVisibility: form.getValues(
-                              'privacy.socialLinksVisibility'
-                            ),
-                          });
-                        }}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name='privacy.locationVisibility'
+                  render={({ field }) => (
+                    <FormItem className='flex items-center justify-between'>
+                      <div className='space-y-0.5'>
+                        <FormLabel className='text-zinc-300'>
+                          Location Visibility
+                        </FormLabel>
+                        <FormDescription className='text-zinc-500'>
+                          Show your location on your profile
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={async (checked: boolean) => {
+                            field.onChange(checked);
+                            await onSubmitPrivacy({
+                              publicProfile: form.getValues(
+                                'privacy.publicProfile'
+                              ),
+                              emailVisibility: form.getValues(
+                                'privacy.emailVisibility'
+                              ),
+                              locationVisibility: checked,
+                              companyVisibility: form.getValues(
+                                'privacy.companyVisibility'
+                              ),
+                              websiteVisibility: form.getValues(
+                                'privacy.websiteVisibility'
+                              ),
+                              socialLinksVisibility: form.getValues(
+                                'privacy.socialLinksVisibility'
+                              ),
+                            });
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name='privacy.companyVisibility'
-                render={({ field }) => (
-                  <FormItem className='flex items-center justify-between'>
-                    <div className='space-y-0.5'>
-                      <FormLabel className='text-zinc-300'>
-                        Company Visibility
-                      </FormLabel>
-                      <FormDescription className='text-zinc-500'>
-                        Show your company on your profile
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={async (checked: boolean) => {
-                          field.onChange(checked);
-                          await onSubmitPrivacy({
-                            publicProfile: form.getValues(
-                              'privacy.publicProfile'
-                            ),
-                            emailVisibility: form.getValues(
-                              'privacy.emailVisibility'
-                            ),
-                            locationVisibility: form.getValues(
-                              'privacy.locationVisibility'
-                            ),
-                            companyVisibility: checked,
-                            websiteVisibility: form.getValues(
-                              'privacy.websiteVisibility'
-                            ),
-                            socialLinksVisibility: form.getValues(
-                              'privacy.socialLinksVisibility'
-                            ),
-                          });
-                        }}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name='privacy.companyVisibility'
+                  render={({ field }) => (
+                    <FormItem className='flex items-center justify-between'>
+                      <div className='space-y-0.5'>
+                        <FormLabel className='text-zinc-300'>
+                          Company Visibility
+                        </FormLabel>
+                        <FormDescription className='text-zinc-500'>
+                          Show your company on your profile
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={async (checked: boolean) => {
+                            field.onChange(checked);
+                            await onSubmitPrivacy({
+                              publicProfile: form.getValues(
+                                'privacy.publicProfile'
+                              ),
+                              emailVisibility: form.getValues(
+                                'privacy.emailVisibility'
+                              ),
+                              locationVisibility: form.getValues(
+                                'privacy.locationVisibility'
+                              ),
+                              companyVisibility: checked,
+                              websiteVisibility: form.getValues(
+                                'privacy.websiteVisibility'
+                              ),
+                              socialLinksVisibility: form.getValues(
+                                'privacy.socialLinksVisibility'
+                              ),
+                            });
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name='privacy.websiteVisibility'
-                render={({ field }) => (
-                  <FormItem className='flex items-center justify-between'>
-                    <div className='space-y-0.5'>
-                      <FormLabel className='text-zinc-300'>
-                        Website Visibility
-                      </FormLabel>
-                      <FormDescription className='text-zinc-500'>
-                        Show your website on your profile
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={async (checked: boolean) => {
-                          field.onChange(checked);
-                          await onSubmitPrivacy({
-                            publicProfile: form.getValues(
-                              'privacy.publicProfile'
-                            ),
-                            emailVisibility: form.getValues(
-                              'privacy.emailVisibility'
-                            ),
-                            locationVisibility: form.getValues(
-                              'privacy.locationVisibility'
-                            ),
-                            companyVisibility: form.getValues(
-                              'privacy.companyVisibility'
-                            ),
-                            websiteVisibility: checked,
-                            socialLinksVisibility: form.getValues(
-                              'privacy.socialLinksVisibility'
-                            ),
-                          });
-                        }}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name='privacy.websiteVisibility'
+                  render={({ field }) => (
+                    <FormItem className='flex items-center justify-between'>
+                      <div className='space-y-0.5'>
+                        <FormLabel className='text-zinc-300'>
+                          Website Visibility
+                        </FormLabel>
+                        <FormDescription className='text-zinc-500'>
+                          Show your website on your profile
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={async (checked: boolean) => {
+                            field.onChange(checked);
+                            await onSubmitPrivacy({
+                              publicProfile: form.getValues(
+                                'privacy.publicProfile'
+                              ),
+                              emailVisibility: form.getValues(
+                                'privacy.emailVisibility'
+                              ),
+                              locationVisibility: form.getValues(
+                                'privacy.locationVisibility'
+                              ),
+                              companyVisibility: form.getValues(
+                                'privacy.companyVisibility'
+                              ),
+                              websiteVisibility: checked,
+                              socialLinksVisibility: form.getValues(
+                                'privacy.socialLinksVisibility'
+                              ),
+                            });
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name='privacy.socialLinksVisibility'
-                render={({ field }) => (
-                  <FormItem className='flex items-center justify-between'>
-                    <div className='space-y-0.5'>
-                      <FormLabel className='text-zinc-300'>
-                        Social Links Visibility
-                      </FormLabel>
-                      <FormDescription className='text-zinc-500'>
-                        Show your social links on your profile
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={async (checked: boolean) => {
-                          field.onChange(checked);
-                          await onSubmitPrivacy({
-                            publicProfile: form.getValues(
-                              'privacy.publicProfile'
-                            ),
-                            emailVisibility: form.getValues(
-                              'privacy.emailVisibility'
-                            ),
-                            locationVisibility: form.getValues(
-                              'privacy.locationVisibility'
-                            ),
-                            companyVisibility: form.getValues(
-                              'privacy.companyVisibility'
-                            ),
-                            websiteVisibility: form.getValues(
-                              'privacy.websiteVisibility'
-                            ),
-                            socialLinksVisibility: checked,
-                          });
-                        }}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-          </Card>
+                <FormField
+                  control={form.control}
+                  name='privacy.socialLinksVisibility'
+                  render={({ field }) => (
+                    <FormItem className='flex items-center justify-between'>
+                      <div className='space-y-0.5'>
+                        <FormLabel className='text-zinc-300'>
+                          Social Links Visibility
+                        </FormLabel>
+                        <FormDescription className='text-zinc-500'>
+                          Show your social links on your profile
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={async (checked: boolean) => {
+                            field.onChange(checked);
+                            await onSubmitPrivacy({
+                              publicProfile: form.getValues(
+                                'privacy.publicProfile'
+                              ),
+                              emailVisibility: form.getValues(
+                                'privacy.emailVisibility'
+                              ),
+                              locationVisibility: form.getValues(
+                                'privacy.locationVisibility'
+                              ),
+                              companyVisibility: form.getValues(
+                                'privacy.companyVisibility'
+                              ),
+                              websiteVisibility: form.getValues(
+                                'privacy.websiteVisibility'
+                              ),
+                              socialLinksVisibility: checked,
+                            });
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </Card>
+          )}
 
           {/* Appearance */}
-          <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
-            <div className='mb-4 flex items-center gap-3'>
-              <Monitor className='h-5 w-5 text-zinc-400' />
-              <h2 className='text-lg font-semibold text-white'>Appearance</h2>
-            </div>
+          {(!visibleSections || visibleSections.includes('appearance')) && (
+            <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
+              <div className='mb-4 flex items-center gap-3'>
+                <Monitor className='h-5 w-5 text-zinc-400' />
+                <h2 className='text-lg font-semibold text-white'>Appearance</h2>
+              </div>
 
-            <FormField
-              control={form.control}
-              name='appearance.theme'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-zinc-300'>Theme</FormLabel>
-                  <Select
-                    onValueChange={async (value: string) => {
-                      field.onChange(value);
-                      await onSubmitAppearance({
-                        theme: value as 'light' | 'dark' | 'auto',
-                      });
-                    }}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className='w-full border-zinc-800 bg-zinc-900/50 text-white'>
-                        <SelectValue placeholder='Select theme' />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className='border-zinc-800 bg-zinc-900'>
-                      <SelectItem
-                        value='light'
-                        className='text-white hover:bg-zinc-800'
-                      >
-                        <div className='flex items-center gap-2'>
-                          <Sun className='h-4 w-4' />
-                          Light
-                        </div>
-                      </SelectItem>
-                      <SelectItem
-                        value='dark'
-                        className='text-white hover:bg-zinc-800'
-                      >
-                        <div className='flex items-center gap-2'>
-                          <Moon className='h-4 w-4' />
-                          Dark
-                        </div>
-                      </SelectItem>
-                      <SelectItem
-                        value='auto'
-                        className='text-white hover:bg-zinc-800'
-                      >
-                        <div className='flex items-center gap-2'>
-                          <Monitor className='h-4 w-4' />
-                          Auto
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </Card>
-
-          {/* Preferences */}
-          <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
-            <div className='mb-4 flex items-center gap-3'>
-              <User className='h-5 w-5 text-zinc-400' />
-              <h2 className='text-lg font-semibold text-white'>Preferences</h2>
-            </div>
-
-            <div className='space-y-6'>
-              {/* Language */}
               <FormField
                 control={form.control}
-                name='preferences.language'
+                name='appearance.theme'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className='text-zinc-300'>Language</FormLabel>
+                    <FormLabel className='text-zinc-300'>Theme</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      value={field.value || undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger className='w-full border-zinc-800 bg-zinc-900/50 text-white'>
-                          <SelectValue placeholder='Select language' />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className='border-zinc-800 bg-zinc-900'>
-                        <SelectItem
-                          value='en'
-                          className='text-white hover:bg-zinc-800'
-                        >
-                          English
-                        </SelectItem>
-                        <SelectItem
-                          value='es'
-                          className='text-white hover:bg-zinc-800'
-                        >
-                          Spanish
-                        </SelectItem>
-                        <SelectItem
-                          value='fr'
-                          className='text-white hover:bg-zinc-800'
-                        >
-                          French
-                        </SelectItem>
-                        <SelectItem
-                          value='de'
-                          className='text-white hover:bg-zinc-800'
-                        >
-                          German
-                        </SelectItem>
-                        <SelectItem
-                          value='zh'
-                          className='text-white hover:bg-zinc-800'
-                        >
-                          Chinese
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Timezone */}
-              <FormField
-                control={form.control}
-                name='preferences.timezone'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='text-zinc-300'>Timezone</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
+                      onValueChange={async (value: string) => {
+                        field.onChange(value);
+                        await onSubmitAppearance({
+                          theme: value as 'light' | 'dark' | 'auto',
+                        });
+                      }}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger className='w-full border-zinc-800 bg-zinc-900/50 text-white'>
-                          <SelectValue placeholder='Select timezone' />
+                          <SelectValue placeholder='Select theme' />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className='border-zinc-800 bg-zinc-900'>
                         <SelectItem
-                          value='UTC'
+                          value='light'
                           className='text-white hover:bg-zinc-800'
                         >
-                          UTC
+                          <div className='flex items-center gap-2'>
+                            <Sun className='h-4 w-4' />
+                            Light
+                          </div>
                         </SelectItem>
                         <SelectItem
-                          value='America/New_York'
+                          value='dark'
                           className='text-white hover:bg-zinc-800'
                         >
-                          Eastern Time
+                          <div className='flex items-center gap-2'>
+                            <Moon className='h-4 w-4' />
+                            Dark
+                          </div>
                         </SelectItem>
                         <SelectItem
-                          value='America/Chicago'
+                          value='auto'
                           className='text-white hover:bg-zinc-800'
                         >
-                          Central Time
-                        </SelectItem>
-                        <SelectItem
-                          value='America/Denver'
-                          className='text-white hover:bg-zinc-800'
-                        >
-                          Mountain Time
-                        </SelectItem>
-                        <SelectItem
-                          value='America/Los_Angeles'
-                          className='text-white hover:bg-zinc-800'
-                        >
-                          Pacific Time
-                        </SelectItem>
-                        <SelectItem
-                          value='Europe/London'
-                          className='text-white hover:bg-zinc-800'
-                        >
-                          London
-                        </SelectItem>
-                        <SelectItem
-                          value='Europe/Paris'
-                          className='text-white hover:bg-zinc-800'
-                        >
-                          Paris
-                        </SelectItem>
-                        <SelectItem
-                          value='Asia/Tokyo'
-                          className='text-white hover:bg-zinc-800'
-                        >
-                          Tokyo
+                          <div className='flex items-center gap-2'>
+                            <Monitor className='h-4 w-4' />
+                            Auto
+                          </div>
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -740,11 +621,151 @@ const Settings = () => {
                   </FormItem>
                 )}
               />
+            </Card>
+          )}
 
-              {/* Categories and Skills would be implemented here if needed */}
-              {/* They are arrays in the API but for now we'll keep them as empty arrays */}
-            </div>
-          </Card>
+          {/* Preferences */}
+          {(!visibleSections || visibleSections.includes('preferences')) && (
+            <Card className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4'>
+              <div className='mb-4 flex items-center gap-3'>
+                <User className='h-5 w-5 text-zinc-400' />
+                <h2 className='text-lg font-semibold text-white'>
+                  Preferences
+                </h2>
+              </div>
+
+              <div className='space-y-6'>
+                {/* Language */}
+                <FormField
+                  control={form.control}
+                  name='preferences.language'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-zinc-300'>Language</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger className='w-full border-zinc-800 bg-zinc-900/50 text-white'>
+                            <SelectValue placeholder='Select language' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className='border-zinc-800 bg-zinc-900'>
+                          <SelectItem
+                            value='en'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            English
+                          </SelectItem>
+                          <SelectItem
+                            value='es'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            Spanish
+                          </SelectItem>
+                          <SelectItem
+                            value='fr'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            French
+                          </SelectItem>
+                          <SelectItem
+                            value='de'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            German
+                          </SelectItem>
+                          <SelectItem
+                            value='zh'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            Chinese
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Timezone */}
+                <FormField
+                  control={form.control}
+                  name='preferences.timezone'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-zinc-300'>Timezone</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className='w-full border-zinc-800 bg-zinc-900/50 text-white'>
+                            <SelectValue placeholder='Select timezone' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className='border-zinc-800 bg-zinc-900'>
+                          <SelectItem
+                            value='UTC'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            UTC
+                          </SelectItem>
+                          <SelectItem
+                            value='America/New_York'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            Eastern Time
+                          </SelectItem>
+                          <SelectItem
+                            value='America/Chicago'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            Central Time
+                          </SelectItem>
+                          <SelectItem
+                            value='America/Denver'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            Mountain Time
+                          </SelectItem>
+                          <SelectItem
+                            value='America/Los_Angeles'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            Pacific Time
+                          </SelectItem>
+                          <SelectItem
+                            value='Europe/London'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            London
+                          </SelectItem>
+                          <SelectItem
+                            value='Europe/Paris'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            Paris
+                          </SelectItem>
+                          <SelectItem
+                            value='Asia/Tokyo'
+                            className='text-white hover:bg-zinc-800'
+                          >
+                            Tokyo
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Categories and Skills would be implemented here if needed */}
+                {/* They are arrays in the API but for now we'll keep them as empty arrays */}
+              </div>
+            </Card>
+          )}
 
           {/* Save Button */}
           <div className='flex justify-end'>

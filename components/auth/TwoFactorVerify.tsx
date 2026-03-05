@@ -32,7 +32,6 @@ const TwoFactorVerify = ({ onSuccess, onCancel }: TwoFactorVerifyProps) => {
 
       if (error) {
         toast.error(error.message || 'Verification failed');
-        setIsLoading(false);
         setCode(''); // Clear on error to let user try again
         return;
       }
@@ -43,6 +42,7 @@ const TwoFactorVerify = ({ onSuccess, onCancel }: TwoFactorVerifyProps) => {
       }
     } catch (err) {
       toast.error('An unexpected error occurred during verification');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -62,17 +62,18 @@ const TwoFactorVerify = ({ onSuccess, onCancel }: TwoFactorVerifyProps) => {
 
       if (error) {
         toast.error(error.message || 'Verification failed');
-        setIsLoading(false);
         setBackupCode('');
         return;
       }
 
       if (data) {
         toast.success('Recovery successful');
+        setBackupCode('');
         await onSuccess();
       }
     } catch (err) {
       toast.error('An unexpected error occurred during verification');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -112,30 +113,13 @@ const TwoFactorVerify = ({ onSuccess, onCancel }: TwoFactorVerifyProps) => {
                 autoFocus
               >
                 <InputOTPGroup className='gap-2 sm:gap-4'>
-                  <InputOTPSlot
-                    index={0}
-                    className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950] sm:h-16 sm:w-14'
-                  />
-                  <InputOTPSlot
-                    index={1}
-                    className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950] sm:h-16 sm:w-14'
-                  />
-                  <InputOTPSlot
-                    index={2}
-                    className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950] sm:h-16 sm:w-14'
-                  />
-                  <InputOTPSlot
-                    index={3}
-                    className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950] sm:h-16 sm:w-14'
-                  />
-                  <InputOTPSlot
-                    index={4}
-                    className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950] sm:h-16 sm:w-14'
-                  />
-                  <InputOTPSlot
-                    index={5}
-                    className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950] sm:h-16 sm:w-14'
-                  />
+                  {[...Array(6)].map((_, i) => (
+                    <InputOTPSlot
+                      key={i}
+                      index={i}
+                      className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950] sm:h-16 sm:w-14'
+                    />
+                  ))}
                 </InputOTPGroup>
               </InputOTP>
             </div>

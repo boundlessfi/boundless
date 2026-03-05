@@ -13,6 +13,7 @@ import SecurityTab from '@/components/profile/update/SecurityTab';
 import { IdentityVerificationSection } from '@/components/didit/IdentityVerificationSection';
 import { invalidateAuthProfileCache } from '@/hooks/use-auth';
 import { useRef } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const SettingsContent = () => {
   const searchParams = useSearchParams();
@@ -122,19 +123,51 @@ const SettingsContent = () => {
             </TabsTrigger>
           </TabsList>
           <TabsContent value='profile'>
-            <Profile user={userData?.user as User} />
+            {userData?.user ? (
+              <Profile user={userData.user as User} />
+            ) : (
+              <div className='flex items-center justify-center p-12'>
+                <Loader2 className='mr-2 h-8 w-8 animate-spin text-[#a7f950]' />
+                <span className='text-zinc-500'>Loading profile...</span>
+              </div>
+            )}
           </TabsContent>
           <TabsContent value='settings'>
             <Settings />
           </TabsContent>
+          <TabsContent value='notifications' className='space-y-6'>
+            <Settings visibleSections={['notifications']} />
+          </TabsContent>
+          <TabsContent value='privacy' className='space-y-6'>
+            <Settings visibleSections={['privacy']} />
+          </TabsContent>
+          <TabsContent value='preferences' className='space-y-6'>
+            <Settings visibleSections={['appearance', 'preferences']} />
+          </TabsContent>
           <TabsContent value='security'>
-            <SecurityTab user={userData?.user as User} />
+            {userData?.user ? (
+              <SecurityTab user={userData.user as User} />
+            ) : (
+              <div className='flex items-center justify-center p-12'>
+                <Loader2 className='mr-2 h-8 w-8 animate-spin text-[#a7f950]' />
+                <span className='text-zinc-500'>
+                  Loading security settings...
+                </span>
+              </div>
+            )}
           </TabsContent>
           <TabsContent value='2fa'>
-            <TwoFactorTab
-              user={userData?.user as User}
-              onStatusChange={fetchUserData}
-            />
+            {userData?.user ? (
+              <TwoFactorTab
+                user={userData.user as User}
+                onStatusChange={fetchUserData}
+              />
+            ) : (
+              <div className='flex items-center justify-center p-12'>
+                <Loader2 className='mr-2 h-8 w-8 animate-spin text-[#a7f950]' />
+                <span className='text-zinc-500'>Loading 2FA settings...</span>
+              </div>
+            )}
           </TabsContent>
           <TabsContent value='identity' className='space-y-6'>
             <IdentityVerificationSection
