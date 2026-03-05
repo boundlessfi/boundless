@@ -468,7 +468,33 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     form.setValue('links', updatedLinks, { shouldValidate: true });
   };
 
+  // Team size configuration and computed state (only when hackathon defines limits)
+  const teamMin = currentHackathon?.teamMin;
+  const teamMax = currentHackathon?.teamMax;
+  const hasTeamLimits = teamMin !== undefined && teamMax !== undefined;
+  const watchedTeamMembers = form.watch('teamMembers');
+  const currentTeamSize = (watchedTeamMembers?.length ?? 0) + 1;
+  const isTeamAtCapacity = hasTeamLimits && currentTeamSize >= teamMax;
+  const isTeamBelowMinimum = hasTeamLimits && currentTeamSize < teamMin;
+  const membersNeededForMinimum = hasTeamLimits ? teamMin - currentTeamSize : 0;
+
+  function getTeamSizeBadgeStyle(): string {
+    if (isTeamAtCapacity) {
+      return 'border-yellow-500 bg-yellow-500/10 text-yellow-500';
+    }
+    if (isTeamBelowMinimum) {
+      return 'border-orange-500 bg-orange-500/10 text-orange-500';
+    }
+    return 'border-gray-600 text-gray-400';
+  }
+
   const handleAddInvitee = () => {
+    // Guard: prevent adding members when team is at capacity
+    if (isTeamAtCapacity) {
+      toast.error(`Team is at maximum capacity (${teamMax} members)`);
+      return;
+    }
+
     if (!currentInviteeName || !currentInviteeRole || !currentInviteeEmail) {
       toast.error('Please fill in name, email and role');
       return;
@@ -517,6 +543,14 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
             form.setError('teamName', { message: 'Team Name is required' });
             return;
           }
+
+          if (isTeamBelowMinimum) {
+            toast.error(
+              `Your team needs at least ${teamMin} members. Please invite ${membersNeededForMinimum} more member${membersNeededForMinimum > 1 ? 's' : ''} to continue.`
+            );
+            return;
+          }
+
           isValid = true;
         }
       } else {
@@ -931,9 +965,35 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                     />
 
                     <div className='space-y-3'>
-                      <FormLabel className='text-white'>
-                        Invite Members (Optional)
-                      </FormLabel>
+                      <div className='flex items-center justify-between'>
+                        <FormLabel className='text-white'>
+                          Invite Members
+                          {hasTeamLimits && teamMin > 1 && (
+                            <span className='ml-1 text-xs text-gray-400'>
+                              (min {teamMin} members)
+                            </span>
+                          )}
+                        </FormLabel>
+                        {hasTeamLimits && (
+                          <Badge
+                            variant='outline'
+                            className={cn(
+                              'transition-colors',
+                              getTeamSizeBadgeStyle()
+                            )}
+                          >
+                            <Users className='mr-1 h-3 w-3' />
+                            {currentTeamSize} / {teamMax} members
+                          </Badge>
+                        )}
+                      </div>
+                      {isTeamBelowMinimum && (
+                        <p className='text-xs text-orange-400'>
+                          You need at least {membersNeededForMinimum} more
+                          member{membersNeededForMinimum > 1 ? 's' : ''} to
+                          proceed.
+                        </p>
+                      )}
                       <div className='flex flex-col gap-3'>
                         <div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
                           <Input
@@ -943,6 +1003,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                               setCurrentInviteeName(e.target.value)
                             }
                             className='border-gray-700 bg-gray-800/50 text-white'
+                            disabled={isTeamAtCapacity}
                           />
                           <Input
                             placeholder='Email'
@@ -952,6 +1013,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                               setCurrentInviteeEmail(e.target.value)
                             }
                             className='border-gray-700 bg-gray-800/50 text-white'
+                            disabled={isTeamAtCapacity}
                           />
                           <Input
                             placeholder='Role (e.g. Designer)'
@@ -960,15 +1022,22 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                               setCurrentInviteeRole(e.target.value)
                             }
                             className='border-gray-700 bg-gray-800/50 text-white'
+                            disabled={isTeamAtCapacity}
                           />
                         </div>
                         <Button
                           type='button'
                           onClick={handleAddInvitee}
-                          className='self-start bg-gray-800 text-white hover:bg-gray-700'
+                          disabled={isTeamAtCapacity}
+                          className={cn(
+                            'self-start',
+                            isTeamAtCapacity
+                              ? 'cursor-not-allowed bg-gray-700 text-gray-500 opacity-50'
+                              : 'bg-gray-800 text-white hover:bg-gray-700'
+                          )}
                         >
                           <Plus className='mr-2 h-4 w-4' />
-                          Add Member
+                          {isTeamAtCapacity ? 'Team Full' : 'Add Member'}
                         </Button>
                       </div>
 
