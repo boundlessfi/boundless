@@ -4,7 +4,8 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useNotificationPolling } from '@/hooks/use-notification-polling';
 import { useNotificationStore } from '@/lib/stores/notification-store';
-import { Notification } from '@/types/notifications';
+import { Notification, NotificationType } from '@/types/notifications';
+import { useMessages } from '@/components/messages/MessagesProvider';
 import { NotificationDetailSheet } from './components/NotificationDetailSheet';
 import { NotificationSection } from './components/NotificationSection';
 import { Button } from '@/components/ui/button';
@@ -87,6 +88,7 @@ export default function NotificationsPage() {
   const [isMarkingAll, setIsMarkingAll] = useState(false);
 
   const limit = 20;
+  const { openMessages } = useMessages();
 
   const notificationsHook = useNotifications({ page, limit, autoFetch: true });
   const {
@@ -120,6 +122,18 @@ export default function NotificationsPage() {
 
   const handleNotificationClick = useCallback(
     (notification: Notification) => {
+      if (
+        notification.type === NotificationType.DIRECT_MESSAGE &&
+        notification.data?.conversationId
+      ) {
+        openMessages(notification.data.conversationId as string);
+        setSheetOpen(false);
+        if (!notification.read) {
+          markNotificationAsRead([notification.id]).catch(() => {});
+        }
+        return;
+      }
+
       setSelectedNotification(notification);
       setSheetOpen(true);
 
@@ -127,7 +141,7 @@ export default function NotificationsPage() {
         markNotificationAsRead([notification.id]).catch(() => {});
       }
     },
-    [markNotificationAsRead]
+    [markNotificationAsRead, openMessages]
   );
 
   const handleMarkAllAsRead = useCallback(async () => {

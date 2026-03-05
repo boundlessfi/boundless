@@ -19,6 +19,7 @@ import {
 } from '@trustless-work/escrow';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { reportError } from '@/lib/error-reporting';
 
 /**
  * Component to initialize a multi-release escrow using Trustless Work
@@ -149,7 +150,8 @@ export const InitializeEscrowButton = () => {
       } else {
         throw new Error('Missing contractId or escrow in response');
       }
-    } catch {
+    } catch (err) {
+      reportError(err, { context: 'escrow-initialize' });
       toast.error('Failed to initialize escrow');
     } finally {
       setIsLoading(false);

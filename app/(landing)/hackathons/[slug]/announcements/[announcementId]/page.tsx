@@ -9,6 +9,7 @@ import {
   type HackathonAnnouncement,
 } from '@/lib/api/hackathons/index';
 import { useMarkdown } from '@/hooks/use-markdown';
+import { reportError } from '@/lib/error-reporting';
 import { BoundlessButton } from '@/components/buttons';
 import Loading from '@/components/Loading';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +38,11 @@ export default function AnnouncementDetailPage() {
         setAnnouncement(announcementData);
         setHackathonName(hackathonData.data.name);
       } catch (err) {
-        console.error('Failed to fetch details:', err);
+        reportError(err, {
+          context: 'announcement-details',
+          announcementId,
+          slug,
+        });
         setError(
           'Failed to load announcement. It may have been deleted or moved.'
         );

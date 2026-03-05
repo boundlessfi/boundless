@@ -13,6 +13,7 @@ import {
   ReportReason,
 } from '@/types/comment';
 import { useAuth } from '@/hooks/use-auth';
+import { reportError } from '@/lib/error-reporting';
 import { Loader2, MessageCircle } from 'lucide-react';
 
 interface CampaignCommentsTabProps {
@@ -90,7 +91,7 @@ export function CampaignCommentsTab({ campaignId }: CampaignCommentsTabProps) {
       });
       commentsHook.refetch();
     } catch (error) {
-      console.error('Failed to add comment:', error);
+      reportError(error, { context: 'campaign-addComment', campaignId });
     }
   };
 
@@ -104,7 +105,7 @@ export function CampaignCommentsTab({ campaignId }: CampaignCommentsTabProps) {
       });
       commentsHook.refetch();
     } catch (error) {
-      console.error('Failed to add reply:', error);
+      reportError(error, { context: 'campaign-addReply', campaignId });
     }
   };
 
@@ -121,7 +122,7 @@ export function CampaignCommentsTab({ campaignId }: CampaignCommentsTabProps) {
         description,
       });
     } catch (error) {
-      console.error('Failed to report comment:', error);
+      reportError(error, { context: 'campaign-reportComment', campaignId });
     }
   };
 
@@ -186,7 +187,10 @@ export function CampaignCommentsTab({ campaignId }: CampaignCommentsTabProps) {
                     });
                     commentsHook.refetch();
                   } catch (error) {
-                    console.error('Failed to update comment:', error);
+                    reportError(error, {
+                      context: 'campaign-updateComment',
+                      campaignId,
+                    });
                   }
                 }}
                 onDelete={async commentId => {
@@ -194,7 +198,10 @@ export function CampaignCommentsTab({ campaignId }: CampaignCommentsTabProps) {
                     await deleteCommentHook.deleteComment(commentId);
                     commentsHook.refetch();
                   } catch (error) {
-                    console.error('Failed to delete comment:', error);
+                    reportError(error, {
+                      context: 'campaign-deleteComment',
+                      campaignId,
+                    });
                   }
                 }}
                 onReport={handleReportComment}

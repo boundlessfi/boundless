@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Package, ArrowLeft } from 'lucide-react';
 import { useAuthStatus } from '@/hooks/use-auth';
+import { reportError } from '@/lib/error-reporting';
 import ProjectCard from '@/features/projects/components/ProjectCard';
 
 // ... (existing imports)
@@ -22,8 +23,8 @@ export default function MyProjectsPage() {
       try {
         const data = await getMe();
         setMeData(data);
-      } catch {
-        // console.error('Failed to fetch user data:', error);
+      } catch (err) {
+        reportError(err, { context: 'me-projects-fetchUser' });
       } finally {
         setLoading(false);
       }

@@ -1,5 +1,6 @@
 'use client';
 import { ProjectLayout } from '@/components/project-details/project-layout';
+import { reportError } from '@/lib/error-reporting';
 import { ProjectLoading } from '@/components/project-details/project-loading';
 import { getCrowdfundingProject } from '@/features/projects/api';
 import type { Crowdfunding } from '@/features/projects/types';
@@ -51,7 +52,10 @@ function ProjectContent({
               hackathon = hackathonRes.data;
             }
           } catch (err) {
-            console.error('Failed to fetch hackathon details', err);
+            reportError(err, {
+              context: 'project-fetchHackathonDetails',
+              submissionId: id,
+            });
           }
 
           if (hackathon) {
@@ -69,7 +73,7 @@ function ProjectContent({
         }
         throw new Error('Submission not found');
       } catch (e) {
-        console.error('Failed to fetch submission:', e);
+        reportError(e, { context: 'project-fetchSubmission', id });
         throw e;
       }
     };
@@ -93,7 +97,8 @@ function ProjectContent({
         } catch (e) {
           await fetchSubmission(id);
         }
-      } catch {
+      } catch (err) {
+        reportError(err, { context: 'project-fetch', id });
         setError('Failed to fetch project data');
       } finally {
         setLoading(false);

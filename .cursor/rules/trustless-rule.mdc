@@ -30,12 +30,14 @@ You are methodical, precise, and a master at reasoning through complex requireme
 When working with Trustless Work:
 - Documentation (I'll provide you the docs in the cursor docs management):  
   - React Library → <https://docs.trustlesswork.com/trustless-work/react-library>  
-  - Wallet Kit → <https://docs.trustlesswork.com/trustless-work/developer-resources/stellar-wallet-kit-quick-integration>  
   - Types → <https://docs.trustlesswork.com/trustless-work/developer-resources/types>  
 - Ensure proper installation and configuration before usage.
 - Use provided Types from the documentation when applicable.
 - Follow the API and component usage exactly as described in the docs.
 - Do not use any, instead always you must search for the Trustless Work entities.
+
+## Wallet (backend-managed)
+- Wallet data is provided by the backend wallet API (see `lib/api/wallet.ts`). The wallet provider holds the API response in state and exposes `refreshWallet()`, `syncWallet()`, and trustline helpers. Use the in-app wallet UI (FamilyWalletDrawer, WalletSheet) for sync and add-trustline; there is no external "connect wallet" flow or Stellar Wallet Kit.
 
 ## Code Implementation Guidelines
 - Use **TailwindCSS classes** for styling; avoid plain CSS.

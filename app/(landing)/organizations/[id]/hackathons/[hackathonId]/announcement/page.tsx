@@ -27,6 +27,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { reportError } from '@/lib/error-reporting';
 
 export default function AnnouncementPage() {
   const params = useParams();
@@ -57,7 +58,7 @@ export default function AnnouncementPage() {
       const data = await listAnnouncements(hackathonId);
       setAnnouncements(data);
     } catch (error) {
-      console.error('Failed to fetch announcements:', error);
+      reportError(error, { context: 'announcement-fetch', hackathonId });
       toast.error('Failed to load announcements');
     } finally {
       setIsLoading(false);
@@ -100,7 +101,7 @@ export default function AnnouncementPage() {
       resetForm();
       fetchAnnouncements();
     } catch (error) {
-      console.error('Failed to save announcement:', error);
+      reportError(error, { context: 'announcement-save', hackathonId });
       toast.error('Failed to save announcement');
     } finally {
       setIsSubmitting(false);
@@ -119,7 +120,7 @@ export default function AnnouncementPage() {
       toast.success('Announcement deleted');
       fetchAnnouncements();
     } catch (error) {
-      console.error('Failed to delete announcement:', error);
+      reportError(error, { context: 'announcement-delete', hackathonId });
       toast.error('Failed to delete announcement');
     } finally {
       setIsDeleteDialogOpen(false);
@@ -133,7 +134,7 @@ export default function AnnouncementPage() {
       toast.success('Announcement published');
       fetchAnnouncements();
     } catch (error) {
-      console.error('Failed to publish announcement:', error);
+      reportError(error, { context: 'announcement-publish', hackathonId });
       toast.error('Failed to publish announcement');
     }
   };

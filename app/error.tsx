@@ -1,7 +1,9 @@
 'use client';
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { BoundlessButton } from '@/components/buttons';
 import { AlertTriangle, RefreshCw, Home, ArrowLeft } from 'lucide-react';
+import { reportError } from '@/lib/error-reporting';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -9,6 +11,13 @@ interface ErrorProps {
 }
 
 const Error: React.FC<ErrorProps> = ({ error, reset }) => {
+  useEffect(() => {
+    reportError(error, {
+      digest: error.digest,
+      message: error.message,
+    });
+  }, [error]);
+
   const handleReset = () => {
     reset();
   };
@@ -38,8 +47,9 @@ const Error: React.FC<ErrorProps> = ({ error, reset }) => {
 
           {/* Error Message */}
           <p className='mb-6 text-sm leading-relaxed text-gray-400'>
-            We encountered an unexpected error. Don&apos;t worry, our team has
-            been notified and is working to fix it.
+            We encountered an unexpected error. If you have error reporting
+            enabled, our team has been notified. Otherwise, try again or contact
+            support.
           </p>
 
           {/* Error Details (Development only) */}

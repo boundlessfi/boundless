@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Comment, CommentEntityType, ReactionType } from '@/types/comment';
+import { reportError } from '@/lib/error-reporting';
 
 interface CommentRealtimeOptions {
   entityType: CommentEntityType;
@@ -44,15 +45,17 @@ export function useCommentRealtime(
   useEffect(() => {
     if (!enabled) return;
 
-    const socket = io(
-      `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:8000'}/realtime`,
-      {
-        transports: ['websocket', 'polling'],
-        withCredentials: true,
-        query: userId ? { userId } : undefined,
-        autoConnect: true,
-      }
-    );
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
+      (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
+    if (!baseUrl) return;
+
+    const socket = io(`${baseUrl}/realtime`, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+      query: userId ? { userId } : undefined,
+      autoConnect: true,
+    });
 
     socketRef.current = socket;
 
@@ -71,7 +74,7 @@ export function useCommentRealtime(
     });
 
     socket.on('connect_error', error => {
-      console.error('Real-time socket connection error:', error);
+      reportError(error, { context: 'comment-realtime-socket' });
       isConnectedRef.current = false;
     });
 

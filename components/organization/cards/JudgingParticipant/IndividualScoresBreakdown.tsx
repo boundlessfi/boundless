@@ -7,6 +7,7 @@ import {
 } from '@/lib/api/hackathons/judging';
 import { Loader2, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { reportError } from '@/lib/error-reporting';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -98,7 +99,10 @@ const IndividualScoresBreakdown = ({
           setScores(normalizeInitialScores(initialScores));
         }
       } catch (err) {
-        console.error('Failed to fetch individual scores:', err);
+        reportError(err, {
+          context: 'judging-individualScores',
+          participantId,
+        });
         // Fallback to initialScores if fetch fails
         if (initialScores) {
           setScores(normalizeInitialScores(initialScores));

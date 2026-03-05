@@ -3,15 +3,14 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from 'react';
 import { authClient } from '@/lib/auth-client';
+import { walletApi } from '@/lib/api/wallet';
+import type { SupportedTrustlineAsset } from '@/lib/api/wallet';
 import { WalletBalance, WalletTransaction } from '@/types/wallet';
 
-/**
- * Type definition for the wallet context
- * Contains wallet address, name, and functions to manage wallet state
- */
 type WalletContextType = {
   walletAddress: string | null;
   walletName: string | null;
@@ -19,84 +18,110 @@ type WalletContextType = {
   transactions: WalletTransaction[];
   totalPortfolioValue: number;
   isLoading: boolean;
+  /** True when session indicates user has a wallet (for entry-point visibility before API load). */
+  hasWalletFromSession: boolean;
   setWalletInfo: (address: string, name: string) => void;
   clearWalletInfo: () => void;
+  refreshWallet: () => Promise<void>;
+  syncWallet: () => Promise<void>;
+  getSupportedTrustlineAssets: () => Promise<SupportedTrustlineAsset[]>;
+  addTrustline: (assetCode: string) => Promise<void>;
 };
 
-/**
- * Create the React context for wallet state management
- */
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
-/**
- * Wallet Provider component that wraps the application
- * Manages wallet state and provides wallet information to child components
- * Automatically loads saved wallet information from localStorage on initialization
- */
+const WALLET_NAME = 'Boundless Wallet';
+
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { data: session, isPending: isSessionLoading } =
     authClient.useSession();
-  const [localWalletAddress, setLocalWalletAddress] = useState<string | null>(
-    null
-  );
-  const [localWalletName, setLocalWalletName] = useState<string | null>(null);
-
-  /**
-   * Load saved wallet information from localStorage when the component mounts
-   * This ensures the wallet state persists across browser sessions
-   */
-  useEffect(() => {
-    const storedAddress = localStorage.getItem('walletAddress');
-    const storedName = localStorage.getItem('walletName');
-
-    if (storedAddress) setLocalWalletAddress(storedAddress);
-    if (storedName) setLocalWalletName(storedName);
+  const [walletDetails, setWalletDetails] = useState<{
+    address: string;
+    balances: WalletBalance[];
+    transactions: WalletTransaction[];
+  } | null>(null);
+  const [walletLoading, setWalletLoading] = useState(true);
+  const fetchWallet = useCallback(async () => {
+    setWalletLoading(true);
+    try {
+      const data = await walletApi.getWalletDetails();
+      setWalletDetails({
+        address: data.address,
+        balances: data.balances ?? [],
+        transactions: data.transactions ?? [],
+      });
+    } catch {
+      setWalletDetails(null);
+    } finally {
+      setWalletLoading(false);
+    }
   }, []);
 
-  /**
-   * Set wallet information and save it to localStorage
-   * This function is called when a wallet is successfully connected
-   *
-   * @param address - The wallet's public address
-   * @param name - The name/identifier of the wallet (e.g., "Freighter", "Albedo")
-   */
-  const setWalletInfo = (address: string, name: string) => {
-    setLocalWalletAddress(address);
-    setLocalWalletName(name);
-    localStorage.setItem('walletAddress', address);
-    localStorage.setItem('walletName', name);
-  };
+  useEffect(() => {
+    if (isSessionLoading) return;
+    if (!session?.user) {
+      setWalletDetails(null);
+      setWalletLoading(false);
+      return;
+    }
+    fetchWallet();
+  }, [session?.user, isSessionLoading, fetchWallet]);
 
-  /**
-   * Clear wallet information and remove it from localStorage
-   * This function is called when disconnecting a wallet
-   */
-  const clearWalletInfo = () => {
-    setLocalWalletAddress(null);
-    setLocalWalletName(null);
-    localStorage.removeItem('walletAddress');
-    localStorage.removeItem('walletName');
-  };
+  const refreshWallet = useCallback(async () => {
+    if (!session?.user) return;
+    setWalletLoading(true);
+    try {
+      const data = await walletApi.getWalletDetails();
+      setWalletDetails({
+        address: data.address,
+        balances: data.balances ?? [],
+        transactions: data.transactions ?? [],
+      });
+    } catch {
+      // Keep previous state on refresh failure
+    } finally {
+      setWalletLoading(false);
+    }
+  }, [session?.user]);
 
-  // Derive wallet data from session (priority) or local state
-  const walletAddress = session?.user?.wallet?.address || localWalletAddress;
-  const walletName = session?.user?.wallet?.address
-    ? 'Boundless Wallet'
-    : localWalletName;
+  const syncWallet = useCallback(async () => {
+    await walletApi.syncWallet();
+    await refreshWallet();
+  }, [refreshWallet]);
 
-  // Cast the wallet properties to their formatted types if they exist in the session
-  // We use 'any' casting here because the inferred type from auth-client might not strictly match our interfaces yet
-  const balances =
-    (session?.user?.wallet?.balances as unknown as WalletBalance[]) || [];
-  const transactions =
-    (session?.user?.wallet?.transactions as unknown as WalletTransaction[]) ||
-    [];
+  const getSupportedTrustlineAssets = useCallback((): Promise<
+    SupportedTrustlineAsset[]
+  > => {
+    return walletApi.getSupportedTrustlineAssets();
+  }, []);
 
-  // Calculate total portfolio value derived from USD values of all balances
+  const addTrustline = useCallback(
+    async (assetCode: string) => {
+      await walletApi.addTrustline(assetCode);
+      await refreshWallet();
+    },
+    [refreshWallet]
+  );
+
+  const setWalletInfo = useCallback((_address: string, _name: string) => {
+    // No-op: wallet is managed by backend; no local storage.
+  }, []);
+
+  const clearWalletInfo = useCallback(() => {
+    setWalletDetails(null);
+    // Disconnect only clears local UI state; backend still has the user's wallet.
+  }, []);
+
+  const walletAddress = walletDetails?.address ?? null;
+  const walletName = walletAddress ? WALLET_NAME : null;
+  const balances = walletDetails?.balances ?? [];
+  const transactions = walletDetails?.transactions ?? [];
   const totalPortfolioValue = balances.reduce(
-    (acc, asset) => acc + (asset.usdValue || 0),
+    (acc, asset) => acc + (asset.usdValue ?? 0),
     0
   );
+  const isLoading = isSessionLoading || walletLoading;
+  const hasWalletFromSession = !!session?.user?.wallet?.address;
 
   return (
     <WalletContext.Provider
@@ -106,9 +131,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         balances,
         transactions,
         totalPortfolioValue,
-        isLoading: isSessionLoading,
+        isLoading,
+        hasWalletFromSession,
         setWalletInfo,
         clearWalletInfo,
+        refreshWallet,
+        syncWallet,
+        getSupportedTrustlineAssets,
+        addTrustline,
       }}
     >
       {children}
@@ -116,11 +146,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-/**
- * Custom hook to access the wallet context
- * Provides wallet state and functions to components
- * Throws an error if used outside of WalletProvider
- */
 export const useWalletContext = () => {
   const context = useContext(WalletContext);
   if (!context) {

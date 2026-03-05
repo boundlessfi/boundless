@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useWallet } from '@/hooks/use-wallet';
 import { useWalletContext } from '@/components/providers/wallet-provider';
 import { Button } from '@/components/ui/button';
 import { WalletSheet } from './WalletSheet';
@@ -22,40 +21,46 @@ export function WalletTrigger({
   className,
   drawerType = 'sheet',
 }: WalletTriggerProps) {
-  const { handleConnect } = useWallet();
-  const { walletAddress } = useWalletContext();
+  const { walletAddress, hasWalletFromSession, isLoading } = useWalletContext();
   const [open, setOpen] = useState(false);
 
-  // If not connected, show connect button
-  if (!walletAddress) {
-    if (variant === 'floating' || variant === 'family-button') {
-      return (
-        <Button
-          onClick={handleConnect}
-          size='icon'
-          className={cn(
-            'fixed right-6 bottom-6 z-50 h-14 w-14 rounded-full shadow-lg',
-            'bg-primary text-primary-foreground hover:bg-primary/90',
-            'transition-transform hover:scale-105',
-            className
-          )}
-        >
-          <Wallet className='h-6 w-6' />
-        </Button>
-      );
-    }
+  // Wallet is managed by backend; no "Connect Wallet" flow. Show trigger only when
+  // we have a wallet (from API) or session says user has a wallet (e.g. while loading).
+  const showWalletEntry = !!walletAddress || hasWalletFromSession;
+  if (!showWalletEntry) return null;
 
-    return (
+  // While loading and no address yet, show a minimal trigger that opens the drawer (loading state inside)
+  if (!walletAddress && hasWalletFromSession) {
+    const triggerButton = (
       <Button
-        onClick={handleConnect}
-        className={cn('gap-2', className)}
-        variant='default'
+        onClick={() => setOpen(true)}
+        size='icon'
+        className={cn(
+          variant === 'floating' || variant === 'family-button'
+            ? 'fixed right-6 bottom-6 z-50 h-14 w-14 rounded-full shadow-lg'
+            : '',
+          'bg-muted text-muted-foreground',
+          className
+        )}
+        disabled={isLoading}
+        aria-label='Wallet'
       >
-        <Wallet className='h-4 w-4' />
-        <span className='hidden sm:inline'>Connect Wallet</span>
+        <Wallet className='h-5 w-5' />
       </Button>
     );
+    return (
+      <>
+        {triggerButton}
+        {drawerType === 'family' ? (
+          <FamilyWalletDrawer open={open} onOpenChange={setOpen} />
+        ) : (
+          <WalletSheet open={open} onOpenChange={setOpen} />
+        )}
+      </>
+    );
   }
+
+  const address = walletAddress as string;
 
   return (
     <>
@@ -101,10 +106,26 @@ export function WalletTrigger({
           <div className='flex items-center gap-2'>
             <div className='h-2 w-2 animate-pulse rounded-full bg-green-500' />
             <span className='hidden font-medium sm:inline-block'>
-              {formatAddress(walletAddress, 4)}
+              {formatAddress(address, 4)}
             </span>
             <ChevronDown className='text-muted-foreground h-3 w-3' />
           </div>
+        </Button>
+      )}
+
+      {variant === 'family-button' && (
+        <Button
+          onClick={() => setOpen(true)}
+          size='icon'
+          className={cn(
+            'fixed right-6 bottom-6 z-50 h-14 w-14 rounded-full shadow-lg',
+            'bg-card text-foreground border-border hover:bg-muted border',
+            'transition-transform hover:scale-105',
+            className
+          )}
+          aria-label='Wallet'
+        >
+          <WalletCards className='text-primary h-6 w-6' />
         </Button>
       )}
 

@@ -6,6 +6,7 @@ import {
   getVoteCounts,
 } from '@/lib/api/votes';
 import { VoteEntityType } from '@/types/votes';
+import { reportError } from '@/lib/error-reporting';
 
 interface UseSubmissionVoteReturn {
   voteCount: number;
@@ -51,7 +52,7 @@ export function useSubmissionVote(
         setHasVoted(false);
       }
     } catch (err) {
-      console.error('Error fetching vote data:', err);
+      reportError(err, { context: 'submission-vote-fetch', submissionId });
       setError(err instanceof Error ? err.message : 'Failed to fetch votes');
     } finally {
       setIsLoading(false);
@@ -92,7 +93,7 @@ export function useSubmissionVote(
       // Refresh to get accurate counts from server
       await fetchVoteData();
     } catch (err) {
-      console.error('Error toggling vote:', err);
+      reportError(err, { context: 'submission-vote-toggle', submissionId });
       setError(err instanceof Error ? err.message : 'Failed to update vote');
       // Revert optimistic update on error
       await fetchVoteData();

@@ -10,6 +10,7 @@ import Loading from '@/components/Loading';
 import { SubmissionsManagement } from '@/components/organization/hackathons/submissions/SubmissionsManagement';
 import { authClient } from '@/lib/auth-client';
 import { getHackathon, type Hackathon } from '@/lib/api/hackathons';
+import { reportError } from '@/lib/error-reporting';
 
 export default function SubmissionsPage() {
   const params = useParams();
@@ -41,7 +42,10 @@ export default function SubmissionsPage() {
             setHackathon(res.data);
           }
         } catch (err) {
-          console.error('Failed to fetch hackathon details:', err);
+          reportError(err, {
+            context: 'org-submissions-fetchHackathon',
+            hackathonId,
+          });
         }
       };
       fetchHackathonDetails();
@@ -56,7 +60,7 @@ export default function SubmissionsPage() {
           setCurrentUserId(session.user.id);
         }
       } catch (err) {
-        console.error('Failed to fetch session:', err);
+        reportError(err, { context: 'org-submissions-fetchSession' });
       }
     };
     fetchSession();

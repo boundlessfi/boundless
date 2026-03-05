@@ -21,6 +21,7 @@ import {
   FileUploadError,
   FILE_UPLOAD_ERROR_CODES,
 } from '@/lib/file-upload-utils';
+import { reportError, reportMessage } from '@/lib/error-reporting';
 
 interface UseFileUploadOptions {
   config: FileUploadConfig;
@@ -116,7 +117,13 @@ export function useFileUpload({
           dimensions = await getImageDimensions(file);
           previewUrl = URL.createObjectURL(file);
         } catch (error) {
-          console.warn('Failed to get image dimensions or preview:', error);
+          reportMessage(
+            'Failed to get image dimensions or preview',
+            'warning',
+            {
+              fileName: file.name,
+            }
+          );
         }
       }
 
@@ -174,7 +181,7 @@ export function useFileUpload({
         });
       } catch (error) {
         setState(prev => ({ ...prev, isProcessing: false }));
-        console.error('Error processing files:', error);
+        reportError(error, { context: 'file-upload-processFiles' });
       }
     },
     [config.maxFiles, state.files.length, createFileMetadata, callbacks]

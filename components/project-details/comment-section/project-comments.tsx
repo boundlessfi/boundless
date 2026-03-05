@@ -9,6 +9,7 @@ import { CommentItem } from './comment-item';
 import { CommentInput } from './comment-input';
 import { CommentsEmptyState } from './comments-empty-state';
 import { CommentEntityType, Comment } from '@/types/comment';
+import { reportError } from '@/lib/error-reporting';
 
 interface ProjectCommentsProps {
   projectId: string;
@@ -74,7 +75,7 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
         entityId: projectId,
       });
     } catch (error) {
-      console.error('Failed to create comment:', error);
+      reportError(error, { context: 'project-comment-create', projectId });
     }
   };
 
@@ -87,7 +88,7 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
         entityId: projectId,
       } as any);
     } catch (error) {
-      console.error('Failed to create reply:', error);
+      reportError(error, { context: 'project-comment-reply', projectId });
     }
   };
 
@@ -95,7 +96,7 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
     try {
       await commentSystem.updateComment.updateComment(commentId, { content });
     } catch (error) {
-      console.error('Failed to update comment:', error);
+      reportError(error, { context: 'project-comment-update', projectId });
     }
   };
 
@@ -103,7 +104,7 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
     try {
       await commentSystem.deleteComment.deleteComment(commentId);
     } catch (error) {
-      console.error('Failed to delete comment:', error);
+      reportError(error, { context: 'project-comment-delete', projectId });
     }
   };
 
@@ -118,7 +119,7 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
         description,
       });
     } catch (error) {
-      console.error('Failed to report comment:', error);
+      reportError(error, { context: 'project-comment-report', projectId });
     }
   };
 

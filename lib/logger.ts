@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import type { ILogger, LoggerData } from '@/types/logger.types';
+import { reportError } from '@/lib/error-reporting';
 
 type LogLevel = LoggerData['LogLevel'];
 type LogData = LoggerData['LogData'];
@@ -36,7 +37,9 @@ export class Logger implements ILogger {
       const jsonData = JSON.stringify(logData, null, 2);
       logMethod(prefix, eventType, '\n', jsonData);
     } catch (error) {
-      console.error(`Error stringifying log data: ${error}`);
+      reportError(error instanceof Error ? error : new Error(String(error)), {
+        context: 'logger-stringify',
+      });
       logMethod(
         prefix,
         data.eventType,

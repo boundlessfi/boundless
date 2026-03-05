@@ -37,8 +37,16 @@ export function Footer() {
           <div className='flex flex-col items-end space-y-6'>
             <nav
               className='mb-14 grid grid-cols-2 gap-x-8 gap-y-4 text-center sm:text-left'
-              aria-label='Legal links'
+              aria-label='Footer links'
             >
+              <Link
+                href='https://docs.boundlessfi.xyz/'
+                className='hover:text-primary rounded text-sm text-[#B5B5B5] transition-colors focus:ring-2 focus:ring-white/50 focus:outline-none'
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                Docs
+              </Link>
               <Link
                 href='/terms'
                 className='hover:text-primary rounded text-sm text-[#B5B5B5] transition-colors focus:ring-2 focus:ring-white/50 focus:outline-none'
@@ -113,8 +121,16 @@ export function Footer() {
 
           <nav
             className='mb-14 grid grid-cols-2 gap-x-8 gap-y-4 text-center sm:text-left'
-            aria-label='Legal links'
+            aria-label='Footer links'
           >
+            <Link
+              href='https://docs.boundlessfi.xyz/'
+              className='hover:text-primary rounded text-sm text-[#B5B5B5] transition-colors focus:ring-2 focus:ring-white/50 focus:outline-none'
+              target='_blank'
+              rel='noopener noreferrer'
+            >
+              Docs
+            </Link>
             <Link
               href='/terms'
               className='hover:text-primary rounded text-sm text-[#B5B5B5] transition-colors focus:ring-2 focus:ring-white/50 focus:outline-none'

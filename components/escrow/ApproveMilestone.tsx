@@ -27,6 +27,7 @@ import {
 } from '@trustless-work/escrow';
 import { toast } from 'sonner';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { reportError } from '@/lib/error-reporting';
 
 /**
  * Component to approve milestones in a multi-release escrow
@@ -176,7 +177,8 @@ export const ApproveMilestone = () => {
           duration: 5000,
         }
       );
-    } catch {
+    } catch (err) {
+      reportError(err, { context: 'escrow-approveMilestone' });
       toast.error('Failed to approve milestone');
     } finally {
       setIsLoading(null);

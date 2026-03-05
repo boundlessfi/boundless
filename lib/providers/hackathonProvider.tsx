@@ -24,6 +24,7 @@ import {
   getHackathonSubmissions,
   getHackathonWinners,
 } from '@/lib/api/hackathon';
+import { reportError } from '@/lib/error-reporting';
 
 // -------------------
 // Status Mapper
@@ -236,8 +237,8 @@ export function HackathonDataProvider({
       if (response.success && response.data) {
         setSubmissions(response.data.submissions);
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      reportError(err, { context: 'fetchSubmissions', slug });
     }
   }, []);
 
@@ -265,8 +266,8 @@ export function HackathonDataProvider({
         logo: sub.logo ?? '/placeholder.svg',
       }));
       setExploreSubmissions(mappedSubmissions);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      reportError(err, { context: 'fetchExploreSubmissions', hackathonId });
     }
   }, []);
 
