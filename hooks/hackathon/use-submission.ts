@@ -9,14 +9,31 @@ import {
   type CreateSubmissionRequest,
   type ParticipantSubmission,
 } from '@/lib/api/hackathons';
+import type { ApiError } from '@/lib/api/api';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 import { reportError } from '@/lib/error-reporting';
 
+function getApiErrorMessage(err: unknown, fallback: string): string {
+  const apiErr = err as ApiError | undefined;
+  if (apiErr && typeof apiErr.message === 'string' && apiErr.message) {
+    const firstField =
+      Array.isArray(apiErr.errors) && apiErr.errors.length > 0
+        ? apiErr.errors[0].message
+        : null;
+    if (firstField && firstField !== apiErr.message) {
+      return `${apiErr.message}: ${firstField}`;
+    }
+    return apiErr.message;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
+
 // Type for submission data from form (without backend-specific fields)
 export type SubmissionFormData = Omit<
   CreateSubmissionRequest,
-  'hackathonId' | 'organizationId' | 'participationType'
+  'organizationId' | 'participationType'
 > & {
   participationType?: 'INDIVIDUAL' | 'TEAM';
   teamName?: string;
@@ -102,16 +119,20 @@ export function useSubmission({
           organizationId
         );
 
-        if (response.success && response.data) {
+        if (response?.success && response?.data) {
           setSubmission(response.data);
-          toast.success('Submission created successfully!');
+          toast.success(response.message || 'Submission created successfully!');
           return response.data;
-        } else {
-          throw new Error(response.message || 'Submission creation failed');
         }
+        throw new Error(
+          (response as { message?: string })?.message ||
+            'Submission creation failed'
+        );
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to create submission';
+        const errorMessage = getApiErrorMessage(
+          err,
+          'Failed to create submission'
+        );
         setError(errorMessage);
         toast.error(errorMessage);
         reportError(err, {
@@ -144,16 +165,20 @@ export function useSubmission({
       try {
         const response = await updateSubmission(submissionId, data);
 
-        if (response.success && response.data) {
+        if (response?.success && response?.data) {
           setSubmission(response.data);
-          toast.success('Submission updated successfully!');
+          toast.success(response.message || 'Submission updated successfully!');
           return response.data;
-        } else {
-          throw new Error(response.message || 'Submission update failed');
         }
+        throw new Error(
+          (response as { message?: string })?.message ||
+            'Submission update failed'
+        );
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to update submission';
+        const errorMessage = getApiErrorMessage(
+          err,
+          'Failed to update submission'
+        );
         setError(errorMessage);
         toast.error(errorMessage);
         reportError(err, {
@@ -184,8 +209,10 @@ export function useSubmission({
         toast.success('Submission deleted successfully');
         return true;
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to delete submission';
+        const errorMessage = getApiErrorMessage(
+          err,
+          'Failed to delete submission'
+        );
         setError(errorMessage);
         toast.error(errorMessage);
         throw err;
