@@ -1081,15 +1081,17 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
           <div key='step-1' className='space-y-6'>
             <div className='flex items-center justify-between'>
               <div></div>
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                onClick={handleFillMockData}
-                className='border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white'
-              >
-                Fill with Mock Data
-              </Button>
+              {process.env.NODE_ENV === 'development' && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={handleFillMockData}
+                  className='border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white'
+                >
+                  Fill with Mock Data
+                </Button>
+              )}
             </div>
             <FormField
               control={form.control}

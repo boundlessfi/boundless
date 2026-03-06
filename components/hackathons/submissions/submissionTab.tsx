@@ -267,7 +267,8 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
       {!isLoadingMySubmission &&
         !mySubmission &&
         isAuthenticated &&
-        isRegistered && (
+        isRegistered &&
+        status !== 'upcoming' && (
           <div className='mb-8 rounded-lg border border-dashed border-gray-700 bg-gray-800/20 p-8 text-center'>
             <p className='mb-4 text-gray-400'>
               You haven't submitted a project yet.
