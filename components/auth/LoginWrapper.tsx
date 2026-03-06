@@ -35,9 +35,23 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
   const [lastMethod, setLastMethod] = useState<string | null>(null);
   const [twoFactorRequired, setTwoFactorRequired] = useState(false);
 
-  const callbackUrl = searchParams.get('callbackUrl')
+  const rawCallbackUrl = searchParams.get('callbackUrl')
     ? decodeURIComponent(searchParams.get('callbackUrl')!)
     : process.env.NEXT_PUBLIC_APP_URL || '/';
+
+  const appOrigin =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : (process.env.NEXT_PUBLIC_APP_URL || 'https://boundlessfi.xyz').replace(
+          /\/$/,
+          ''
+        );
+
+  const callbackUrl =
+    rawCallbackUrl.startsWith('http://') ||
+    rawCallbackUrl.startsWith('https://')
+      ? rawCallbackUrl
+      : `${appOrigin}${rawCallbackUrl.startsWith('/') ? '' : '/'}${rawCallbackUrl}`;
 
   useEffect(() => {
     const method = authClient.getLastUsedLoginMethod();

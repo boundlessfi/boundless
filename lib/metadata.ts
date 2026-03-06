@@ -477,7 +477,7 @@ export function generateHackathonMetadata(hackathon: Hackathon): Metadata {
   );
   const keywords = hackathon.categories || [];
 
-  const ogImageUrl = getAbsoluteImageUrl(hackathon.banner);
+  const ogImageUrl = getAbsoluteImageUrl(hackathon.banner ?? '');
 
   return {
     title,
@@ -497,7 +497,7 @@ export function generateHackathonMetadata(hackathon: Hackathon): Metadata {
       },
     },
 
-    // Open Graph
+    // Open Graph (absolute URLs required for WhatsApp/Facebook)
     openGraph: {
       title,
       description,
@@ -511,7 +511,7 @@ export function generateHackathonMetadata(hackathon: Hackathon): Metadata {
           width: 1200,
           height: 630,
           alt: hackathon.name,
-          type: 'image/jpeg',
+          type: 'image/png',
         },
       ],
     },
@@ -537,10 +537,17 @@ export function generateHackathonMetadata(hackathon: Hackathon): Metadata {
     // Category
     category: hackathon.categories?.[0] || 'Hackathon',
 
-    // Additional metadata
+    // Explicit og:image for WhatsApp/crawlers that expect these meta tags
     other: {
       'og:site_name': baseMetadata.siteName,
       'og:locale': baseMetadata.locale,
+      'og:image': ogImageUrl,
+      'og:image:url': ogImageUrl,
+      'og:image:secure_url': ogImageUrl,
+      'og:image:width': '1200',
+      'og:image:height': '630',
+      'og:image:alt': hackathon.name,
+      'og:image:type': 'image/png',
     },
   };
 }
