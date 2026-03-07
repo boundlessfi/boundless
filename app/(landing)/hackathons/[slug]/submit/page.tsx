@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useAuthStatus } from '@/hooks/use-auth';
@@ -70,12 +70,20 @@ export default function SubmitProjectPage({
     router.push(`/hackathons/${hackathonSlug}?tab=submission`);
   };
 
-  if (
-    isLoading ||
-    hackathonLoading ||
-    isLoadingMySubmission ||
-    !currentHackathon
-  ) {
+  const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
+
+  useEffect(() => {
+    if (
+      !isLoading &&
+      !hackathonLoading &&
+      !isLoadingMySubmission &&
+      currentHackathon
+    ) {
+      setHasInitialLoaded(true);
+    }
+  }, [isLoading, hackathonLoading, isLoadingMySubmission, currentHackathon]);
+
+  if (!hasInitialLoaded || !currentHackathon) {
     return <LoadingScreen />;
   }
 
