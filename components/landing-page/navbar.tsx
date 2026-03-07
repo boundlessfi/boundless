@@ -9,7 +9,6 @@ import {
   User as UserIcon,
   LogOut,
   Settings,
-  Sparkles,
   Wand2,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -83,9 +82,8 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <DesktopMenu items={MENU_ITEMS} currentPath={pathname} />
 
-          {/* Desktop Actions - Updated with better alignment */}
-          {/* <div className='flex items-center gap-2'> */}
-          <div className='hidden shrink-0 min-[990px]:flex md:items-center md:gap-3'>
+          {/* Desktop Actions: single flex group for correct layout */}
+          <div className='hidden shrink-0 items-center gap-2 lg:flex lg:gap-3'>
             {isLoading ? (
               <LoadingSkeleton />
             ) : isAuthenticated ? (
@@ -95,13 +93,29 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu */}
-          <MobileMenu
-            isAuthenticated={isAuthenticated}
-            isLoading={isLoading}
-            user={user}
-          />
-          {/* </div> */}
+          {/* Mobile: right-aligned group — notification, wallet (if auth), hamburger; placeholders when loading to avoid layout jump */}
+          <div className='flex shrink-0 items-center justify-end gap-2 lg:hidden'>
+            {isAuthenticated && isLoading && (
+              <div className='flex items-center gap-2' aria-hidden>
+                <span className='h-11 w-11 shrink-0 animate-pulse rounded-lg border border-white/10 bg-white/5' />
+                <span className='h-11 w-11 shrink-0 animate-pulse rounded-lg border border-white/10 bg-white/5' />
+              </div>
+            )}
+            {isAuthenticated && !isLoading && (
+              <>
+                <NotificationBell
+                  className='flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-white/20 p-2.5 text-white/70 transition-colors hover:border-white/30 hover:bg-white/5 hover:text-white'
+                  limit={10}
+                />
+                <WalletTrigger variant='icon' drawerType='family' />
+              </>
+            )}
+            <MobileMenu
+              isAuthenticated={isAuthenticated}
+              isLoading={isLoading}
+              user={user}
+            />
+          </div>
         </div>
       </div>
     </nav>
@@ -142,7 +156,7 @@ function DesktopMenu({
 }) {
   return (
     <nav
-      className='hidden flex-1 min-[990px]:flex md:items-center md:justify-center'
+      className='hidden flex-1 items-center justify-center lg:flex'
       aria-label='Main navigation'
     >
       <div className='flex items-center gap-1'>
@@ -156,24 +170,9 @@ function DesktopMenu({
               className={cn(
                 'rounded-lg px-3 py-2 text-sm font-medium transition-all duration-100',
                 isActive
-                  ? `bg-[${BRAND_COLOR}]/10 text-[${BRAND_COLOR}] border border-[${BRAND_COLOR}]/20 shadow-sm shadow-[${BRAND_COLOR}]/5`
-                  : 'text-white/60 hover:bg-white/5 hover:text-white/90',
-                item.href === '/bounties'
-                  ? 'max-[1200px]:hidden'
-                  : item.href === '/blog'
-                    ? 'max-[1200px]:hidden'
-                    : ''
+                  ? 'navbar-link-active'
+                  : 'text-white/60 hover:bg-white/5 hover:text-white/90'
               )}
-              style={
-                isActive
-                  ? {
-                      backgroundColor: `${BRAND_COLOR}1A`,
-                      color: BRAND_COLOR,
-                      borderColor: `${BRAND_COLOR}33`,
-                      boxShadow: `0 1px 2px ${BRAND_COLOR}0D`,
-                    }
-                  : undefined
-              }
             >
               {item.label}
             </Link>
@@ -212,14 +211,17 @@ function AuthenticatedActions() {
     <>
       <div className='flex items-center gap-2'>
         <WalletTrigger variant='icon' drawerType='sheet' />
-
+        <NotificationBell
+          className='rounded-lg border border-white/20 p-2 text-white/70 transition-colors hover:border-white/30 hover:bg-white/5 hover:text-white'
+          limit={10}
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <BoundlessButton
               variant='outline'
               size='sm'
               aria-label='Create new content'
-              className='group relative flex items-center gap-2 overflow-hidden rounded-lg border-white/20 bg-linear-to-r from-transparent via-white/5 to-transparent py-4 text-sm font-medium text-white/90 transition-all duration-300'
+              className='group relative flex items-center gap-2 overflow-hidden rounded-lg border-white/20 bg-transparent px-3 py-2 text-sm font-medium text-white/90 transition-all duration-200 hover:bg-white/5'
               onMouseEnter={e => {
                 setIsHovered(true);
                 e.currentTarget.style.backgroundColor = `${BRAND_COLOR}1A`;
@@ -233,13 +235,8 @@ function AuthenticatedActions() {
                 e.currentTarget.style.color = '';
               }}
             >
-              {/* Animated sparkle that travels across */}
-              <div className='absolute top-1/2 -right-4 h-8 w-8 -translate-y-1/2 opacity-0 transition-all duration-500 group-hover:right-full group-hover:opacity-100'>
-                <Sparkles className='h-3 w-3 text-[#a7f950]' />
-              </div>
-
               <Wand2
-                className={`h-4 w-4 transition-all duration-300 ${isHovered ? 'rotate-12' : ''}`}
+                className={`h-4 w-4 transition-transform duration-200 ${isHovered ? 'rotate-12' : ''}`}
               />
               <span>Create</span>
             </BoundlessButton>
@@ -270,8 +267,7 @@ function AuthenticatedActions() {
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link
-                href='/organizations/new'
-                target='_blank'
+                href='/grants'
                 className='text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
               >
                 <Building2 className='mr-2 h-4 w-4' />
@@ -282,14 +278,16 @@ function AuthenticatedActions() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <UserMenu />
+        <UserMenu
+          triggerClassName='flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 p-1 transition-colors hover:border-white/30 hover:bg-white/10'
+          contentClassName='w-64 rounded-xl border border-white/10 bg-background-main-bg/98 p-0 shadow-xl shadow-black/40 backdrop-blur-xl'
+        />
       </div>
 
       <CreateProjectModal
         open={createProjectModalOpen}
         setOpen={setCreateProjectModalOpen}
       />
-      <NotificationBell limit={10} />
       <WalletRequiredModal
         open={showWalletModal}
         onOpenChange={closeWalletModal}
@@ -310,12 +308,20 @@ function UnauthenticatedActions() {
 
   return (
     <>
-      <Link
-        href='/auth?mode=signin'
-        className='inline-flex h-8 items-center justify-center gap-2 rounded-[10px] bg-[#a7f950] px-3 text-sm font-medium whitespace-nowrap text-black shadow-sm shadow-[#a7f950]/20 transition-all hover:bg-[#a7f950]/90'
-      >
-        Sign In
-      </Link>
+      <div className='flex items-center gap-2'>
+        <Link
+          href='/auth?mode=signin'
+          className='inline-flex h-9 min-h-[44px] items-center justify-center rounded-[10px] border border-white/30 px-4 text-sm font-medium text-white transition-colors hover:border-white/40 hover:bg-white/10'
+        >
+          Sign In
+        </Link>
+        <Link
+          href='/auth?mode=signup'
+          className='inline-flex h-9 min-h-[44px] items-center justify-center rounded-[10px] bg-[#a7f950] px-4 text-sm font-medium text-black shadow-sm shadow-[#a7f950]/20 transition-colors hover:bg-[#a7f950]/90'
+        >
+          Get Started
+        </Link>
+      </div>
 
       <CreateProjectModal
         open={createProjectModalOpen}
@@ -358,14 +364,14 @@ const MobileMenu = ({
   const kycBadge = getKycImageAndAlt(kycStatus);
 
   return (
-    <div className='min-[990px]:hidden'>
+    <div className='lg:hidden'>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
           <BoundlessButton
             variant='outline'
             size='sm'
             aria-label='Open navigation menu'
-            className='border-white/20 transition-all duration-200'
+            className='min-h-[44px] min-w-[44px] border-white/20 transition-all duration-200'
             style={
               {
                 '--hover-bg': `${BRAND_COLOR}1A`,
@@ -390,10 +396,10 @@ const MobileMenu = ({
 
         <SheetContent
           side='right'
-          className='bg-background-main-bg flex w-full flex-col border-l border-white/10 px-5 pt-10 sm:max-w-md'
+          className='bg-background-main-bg flex w-full max-w-[100vw] flex-col border-l border-white/10 px-5 pt-10 sm:max-w-md'
           showCloseButton={true}
         >
-          <div className='flex flex-1 flex-col gap-6 overflow-y-auto pb-6'>
+          <div className='flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pb-4'>
             {isAuthenticated && user && (
               <div className='flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-4 transition-colors hover:bg-white/8'>
                 <span className='relative shrink-0'>
@@ -442,7 +448,6 @@ const MobileMenu = ({
               </div>
             )}
 
-            {/* Navigation Links */}
             <nav className='flex flex-col gap-1' aria-label='Mobile navigation'>
               {MENU_ITEMS.map(item => {
                 const isActive = pathname === item.href;
@@ -453,20 +458,11 @@ const MobileMenu = ({
                     onClick={() => setIsOpen(false)}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'rounded-lg py-3 text-sm font-medium transition-all duration-200',
+                      'flex min-h-[44px] items-center rounded-lg border px-3 py-3 text-sm font-medium transition-all duration-200',
                       isActive
-                        ? 'border'
-                        : 'text-white/70 hover:border hover:border-white/10 hover:bg-white/5 hover:text-white/90'
+                        ? 'navbar-link-active'
+                        : 'text-white/70 hover:border-white/10 hover:bg-white/5 hover:text-white/90'
                     )}
-                    style={
-                      isActive
-                        ? {
-                            backgroundColor: `${BRAND_COLOR}1A`,
-                            color: BRAND_COLOR,
-                            borderColor: `${BRAND_COLOR}33`,
-                          }
-                        : undefined
-                    }
                   >
                     {item.label}
                   </Link>
@@ -474,61 +470,54 @@ const MobileMenu = ({
               })}
             </nav>
 
-            {isAuthenticated && (
-              <div className='flex flex-col gap-3 border-t border-white/10 pt-6'>
-                {isLoading ? (
-                  <LoadingSkeleton />
-                ) : (
-                  <>
-                    <WalletTrigger variant='icon' drawerType='family' />
-                    {user?.username && (
-                      <Link
-                        href={`/profile/${user.username}`}
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <BoundlessButton variant='outline' className='w-full'>
-                          <UserIcon className='mr-2 h-4 w-4' />
-                          Profile
-                        </BoundlessButton>
-                      </Link>
-                    )}
-                    <Link href='/me/settings' onClick={() => setIsOpen(false)}>
-                      <BoundlessButton variant='outline' className='w-full'>
-                        <Settings className='mr-2 h-4 w-4' />
-                        Settings
-                      </BoundlessButton>
-                    </Link>
-                    <BoundlessButton
-                      variant='outline'
-                      className='w-full border-red-500/50 text-red-400 hover:bg-red-500/10'
-                      onClick={() => {
-                        logout();
-                        setIsOpen(false);
-                      }}
-                    >
-                      <LogOut className='mr-2 h-4 w-4' />
-                      Sign Out
-                    </BoundlessButton>
-                  </>
-                )}
-              </div>
-            )}
+            {isAuthenticated && isLoading && <LoadingSkeleton />}
           </div>
 
-          {/* Sign Up / Sign In Buttons - Fixed at bottom for unauthenticated users */}
+          {/* Bottom: account actions – Profile, Settings, Sign Out (authenticated) or Get Started + Sign In (unauthenticated) */}
+          {isAuthenticated && !isLoading && (
+            <div className='shrink-0 border-t border-white/10 pt-4 pb-6'>
+              {user?.username && (
+                <Link
+                  href={`/profile/${user.username}`}
+                  onClick={() => setIsOpen(false)}
+                  className='mb-3 flex min-h-[44px] w-full items-center justify-center rounded-[10px] border border-white/30 px-4 py-3 text-sm font-medium text-white transition-colors hover:border-white/40 hover:bg-white/10'
+                >
+                  Profile
+                </Link>
+              )}
+              <Link
+                href='/me/settings'
+                onClick={() => setIsOpen(false)}
+                className='mb-3 flex min-h-[44px] w-full items-center justify-center rounded-[10px] border border-white/30 px-4 py-3 text-sm font-medium text-white transition-colors hover:border-white/40 hover:bg-white/10'
+              >
+                Settings
+              </Link>
+              <button
+                type='button'
+                className='flex min-h-[44px] w-full items-center justify-center rounded-[10px] border border-red-500/50 bg-transparent px-4 py-3 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10'
+                onClick={() => {
+                  logout();
+                  setIsOpen(false);
+                }}
+              >
+                Sign Out
+              </button>
+            </div>
+          )}
+
           {!isAuthenticated && (
-            <div className='mt-auto flex flex-col gap-3 border-t border-white/10 pt-6 pb-6'>
+            <div className='mt-auto flex shrink-0 flex-col gap-3 border-t border-white/10 pt-6 pb-6'>
               <Link
                 href='/auth?mode=signup'
                 onClick={() => setIsOpen(false)}
-                className='inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-[#a7f950] px-4 py-2 text-sm font-medium whitespace-nowrap text-black shadow-sm shadow-[#a7f950]/20 transition-all hover:bg-[#a7f950]/90'
+                className='inline-flex min-h-[44px] w-full items-center justify-center rounded-[10px] bg-[#a7f950] px-4 py-3 text-sm font-medium text-black shadow-sm shadow-[#a7f950]/20 transition-colors hover:bg-[#a7f950]/90'
               >
                 Get Started
               </Link>
               <Link
                 href='/auth?mode=signin'
                 onClick={() => setIsOpen(false)}
-                className='inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] border border-white/30 px-4 py-2 text-sm font-medium whitespace-nowrap text-white transition-all hover:border-white/40 hover:bg-white/10'
+                className='inline-flex min-h-[44px] w-full items-center justify-center rounded-[10px] border border-white/30 px-4 py-3 text-sm font-medium text-white transition-colors hover:border-white/40 hover:bg-white/10'
               >
                 Sign In
               </Link>

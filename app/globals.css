@@ -412,6 +412,21 @@ input[type='number'] {
   transition: all 0.5s ease-out;
 }
 
+/* Navbar active state – brand color via CSS variables (Tailwind-safe) */
+:root {
+  --nav-active-bg: rgba(167, 249, 80, 0.1);
+  --nav-active-color: #a7f950;
+  --nav-active-border: rgba(167, 249, 80, 0.2);
+  --nav-active-shadow: 0 1px 2px rgba(167, 249, 80, 0.05);
+}
+
+.navbar-link-active {
+  background-color: var(--nav-active-bg);
+  color: var(--nav-active-color);
+  border: 1px solid var(--nav-active-border);
+  box-shadow: var(--nav-active-shadow);
+}
+
 /* Navbar character animations */
 .nav-char {
   display: inline-block;

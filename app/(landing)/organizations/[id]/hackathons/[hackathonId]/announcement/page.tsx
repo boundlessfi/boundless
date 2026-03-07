@@ -29,6 +29,23 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { reportError } from '@/lib/error-reporting';
 
+/** Strip Markdown to plain text for list preview (headings, bold, links, etc.). */
+function stripMarkdown(md: string): string {
+  if (!md || typeof md !== 'string') return '';
+  return md
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/#{1,6}\s*/g, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\n+/g, ' ')
+    .trim();
+}
+
 export default function AnnouncementPage() {
   const params = useParams();
   const organizationId = params.id as string;
@@ -298,7 +315,7 @@ export default function AnnouncementPage() {
                         )}
                       </div>
                       <p className='line-clamp-2 text-sm text-zinc-400'>
-                        {item.content.replace(/<[^>]*>/g, '')}
+                        {stripMarkdown(item.content)}
                       </p>
                       <div className='flex items-center gap-4 text-xs text-zinc-500'>
                         <span>
