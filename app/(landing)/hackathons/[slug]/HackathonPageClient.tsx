@@ -296,7 +296,7 @@ export default function HackathonPageClient() {
   };
 
   const handleSubmitClick = () => {
-    router.push('?tab=submission');
+    router.push(`/hackathons/${currentHackathon?.slug}/submit`);
   };
 
   const handleViewSubmissionClick = () => {

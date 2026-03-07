@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -34,15 +34,14 @@ import {
 } from '@/lib/country-utils';
 import { toast } from 'sonner';
 
-const DynamicMinimalTiptap = dynamic(
-  () =>
-    import('@/components/ui/shadcn-io/minimal-tiptap').then(mod => ({
-      default: mod.MinimalTiptap,
-    })),
+const MDEditor = dynamic(
+  () => import('@uiw/react-md-editor').then(mod => mod.default),
   {
     ssr: false,
     loading: () => (
-      <div className='h-32 w-full animate-pulse rounded-lg bg-gray-800' />
+      <div className='flex h-32 w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/30'>
+        <Loader2 className='h-6 w-6 animate-spin text-zinc-500' />
+      </div>
     ),
   }
 );
@@ -264,10 +263,32 @@ export default function GeneralSettingsTab({
                   Details <span className='text-red-400'>*</span>
                 </FormLabel>
                 <FormControl>
-                  <div className='[&_.tiptap]:prose-invert [&_.tiptap]:prose-p:text-zinc-200 [&_.tiptap]:prose-headings:text-white overflow-hidden rounded-[12px] border border-zinc-700 bg-zinc-900/80 [&_.tiptap]:min-h-[180px] [&_.tiptap]:p-4 [&_.tiptap]:text-zinc-100'>
-                    <DynamicMinimalTiptap
-                      content={field.value}
-                      onChange={field.onChange}
+                  <div className='overflow-hidden rounded-xl border border-zinc-800'>
+                    <MDEditor
+                      value={field.value}
+                      onChange={value => field.onChange(value || '')}
+                      height={300}
+                      data-color-mode='dark'
+                      preview='edit'
+                      hideToolbar={false}
+                      visibleDragbar={true}
+                      textareaProps={{
+                        placeholder:
+                          "Tell your hackathon's story...\n\nUse markdown for formatting: headings, lists, links, and more.",
+                        style: {
+                          fontSize: 14,
+                          lineHeight: 1.6,
+                          color: '#ffffff',
+                          backgroundColor: '#18181b', // matching InfoTab style
+                          fontFamily: 'inherit',
+                          border: 'none',
+                        },
+                      }}
+                      style={{
+                        backgroundColor: '#18181b', // matching InfoTab style
+                        color: '#ffffff',
+                        border: 'none',
+                      }}
                     />
                   </div>
                 </FormControl>

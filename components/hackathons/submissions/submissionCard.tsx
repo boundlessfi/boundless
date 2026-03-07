@@ -164,39 +164,39 @@ const SubmissionCard = ({
           >
             {status}
           </Badge>
-
           {isMySubmission && !isDeadlinePassed && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  className='h-8 w-8 p-0 text-gray-400 hover:text-white'
-                  onClick={e => e.stopPropagation()}
+            <div onClick={e => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    className='h-8 w-8 p-0 text-gray-400 hover:text-white'
+                  >
+                    <MoreHorizontal className='h-4 w-4' />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align='end'
+                  className='border-gray-800 bg-black text-white'
                 >
-                  <MoreHorizontal className='h-4 w-4' />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align='end'
-                className='border-gray-800 bg-black text-white'
-              >
-                <DropdownMenuItem
-                  onClick={handleEditClick}
-                  className='cursor-pointer text-gray-300 focus:bg-gray-800 focus:text-white'
-                >
-                  <Edit className='mr-2 h-4 w-4' />
-                  Edit Submission
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleDeleteClick}
-                  className='cursor-pointer text-red-500 focus:bg-red-900/20 focus:text-red-400'
-                >
-                  <Trash className='mr-2 h-4 w-4' />
-                  Delete Submission
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem
+                    onSelect={() => onEditClick?.()}
+                    className='cursor-pointer text-gray-300 focus:bg-gray-800 focus:text-white'
+                  >
+                    <Edit className='mr-2 h-4 w-4' />
+                    Edit Submission
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => onDeleteClick?.()}
+                    className='cursor-pointer text-red-500 focus:bg-red-900/20 focus:text-red-400'
+                  >
+                    <Trash className='mr-2 h-4 w-4' />
+                    Delete Submission
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </div>

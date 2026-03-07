@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { getTeamPosts, type TeamRecruitmentPost } from '@/lib/api/hackathons';
+import { getHackathonParticipants } from '@/lib/api/hackathon';
 import { reportError } from '@/lib/error-reporting';
 import { useParams } from 'next/navigation';
 
@@ -8,24 +9,36 @@ export function useParticipants() {
   const { currentHackathon } = useHackathonData();
   const params = useParams();
   const [teams, setTeams] = useState<TeamRecruitmentPost[]>([]);
+  const [apiParticipants, setApiParticipants] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const hackathonId = currentHackathon?.id || (params?.slug as string);
 
   // Fetch teams to get accurate team info and roles
   useEffect(() => {
     if (hackathonId) {
-      getTeamPosts(hackathonId, { limit: 50 })
-        .then(response => {
-          if (response.success && response.data) {
-            // Check if response.data is the array or if it's nested in .teams
+      setIsLoading(true);
+      Promise.all([
+        getTeamPosts(hackathonId, { limit: 50 }),
+        getHackathonParticipants(hackathonId, { limit: 100 }),
+      ])
+        .then(([teamsResponse, participantsResponse]) => {
+          if (teamsResponse.success && teamsResponse.data) {
             const teamsArray =
-              (response.data as any).teams ||
-              (Array.isArray(response.data) ? response.data : []);
+              (teamsResponse.data as any).teams ||
+              (Array.isArray(teamsResponse.data) ? teamsResponse.data : []);
             setTeams(teamsArray);
+          }
+
+          if (participantsResponse.success && participantsResponse.data) {
+            setApiParticipants(participantsResponse.data.participants || []);
           }
         })
         .catch(err => {
-          reportError(err, { context: 'participants-fetchTeams', hackathonId });
+          reportError(err, { context: 'participants-fetchData', hackathonId });
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     }
   }, [hackathonId]);
@@ -66,66 +79,143 @@ export function useParticipants() {
   }, [teams]);
 
   // Transform API participants to match expected Participant type
-  const participants: Array<{
-    id: string;
-    userId: string;
-    name: string;
-    username: string;
-    avatar: string;
-    hasSubmitted: boolean;
-    joinedDate: string;
-    role: string;
-    categories: string[];
-    projects: number;
-    followers: number;
-    teamId?: string;
-    teamName?: string;
-    isIndividual: boolean;
-  }> = (currentHackathon?.participants || []).map(apiParticipant => {
-    const apiUser = (apiParticipant.user || {}) as any;
-    const profile = (apiUser.profile || {}) as any;
-    const userId = apiParticipant.userId || apiUser.id;
+  const participants = useMemo(() => {
+    // We want to merge data from both sources.
+    // currentHackathon?.participants has the Google avatars (user.image).
+    // apiParticipants has the stats (followers, projects).
+    const baseParticipants = currentHackathon?.participants || [];
+    const sourceParticipants =
+      apiParticipants.length > 0 ? apiParticipants : baseParticipants;
 
-    // Enrich with team data from fetched teams
-    const teamInfo = userId ? userTeamMap.get(userId) : null;
+    // Create a lookup map from base participants for fast merging
+    const baseLookup = new Map();
+    baseParticipants.forEach(p => {
+      const uId = p.userId || (p.user || {}).id || p.id;
+      if (uId) baseLookup.set(uId, p);
+    });
 
-    // Robust name detection
-    const name =
-      apiUser.name ||
-      profile.name ||
-      `${profile.firstName || apiUser.firstName || ''} ${profile.lastName || apiUser.lastName || ''}`.trim() ||
-      apiUser.displayUsername ||
-      'Anonymous';
+    return sourceParticipants.map(apiParticipant => {
+      // Find matching base participant to merge data
+      const pId =
+        apiParticipant.userId ||
+        (apiParticipant.user || {}).id ||
+        apiParticipant.id;
+      const basePat = pId ? baseLookup.get(pId) : null;
 
-    // Robust username detection
-    const username =
-      apiUser.username ||
-      profile.username ||
-      apiUser.displayUsername ||
-      apiUser.handle ||
-      'user';
+      // Merge user objects to ensure we don't lose avatar data (like Google profile images)
+      const apiUser = {
+        ...(basePat?.user || {}),
+        ...(apiParticipant.user || {}),
+        ...((apiParticipant.user || apiParticipant || {}) as any),
+      };
+      const profile = {
+        ...(basePat?.user?.profile || {}),
+        ...(apiUser.profile || {}),
+      } as any;
 
-    const avatar = profile.image || profile.avatar || apiUser.image || '';
+      // Robust userId detection
+      const userId =
+        apiParticipant.userId ||
+        apiUser.id ||
+        apiUser.userId ||
+        (typeof apiParticipant.id === 'string' ? apiParticipant.id : undefined);
 
-    return {
-      id: apiParticipant.id,
-      userId: userId,
-      name,
-      username,
-      avatar,
-      hasSubmitted: !!apiParticipant.submission,
-      joinedDate: apiParticipant.registeredAt,
-      // Use role from Team if found, then from API, otherwise default
-      role: teamInfo?.role || (apiParticipant as any).role || 'Participant',
-      categories: [],
-      projects: 0,
-      followers: 0,
-      teamId: teamInfo?.teamId || apiParticipant.teamId,
-      teamName: teamInfo?.teamName || apiParticipant.teamName,
-      isIndividual:
-        apiParticipant.participationType === 'individual' && !teamInfo,
-    };
-  });
+      // Enrich with team data from fetched teams
+      const teamInfo = userId ? userTeamMap.get(userId) : null;
+
+      // Robust name detection
+      const name =
+        apiParticipant.name ||
+        basePat?.name ||
+        apiUser.name ||
+        profile.name ||
+        `${profile.firstName || apiUser.firstName || apiParticipant.firstName || ''} ${profile.lastName || apiUser.lastName || apiParticipant.lastName || ''}`.trim() ||
+        apiUser.displayUsername ||
+        apiParticipant.displayUsername ||
+        apiUser.displayName ||
+        apiParticipant.displayName ||
+        'Anonymous';
+
+      // Robust username detection
+      const username =
+        apiParticipant.username ||
+        basePat?.username ||
+        apiUser.username ||
+        profile.username ||
+        apiUser.displayUsername ||
+        apiParticipant.displayUsername ||
+        apiUser.handle ||
+        apiParticipant.handle ||
+        'user';
+
+      const avatar =
+        profile.image ||
+        profile.avatar ||
+        profile.avatarUrl ||
+        profile.imageUrl ||
+        profile.picture ||
+        profile.photoURL ||
+        apiUser.image ||
+        apiUser.avatar ||
+        apiUser.avatarUrl ||
+        apiUser.imageUrl ||
+        apiUser.picture ||
+        apiUser.photo ||
+        apiUser.photoURL ||
+        apiParticipant.avatar ||
+        apiParticipant.image ||
+        apiParticipant.avatarUrl ||
+        apiParticipant.imageUrl ||
+        apiParticipant.picture ||
+        apiParticipant.photo ||
+        '/placeholder.svg';
+
+      // Get joined date - prefer registeredAt
+      const joinedDate =
+        apiParticipant.registeredAt ||
+        basePat?.registeredAt ||
+        apiParticipant.createdAt ||
+        new Date().toISOString();
+
+      // Get stats if available in enriched profile or participant object
+      const userStats = (apiParticipant as any).userStats || {};
+      const projectsCount =
+        apiParticipant.projects ??
+        userStats.projects ??
+        profile.projectsCount ??
+        0;
+      const followersCount =
+        apiParticipant.followers ??
+        userStats.followers ??
+        profile.followersCount ??
+        0;
+
+      return {
+        id: apiParticipant.id || basePat?.id,
+        userId: userId,
+        name: name === ' ' ? 'Anonymous' : name, // Fix empty space from trim
+        username,
+        avatar,
+        hasSubmitted: !!(apiParticipant.submission || basePat?.submission),
+        joinedDate,
+        // Use role from Team if found, then from API, otherwise default
+        role:
+          teamInfo?.role ||
+          (apiParticipant as any).role ||
+          (basePat as any)?.role ||
+          'Participant',
+        categories: apiParticipant.categories || basePat?.categories || [],
+        projects: projectsCount,
+        followers: followersCount,
+        teamId: teamInfo?.teamId || apiParticipant.teamId || basePat?.teamId,
+        teamName:
+          teamInfo?.teamName || apiParticipant.teamName || basePat?.teamName,
+        isIndividual:
+          (apiParticipant.participationType || basePat?.participationType) ===
+            'individual' && !teamInfo,
+      };
+    });
+  }, [apiParticipants, currentHackathon?.participants, userTeamMap]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [submissionFilter, setSubmissionFilter] = useState('all');
@@ -142,7 +232,7 @@ export function useParticipants() {
           p.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (p.role && p.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
           (p.categories &&
-            p.categories.some(cat =>
+            p.categories.some((cat: string) =>
               cat.toLowerCase().includes(searchTerm.toLowerCase())
             ))
       );
@@ -162,7 +252,9 @@ export function useParticipants() {
         p =>
           (p.role && p.role.toLowerCase().includes(skillFilter)) ||
           (p.categories &&
-            p.categories.some(cat => cat.toLowerCase().includes(skillFilter)))
+            p.categories.some((cat: string) =>
+              cat.toLowerCase().includes(skillFilter)
+            ))
       );
     }
 

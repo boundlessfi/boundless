@@ -125,6 +125,7 @@ interface SubmissionFormContentProps {
   initialData?: Partial<SubmissionFormDataLocal>;
   submissionId?: string;
   onSuccess?: () => void;
+  onClose?: () => void;
 }
 
 const INITIAL_STEPS: Step[] = [
@@ -198,8 +199,19 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   initialData,
   submissionId,
   onSuccess,
+  onClose,
 }) => {
-  const { collapse, isExpanded: open } = useExpandableScreen();
+  // Use context carefully since it might not be available when used standalone
+  let collapse = () => {};
+  let open = true;
+  try {
+    const expandableCtx = useExpandableScreen();
+    collapse = expandableCtx.collapse;
+    open = expandableCtx.isExpanded;
+  } catch (e) {
+    // Standalone mode, not in ExpandableScreen
+  }
+
   const { currentHackathon } = useHackathonData();
   const { user } = useAuthStatus();
 
@@ -773,7 +785,11 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       } else {
         await create(submissionData);
       }
-      collapse();
+      if (onClose) {
+        onClose();
+      } else {
+        collapse();
+      }
       onSuccess?.();
     } catch {
       // Error handled in hook
@@ -1503,22 +1519,31 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className='flex flex-1 gap-8 overflow-y-auto px-10 py-6'
+          className='flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 sm:px-10 md:flex-row md:gap-8'
         >
-          <div className='sticky top-0 h-fit'>
+          <div className='mt-4 h-fit w-full md:sticky md:top-0 md:mt-0 md:w-auto'>
             <Stepper steps={steps} />
           </div>
-          <div className='flex flex-1 flex-col space-y-6'>
+          <div className='flex w-full flex-1 flex-col space-y-6'>
             {renderStepContent()}
             <div className='mt-auto flex justify-between pt-6 pb-6'>
               <Button
                 type='button'
                 variant='outline'
-                onClick={handleBack}
-                disabled={currentStep === 0}
+                onClick={() => {
+                  if (currentStep > 0) {
+                    handleBack();
+                  } else {
+                    if (onClose) {
+                      onClose();
+                    } else {
+                      collapse();
+                    }
+                  }
+                }}
                 className='border-gray-700 text-white hover:bg-gray-800'
               >
-                Back
+                {currentStep === 0 ? 'Cancel' : 'Back'}
               </Button>
               {currentStep < steps.length - 1 ? (
                 <Button
@@ -1567,6 +1592,8 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     </div>
   );
 };
+
+export { SubmissionFormContent };
 
 interface SubmissionScreenWrapperProps extends SubmissionFormContentProps {
   children: React.ReactNode;
