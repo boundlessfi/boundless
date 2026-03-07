@@ -94,6 +94,8 @@ const Newsletter = ({
         source: 'website',
         tags: selectedTags,
       });
+      onOpenChange(false);
+      window.location.href = '/newsletter/confirmed';
     } catch (err) {
       const e = err as NewsletterApiError;
       if (e.code === 'ALREADY_SUBSCRIBED')

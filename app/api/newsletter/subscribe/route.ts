@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-
         ...(request.headers.get('user-agent') && {
           'User-Agent': request.headers.get('user-agent')!,
         }),
@@ -20,25 +19,11 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json(
-        {
-          message: errorData.message || 'Failed to subscribe to waitlist',
-          status: response.status,
-        },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data, { status: 200 });
+    const data = await response.json().catch(() => ({}));
+    return NextResponse.json(data, { status: response.status });
   } catch {
     return NextResponse.json(
-      {
-        message: 'Internal server error',
-        status: 500,
-      },
+      { message: 'Internal server error', status: 500 },
       { status: 500 }
     );
   }

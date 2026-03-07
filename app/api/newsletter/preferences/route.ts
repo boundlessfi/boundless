@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 const backendUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export async function PATCH(req: NextRequest) {
