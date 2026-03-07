@@ -238,20 +238,17 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
               </Button>
             )}
 
-            {/* View Submission Button */}
-            {status === 'ongoing' &&
-              isRegistered &&
-              hasSubmitted &&
-              onViewSubmissionClick && (
-                <Button
-                  onClick={onViewSubmissionClick}
-                  variant='outline'
-                  className='w-full border-gray-700 py-4 text-sm text-gray-300 hover:bg-gray-900'
-                >
-                  <FileText className='mr-1.5 h-3.5 w-3.5' />
-                  View Submission
-                </Button>
-              )}
+            {/* Edit / View Submission Button */}
+            {status === 'ongoing' && isRegistered && hasSubmitted && (
+              <Button
+                onClick={onSubmitClick}
+                variant='outline'
+                className='w-full border-gray-700 py-4 text-sm text-gray-300 hover:bg-gray-900'
+              >
+                <FileText className='mr-1.5 h-3.5 w-3.5' />
+                Edit Submission
+              </Button>
+            )}
 
             {/* Find Team Button */}
             {status === 'ongoing' &&

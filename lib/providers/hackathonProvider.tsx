@@ -322,8 +322,6 @@ export function HackathonDataProvider({
   // --------------------------------
   const setCurrentHackathon = useCallback(
     async (slug: string) => {
-      if (currentHackathonSlug === slug && fetchingRef.current) return;
-
       setCurrentHackathonSlug(slug);
       const data = await fetchHackathonBySlug(slug);
 

@@ -83,7 +83,8 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
     setSelectedSort,
     setSelectedCategory,
   } = useSubmissions();
-  const { currentHackathon } = useHackathonData();
+  const { currentHackathon, loading: isHackathonDataLoading } =
+    useHackathonData();
   const { status } = useHackathonStatus(
     currentHackathon?.startDate,
     currentHackathon?.submissionDeadline
@@ -265,6 +266,14 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
         </div>
       </div>
 
+      {/* Loading State */}
+      {(isLoadingMySubmission || isHackathonDataLoading) && (
+        <div className='flex w-full items-center justify-center py-8'>
+          <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
+          <span className='ml-3 text-gray-400'>Loading submissions...</span>
+        </div>
+      )}
+
       {/* Submissions Grid with Create Button if no submission */}
       {!isLoadingMySubmission &&
         !mySubmission &&
@@ -289,7 +298,9 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
         )}
 
       {/* Submissions Grid / List */}
-      {submissions.length > 0 || mySubmission ? (
+      {!isLoadingMySubmission &&
+      !isHackathonDataLoading &&
+      (submissions.length > 0 || mySubmission) ? (
         <div
           className={cn(
             viewMode === 'grid'
