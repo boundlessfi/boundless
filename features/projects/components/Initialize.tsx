@@ -13,6 +13,8 @@ import ProjectSubmissionSuccess from './ProjectSubmissionSuccess';
 import Loading from '@/components/loading/Loading';
 import { useWalletProtection } from '@/hooks/use-wallet-protection';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
+import WalletNotReadyModal from '@/components/wallet/WalletNotReadyModal';
+import { WalletSheet } from '@/components/wallet/WalletSheet';
 
 type StepState = 'pending' | 'active' | 'completed';
 
@@ -47,11 +49,16 @@ const Initialize: React.FC<InitializeProps> = ({ onSuccess }) => {
   const {
     requireWallet,
     showWalletModal,
+    showNotReadyModal,
+    notReadyReasons,
     handleWalletConnected,
     closeWalletModal,
+    closeNotReadyModal,
   } = useWalletProtection({
     actionName: 'initialize project',
   });
+
+  const [isWalletDrawerOpen, setIsWalletDrawerOpen] = useState(false);
 
   const localSteps: Step[] = [
     {
@@ -203,6 +210,21 @@ const Initialize: React.FC<InitializeProps> = ({ onSuccess }) => {
         actionName='initialize project'
         onWalletConnected={handleWalletConnected}
       />
+
+      {/* Wallet Not Ready Modal */}
+      <WalletNotReadyModal
+        open={showNotReadyModal}
+        onOpenChange={closeNotReadyModal}
+        reasons={notReadyReasons}
+        onOpenWallet={() => setIsWalletDrawerOpen(true)}
+        actionName='initialize project'
+      />
+
+      {/* Wallet Sheet */}
+      <WalletSheet
+        open={isWalletDrawerOpen}
+        onOpenChange={setIsWalletDrawerOpen}
+      />
     </>
   );
 };
@@ -237,7 +259,7 @@ const MilestonesPhase = ({
         <Button
           type='button'
           variant='outline'
-          className='border-[#484848] bg-[rgba(255,255,255,0.30)] text-white'
+          className='border-gray-800 bg-[rgba(255,255,255,0.30)] text-white'
           onClick={onBack}
         >
           Back
