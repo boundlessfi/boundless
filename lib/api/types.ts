@@ -122,6 +122,7 @@ export interface User {
     rank?: number | null;
     submittedAt: string;
     hackathonId: string;
+    projectId: string;
     hackathon?: Hackathon;
   }>;
   joinedHackathons?: Array<{

@@ -47,11 +47,33 @@ function ProjectCard({
     banner || '/images/placeholders/project-banner-placeholder.png';
 
   const handleClick = () => {
-    router.push(`/projects/${slug}`);
+    // @ts-expect-error - Custom property added in mapping
+    const url = data.isSubmission
+      ? `/projects/${slug}?type=submission`
+      : `/projects/${slug}`;
+    router.push(url);
   };
 
   // Determine display status
   const getDisplayStatus = () => {
+    console.log('DEBUG: ProjectCard data:', {
+      title,
+      id: data.id,
+      slug: data.slug,
+      isSubmission: (data as any).isSubmission,
+      submissionStatus: (data as any).submissionStatus,
+    });
+    // @ts-expect-error - Custom property added in mapping
+    if (data.isSubmission) {
+      // @ts-expect-error - Custom property added in mapping
+      const submissionStatus = data.submissionStatus;
+      if (submissionStatus === 'SHORTLISTED' || submissionStatus === 'ACCEPTED')
+        return 'Shortlisted';
+      if (submissionStatus === 'SUBMITTED') return 'Submitted';
+      if (submissionStatus === 'DISQUALIFIED') return 'Disqualified';
+      return 'Submission';
+    }
+
     if (projectStatus === 'IDEA') return 'Validation';
     if (projectStatus === 'ACTIVE') return 'Funding';
     if (projectStatus === 'LIVE') return 'Funded';

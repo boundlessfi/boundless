@@ -102,32 +102,46 @@ export default function MyProjectsPage() {
         </Card>
       ) : (
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-          {sortedProjects.map(project => (
-            <ProjectCard
-              isFullWidth
-              key={project.id}
-              data={
-                {
-                  id: project.id,
-                  slug: project.id,
-                  project: {
-                    ...project,
-                    creator: {
-                      name: authUser?.name || 'You',
-                      image: authUser?.image || '/user.png',
+          {sortedProjects.map(project => {
+            // Find if this project is a hackathon submission
+            const submission =
+              meData.user.hackathonSubmissionsAsParticipant?.find(
+                s => s.projectId === project.id
+              );
+
+            // If it's a submission, use the submission ID for the slug to ensure correct redirection from ProjectCard
+            const displayId = submission?.id || project.id;
+
+            return (
+              <ProjectCard
+                isFullWidth
+                key={project.id}
+                data={
+                  {
+                    id: displayId,
+                    slug: displayId,
+                    project: {
+                      ...project,
+                      creator: {
+                        name: authUser?.name || 'You',
+                        image: authUser?.image || '/user.png',
+                      },
                     },
-                  },
-                  fundingGoal: 0,
-                  fundingRaised: 0,
-                  fundingCurrency: 'USDC',
-                  fundingEndDate: null,
-                  milestones: [],
-                  voteGoal: 0,
-                  voteProgress: 0,
-                } as any
-              }
-            />
-          ))}
+                    // Add custom properties for ProjectCard
+                    isSubmission: !!submission,
+                    submissionStatus: submission?.status,
+                    fundingGoal: 0,
+                    fundingRaised: 0,
+                    fundingCurrency: 'USDC',
+                    fundingEndDate: null,
+                    milestones: [],
+                    voteGoal: 0,
+                    voteProgress: 0,
+                  } as any
+                }
+              />
+            );
+          })}
         </div>
       )}
     </div>
