@@ -12,9 +12,7 @@ export async function GET(
     redirect: 'manual',
   });
   if (res.status === 302) {
-    return NextResponse.redirect(
-      res.headers.get('Location') ?? `${appUrl}/newsletter/unsubscribed`
-    );
+    return NextResponse.redirect(`${appUrl}/newsletter/unsubscribed`);
   }
   return NextResponse.redirect(
     `${appUrl}/newsletter/unsubscribe/error?reason=invalid`

@@ -12,9 +12,7 @@ export async function GET(
     redirect: 'manual',
   });
   if (res.status === 302) {
-    return NextResponse.redirect(
-      res.headers.get('Location') ?? `${appUrl}/newsletter/confirmed`
-    );
+    return NextResponse.redirect(`${appUrl}/newsletter/confirmed`);
   }
   const reason = res.status === 400 ? 'expired' : 'invalid';
   return NextResponse.redirect(
