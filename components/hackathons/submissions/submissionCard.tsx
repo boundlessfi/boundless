@@ -127,6 +127,16 @@ const SubmissionCard = ({
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   };
 
+  const handleEditSelect = (e: Event) => {
+    e.stopPropagation();
+    onEditClick?.();
+  };
+
+  const handleDeleteSelect = (e: Event) => {
+    e.stopPropagation();
+    onDeleteClick?.();
+  };
+
   return (
     <div
       onClick={onViewClick}
@@ -171,6 +181,7 @@ const SubmissionCard = ({
                   <Button
                     variant='ghost'
                     size='sm'
+                    aria-label='More options'
                     className='h-8 w-8 p-0 text-gray-400 hover:text-white'
                   >
                     <MoreHorizontal className='h-4 w-4' />
@@ -181,14 +192,14 @@ const SubmissionCard = ({
                   className='border-gray-800 bg-black text-white'
                 >
                   <DropdownMenuItem
-                    onSelect={() => onEditClick?.()}
+                    onSelect={handleEditSelect}
                     className='cursor-pointer text-gray-300 focus:bg-gray-800 focus:text-white'
                   >
                     <Edit className='mr-2 h-4 w-4' />
                     Edit Submission
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={() => onDeleteClick?.()}
+                    onSelect={handleDeleteSelect}
                     className='cursor-pointer text-red-500 focus:bg-red-900/20 focus:text-red-400'
                   >
                     <Trash className='mr-2 h-4 w-4' />

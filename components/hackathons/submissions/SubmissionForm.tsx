@@ -34,6 +34,7 @@ import {
   ExpandableScreenContent,
   ExpandableScreenTrigger,
   useExpandableScreen,
+  useOptionalExpandableScreen,
 } from '@/components/ui/expandable-screen';
 import Stepper from '@/components/stepper/Stepper';
 import { uploadService } from '@/lib/api/upload';
@@ -201,16 +202,9 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   onSuccess,
   onClose,
 }) => {
-  // Use context carefully since it might not be available when used standalone
-  let collapse = () => {};
-  let open = true;
-  try {
-    const expandableCtx = useExpandableScreen();
-    collapse = expandableCtx.collapse;
-    open = expandableCtx.isExpanded;
-  } catch (e) {
-    // Standalone mode, not in ExpandableScreen
-  }
+  const expandableCtx = useOptionalExpandableScreen();
+  const collapse = expandableCtx?.collapse ?? (() => {});
+  const open = expandableCtx?.isExpanded ?? true;
 
   const { currentHackathon } = useHackathonData();
   const { user } = useAuthStatus();
@@ -416,7 +410,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       description:
         'An intelligent task management application that uses machine learning to prioritize tasks...',
       logo: '',
-      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      videoUrl: 'https://youtu.be/rOSZhhblE_8?si=Hf_YvPTMmyWTUOKQ',
       introduction: 'This project leverages advanced AI algorithms...',
       links: [
         { type: 'github', url: 'https://github.com/example/ai-task-manager' },
@@ -785,12 +779,14 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       } else {
         await create(submissionData);
       }
-      if (onClose) {
+
+      if (onSuccess) {
+        onSuccess();
+      } else if (onClose) {
         onClose();
       } else {
         collapse();
       }
-      onSuccess?.();
     } catch {
       // Error handled in hook
     }

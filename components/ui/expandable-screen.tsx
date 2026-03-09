@@ -34,6 +34,10 @@ function useExpandableScreen() {
   return context;
 }
 
+export function useOptionalExpandableScreen() {
+  return useContext(ExpandableScreenContext);
+}
+
 // Root Component
 interface ExpandableScreenProps {
   children: ReactNode;

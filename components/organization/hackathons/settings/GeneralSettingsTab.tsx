@@ -55,6 +55,8 @@ interface GeneralSettingsTabProps {
   isPublished?: boolean;
 }
 
+import TurndownService from 'turndown';
+
 export default function GeneralSettingsTab({
   organizationId,
   hackathonId,
@@ -78,6 +80,24 @@ export default function GeneralSettingsTab({
     address: string;
   } | null>(null);
 
+  // Normalize HTML to Markdown for existing descriptions
+  const normalizedDescription = React.useMemo(() => {
+    let desc = initialData?.description || '';
+    if (desc && /<[a-z][\\s\\S]*>/i.test(desc)) {
+      try {
+        const turndownService = new TurndownService({
+          headingStyle: 'atx',
+          codeBlockStyle: 'fenced',
+          bulletListMarker: '-',
+        });
+        desc = turndownService.turndown(desc);
+      } catch (err) {
+        console.error('Failed to convert HTML to Markdown', err);
+      }
+    }
+    return desc;
+  }, [initialData?.description]);
+
   const form = useForm<InfoFormData>({
     resolver: zodResolver(infoSchema),
     defaultValues: {
@@ -85,7 +105,7 @@ export default function GeneralSettingsTab({
       tagline: initialData?.tagline || '',
       slug: initialData?.slug || '',
       banner: initialData?.banner || '',
-      description: initialData?.description || '',
+      description: normalizedDescription,
       categories: Array.isArray(initialData?.categories)
         ? initialData.categories
         : [],

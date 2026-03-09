@@ -73,18 +73,29 @@ export default function SubmitProjectPage({
   const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
 
   useEffect(() => {
-    if (
-      !isLoading &&
-      !hackathonLoading &&
-      !isLoadingMySubmission &&
-      currentHackathon
-    ) {
+    if (!isLoading && !hackathonLoading && !isLoadingMySubmission) {
       setHasInitialLoaded(true);
     }
-  }, [isLoading, hackathonLoading, isLoadingMySubmission, currentHackathon]);
+  }, [isLoading, hackathonLoading, isLoadingMySubmission]);
 
-  if (!hasInitialLoaded || !currentHackathon) {
+  if (!hasInitialLoaded) {
     return <LoadingScreen />;
+  }
+
+  if (!currentHackathon) {
+    return (
+      <div className='flex min-h-screen flex-col items-center justify-center bg-black px-5 py-5 text-white'>
+        <h1 className='mb-4 text-2xl font-bold'>Hackathon Not Found</h1>
+        <Button
+          onClick={handleClose}
+          variant='ghost'
+          className='text-gray-400 hover:text-white'
+        >
+          <ArrowLeft className='mr-2 h-4 w-4' />
+          Go Back
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -115,6 +126,8 @@ export default function SubmitProjectPage({
                     introduction: mySubmission.introduction,
                     links: mySubmission.links,
                     participationType: (mySubmission as any).participationType,
+                    teamName: (mySubmission as any).teamName,
+                    teamMembers: (mySubmission as any).teamMembers,
                   }
                 : undefined
             }

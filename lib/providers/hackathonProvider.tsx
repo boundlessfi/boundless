@@ -99,7 +99,7 @@ interface HackathonDataContextType {
   getHackathonById: (id: string) => Hackathon | undefined;
   getHackathonBySlug: (slug: string) => Promise<Hackathon | null>;
 
-  setCurrentHackathon: (slug: string) => void;
+  setCurrentHackathon: (slug: string) => Promise<void>;
 
   addDiscussion: (content: string) => Promise<void>;
   addReply: (parentCommentId: string, content: string) => Promise<void>;

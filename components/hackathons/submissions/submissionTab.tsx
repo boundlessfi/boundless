@@ -277,6 +277,7 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
 
       {/* Submissions Grid with Create Button if no submission */}
       {!isLoadingMySubmission &&
+        !isHackathonDataLoading &&
         !mySubmission &&
         isAuthenticated &&
         isRegistered &&

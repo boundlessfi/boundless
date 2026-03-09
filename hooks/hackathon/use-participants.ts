@@ -12,17 +12,17 @@ export function useParticipants() {
   const [apiParticipants, setApiParticipants] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const hackathonId = currentHackathon?.id || (params?.slug as string);
+  const hackathonId = currentHackathon?.id;
 
   // Fetch teams to get accurate team info and roles
   useEffect(() => {
     if (hackathonId) {
       setIsLoading(true);
-      Promise.all([
-        getTeamPosts(hackathonId, { limit: 50 }),
-        getHackathonParticipants(hackathonId, { limit: 100 }),
-      ])
-        .then(([teamsResponse, participantsResponse]) => {
+
+      const fetchAllData = async () => {
+        try {
+          // Fetch teams
+          const teamsResponse = await getTeamPosts(hackathonId, { limit: 50 });
           if (teamsResponse.success && teamsResponse.data) {
             const teamsArray =
               (teamsResponse.data as any).teams ||
@@ -30,16 +30,35 @@ export function useParticipants() {
             setTeams(teamsArray);
           }
 
-          if (participantsResponse.success && participantsResponse.data) {
-            setApiParticipants(participantsResponse.data.participants || []);
+          // Fetch participants with pagination
+          let allParticipants: any[] = [];
+          let page = 1;
+          let hasMore = true;
+
+          while (hasMore) {
+            const participantsResponse = await getHackathonParticipants(
+              hackathonId,
+              { limit: 100, page }
+            );
+            if (participantsResponse.success && participantsResponse.data) {
+              const newParticipants =
+                participantsResponse.data.participants || [];
+              allParticipants = [...allParticipants, ...newParticipants];
+              hasMore = participantsResponse.data.pagination?.hasNext || false;
+              page++;
+            } else {
+              hasMore = false;
+            }
           }
-        })
-        .catch(err => {
+          setApiParticipants(allParticipants);
+        } catch (err) {
           reportError(err, { context: 'participants-fetchData', hackathonId });
-        })
-        .finally(() => {
+        } finally {
           setIsLoading(false);
-        });
+        }
+      };
+
+      fetchAllData();
     }
   }, [hackathonId]);
 
