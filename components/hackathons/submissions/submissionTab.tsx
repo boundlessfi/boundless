@@ -37,6 +37,7 @@ import { Loader2 } from 'lucide-react';
 import { useExpandableScreen } from '@/components/ui/expandable-screen';
 import { toast } from 'sonner';
 import { useHackathonStatus } from '@/hooks/hackathon/use-hackathon-status';
+import { reportError } from '@/lib/error-reporting';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'grid' | 'list';
@@ -53,6 +54,7 @@ interface SubmissionTabContentProps extends SubmissionTabProps {
   fetchMySubmission: () => Promise<any>;
   removeSubmission: (id: string) => Promise<void>;
   hackathonId: string;
+  hackathonSlug: string;
 }
 
 const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
@@ -63,10 +65,10 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
   fetchMySubmission,
   removeSubmission,
   hackathonId,
+  hackathonSlug,
 }) => {
   const { isAuthenticated } = useAuthStatus();
   const router = useRouter();
-  const { expand } = useExpandableScreen();
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
@@ -81,7 +83,9 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
     setSelectedSort,
     setSelectedCategory,
   } = useSubmissions();
-  const { currentHackathon } = useHackathonData();
+
+  const { currentHackathon, loading: isHackathonDataLoading } =
+    useHackathonData();
   const { status } = useHackathonStatus(
     currentHackathon?.startDate,
     currentHackathon?.submissionDeadline
@@ -128,8 +132,12 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
         await removeSubmission(submissionToDelete);
         setSubmissionToDelete(null);
         toast.success('Submission deleted successfully');
+        window.location.reload();
       } catch (error) {
-        console.error('Failed to delete submission:', error);
+        reportError(error, {
+          context: 'submission-delete',
+          submissionToDelete,
+        });
         toast.error('Failed to delete submission');
       } finally {
         setIsDeleting(false);
@@ -259,17 +267,27 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
         </div>
       </div>
 
+      {/* Loading State */}
+      {(isLoadingMySubmission || isHackathonDataLoading) && (
+        <div className='flex w-full items-center justify-center py-8'>
+          <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
+          <span className='ml-3 text-gray-400'>Loading submissions...</span>
+        </div>
+      )}
+
       {/* Submissions Grid with Create Button if no submission */}
       {!isLoadingMySubmission &&
+        !isHackathonDataLoading &&
         !mySubmission &&
         isAuthenticated &&
-        isRegistered && (
+        isRegistered &&
+        status !== 'upcoming' && (
           <div className='mb-8 rounded-lg border border-dashed border-gray-700 bg-gray-800/20 p-8 text-center'>
             <p className='mb-4 text-gray-400'>
               You haven't submitted a project yet.
             </p>
             <Button
-              onClick={expand}
+              onClick={() => router.push(`/hackathons/${hackathonSlug}/submit`)}
               disabled={isDeadlinePassed}
               className='bg-[#a7f950] text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
             >
@@ -282,7 +300,9 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
         )}
 
       {/* Submissions Grid / List */}
-      {submissions.length > 0 || mySubmission ? (
+      {!isLoadingMySubmission &&
+      !isHackathonDataLoading &&
+      (submissions.length > 0 || mySubmission) ? (
         <div
           className={cn(
             viewMode === 'grid'
@@ -326,7 +346,9 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
               isMySubmission={true}
               isDeadlinePassed={isDeadlinePassed}
               onViewClick={() => handleViewSubmission(mySubmission.id)}
-              onEditClick={expand}
+              onEditClick={() =>
+                router.push(`/hackathons/${hackathonSlug}/submit`)
+              }
               onDeleteClick={() => handleDeleteClick(mySubmission.id)}
               onUpvoteClick={() => {}}
               onCommentClick={() => {}}
@@ -489,33 +511,12 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
     fetchMySubmission,
     remove: removeSubmission,
   } = useSubmission({
-    hackathonSlugOrId: hackathonSlug || '',
+    hackathonSlugOrId: hackathonId || '',
     autoFetch: isAuthenticated && !!hackathonId,
   });
 
   return (
-    <SubmissionScreenWrapper
-      hackathonSlugOrId={hackathonSlug}
-      organizationId={orgId}
-      initialData={
-        mySubmission
-          ? {
-              projectName: mySubmission.projectName,
-              category: mySubmission.category,
-              description: mySubmission.description,
-              logo: mySubmission.logo,
-              videoUrl: mySubmission.videoUrl,
-              introduction: mySubmission.introduction,
-              links: mySubmission.links,
-              participationType: (mySubmission as any).participationType, // added support in wrapper/modal
-            }
-          : undefined
-      }
-      submissionId={mySubmission?.id}
-      onSuccess={() => {
-        fetchMySubmission();
-      }}
-    >
+    <div className='w-full'>
       <SubmissionTabContent
         organizationId={orgId}
         isRegistered={isRegistered}
@@ -526,8 +527,9 @@ const SubmissionTab: React.FC<SubmissionTabProps> = ({
           await removeSubmission(id);
         }}
         hackathonId={hackathonId}
+        hackathonSlug={hackathonSlug}
       />
-    </SubmissionScreenWrapper>
+    </div>
   );
 };
 

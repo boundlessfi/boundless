@@ -166,46 +166,63 @@ export interface UpdateUserSettingsResponse {
 }
 
 /**
- * Get user settings
+ * Get user settings from backend. Unwraps { success, data } response.
  */
 export const getUserSettings = async (): Promise<UserSettings> => {
-  const res = await api.get<UserSettings>('/users/settings');
-  return res.data;
+  const res = await api.get<ApiResponse<UserSettings>>('/users/settings');
+  const raw = res.data as ApiResponse<UserSettings>;
+  const data = raw?.data ?? (res.data as unknown as UserSettings);
+  return {
+    notifications: data?.notifications ?? {},
+    privacy: data?.privacy ?? {},
+    appearance: data?.appearance ?? {},
+    preferences: data?.preferences ?? {},
+  };
 };
 
 export const updateAppearanceSettings = async (
   data: UserAppearance
 ): Promise<UserAppearance> => {
-  const res = await api.put<UserAppearance>('/users/settings/appearance', data);
-  return {
-    theme: res.data.theme,
-  };
+  const res = await api.put<ApiResponse<UserAppearance>>(
+    '/users/settings/appearance',
+    data
+  );
+  const raw = res.data as ApiResponse<UserAppearance>;
+  const payload = raw?.data ?? (res.data as unknown as UserAppearance);
+  return { theme: payload?.theme ?? 'light' };
 };
 
 export const updateNotificationsSettings = async (
   data: UserNotifications
 ): Promise<UpdateUserNotificationsResponse> => {
-  const res = await api.put<UserNotifications>(
+  const res = await api.put<ApiResponse<UserNotifications>>(
     '/users/settings/notifications',
     data
   );
+  const raw = res.data as ApiResponse<UserNotifications>;
+  const payload = raw?.data ?? (res.data as unknown as UserNotifications);
   return {
-    emailNotifications: res.data.emailNotifications,
-    pushNotifications: res.data.pushNotifications,
+    emailNotifications: payload?.emailNotifications ?? true,
+    pushNotifications: payload?.pushNotifications ?? true,
   };
 };
 
 export const updatePrivacySettings = async (
   data: UserPrivacy
 ): Promise<UserPrivacy> => {
-  const res = await api.put<UserPrivacy>('/users/settings/privacy', data);
+  const res = await api.put<ApiResponse<UserPrivacy>>(
+    '/users/settings/privacy',
+    data
+  );
+  const raw = res.data as ApiResponse<UserPrivacy>;
+  const payload = raw?.data ?? (res.data as unknown as UserPrivacy);
   return {
-    publicProfile: res.data.publicProfile,
-    emailVisibility: res.data.emailVisibility,
-    locationVisibility: res.data.locationVisibility,
-    companyVisibility: res.data.companyVisibility,
-    websiteVisibility: res.data.websiteVisibility,
-    socialLinksVisibility: res.data.socialLinksVisibility,
+    publicProfile: payload?.publicProfile,
+    emailVisibility: payload?.emailVisibility,
+    locationVisibility: payload?.locationVisibility,
+    companyVisibility: payload?.companyVisibility,
+    websiteVisibility: payload?.websiteVisibility,
+    socialLinksVisibility: payload?.socialLinksVisibility,
   };
 };
 /**
@@ -297,4 +314,127 @@ export const updateUserAvatar = async (
     avatarUrl: axiosRes.data.avatarUrl ?? '',
     message: axiosRes.data.message,
   };
+};
+/**
+ * Two-factor authentication interfaces
+ */
+export interface TwoFactorStatusResponse {
+  twoFactorEnabled: boolean;
+}
+
+export interface GetTotpUriResponse {
+  totpURI: string;
+}
+
+export interface VerifyTotpResponse {
+  status: boolean;
+}
+
+export interface EnableTwoFactorResponse {
+  totpURI: string;
+  backupCodes: string[];
+}
+
+export interface GenerateBackupCodesResponse {
+  status: boolean;
+  backupCodes: string[];
+}
+
+/**
+ * AXIOS-BASED 2FA HELPERS
+ *
+ * Note: These functions use direct axios-based API calls instead of the Better Auth client plugin.
+ * They are preserved for use in internal tools, CLI scripts, or specific out-of-UI contexts
+ * where the standard authClient plugins are not appropriate.
+ *
+ * For standard UI components, prefer using `authClient.twoFactor.*`.
+ */
+
+/**
+ * Get TOTP URI for setup
+  const res = await api.post<GetTotpUriResponse>(
+    '/auth/two-factor/get-totp-uri',
+    { password }
+  );
+  return res.data.totpURI;
+};
+
+export const verifyTotp = async (
+  code: string,
+  trustDevice: boolean | null = null
+): Promise<boolean> => {
+  const res = await api.post<VerifyTotpResponse>(
+    '/auth/two-factor/verify-totp',
+    { code, trustDevice }
+  );
+  return res.data.status;
+};
+
+export const sendTwoFactorOtp = async (): Promise<boolean> => {
+  const res = await api.post<{ status: boolean }>('/auth/two-factor/send-otp');
+  return res.data.status;
+};
+
+export const verifyTwoFactorOtp = async (
+  code: string,
+  trustDevice: boolean | null = null
+): Promise<{ token: string; user: User }> => {
+  const res = await api.post<{ token: string; user: User }>(
+    '/auth/two-factor/verify-otp',
+    { code, trustDevice }
+  );
+  return res.data;
+};
+
+/**
+ * Verify backup code
+ */
+export const verifyBackupCode = async (
+  code: string,
+  trustDevice: boolean | null = null,
+  disableSession: boolean | null = null
+): Promise<{
+  user: User;
+  session: { id: string; userId: string; token: string; expiresAt: Date };
+}> => {
+  const res = await api.post<{
+    user: User;
+    session: { id: string; userId: string; token: string; expiresAt: Date };
+  }>('/auth/two-factor/verify-backup-code', {
+    code,
+    trustDevice,
+    disableSession,
+  });
+  return res.data;
+};
+
+export const generateBackupCodes = async (
+  password: string
+): Promise<string[]> => {
+  const res = await api.post<GenerateBackupCodesResponse>(
+    '/auth/two-factor/generate-backup-codes',
+    { password }
+  );
+  return res.data.backupCodes;
+};
+
+export const enableTwoFactor = async (
+  password: string,
+  issuer: string | null = 'Boundless'
+): Promise<EnableTwoFactorResponse> => {
+  const res = await api.post<EnableTwoFactorResponse>(
+    '/auth/two-factor/enable',
+    {
+      password,
+      issuer: issuer || 'Boundless',
+    }
+  );
+  return res.data;
+};
+
+export const disableTwoFactor = async (password: string): Promise<boolean> => {
+  const res = await api.post<{ status: boolean }>('/auth/two-factor/disable', {
+    password,
+  });
+  return res.data.status;
 };

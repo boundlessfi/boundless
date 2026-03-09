@@ -25,6 +25,7 @@ import {
   MultiReleaseMilestone,
 } from '@trustless-work/escrow';
 import { toast } from 'sonner';
+import { reportError } from '@/lib/error-reporting';
 import {
   Loader2,
   CheckCircle2,
@@ -237,7 +238,8 @@ export const ChangeMilestoneStatus = () => {
         `Milestone ${milestoneIndex + 1} status changed to ${newStatus}`
       );
       setSelectedMilestone(null);
-    } catch {
+    } catch (err) {
+      reportError(err, { context: 'escrow-changeMilestoneStatus' });
       toast.error('Failed to change milestone status');
     } finally {
       setIsLoading(null);

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,23 +13,21 @@ import {
   CheckCircle2,
   UserPlus,
   Info,
+  Loader2,
 } from 'lucide-react';
 import { useParticipants } from '@/hooks/hackathon/use-participants';
 import Link from 'next/link';
 import { useAuthStatus } from '@/hooks/use-auth';
+import { useMessages } from '@/components/messages/MessagesProvider';
+import { createConversation } from '@/lib/api/messages';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { InviteUserModal } from '../team-formation/InviteUserModal';
 import { useFollow } from '@/hooks/use-follow';
 import { useFollowStats } from '@/hooks/use-follow-stats';
 import { getUserProfileByUsername } from '@/lib/api/auth';
+import { reportError } from '@/lib/error-reporting';
 import type { PublicUserProfile } from '@/features/projects/types';
-import { useEffect } from 'react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 const BRAND_COLOR = '#a7f950';
 
@@ -62,6 +60,9 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
   const [profileData, setProfileData] = useState<PublicUserProfile | null>(
     null
   );
+  const [messageLoading, setMessageLoading] = useState(false);
+  const { user } = useAuthStatus();
+  const { openMessages } = useMessages();
   const {
     toggleFollow,
     isFollowing,
@@ -72,6 +73,27 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
   );
 
   const { participants, allParticipants, teams } = useParticipants();
+  const isOwnProfile = user?.id === participant.userId;
+
+  const handleMessageClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isOwnProfile || messageLoading) return;
+    setMessageLoading(true);
+    try {
+      const { conversation } = await createConversation(participant.userId);
+      openMessages(conversation.id);
+    } catch (err) {
+      reportError(err, {
+        context: 'profile-card-message',
+        userId: participant.userId,
+      });
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to start conversation'
+      );
+    } finally {
+      setMessageLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -81,7 +103,10 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
           setProfileData(data);
         }
       } catch (error) {
-        console.error('Error fetching profile data:', error);
+        reportError(error, {
+          context: 'participant-profile',
+          username: participant.username,
+        });
       }
     };
     fetchProfile();
@@ -98,7 +123,6 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
 
   const isTeamLeader = participant.role === 'leader' && participant.teamId;
 
-  const { user } = useAuthStatus();
   const { currentHackathon } = useHackathonData();
 
   const currentUserParticipant = useMemo(() => {
@@ -254,24 +278,22 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
           >
             {isFollowLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
           </Button>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className='inline-block'>
-                  <Button
-                    className='bg-zinc-800 text-zinc-500 transition-colors'
-                    size='icon'
-                    disabled
-                  >
-                    <MessageCircle className='h-4 w-4' />
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className='border-zinc-800 bg-zinc-900 text-xs text-zinc-400'>
-                Messaging coming soon
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {!isOwnProfile && (
+            <Button
+              className='bg-zinc-800 text-white transition-colors hover:bg-zinc-700'
+              size='icon'
+              disabled={messageLoading}
+              onClick={handleMessageClick}
+              title='Message'
+              aria-label='Message'
+            >
+              {messageLoading ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <MessageCircle className='h-4 w-4' />
+              )}
+            </Button>
+          )}
           {canInvite && (
             <Button
               className='bg-zinc-800 text-white transition-colors hover:bg-zinc-700'

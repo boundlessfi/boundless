@@ -6,6 +6,7 @@ import {
   type IndividualJudgeScore,
 } from '@/lib/api/hackathons/judging';
 import { authClient } from '@/lib/auth-client';
+import { reportError } from '@/lib/error-reporting';
 
 interface UseSubmissionScoresProps {
   open: boolean;
@@ -165,7 +166,10 @@ export const useSubmissionScores = ({
           if (!cancelled) initializeForm(criteria);
         }
       } catch (err) {
-        console.error('[useSubmissionScores] Error fetching scores:', err);
+        reportError(err, {
+          context: 'useSubmissionScores-fetch',
+          participantId,
+        });
         if (!cancelled) initializeForm(criteria);
       } finally {
         if (!cancelled) setIsFetching(false);

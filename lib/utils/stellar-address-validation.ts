@@ -1,8 +1,11 @@
+import { StrKey } from '@stellar/stellar-sdk';
+
 /**
- * Validates a Stellar address format
- * Stellar addresses start with G and are 56 characters long
+ * Validates a Stellar public key (G... address).
+ * Uses the official SDK to verify format, RFC4648 base32 encoding, and CRC16 checksum.
  */
 export const validateStellarAddress = (address: string): boolean => {
-  const stellarAddressRegex = /^G[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{55}$/;
-  return stellarAddressRegex.test(address);
+  if (!address || typeof address !== 'string') return false;
+  const trimmed = address.trim();
+  return StrKey.isValidEd25519PublicKey(trimmed);
 };

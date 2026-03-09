@@ -78,6 +78,9 @@ export enum NotificationType {
   PASSWORD_CHANGED = 'PASSWORD_CHANGED',
   EMAIL_CHANGED = 'EMAIL_CHANGED',
   SECURITY_ALERT = 'SECURITY_ALERT',
+
+  // Direct messaging
+  DIRECT_MESSAGE = 'DIRECT_MESSAGE',
 }
 
 /**
@@ -91,7 +94,7 @@ export interface Notification {
   type: NotificationType;
   title: string;
   message: string;
-  data: {
+  data: null | {
     // Organization fields
     organizationId?: string;
     organizationName?: string;
@@ -122,6 +125,10 @@ export interface Notification {
     amount?: number;
     transactionHash?: string;
     archivedBy?: string;
+    // Direct message
+    conversationId?: string;
+    messageId?: string;
+    senderId?: string;
     [key: string]: unknown;
   };
   read: boolean;

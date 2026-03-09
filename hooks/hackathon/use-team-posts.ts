@@ -16,6 +16,7 @@ import {
   type UpdateTeamPostRequest,
   type GetTeamPostsOptions,
 } from '@/lib/api/hackathons';
+import { reportError } from '@/lib/error-reporting';
 
 interface UseTeamPostsProps {
   hackathonSlugOrId: string;
@@ -130,8 +131,10 @@ export function useTeamPosts({
         setMyTeam(null);
       }
     } catch (err) {
-      console.error('Error fetching my team:', err);
-      // Silently fail but log
+      reportError(err, {
+        context: 'team-posts-fetchMyTeam',
+        hackathonSlugOrId,
+      });
       setMyTeam(null);
     } finally {
       setIsLoadingMyTeam(false);

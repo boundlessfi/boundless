@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { reportError } from '@/lib/error-reporting';
 import {
   getUserEarnings,
   EarningsData,
@@ -154,7 +155,7 @@ const EarningsPage: React.FC = () => {
           toast.error(res.error || 'Failed to load earnings data');
         }
       } catch (error) {
-        console.error('Failed to fetch earnings:', error);
+        reportError(error, { context: 'me-earnings-fetch' });
         toast.error('Failed to load earnings data');
       } finally {
         setLoading(false);

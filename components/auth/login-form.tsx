@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { authClient } from '@/lib/auth-client';
 import { toast } from 'sonner';
+import { reportError } from '@/lib/error-reporting';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -55,7 +56,12 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
                 ? errorObj.message
                 : 'Login failed. Please try again.';
 
-            console.error('Login error:', errorObj);
+            reportError(
+              errorObj instanceof Error
+                ? errorObj
+                : new Error(String(errorObj)),
+              { context: 'login-callback' }
+            );
             onError?.(errorMessage);
             toast.error(errorMessage);
           },
@@ -64,7 +70,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
 
       if (error) {
         const errorMessage = error.message || 'Login failed. Please try again.';
-        console.error('Login error:', error);
+        reportError(error, { context: 'login-error' });
         onError?.(errorMessage);
         toast.error(errorMessage);
       }
@@ -73,7 +79,9 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         error instanceof Error
           ? error.message
           : 'Login failed. Please try again.';
-      console.error('Login error:', error);
+      reportError(error instanceof Error ? error : new Error(String(error)), {
+        context: 'login-catch',
+      });
       onError?.(errorMessage);
       toast.error(errorMessage);
     } finally {

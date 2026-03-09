@@ -2,6 +2,7 @@
 
 import { useAuthStore } from '@/lib/stores/auth-store';
 import React, { useEffect, useState } from 'react';
+import { reportError } from '@/lib/error-reporting';
 import AuthLoadingState from '../auth/AuthLoadingState';
 
 interface AuthProviderProps {
@@ -42,11 +43,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (accessToken && !isAuthenticated) {
           try {
             await refreshUser();
-          } catch {
+          } catch (err) {
+            reportError(err, { context: 'auth-refreshUser' });
             clearAuth();
           }
         }
-      } catch {
+      } catch (err) {
+        reportError(err, { context: 'auth-initializeAuth' });
         clearAuth();
       }
     };

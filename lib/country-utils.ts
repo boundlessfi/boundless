@@ -1,3 +1,5 @@
+import { reportError } from '@/lib/error-reporting';
+
 export interface Country {
   id: number;
   name: string;
@@ -833,7 +835,9 @@ export async function geocodeAddress(
         address: result.display_name,
       };
     }
-  } catch {}
+  } catch (err) {
+    reportError(err, { context: 'geocode-address', address });
+  }
 
   return null;
 }

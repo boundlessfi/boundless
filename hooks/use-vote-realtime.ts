@@ -8,6 +8,7 @@ import {
   VoteType,
   VoterDto,
 } from '@/types/votes';
+import { reportError } from '@/lib/error-reporting';
 
 interface VoteRealtimeOptions {
   entityType: VoteEntityType;
@@ -53,15 +54,17 @@ export function useVoteRealtime(
   useEffect(() => {
     if (!enabled) return;
 
-    const socket = io(
-      `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:8000'}/realtime`,
-      {
-        transports: ['websocket', 'polling'],
-        withCredentials: true,
-        query: userId ? { userId } : undefined,
-        autoConnect: true,
-      }
-    );
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
+      (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
+    if (!baseUrl) return;
+
+    const socket = io(`${baseUrl}/realtime`, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+      query: userId ? { userId } : undefined,
+      autoConnect: true,
+    });
 
     socketRef.current = socket;
 
@@ -80,7 +83,7 @@ export function useVoteRealtime(
     });
 
     socket.on('connect_error', error => {
-      console.error('Vote real-time socket connection error:', error);
+      reportError(error, { context: 'vote-realtime-socket' });
       isConnectedRef.current = false;
     });
 

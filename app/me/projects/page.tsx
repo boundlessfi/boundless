@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Package, ArrowLeft } from 'lucide-react';
 import { useAuthStatus } from '@/hooks/use-auth';
+import { reportError } from '@/lib/error-reporting';
 import ProjectCard from '@/features/projects/components/ProjectCard';
 
 // ... (existing imports)
@@ -22,8 +23,8 @@ export default function MyProjectsPage() {
       try {
         const data = await getMe();
         setMeData(data);
-      } catch {
-        // console.error('Failed to fetch user data:', error);
+      } catch (err) {
+        reportError(err, { context: 'me-projects-fetchUser' });
       } finally {
         setLoading(false);
       }
@@ -101,14 +102,23 @@ export default function MyProjectsPage() {
         </Card>
       ) : (
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-          {sortedProjects.map(project => (
-            <ProjectCard
-              isFullWidth
-              key={project.id}
-              data={
-                {
-                  id: project.id,
-                  slug: project.id,
+          {sortedProjects.map(project => {
+            // Find if this project is a hackathon submission
+            const submission =
+              meData.user.hackathonSubmissionsAsParticipant?.find(
+                s => s.projectId === project.id
+              );
+
+            // If it's a submission, use the submission ID for the slug to ensure correct redirection from ProjectCard
+            const displayId = submission?.id || project.id;
+
+            return (
+              <ProjectCard
+                isFullWidth
+                key={project.id}
+                data={{
+                  id: displayId,
+                  slug: displayId,
                   project: {
                     ...project,
                     creator: {
@@ -116,17 +126,12 @@ export default function MyProjectsPage() {
                       image: authUser?.image || '/user.png',
                     },
                   },
-                  fundingGoal: 0,
-                  fundingRaised: 0,
-                  fundingCurrency: 'USDC',
-                  fundingEndDate: null,
-                  milestones: [],
-                  voteGoal: 0,
-                  voteProgress: 0,
-                } as any
-              }
-            />
-          ))}
+                  isSubmission: !!submission,
+                  submissionStatus: submission?.status,
+                }}
+              />
+            );
+          })}
         </div>
       )}
     </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { reportError } from '@/lib/error-reporting';
 
 const getBackendUrl = () => {
   // Normalize API URL: remove trailing slash and /api if present
@@ -97,7 +98,9 @@ async function handleRequest(
             body = await request.text();
           }
         }
-      } catch {}
+      } catch (err) {
+        reportError(err, { context: 'proxy-parseRequestBody' });
+      }
     }
 
     // Forward headers

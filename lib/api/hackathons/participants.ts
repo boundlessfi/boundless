@@ -211,23 +211,21 @@ export const getParticipants = async (
 
 /**
  * Create a submission for a hackathon
- * Supports both slug-based (public) and organization/hackathon ID (authenticated) endpoints
+ * POST /api/hackathons/:idOrSlug/submissions — idOrSlug in path, body per CreateSubmissionRequest
  */
 export const createSubmission = async (
-  hackathonSlugOrId: string,
+  idOrSlug: string,
   data: Omit<CreateSubmissionRequest, 'hackathonId' | 'organizationId'>,
   organizationId?: string
 ): Promise<CreateSubmissionResponse> => {
-  // Backend uses /hackathons/submissions with hackathonId in body
-  const submissionData: CreateSubmissionRequest = {
+  const body = {
     ...data,
-    hackathonId: hackathonSlugOrId,
-    organizationId: organizationId || '',
+    organizationId: organizationId ?? '',
     participationType: data.participationType || 'INDIVIDUAL',
-    links: data.links || [],
+    links: data.links ?? [],
   };
 
-  const res = await api.post('/hackathons/submissions', submissionData);
+  const res = await api.post(`/hackathons/${idOrSlug}/submissions`, body);
   return res.data;
 };
 

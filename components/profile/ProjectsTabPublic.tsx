@@ -33,14 +33,26 @@ export default function ProjectsTabPublic({ user }: ProjectsTabProps) {
       </div>
 
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'>
-        {user.projects.map(project => (
-          <Link key={project.id} href={`/projects/${project.id}`}>
-            <ProjectCard
-              isFullWidth={true}
-              data={
-                {
-                  id: project.id,
-                  slug: project.id,
+        {user.projects.map(project => {
+          // Find if this project is a hackathon submission
+          const submission = user.hackathonSubmissionsAsParticipant?.find(
+            s => s.projectId === project.id
+          );
+
+          // If it's a submission, use the submission ID for the URL and add ?type=submission
+          const displayId = submission?.id || project.id;
+          const href = submission
+            ? `/projects/${displayId}?type=submission`
+            : `/projects/${displayId}`;
+
+          return (
+            <Link key={project.id} href={href}>
+              <ProjectCard
+                newTab={true}
+                isFullWidth={true}
+                data={{
+                  id: displayId,
+                  slug: displayId,
                   project: {
                     ...project,
                     creator: {
@@ -48,18 +60,14 @@ export default function ProjectsTabPublic({ user }: ProjectsTabProps) {
                       image: user.image,
                     },
                   },
-                  fundingGoal: 0,
-                  fundingRaised: 0,
-                  fundingCurrency: 'USDC',
-                  fundingEndDate: null,
-                  milestones: [],
-                  voteGoal: 0,
-                  voteProgress: 0,
-                } as any
-              }
-            />
-          </Link>
-        ))}
+                  // Add a custom property to indicate it's a submission for ProjectCard
+                  isSubmission: !!submission,
+                  submissionStatus: submission?.status,
+                }}
+              />
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

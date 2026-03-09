@@ -14,6 +14,7 @@ import {
   MultiReleaseEscrow,
 } from '@trustless-work/escrow';
 import { toast } from 'sonner';
+import { reportError } from '@/lib/error-reporting';
 
 // Extended type to include balance property that may exist at runtime
 // Using intersection type to avoid type conflicts with required balance property
@@ -166,7 +167,8 @@ export const FundEscrowButton = () => {
       });
 
       toast.success('Escrow funded successfully!');
-    } catch {
+    } catch (err) {
+      reportError(err, { context: 'escrow-fund' });
       setFundingStatus({
         success: false,
         message: 'Failed to fund escrow',

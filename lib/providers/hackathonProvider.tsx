@@ -24,6 +24,7 @@ import {
   getHackathonSubmissions,
   getHackathonWinners,
 } from '@/lib/api/hackathon';
+import { reportError } from '@/lib/error-reporting';
 
 // -------------------
 // Status Mapper
@@ -98,7 +99,7 @@ interface HackathonDataContextType {
   getHackathonById: (id: string) => Hackathon | undefined;
   getHackathonBySlug: (slug: string) => Promise<Hackathon | null>;
 
-  setCurrentHackathon: (slug: string) => void;
+  setCurrentHackathon: (slug: string) => Promise<void>;
 
   addDiscussion: (content: string) => Promise<void>;
   addReply: (parentCommentId: string, content: string) => Promise<void>;
@@ -236,8 +237,8 @@ export function HackathonDataProvider({
       if (response.success && response.data) {
         setSubmissions(response.data.submissions);
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      reportError(err, { context: 'fetchSubmissions', slug });
     }
   }, []);
 
@@ -265,8 +266,8 @@ export function HackathonDataProvider({
         logo: sub.logo ?? '/placeholder.svg',
       }));
       setExploreSubmissions(mappedSubmissions);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      reportError(err, { context: 'fetchExploreSubmissions', hackathonId });
     }
   }, []);
 
@@ -321,8 +322,6 @@ export function HackathonDataProvider({
   // --------------------------------
   const setCurrentHackathon = useCallback(
     async (slug: string) => {
-      if (currentHackathonSlug === slug && fetchingRef.current) return;
-
       setCurrentHackathonSlug(slug);
       const data = await fetchHackathonBySlug(slug);
 

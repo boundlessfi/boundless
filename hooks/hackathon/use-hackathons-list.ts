@@ -8,6 +8,7 @@ import {
 } from '@/lib/api/hackathons';
 import type { HackathonFilters } from './use-hackathon-filters';
 import { mapSortToAPI, mapStatusToAPI } from './use-hackathon-filters';
+import { reportError } from '@/lib/error-reporting';
 
 type SortOption =
   | 'newest'
@@ -210,7 +211,10 @@ export const useHackathonsList: (
           setHackathons(hackathonsList);
         }
       } catch (err) {
-        console.error('[useHackathonsList] fetchHackathons error', err);
+        reportError(err, {
+          context: 'useHackathonsList-fetch',
+          page: String(page),
+        });
         const errorMessage =
           err instanceof Error ? err.message : 'Failed to fetch hackathons';
         setError(errorMessage);

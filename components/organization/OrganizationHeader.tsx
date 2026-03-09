@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import { UserMenu } from '@/components/user/UserMenu';
 import { Skeleton } from '../ui/skeleton';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { OrganizationHeaderSearch } from './OrganizationHeaderSearch';
 
 export default function OrganizationHeader() {
   const pathname = usePathname();
@@ -39,6 +40,7 @@ export default function OrganizationHeader() {
   const { handleConnect, handleDisconnect } = useWallet();
   const { walletAddress, walletName } = useWalletContext();
   const [copied, setCopied] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Show organization selector on org pages, but NOT on /organizations/new
   const showOrgSelector =
@@ -220,11 +222,10 @@ export default function OrganizationHeader() {
 
       {/* Right Section: Actions & User */}
       <div className='flex items-center gap-2'>
-        {/* Search - Desktop only */}
+        {/* Search - Desktop */}
         <button
-          onClick={() => {
-            // TODO: Implement search functionality
-          }}
+          type='button'
+          onClick={() => setSearchOpen(true)}
           className='hidden items-center gap-2 rounded-lg border border-zinc-800/50 bg-zinc-900/30 px-3 py-1.5 text-sm text-zinc-400 transition-all hover:border-zinc-700 hover:bg-zinc-900/50 hover:text-white lg:flex lg:w-52 xl:w-64'
         >
           <Search className='h-4 w-4 flex-shrink-0' />
@@ -236,13 +237,17 @@ export default function OrganizationHeader() {
 
         {/* Search - Mobile */}
         <button
-          onClick={() => {
-            // TODO: Implement search functionality
-          }}
+          type='button'
+          onClick={() => setSearchOpen(true)}
           className='flex items-center justify-center rounded-lg border border-zinc-800/50 bg-zinc-900/30 p-2 text-zinc-400 transition-all hover:border-zinc-700 hover:bg-zinc-900/50 hover:text-white lg:hidden'
         >
           <Search className='h-4 w-4' />
         </button>
+
+        <OrganizationHeaderSearch
+          open={searchOpen}
+          onOpenChange={setSearchOpen}
+        />
 
         {/* Quick Actions */}
         {quickActions.length > 0 && (

@@ -9,7 +9,7 @@ Boundless is a decentralized crowdfunding and grants platform built on the Stell
 - **Secure and transparent community voting and feedback systems**
 - **Flexible user roles** including campaign creators, grant applicants, managers, and admins
 - **Integrated authentication** with email, social login, and KYC verification
-- **Multi-wallet support** for Stellar ecosystem (Freighter, Albedo, Rabet, xBull, Lobstr, Hana, HOT Wallet)
+- **Backend-managed wallet** with sync and trustline support in-app (no external connect-wallet flow)
 - **Comprehensive backend support** with RESTful API endpoints and robust security measures
 - **Automated contract deployment and upgrade processes** using CI/CD pipelines
 
@@ -81,7 +81,6 @@ boundless/
 │   │   └── LaunchCampaignFlow.tsx
 │   ├── comment/               # Comment components
 │   ├── comments/              # Comments system
-│   ├── connect-wallet/        # Wallet connection UI
 │   ├── landing-page/          # Landing page components
 │   ├── layout/                # Layout components
 │   ├── loading/               # Loading components
@@ -93,7 +92,7 @@ boundless/
 │   ├── stepper/               # Stepper components
 │   ├── testimonials/          # Testimonial components
 │   ├── ui/                    # Reusable UI components (48 components)
-│   ├── wallet/                # Wallet-related components
+│   ├── wallet/                # In-app wallet UI (drawer, sheet, sync, trustlines)
 │   └── waitlist/              # Waitlist components
 ├── hooks/                     # Custom React hooks
 │   ├── use-account.ts         # Account management hook

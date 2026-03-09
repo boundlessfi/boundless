@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSocket } from './useSocket';
 import { getNotifications } from '@/lib/api/notifications';
 import { Notification } from '@/types/notifications';
+import { reportError } from '@/lib/error-reporting';
 
 interface UseNotificationsOptions {
   page?: number;
@@ -80,7 +81,7 @@ export function useNotifications(
         setTotal(response.total || 0);
       }
     } catch (err) {
-      console.error('Failed to fetch notifications:', err);
+      reportError(err, { context: 'notifications-fetch' });
       setError(
         err instanceof Error ? err : new Error('Failed to fetch notifications')
       );
@@ -160,7 +161,7 @@ export function useNotifications(
     };
 
     const handleError = (error: { message: string }) => {
-      console.error('WebSocket error:', error);
+      reportError(error, { context: 'notifications-websocket' });
     };
 
     socket.on('notification', handleNotification);

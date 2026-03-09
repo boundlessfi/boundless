@@ -22,6 +22,7 @@ import { mapJudgingSubmissionsToRewardSubmissions } from '@/lib/utils/rewards-da
 import { Submission } from '@/components/organization/hackathons/rewards/types';
 import { PrizeTier } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
 import { toast } from 'sonner';
+import { reportError } from '@/lib/error-reporting';
 
 const mapEscrowToHackathonEscrowData = (
   escrowData: MultiReleaseEscrow
@@ -374,7 +375,10 @@ export const useHackathonRewards = (
 
                 return sub;
               } catch (err) {
-                console.error(`Failed to enrich submission detail:`, err);
+                reportError(err, {
+                  context: 'rewards-enrichSubmission',
+                  submissionId: sub.id,
+                });
                 return sub;
               }
             })
@@ -421,10 +425,11 @@ export const useHackathonRewards = (
               });
             }
           } catch (resultsErr) {
-            console.error(
-              'Failed to fetch judging results for rewards page:',
-              resultsErr
-            );
+            reportError(resultsErr, {
+              context: 'rewards-fetchJudgingResults',
+              organizationId,
+              hackathonId,
+            });
           }
 
           setSubmissions(mappedSubmissions);

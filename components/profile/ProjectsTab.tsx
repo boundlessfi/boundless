@@ -100,38 +100,47 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
         onScrollCapture={handleScroll}
       >
         <div className='grid gap-4 pr-4 md:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2'>
-          {projects.map(project => (
-            <Link
-              key={project.id}
-              href={`/projects/${project.id}`}
-              target='_blank'
-            >
-              <ProjectCard
-                newTab={true}
-                isFullWidth={true}
-                data={
-                  {
-                    id: project.id,
-                    slug: project.id,
+          {projects.map(project => {
+            // Find if this project is a hackathon submission
+            // We need to check if the user object has submissions
+            const submission =
+              user.user.hackathonSubmissionsAsParticipant?.find(
+                s => s.projectId === project.id
+              );
+
+            // If it's a submission, use the submission ID for the URL and add ?type=submission
+            const displayId = submission?.id || project.id;
+            const href = submission
+              ? `/projects/${displayId}?type=submission`
+              : `/projects/${displayId}`;
+
+            return (
+              <Link
+                key={project.id}
+                href={href}
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                <ProjectCard
+                  newTab={true}
+                  isFullWidth={true}
+                  data={{
+                    id: displayId,
+                    slug: displayId,
                     project: {
                       ...project,
                       creator: {
                         name: user.user.name || 'User',
                         image: user.user.image || '/avatar.png',
                       },
-                    } as any,
-                    fundingGoal: 0,
-                    fundingRaised: 0,
-                    fundingCurrency: 'USDC',
-                    fundingEndDate: null,
-                    milestones: [],
-                    voteGoal: 0,
-                    voteProgress: 0,
-                  } as any
-                }
-              />
-            </Link>
-          ))}
+                    },
+                    isSubmission: !!submission,
+                    submissionStatus: submission?.status,
+                  }}
+                />
+              </Link>
+            );
+          })}
 
           {!hasMore && projects.length > 0 && (
             <div className='col-span-full py-4 text-center'>

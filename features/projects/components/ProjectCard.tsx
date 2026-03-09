@@ -3,10 +3,36 @@ import { formatNumber, cn } from '@/lib/utils';
 import { useRouter } from 'nextjs-toploader/app';
 import Image from 'next/image';
 import { CountdownTimer } from '@/components/ui/timer';
-import { Crowdfunding } from '@/features/projects/types';
+
+export type ProjectCardData = {
+  id: string;
+  slug: string;
+  project: {
+    id?: string;
+    title: string;
+    vision?: string | null;
+    banner?: string | null;
+    logo?: string | null;
+    creator?: { name: string; image?: string | null };
+    category?: string | null;
+    status: string;
+    _count?: { votes?: number };
+    [key: string]: any;
+  };
+  fundingGoal?: number;
+  fundingRaised?: number;
+  fundingCurrency?: string;
+  fundingEndDate?: string | null;
+  milestones?: any[];
+  voteGoal?: number;
+  voteProgress?: number;
+  isSubmission?: boolean;
+  submissionStatus?: string | null;
+  [key: string]: any;
+};
 
 type ProjectCardProps = {
-  data: Crowdfunding;
+  data: ProjectCardData;
   newTab?: boolean;
   isFullWidth?: boolean;
   className?: string;
@@ -23,13 +49,15 @@ function ProjectCard({
   const {
     slug,
     project,
-    fundingGoal,
-    fundingRaised,
-    fundingCurrency,
-    fundingEndDate,
-    milestones,
-    voteGoal,
-    voteProgress,
+    fundingGoal = 0,
+    fundingRaised = 0,
+    fundingCurrency = 'USDC',
+    fundingEndDate = null,
+    milestones = [],
+    voteGoal = 0,
+    voteProgress = 0,
+    isSubmission,
+    submissionStatus,
   } = data;
 
   const {
@@ -47,11 +75,22 @@ function ProjectCard({
     banner || '/images/placeholders/project-banner-placeholder.png';
 
   const handleClick = () => {
-    router.push(`/projects/${slug}`);
+    const url = isSubmission
+      ? `/projects/${slug}?type=submission`
+      : `/projects/${slug}`;
+    router.push(url);
   };
 
   // Determine display status
   const getDisplayStatus = () => {
+    if (isSubmission) {
+      if (submissionStatus === 'SHORTLISTED' || submissionStatus === 'ACCEPTED')
+        return 'Shortlisted';
+      if (submissionStatus === 'SUBMITTED') return 'Submitted';
+      if (submissionStatus === 'DISQUALIFIED') return 'Disqualified';
+      return 'Submission';
+    }
+
     if (projectStatus === 'IDEA') return 'Validation';
     if (projectStatus === 'ACTIVE') return 'Funding';
     if (projectStatus === 'LIVE') return 'Funded';

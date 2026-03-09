@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 import { toast } from 'sonner';
 import { Logger } from '@/lib/logger';
+import { reportError } from '@/lib/error-reporting';
 const logger = new Logger();
 logger.setMinLevel('info');
 import {
@@ -1315,10 +1316,10 @@ export function OrganizationProvider({
             }
           }
         } catch (error) {
-          console.error(
-            'Failed to demote previous owner during transfer:',
-            error
-          );
+          reportError(error, {
+            context: 'org-demotePreviousOwnerOnTransfer',
+            orgId,
+          });
           // Continue execution - user might end up with two owners but better than failing completely
           // They can fix it manually now via the Members tab
         }

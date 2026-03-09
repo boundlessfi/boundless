@@ -82,6 +82,13 @@ export interface PublicUserProfile {
     logo: string;
     createdAt: string;
   }>;
+  hackathonSubmissionsAsParticipant?: Array<{
+    id: string;
+    projectId: string;
+    status: string;
+    hackathonId: string;
+    projectName: string;
+  }>;
   badges: any[];
   stats: {
     projectsCreated: number;

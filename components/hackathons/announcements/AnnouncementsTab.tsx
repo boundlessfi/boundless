@@ -5,6 +5,26 @@ import { Megaphone, Pin, ArrowUpDown, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { HackathonAnnouncement } from '@/lib/api/hackathons/index';
 import Link from 'next/link';
+import { useMarkdown } from '@/hooks/use-markdown';
+
+/** Renders announcement body as Markdown (supports both Markdown and legacy HTML). */
+function AnnouncementPreview({ content }: { content: string }) {
+  const raw = content?.trim() || '';
+  const isLikelyHtml = raw.startsWith('<');
+  const markdown = isLikelyHtml ? raw.replace(/<[^>]*>/g, ' ') : raw;
+  const { styledContent, loading } = useMarkdown(markdown, {
+    loadingDelay: 0,
+  });
+
+  if (!raw) return <span className='text-zinc-500'>No content</span>;
+  if (loading) return <span className='animate-pulse text-zinc-500'>…</span>;
+
+  return (
+    <div className='[&_.markdown-content]:line-clamp-2 [&_.markdown-content]:overflow-hidden [&_.markdown-content]:text-sm [&_.markdown-content]:text-zinc-400 [&_.markdown-content_h1]:text-base [&_.markdown-content_h2]:text-base! [&_.markdown-content_h3]:text-base [&_.markdown-content_p]:my-0 [&_.markdown-content_p]:text-zinc-400'>
+      {styledContent}
+    </div>
+  );
+}
 
 interface AnnouncementsTabProps {
   announcements: HackathonAnnouncement[];
@@ -90,9 +110,7 @@ export function AnnouncementsTab({
                   </h3>
                 </div>
 
-                <p className='line-clamp-2 text-sm text-zinc-400'>
-                  {announcement.content.replace(/<[^>]*>/g, '')}
-                </p>
+                <AnnouncementPreview content={announcement.content} />
 
                 <div className='flex items-center gap-4 text-xs text-zinc-500'>
                   <span className='flex items-center gap-1.5'>

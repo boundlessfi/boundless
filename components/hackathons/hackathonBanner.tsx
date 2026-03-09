@@ -315,14 +315,14 @@ export function HackathonBanner({
             {status === 'ongoing' &&
               isRegistered &&
               hasSubmitted &&
-              onViewSubmissionClick && (
+              onSubmitClick && (
                 <Button
-                  onClick={onViewSubmissionClick}
+                  onClick={onSubmitClick}
                   variant='outline'
                   className='w-full border-gray-700 bg-transparent py-5 text-gray-300 hover:bg-gray-900'
                 >
                   <FileText className='mr-2 h-4 w-4' />
-                  View Submission
+                  Edit Submission
                 </Button>
               )}
 

@@ -5,6 +5,8 @@ import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useRegisterHackathon } from '@/hooks/hackathon/use-register-hackathon';
 import { useLeaveHackathon } from '@/hooks/hackathon/use-leave-hackathon';
+import { useSubmission } from '@/hooks/hackathon/use-submission';
+import { useAuthStatus } from '@/hooks/use-auth';
 import { RegisterHackathonModal } from '@/components/hackathons/overview/RegisterHackathonModal';
 import { HackathonBanner } from '@/components/hackathons/hackathonBanner';
 import { HackathonNavTabs } from '@/components/hackathons/hackathonNavTabs';
@@ -29,6 +31,7 @@ import {
 } from '@/lib/api/hackathons/index';
 import { Megaphone } from 'lucide-react';
 import { AnnouncementsTab } from '@/components/hackathons/announcements/AnnouncementsTab';
+import { reportError, reportMessage } from '@/lib/error-reporting';
 
 export default function HackathonPageClient() {
   const router = useRouter();
@@ -43,6 +46,13 @@ export default function HackathonPageClient() {
     setCurrentHackathon,
     refreshCurrentHackathon,
   } = useHackathonData();
+
+  const { isAuthenticated } = useAuthStatus();
+
+  const { submission: mySubmission } = useSubmission({
+    hackathonSlugOrId: currentHackathon?.id || '',
+    autoFetch: !!currentHackathon && isAuthenticated,
+  });
 
   const timeline_Events = useTimelineEvents(currentHackathon, {
     includeEndDate: false,
@@ -84,8 +94,10 @@ export default function HackathonPageClient() {
         // Only show published announcements for public view
         setAnnouncements(data.filter(a => !a.isDraft));
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to fetch announcements:', error);
+        reportError(error, {
+          context: 'hackathon-fetchAnnouncements',
+          hackathonId,
+        });
       } finally {
         setAnnouncementsLoading(false);
       }
@@ -197,8 +209,10 @@ export default function HackathonPageClient() {
           process.env.NODE_ENV === 'development' &&
           currentHackathon?.enabledTabs
         ) {
-          console.warn(
-            `[HackathonPageClient] Tab "${tab.id}" (enabled key: ${key}) is not in currentHackathon.enabledTabs and will be hidden. Add the tab id to tabIdToEnabledKey and ensure the backend includes the key in enabledTabs when the tab should be visible.`
+          reportMessage(
+            `Tab "${tab.id}" (enabled key: ${key}) is not in currentHackathon.enabledTabs and will be hidden`,
+            'warning',
+            { tabId: tab.id, key }
           );
         }
         return isVisible;
@@ -227,7 +241,7 @@ export default function HackathonPageClient() {
   // Registration status
   const {
     isRegistered,
-    hasSubmitted,
+    hasSubmitted: participantHasSubmitted,
     setParticipant,
     register: registerForHackathon,
   } = useRegisterHackathon({
@@ -240,6 +254,8 @@ export default function HackathonPageClient() {
       : null,
     organizationId: undefined,
   });
+
+  const hasSubmitted = !!mySubmission || participantHasSubmitted;
 
   // Leave hackathon functionality
   const { isLeaving, leave: leaveHackathon } = useLeaveHackathon({
@@ -291,7 +307,7 @@ export default function HackathonPageClient() {
   };
 
   const handleSubmitClick = () => {
-    router.push('?tab=submission');
+    router.push(`/hackathons/${currentHackathon?.slug}/submit`);
   };
 
   const handleViewSubmissionClick = () => {
@@ -303,10 +319,25 @@ export default function HackathonPageClient() {
   };
 
   // Set current hackathon on mount
+  const [isInitializing, setIsInitializing] = useState(true);
+
   useEffect(() => {
-    if (hackathonId) {
-      setCurrentHackathon(hackathonId);
-    }
+    let isMounted = true;
+
+    const initHackathon = async () => {
+      if (hackathonId) {
+        await setCurrentHackathon(hackathonId);
+      }
+      if (isMounted) {
+        setIsInitializing(false);
+      }
+    };
+
+    initHackathon();
+
+    return () => {
+      isMounted = false;
+    };
   }, [hackathonId, setCurrentHackathon]);
 
   // Handle tab changes from URL
@@ -344,7 +375,7 @@ export default function HackathonPageClient() {
   };
 
   // Loading state
-  if (loading) {
+  if (loading || isInitializing) {
     return <LoadingScreen />;
   }
 

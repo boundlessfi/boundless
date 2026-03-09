@@ -1,4 +1,6 @@
 /* eslint-disable no-console */
+import { reportError, reportMessage } from '@/lib/error-reporting';
+
 /**
  * Authentication logger utility
  */
@@ -15,23 +17,16 @@ export class AuthLogger {
   }
 
   /**
-   * Log authentication errors
+   * Log authentication errors (reported to Sentry when configured)
    */
   static error(event: string, error: Error, data?: Record<string, unknown>) {
-    console.error(`[AUTH ERROR] ${event}`, {
-      error: error.message,
-      stack: error.stack,
-      ...data,
-    });
+    reportError(error, { context: 'auth', event, ...data });
   }
 
   /**
-   * Log authentication warnings
+   * Log authentication warnings (reported to Sentry when configured)
    */
   static warn(event: string, data?: Record<string, unknown>) {
-    console.warn(
-      `[AUTH WARN] ${event}`,
-      data ? JSON.stringify(data, null, 2) : ''
-    );
+    reportMessage(`[AUTH WARN] ${event}`, 'warning', data);
   }
 }

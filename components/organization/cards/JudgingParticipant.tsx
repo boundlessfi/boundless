@@ -21,6 +21,7 @@ import {
   type JudgingCriterion,
 } from '@/lib/api/hackathons/judging';
 import Link from 'next/link';
+import { reportError } from '@/lib/error-reporting';
 import IndividualScoresBreakdown from './JudgingParticipant/IndividualScoresBreakdown';
 
 import { authClient } from '@/lib/auth-client';
@@ -144,7 +145,10 @@ const JudgingParticipant = ({
         // Optional: Show toast that no criteria are set
       }
     } catch (error) {
-      console.error('Failed to fetch judging criteria:', error);
+      reportError(error, {
+        context: 'JudgingParticipant-fetchCriteria',
+        hackathonId,
+      });
       setCriteria([]);
     } finally {
       setIsLoadingCriteria(false);

@@ -816,8 +816,8 @@ export interface CheckRegistrationStatusResponse extends ApiResponse<Participant
   message: string;
 }
 
+/** Request body for POST /hackathons/:idOrSlug/submissions (hackathon id/slug is in path) */
 export interface CreateSubmissionRequest {
-  hackathonId: string;
   organizationId: string;
   projectId?: string;
   participationType: 'INDIVIDUAL' | 'TEAM';
@@ -837,7 +837,7 @@ export interface CreateSubmissionRequest {
   logo?: string;
   videoUrl?: string;
   introduction?: string;
-  links: Array<{ type: string; url: string }>;
+  links: Array<{ type: string; url: string; description?: string }>;
   socialLinks?: {
     github?: string;
     telegram?: string;
@@ -847,7 +847,7 @@ export interface CreateSubmissionRequest {
 }
 
 export interface UpdateSubmissionRequest extends CreateSubmissionRequest {
-  submissionId: string;
+  submissionId?: string;
 }
 
 export interface CreateSubmissionResponse extends ApiResponse<ParticipantSubmission> {
@@ -1816,24 +1816,38 @@ export const checkRegistrationStatus = async (
 
 /**
  * Create a submission for a hackathon
- * Supports both slug-based (public) and organization/hackathon ID (authenticated) endpoints
+ * POST /api/hackathons/:idOrSlug/submissions — idOrSlug in path, body per CreateSubmissionRequest
  */
 export const createSubmission = async (
-  hackathonSlugOrId: string,
-  data: Omit<CreateSubmissionRequest, 'hackathonId' | 'organizationId'>,
+  idOrSlug: string,
+  data: Omit<CreateSubmissionRequest, 'organizationId'>,
   organizationId?: string
 ): Promise<CreateSubmissionResponse> => {
-  // Backend uses /hackathons/submissions with hackathonId in body
-  const submissionData: CreateSubmissionRequest = {
+  const body: CreateSubmissionRequest = {
     ...data,
-    hackathonId: hackathonSlugOrId,
-    organizationId: organizationId || '',
+    organizationId: organizationId ?? '',
     participationType: data.participationType || 'INDIVIDUAL',
-    links: data.links || [],
+    links: data.links ?? [],
   };
 
-  const res = await api.post('/hackathons/submissions', submissionData);
-  return res.data;
+  const res = await api.post<{
+    success?: boolean;
+    data?: ParticipantSubmission;
+    message?: string;
+  }>(`/hackathons/${idOrSlug}/submissions`, body);
+  const raw = res.data;
+  const submission: ParticipantSubmission =
+    raw?.data && typeof raw.data === 'object' && 'id' in (raw.data as object)
+      ? (raw.data as ParticipantSubmission)
+      : (raw as unknown as ParticipantSubmission);
+  return {
+    success: true,
+    data: submission,
+    message:
+      (raw && typeof raw === 'object' && 'message' in raw
+        ? (raw as { message?: string }).message
+        : undefined) ?? 'Submission created successfully',
+  };
 };
 
 /**
@@ -1841,7 +1855,7 @@ export const createSubmission = async (
  */
 export const updateSubmission = async (
   submissionId: string,
-  data: Partial<Omit<CreateSubmissionRequest, 'hackathonId' | 'organizationId'>>
+  data: Partial<Omit<CreateSubmissionRequest, 'organizationId'>>
 ): Promise<UpdateSubmissionResponse> => {
   // Backend uses /hackathons/submissions/:submissionId with PATCH
   const res = await api.patch(`/hackathons/submissions/${submissionId}`, data);
