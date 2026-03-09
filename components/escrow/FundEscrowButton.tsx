@@ -133,7 +133,8 @@ export const FundEscrowButton = () => {
           !fundResponse.unsignedTransaction
         ) {
           const errorMessage =
-            'message' in fundResponse && typeof fundResponse.message === 'string'
+            'message' in fundResponse &&
+            typeof fundResponse.message === 'string'
               ? fundResponse.message
               : 'Failed to fund escrow';
           throw new Error(errorMessage);
@@ -156,7 +157,8 @@ export const FundEscrowButton = () => {
           sendResponse.status !== ('SUCCESS' as Status)
         ) {
           const errorMessage =
-            'message' in sendResponse && typeof sendResponse.message === 'string'
+            'message' in sendResponse &&
+            typeof sendResponse.message === 'string'
               ? sendResponse.message
               : 'Failed to send transaction';
           throw new Error(errorMessage);

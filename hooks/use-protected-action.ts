@@ -18,8 +18,11 @@ export function useProtectedAction({
   const {
     requireWallet,
     showWalletModal,
+    showNotReadyModal,
+    notReadyReasons,
     handleWalletConnected,
     closeWalletModal,
+    closeNotReadyModal,
   } = useWalletProtection({
     actionName,
     showModal: true,
@@ -70,7 +73,10 @@ export function useProtectedAction({
   return {
     executeProtectedAction,
     showWalletModal,
+    showNotReadyModal,
+    notReadyReasons,
     closeWalletModal,
+    closeNotReadyModal,
     handleWalletConnected: handleWalletConnectedWithRedirect,
     clearPendingAction,
     hasPendingAction: !!pendingAction,

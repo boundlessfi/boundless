@@ -2,10 +2,10 @@ import { useMemo } from 'react';
 import { useWalletContext } from '@/components/providers/wallet-provider';
 import { WalletBalance } from '@/types/wallet';
 
-export type WalletNotReadyReason = 
-  | 'not_activated' 
-  | 'no_usdc_trustline' 
-  | 'insufficient_xlm' 
+export type WalletNotReadyReason =
+  | 'not_activated'
+  | 'no_usdc_trustline'
+  | 'insufficient_xlm'
   | 'insufficient_usdc';
 
 export interface WalletReadinessResult {
@@ -25,10 +25,10 @@ export function useWalletReadiness() {
     }
 
     const reasons: WalletNotReadyReason[] = [];
-    
-    const nativeBalance = balances.find(b => b.asset_type === 'native');
-    const xlmAmount = nativeBalance ? parseFloat(nativeBalance.balance) : 0;
-    
+
+    const xlmBalance = balances.find(b => b.asset_type === 'native');
+    const xlmAmount = xlmBalance ? parseFloat(xlmBalance.balance) : 0;
+
     // 1. Check activation (needs at least 1 XLM to exist)
     if (xlmAmount < 1) {
       reasons.push('not_activated');
@@ -53,11 +53,11 @@ export function useWalletReadiness() {
     return {
       isReady: reasons.length === 0,
       reasons,
-      hasWallet: true
+      hasWallet: true,
     };
   };
 
   return {
-    checkReadiness
+    checkReadiness,
   };
 }

@@ -104,7 +104,7 @@ const Initialize: React.FC<InitializeProps> = ({ onSuccess }) => {
 
   const submitInit = async () => {
     if (!formData) return;
-    requireWallet(async () => {
+    await requireWallet(async () => {
       try {
         setIsSubmitting(true);
         toast.loading('Initializing project...');
