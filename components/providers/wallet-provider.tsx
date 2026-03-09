@@ -26,6 +26,9 @@ type WalletContextType = {
   syncWallet: () => Promise<void>;
   getSupportedTrustlineAssets: () => Promise<SupportedTrustlineAsset[]>;
   addTrustline: (assetCode: string) => Promise<void>;
+  isWalletOpen: boolean;
+  onOpenWallet: () => void;
+  onCloseWallet: () => void;
 };
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -123,6 +126,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const isLoading = isSessionLoading || walletLoading;
   const hasWalletFromSession = !!session?.user?.wallet?.address;
 
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
+
+  const onOpenWallet = useCallback(() => {
+    setIsWalletOpen(true);
+  }, []);
+
+  const onCloseWallet = useCallback(() => {
+    setIsWalletOpen(false);
+  }, []);
+
   return (
     <WalletContext.Provider
       value={{
@@ -139,6 +152,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         syncWallet,
         getSupportedTrustlineAssets,
         addTrustline,
+        isWalletOpen,
+        onOpenWallet,
+        onCloseWallet,
       }}
     >
       {children}

@@ -18,7 +18,6 @@ export function useParticipants() {
   useEffect(() => {
     if (hackathonId) {
       setIsLoading(true);
-
       const fetchAllData = async () => {
         try {
           // Fetch teams

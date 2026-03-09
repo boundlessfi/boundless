@@ -33,6 +33,8 @@ import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 import { WalletTrigger } from '../wallet/WalletTrigger';
 import { NotificationBell } from '../notifications/NotificationBell';
 import CreateProjectModal from '@/features/projects/components/CreateProjectModal';
+import WalletNotReadyModal from '@/components/wallet/WalletNotReadyModal';
+import { useWalletContext } from '../providers/wallet-provider';
 
 const BRAND_COLOR = '#a7f950';
 const ACTIONS = {
@@ -200,12 +202,16 @@ function AuthenticatedActions() {
   const {
     executeProtectedAction,
     showWalletModal,
+    showNotReadyModal,
+    notReadyReasons,
     closeWalletModal,
+    closeNotReadyModal,
     handleWalletConnected,
   } = useProtectedAction({
     actionName: ACTIONS.CREATE_PROJECT,
     onSuccess: () => setCreateProjectModalOpen(true),
   });
+  const { onOpenWallet } = useWalletContext();
 
   return (
     <>
@@ -294,17 +300,31 @@ function AuthenticatedActions() {
         actionName={ACTIONS.CREATE_PROJECT}
         onWalletConnected={handleWalletConnected}
       />
+      <WalletNotReadyModal
+        open={showNotReadyModal}
+        onOpenChange={closeNotReadyModal}
+        reasons={notReadyReasons}
+        actionName={ACTIONS.CREATE_PROJECT}
+        onOpenWallet={onOpenWallet}
+      />
     </>
   );
 }
 
 function UnauthenticatedActions() {
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
-  const { showWalletModal, closeWalletModal, handleWalletConnected } =
-    useProtectedAction({
-      actionName: ACTIONS.CREATE_PROJECT,
-      onSuccess: () => setCreateProjectModalOpen(true),
-    });
+  const {
+    showWalletModal,
+    showNotReadyModal,
+    notReadyReasons,
+    closeWalletModal,
+    closeNotReadyModal,
+    handleWalletConnected,
+  } = useProtectedAction({
+    actionName: ACTIONS.CREATE_PROJECT,
+    onSuccess: () => setCreateProjectModalOpen(true),
+  });
+  const { onOpenWallet } = useWalletContext();
 
   return (
     <>
@@ -333,6 +353,13 @@ function UnauthenticatedActions() {
         onOpenChange={closeWalletModal}
         actionName={ACTIONS.CREATE_PROJECT}
         onWalletConnected={handleWalletConnected}
+      />
+      <WalletNotReadyModal
+        open={showNotReadyModal}
+        onOpenChange={closeNotReadyModal}
+        reasons={notReadyReasons}
+        actionName={ACTIONS.CREATE_PROJECT}
+        onOpenWallet={onOpenWallet}
       />
     </>
   );
