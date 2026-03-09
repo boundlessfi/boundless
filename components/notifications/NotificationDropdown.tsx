@@ -211,7 +211,7 @@ export const NotificationDropdown = ({
                 </button>
               )}
               <Link
-                href='/notifications'
+                href='/me/notifications'
                 className='text-primary hover:text-primary/80 ml-auto text-xs font-medium transition-colors'
                 onClick={onClose}
               >
