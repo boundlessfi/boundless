@@ -21,7 +21,8 @@ export function WalletTrigger({
   className,
   drawerType = 'sheet',
 }: WalletTriggerProps) {
-  const { walletAddress, hasWalletFromSession, isLoading } = useWalletContext();
+  const { walletAddress, hasWalletFromSession, isLoading, onOpenWallet } =
+    useWalletContext();
   const [open, setOpen] = useState(false);
 
   // Wallet is managed by backend; no "Connect Wallet" flow. Show trigger only when

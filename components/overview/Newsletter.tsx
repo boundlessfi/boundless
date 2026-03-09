@@ -25,7 +25,11 @@ import { BoundlessButton } from '../buttons';
 import { Input } from '../ui/input';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { newsletterSubscribe } from '@/lib/api/waitlist';
+import {
+  newsletterSubscribe,
+  type NewsletterApiError,
+  type NewsletterTag,
+} from '@/lib/api/waitlist';
 import { Button } from '../ui/button';
 
 const formSchema = z.object({
@@ -42,6 +46,7 @@ const Newsletter = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<NewsletterTag[]>([]);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -82,15 +87,23 @@ const Newsletter = ({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setError(null);
     setIsSubmitting(true);
-
     try {
       await newsletterSubscribe({
         email: values.email,
         name: values.name,
+        source: 'website',
+        tags: selectedTags,
       });
-    } catch {
-      setError('Failed to submit form. Please try again.');
-      setIsSubmitting(false);
+      onOpenChange(false);
+      window.location.href = '/newsletter/confirmed';
+    } catch (err) {
+      const e = err as NewsletterApiError;
+      if (e.code === 'ALREADY_SUBSCRIBED')
+        setError('This email is already subscribed.');
+      else if (e.code === 'RATE_LIMITED')
+        setError('Too many attempts. Please try again in a minute.');
+      else if (e.code === 'INVALID_TAGS') setError('Invalid topic selection.');
+      else setError('Failed to submit form. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -186,6 +199,37 @@ const Newsletter = ({
                         </FormItem>
                       )}
                     />
+
+                    <div className='mt-4 flex flex-wrap gap-3'>
+                      {(
+                        [
+                          'bounties',
+                          'hackathons',
+                          'grants',
+                          'updates',
+                        ] as NewsletterTag[]
+                      ).map(tag => (
+                        <label
+                          key={tag}
+                          className='flex cursor-pointer items-center gap-1.5 text-sm text-[#D9D9D9]'
+                        >
+                          <input
+                            type='checkbox'
+                            className='accent-[#A7F950]'
+                            checked={selectedTags.includes(tag)}
+                            onChange={() =>
+                              setSelectedTags(p =>
+                                p.includes(tag)
+                                  ? p.filter(t => t !== tag)
+                                  : [...p, tag]
+                              )
+                            }
+                          />
+                          {tag.charAt(0).toUpperCase() + tag.slice(1)}
+                        </label>
+                      ))}
+                    </div>
+
                     <BoundlessButton
                       variant={form.formState.isValid ? 'default' : 'outline'}
                       type='submit'

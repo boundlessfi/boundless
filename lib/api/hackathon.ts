@@ -55,7 +55,6 @@ export const getHackathon = async (
   slug: string
 ): Promise<GetHackathonResponse> => {
   const res = await api.get(`/hackathons/s/${slug}`);
-
   return res.data as GetHackathonResponse;
 };
 

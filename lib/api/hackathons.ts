@@ -347,6 +347,7 @@ export type Hackathon = {
 
   startDate: string; // ISO date
   submissionDeadline: string; // ISO date
+  submissionDeadlineExtendedAt?: string | null;
   registrationDeadline: string; // ISO date
   judgingDeadline?: string; // ISO date
 
