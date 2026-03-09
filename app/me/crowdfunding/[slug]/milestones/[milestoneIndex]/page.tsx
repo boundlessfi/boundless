@@ -162,31 +162,31 @@ export default function MilestoneDetailPage({ params }: PageProps) {
       // Step 3: Perform blockchain transaction with Trustless Work SDK
       toast('Please confirm the transaction in your wallet');
 
-      const { unsignedTransaction } = await changeMilestoneStatus(
-        {
-          contractId: campaign.escrowAddress,
-          milestoneIndex: (milestone.orderIndex ?? milestoneIndex).toString(),
-          newStatus: data.status === 'completed' ? 'completed' : 'in_progress',
-          newEvidence: data.submissionNotes, // Use submission notes as evidence description
-          serviceProvider: walletAddress || '',
-        },
-        'multi-release'
-      );
-      if (!unsignedTransaction) {
-        throw new Error(
-          'Unsigned transaction is missing from useChangeMilestoneStatusresponse.'
-        );
-      }
+      // const { unsignedTransaction } = await changeMilestoneStatus(
+      //   {
+      //     contractId: campaign.escrowAddress,
+      //     milestoneIndex: (milestone.orderIndex ?? milestoneIndex).toString(),
+      //     newStatus: data.status === 'completed' ? 'completed' : 'in_progress',
+      //     newEvidence: data.submissionNotes, // Use submission notes as evidence description
+      //     serviceProvider: walletAddress || '',
+      //   },
+      //   'multi-release'
+      // );
+      // if (!unsignedTransaction) {
+      //   throw new Error(
+      //     'Unsigned transaction is missing from useChangeMilestoneStatusresponse.'
+      //   );
+      // }
 
-      const signedXdr = await signTransaction({
-        unsignedTransaction,
-        address: walletAddress || '',
-      });
+      // const signedXdr = await signTransaction({
+      //   unsignedTransaction,
+      //   address: walletAddress || '',
+      // });
 
-      const trxsent = await sendTransaction(signedXdr);
-      if (trxsent.status === 'SUCCESS') {
-        toast.success('Transaction confirmed on blockchain');
-      }
+      // const trxsent = await sendTransaction(signedXdr);
+      // if (trxsent.status === 'SUCCESS') {
+      //   toast.success('Transaction confirmed on blockchain');
+      // }
 
       toast('Updating milestone...');
 
