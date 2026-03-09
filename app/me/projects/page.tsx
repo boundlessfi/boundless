@@ -116,29 +116,19 @@ export default function MyProjectsPage() {
               <ProjectCard
                 isFullWidth
                 key={project.id}
-                data={
-                  {
-                    id: displayId,
-                    slug: displayId,
-                    project: {
-                      ...project,
-                      creator: {
-                        name: authUser?.name || 'You',
-                        image: authUser?.image || '/user.png',
-                      },
+                data={{
+                  id: displayId,
+                  slug: displayId,
+                  project: {
+                    ...project,
+                    creator: {
+                      name: authUser?.name || 'You',
+                      image: authUser?.image || '/user.png',
                     },
-                    // Add custom properties for ProjectCard
-                    isSubmission: !!submission,
-                    submissionStatus: submission?.status,
-                    fundingGoal: 0,
-                    fundingRaised: 0,
-                    fundingCurrency: 'USDC',
-                    fundingEndDate: null,
-                    milestones: [],
-                    voteGoal: 0,
-                    voteProgress: 0,
-                  } as any
-                }
+                  },
+                  isSubmission: !!submission,
+                  submissionStatus: submission?.status,
+                }}
               />
             );
           })}

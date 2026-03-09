@@ -103,11 +103,10 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
           {projects.map(project => {
             // Find if this project is a hackathon submission
             // We need to check if the user object has submissions
-            const submission = (
-              user.user as any
-            ).hackathonSubmissionsAsParticipant?.find(
-              (s: any) => s.projectId === project.id
-            );
+            const submission =
+              user.user.hackathonSubmissionsAsParticipant?.find(
+                s => s.projectId === project.id
+              );
 
             // If it's a submission, use the submission ID for the URL and add ?type=submission
             const displayId = submission?.id || project.id;
@@ -116,33 +115,28 @@ export default function ProjectsTab({ user }: ProjectsTabProps) {
               : `/projects/${displayId}`;
 
             return (
-              <Link key={project.id} href={href} target='_blank'>
+              <Link
+                key={project.id}
+                href={href}
+                target='_blank'
+                rel='noopener noreferrer'
+              >
                 <ProjectCard
                   newTab={true}
                   isFullWidth={true}
-                  data={
-                    {
-                      id: displayId,
-                      slug: displayId,
-                      project: {
-                        ...project,
-                        creator: {
-                          name: user.user.name || 'User',
-                          image: user.user.image || '/avatar.png',
-                        },
-                      } as any,
-                      // Add custom properties for ProjectCard
-                      isSubmission: !!submission,
-                      submissionStatus: submission?.status,
-                      fundingGoal: 0,
-                      fundingRaised: 0,
-                      fundingCurrency: 'USDC',
-                      fundingEndDate: null,
-                      milestones: [],
-                      voteGoal: 0,
-                      voteProgress: 0,
-                    } as any
-                  }
+                  data={{
+                    id: displayId,
+                    slug: displayId,
+                    project: {
+                      ...project,
+                      creator: {
+                        name: user.user.name || 'User',
+                        image: user.user.image || '/avatar.png',
+                      },
+                    },
+                    isSubmission: !!submission,
+                    submissionStatus: submission?.status,
+                  }}
                 />
               </Link>
             );

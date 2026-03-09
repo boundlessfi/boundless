@@ -50,29 +50,20 @@ export default function ProjectsTabPublic({ user }: ProjectsTabProps) {
               <ProjectCard
                 newTab={true}
                 isFullWidth={true}
-                data={
-                  {
-                    id: displayId,
-                    slug: displayId,
-                    project: {
-                      ...project,
-                      creator: {
-                        name: user.name,
-                        image: user.image,
-                      },
+                data={{
+                  id: displayId,
+                  slug: displayId,
+                  project: {
+                    ...project,
+                    creator: {
+                      name: user.name,
+                      image: user.image,
                     },
-                    // Add a custom property to indicate it's a submission for ProjectCard
-                    isSubmission: !!submission,
-                    submissionStatus: submission?.status,
-                    fundingGoal: 0,
-                    fundingRaised: 0,
-                    fundingCurrency: 'USDC',
-                    fundingEndDate: null,
-                    milestones: [],
-                    voteGoal: 0,
-                    voteProgress: 0,
-                  } as any
-                }
+                  },
+                  // Add a custom property to indicate it's a submission for ProjectCard
+                  isSubmission: !!submission,
+                  submissionStatus: submission?.status,
+                }}
               />
             </Link>
           );
