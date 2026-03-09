@@ -97,7 +97,6 @@ export default function SubmitProjectPage({
       </div>
     );
   }
-
   return (
     <div className='min-h-screen bg-black px-5 py-5 text-white md:px-[50px] lg:px-[100px]'>
       <div className='mx-auto max-w-[1200px] pb-10'>

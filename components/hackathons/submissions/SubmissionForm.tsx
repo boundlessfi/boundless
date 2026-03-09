@@ -779,7 +779,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       } else {
         await create(submissionData);
       }
-
       if (onSuccess) {
         onSuccess();
       } else if (onClose) {
