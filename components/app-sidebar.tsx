@@ -30,6 +30,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useNotificationStore } from '@/lib/stores/notification-store';
 import { Logo } from './landing-page/navbar';
+import { useNotifications } from '@/hooks/useNotifications';
+import { authClient } from '@/lib/auth-client';
 
 const getNavigationData = (counts?: {
   participating?: number;
@@ -136,6 +138,12 @@ export function AppSidebar({
   user: UserData;
   counts?: { participating?: number; submissions?: number; projects?: number };
 } & React.ComponentProps<typeof Sidebar>) {
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
+
+  // Initialize notifications hook to ensure it fetches globally and syncs with store
+  useNotifications(userId || undefined);
+
   const unreadNotifications = useNotificationStore(state => state.unreadCount);
 
   const navigationData = React.useMemo(

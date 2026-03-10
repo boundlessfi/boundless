@@ -3,6 +3,7 @@ import { useSocket } from './useSocket';
 import { getNotifications } from '@/lib/api/notifications';
 import { Notification } from '@/types/notifications';
 import { reportError } from '@/lib/error-reporting';
+import { useNotificationStore } from '@/lib/stores/notification-store';
 
 interface UseNotificationsOptions {
   page?: number;
@@ -45,6 +46,13 @@ export function useNotifications(
   const [error, setError] = useState<Error | null>(null);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(initialPage);
+
+  const { setUnreadCount: setGlobalUnreadCount } = useNotificationStore();
+
+  // Sync with global store
+  useEffect(() => {
+    setGlobalUnreadCount(unreadCount);
+  }, [unreadCount, setGlobalUnreadCount]);
 
   // Merge server list with current state: dedupe by id, preserve optimistic read state (short rollback path)
   const mergeNotifications = useCallback(
