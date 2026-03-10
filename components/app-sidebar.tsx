@@ -29,11 +29,13 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useNotificationStore } from '@/lib/stores/notification-store';
+import { Logo } from './landing-page/navbar';
 
 const getNavigationData = (counts?: {
   participating?: number;
   unreadNotifications?: number;
   submissions?: number;
+  projects?: number;
 }) => ({
   main: [
     {
@@ -57,7 +59,7 @@ const getNavigationData = (counts?: {
       title: 'My Projects',
       url: '/me/projects',
       icon: IconFolder,
-      badge: '3',
+      badge: (counts?.projects ?? 0) > 0 ? String(counts?.projects) : undefined,
     },
     {
       title: 'Create Project',
@@ -132,7 +134,7 @@ export function AppSidebar({
   ...props
 }: {
   user: UserData;
-  counts?: { participating?: number; submissions?: number };
+  counts?: { participating?: number; submissions?: number; projects?: number };
 } & React.ComponentProps<typeof Sidebar>) {
   const unreadNotifications = useNotificationStore(state => state.unreadCount);
 
@@ -164,7 +166,7 @@ export function AppSidebar({
               size='lg'
               className='group hover:bg-sidebar-accent/0 transition-all duration-200'
             >
-              <Link href='/dashboard' className='flex items-center gap-3'>
+              {/* <Link href='/' className='flex items-center gap-3'>
                 <div className='flex items-center justify-center rounded-lg'>
                   <Image
                     width={24}
@@ -174,7 +176,8 @@ export function AppSidebar({
                     alt='Boundless Logo'
                   />
                 </div>
-              </Link>
+              </Link> */}
+              <Logo />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

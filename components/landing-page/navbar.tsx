@@ -124,7 +124,7 @@ export function Navbar() {
   );
 }
 
-function Logo() {
+export function Logo() {
   return (
     <Link
       href='/'

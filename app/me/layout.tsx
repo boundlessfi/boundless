@@ -23,9 +23,14 @@ interface MeLayoutProfile {
     image?: string;
     joinedHackathons?: ProfileItemWithId[];
     hackathonSubmissionsAsParticipant?: ProfileItemWithId[];
+    projects?: ProfileItemWithId[];
   };
   image?: string;
   hackathonSubmissionsAsParticipant?: ProfileItemWithId[];
+  projects?: ProfileItemWithId[];
+  stats?: {
+    projectsCreated?: number;
+  };
 }
 
 const getId = (item: ProfileItemWithId): string | undefined =>
@@ -69,6 +74,25 @@ const MeLayout = ({ children }: MeLayoutProps): React.ReactElement => {
     }).length;
   }, [typedProfile]);
 
+  const projectsCount = useMemo(() => {
+    if (!typedProfile) return 0;
+    // stats.projectsCreated is often the most direct count
+    if (typeof typedProfile.stats?.projectsCreated === 'number') {
+      return typedProfile.stats.projectsCreated;
+    }
+    // Fallback to array lengths
+    const fromUser = typedProfile.user?.projects ?? [];
+    const fromProfile = typedProfile.projects ?? [];
+    const merged = [...fromUser, ...fromProfile];
+    const seen = new Set<string>();
+    return merged.filter(p => {
+      const id = getId(p);
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    }).length;
+  }, [typedProfile]);
+
   // Only show full-screen spinner on first load, not on background refetches
   if (isLoading && !hasLoadedOnce.current) {
     return (
@@ -92,6 +116,7 @@ const MeLayout = ({ children }: MeLayoutProps): React.ReactElement => {
         counts={{
           participating: hackathonsCount,
           submissions: submissionsCount,
+          projects: projectsCount,
         }}
         variant='inset'
       />
