@@ -12,6 +12,9 @@ import { fundCrowdfundingProject } from '@/features/projects/api';
 import { useWalletContext } from '@/components/providers/wallet-provider';
 import { useWalletProtection } from '@/hooks/use-wallet-protection';
 import { signTransaction } from '@/lib/config/wallet-kit';
+import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
+import WalletNotReadyModal from '@/components/wallet/WalletNotReadyModal';
+import { WalletSheet } from '@/components/wallet/WalletSheet';
 import {
   useFundEscrow,
   useSendTransaction,
@@ -82,9 +85,19 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
 
   // Wallet hooks
   const { walletAddress } = useWalletContext();
-  const { requireWallet } = useWalletProtection({
+  const {
+    requireWallet,
+    showWalletModal,
+    showNotReadyModal,
+    notReadyReasons,
+    handleWalletConnected,
+    closeWalletModal,
+    closeNotReadyModal,
+  } = useWalletProtection({
     actionName: 'fund project',
   });
+
+  const [isWalletDrawerOpen, setIsWalletDrawerOpen] = useState(false);
   // Form data state
   const [formData, setFormData] = useState<FundProjectFormData>({
     amount: {},
@@ -292,29 +305,11 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
     setError(null);
 
     const walletValid = await requireWallet(async () => {
-      if (!walletAddress) {
-        setError('Wallet address is required');
-        setFlowStep('form');
-        setIsLoading(false);
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!project.contractId) {
-        setError(
-          'This project does not have an escrow contract set up. Please contact the project creator or support if you believe this is an error.'
-        );
-        setFlowStep('form');
-        setIsLoading(false);
-        setIsSubmitting(false);
-        return;
-      }
-
       try {
         // Step 1: Prepare the payload according to FundEscrowPayload type
         const payload: FundEscrowPayload = {
-          contractId: project.contractId,
-          signer: walletAddress,
+          contractId: project.contractId!,
+          signer: walletAddress!,
           amount: fundingAmount,
         };
 
@@ -342,7 +337,7 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
         // Step 3: Sign transaction with wallet
         const signedXdr = await signTransaction({
           unsignedTransaction,
-          address: walletAddress,
+          address: walletAddress!,
         });
 
         // Extract transaction hash from signed XDR
@@ -405,7 +400,7 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
         setIsLoading(false);
         setIsSubmitting(false);
       }
-    });
+    }, fundingAmount);
 
     if (!walletValid) {
       setFlowStep('form');
@@ -593,6 +588,27 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
           isSubmitting={isSubmitting}
         />
       )}
+
+      {/* Wallet Modals */}
+      <WalletRequiredModal
+        open={showWalletModal}
+        onOpenChange={closeWalletModal}
+        actionName='fund project'
+        onWalletConnected={handleWalletConnected}
+      />
+
+      <WalletNotReadyModal
+        open={showNotReadyModal}
+        onOpenChange={closeNotReadyModal}
+        reasons={notReadyReasons}
+        onOpenWallet={() => setIsWalletDrawerOpen(true)}
+        actionName='fund project'
+      />
+
+      <WalletSheet
+        open={isWalletDrawerOpen}
+        onOpenChange={setIsWalletDrawerOpen}
+      />
     </BoundlessSheet>
   );
 };

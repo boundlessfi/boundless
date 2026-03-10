@@ -7,6 +7,7 @@ https://www.figma.com/design/EMNGAQl1SGObXcsoa24krt/Boundless_Project-Details?no
 This design proposes a cleaner and more professional UI/UX for the hackathon detail page.
 
 Included in the Figma file:
+
 - Desktop layout
 - Mobile layout
 - Banner / hero placement proposal
@@ -23,6 +24,7 @@ The hackathon banner is placed as a full-width hero image at the top of the page
 The sidebar becomes a compact summary card with key information and actions.
 
 Design Goals
+
 - Simpler UI and improved visual hierarchy
 - Clear primary actions (Join, Submit, View Submission)
 - Consistent spacing and typography

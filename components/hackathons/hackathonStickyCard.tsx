@@ -34,6 +34,7 @@ interface HackathonStickyCardProps {
   onFindTeamClick?: () => void;
   onLeaveClick?: () => void;
   participantType?: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
+  submissionDeadlineExtendedAt?: string | null;
 }
 
 export function HackathonStickyCard(props: HackathonStickyCardProps) {
@@ -54,6 +55,7 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
     onLeaveClick,
     isLeaving,
     participantType,
+    submissionDeadlineExtendedAt,
   } = props;
 
   const { status } = useHackathonStatus(startDate, deadline);
@@ -162,6 +164,11 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
                 <span className='text-xs text-gray-400'>Deadline</span>
                 <span className='text-xs text-white'>
                   {formatDateWithFallback(deadline)}
+                  {submissionDeadlineExtendedAt && (
+                    <span className='ml-1.5 rounded-full bg-[#a7f950]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#a7f950] uppercase'>
+                      Extended
+                    </span>
+                  )}
                 </span>
               </div>
             )}

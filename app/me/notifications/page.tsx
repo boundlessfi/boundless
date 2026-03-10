@@ -104,10 +104,6 @@ export default function NotificationsPage() {
 
   const { setUnreadCount, clearUnreadCount } = useNotificationStore();
 
-  useEffect(() => {
-    setUnreadCount(unreadCount);
-  }, [unreadCount, setUnreadCount]);
-
   useNotificationPolling(notificationsHook, {
     interval: 30000,
     enabled: true,

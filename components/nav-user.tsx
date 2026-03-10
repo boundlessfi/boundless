@@ -26,6 +26,9 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Badge } from './ui/badge';
+import Link from 'next/link';
+import { useAuthActions } from '@/hooks/use-auth';
+import { useNotificationStore } from '@/lib/stores/notification-store';
 
 export interface NavUserProps {
   user: {
@@ -37,6 +40,14 @@ export interface NavUserProps {
 
 export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
   const { isMobile } = useSidebar();
+  const { logout } = useAuthActions();
+  const { unreadCount: unreadNotifications, clearUnreadCount } =
+    useNotificationStore();
+
+  const handleLogout = () => {
+    logout();
+    clearUnreadCount();
+  };
 
   return (
     <SidebarMenu>
@@ -68,7 +79,7 @@ export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className='w-56 rounded-lg'
+            className='bg-background-main-bg/98 w-56 rounded-lg border-white/10 text-white backdrop-blur-xl'
             side={isMobile ? 'bottom' : 'right'}
             align='end'
             sideOffset={4}
@@ -85,10 +96,10 @@ export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
                   </AvatarFallback>
                 </Avatar>
                 <div className='grid flex-1 text-left leading-tight'>
-                  <span className='truncate text-sm font-semibold'>
+                  <span className='truncate text-sm font-semibold text-white'>
                     {user.name}
                   </span>
-                  <span className='text-muted-foreground truncate text-xs'>
+                  <span className='truncate text-xs text-white/60'>
                     {user.email}
                   </span>
                 </div>
@@ -96,22 +107,44 @@ export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className='cursor-pointer gap-2'>
-                <IconUserCircle className='h-4 w-4' />
-                <span>Account Settings</span>
+              <DropdownMenuItem asChild>
+                <Link
+                  href='/me/settings'
+                  className='flex cursor-pointer items-center gap-2 text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
+                >
+                  <IconUserCircle className='h-4 w-4' />
+                  <span>Account Settings</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem className='cursor-pointer gap-2'>
-                <IconCreditCard className='h-4 w-4' />
-                <span>Billing</span>
+              <DropdownMenuItem asChild>
+                <Link
+                  href='/coming-soon'
+                  className='flex cursor-pointer items-center gap-2 text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
+                >
+                  <IconCreditCard className='h-4 w-4' />
+                  <span>Billing</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem className='cursor-pointer gap-2'>
-                <IconBell className='h-4 w-4' />
-                <span>Notifications</span>
-                <Badge className='ml-auto h-5 min-w-5 rounded-full'>3</Badge>
+              <DropdownMenuItem asChild>
+                <Link
+                  href='/me/notifications'
+                  className='flex cursor-pointer items-center gap-2 text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
+                >
+                  <IconBell className='h-4 w-4' />
+                  <span>Notifications</span>
+                  {unreadNotifications > 0 && (
+                    <Badge className='ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#a7f950] text-xs font-bold text-black'>
+                      {unreadNotifications}
+                    </Badge>
+                  )}
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className='text-destructive focus:text-destructive cursor-pointer gap-2'>
+            <DropdownMenuSeparator className='bg-white/10' />
+            <DropdownMenuItem
+              className='text-destructive focus:text-destructive cursor-pointer gap-2 hover:bg-red-500/10'
+              onClick={handleLogout}
+            >
               <IconLogout className='h-4 w-4' />
               <span>Log out</span>
             </DropdownMenuItem>

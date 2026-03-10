@@ -228,17 +228,19 @@ export function useHackathons(
           organizationId, // Add organization filter
         });
 
+        const pagination = (response.data?.pagination ||
+          response.meta?.pagination) as any;
         setHackathons(response.data?.hackathons || []);
         setHackathonsPagination({
-          currentPage: response.data?.pagination.page || 1,
-          totalPages: response.data?.pagination.totalPages || 1,
-          totalItems: response.data?.pagination.total || 0,
-          itemsPerPage: response.data?.pagination.limit || pageSize,
-          hasNext: response.data?.pagination.hasNext || false,
-          hasPrev: response.data?.pagination.hasPrev || false,
+          currentPage: pagination?.page || 1,
+          totalPages: pagination?.totalPages || 1,
+          totalItems: pagination?.total || 0,
+          itemsPerPage: pagination?.limit || pageSize,
+          hasNext: !!pagination?.hasNext,
+          hasPrev: !!pagination?.hasPrev,
         });
         // Update ref immediately
-        hackathonsPageRef.current = response.data?.pagination.page || 1;
+        hackathonsPageRef.current = pagination?.page || 1;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to fetch hackathons';
@@ -575,16 +577,18 @@ export function useHackathons(
           filters ?? initialParticipantFilters
         );
 
+        const pagination = (response.data?.pagination ||
+          response.meta?.pagination) as any;
         setParticipants(response.data?.participants || []);
         setParticipantsPagination({
-          currentPage: response.data?.pagination.page || 1,
-          totalPages: response.data?.pagination.totalPages || 1,
-          totalItems: response.data?.pagination.total || 0,
-          itemsPerPage: response.data?.pagination.limit || pageSize,
-          hasNext: response.data?.pagination.hasNext || false,
-          hasPrev: response.data?.pagination.hasPrev || false,
+          currentPage: pagination?.page || 1,
+          totalPages: pagination?.totalPages || 1,
+          totalItems: pagination?.total || 0,
+          itemsPerPage: pagination?.limit || pageSize,
+          hasNext: !!pagination?.hasNext,
+          hasPrev: !!pagination?.hasPrev,
         });
-        participantsPageRef.current = response.data?.pagination.page || 1;
+        participantsPageRef.current = pagination?.page || 1;
       } catch (error) {
         const errorMessage =
           error instanceof Error

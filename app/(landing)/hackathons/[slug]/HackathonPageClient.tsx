@@ -403,6 +403,7 @@ export default function HackathonPageClient() {
   // Shared props for banner and sticky card
   const sharedActionProps = {
     deadline: currentHackathon.submissionDeadline,
+    submissionDeadlineExtendedAt: currentHackathon.submissionDeadlineExtendedAt,
     startDate: currentHackathon.startDate,
     totalPrizePool: currentHackathon.prizeTiers
       .reduce((acc, prize) => acc + Number(prize.prizeAmount || 0), 0)

@@ -7,7 +7,7 @@ import { SectionCards } from '@/components/section-cards';
 import { SiteHeader } from '@/components/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useAuthStatus } from '@/hooks/use-auth';
-import data from '../app/dashboard/data.json';
+import data from '../data/data.json';
 import React, { useState } from 'react';
 import { FamilyWalletButton } from '@/components/wallet/FamilyWalletButton';
 import {

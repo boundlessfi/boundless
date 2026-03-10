@@ -212,6 +212,10 @@ export function FamilyWalletDrawer({
     setValidateResult('idle');
     try {
       const result = await validateSendDestination(dest, currency);
+
+      // Protect against stale responses if the user has changed the destination
+      if (sendDestination.trim() !== dest) return;
+
       if (result.valid) {
         setValidateResult('valid');
         setValidateError('');
@@ -222,14 +226,44 @@ export function FamilyWalletDrawer({
         );
       }
     } catch (err: unknown) {
+      // Protect against stale responses
+      if (sendDestination.trim() !== dest) return;
+
       const { message, details } = getErrorDisplay(err);
       setValidateResult('invalid');
       setValidateError(message);
       setValidateErrorDetails(details);
     } finally {
-      setValidateLoading(false);
+      // We still want to clear loading if it's the latest call
+      if (sendDestination.trim() === dest) {
+        setValidateLoading(false);
+      }
     }
   }, [sendDestination, sendCurrency, getErrorDisplay]);
+
+  // Auto-validate destination address
+  useEffect(() => {
+    const trimmedDest = sendDestination.trim();
+
+    // Reset state if empty
+    if (!trimmedDest) {
+      setValidateResult('idle');
+      setValidateError('');
+      return;
+    }
+
+    // Immediate trigger if 56 chars
+    if (trimmedDest.length === 56) {
+      handleValidateDestination();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      handleValidateDestination();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [sendDestination, sendCurrency, handleValidateDestination]);
 
   const handleSendSubmit = useCallback(async () => {
     const dest = sendDestination.trim();
@@ -833,37 +867,26 @@ export function FamilyWalletDrawer({
                         <Label htmlFor='send-destination'>
                           Destination (Stellar G...)
                         </Label>
-                        <div className='flex gap-2'>
+                        <div className='relative'>
                           <Input
                             id='send-destination'
                             placeholder='GABCD...'
                             value={sendDestination}
                             onChange={e => {
                               setSendDestination(e.target.value);
-                              setValidateResult('idle');
-                              setValidateError('');
                             }}
-                            className='font-mono text-sm'
+                            className='pr-10 font-mono text-sm'
                           />
-                          <Button
-                            type='button'
-                            variant='outline'
-                            size='sm'
-                            onClick={handleValidateDestination}
-                            disabled={
-                              validateLoading ||
-                              !sendDestination.trim() ||
-                              !sendCurrency
-                            }
-                          >
+                          <div className='absolute top-1/2 right-3 -translate-y-1/2'>
                             {validateLoading ? (
-                              <Loader2 className='h-4 w-4 animate-spin' />
+                              <Loader2 className='text-muted-foreground h-4 w-4 animate-spin' />
                             ) : validateResult === 'valid' ? (
                               <CheckCircle className='h-4 w-4 text-green-600' />
-                            ) : (
-                              'Validate'
-                            )}
-                          </Button>
+                            ) : validateResult === 'invalid' &&
+                              sendDestination.trim().length >= 56 ? (
+                              <AlertCircle className='text-destructive h-4 w-4' />
+                            ) : null}
+                          </div>
                         </div>
                         {validateResult === 'invalid' && validateError && (
                           <Alert variant='destructive' className='mt-2'>
