@@ -41,7 +41,13 @@ export interface NavUserProps {
 export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
   const { isMobile } = useSidebar();
   const { logout } = useAuthActions();
-  const unreadNotifications = useNotificationStore(state => state.unreadCount);
+  const { unreadCount: unreadNotifications, clearUnreadCount } =
+    useNotificationStore();
+
+  const handleLogout = () => {
+    logout();
+    clearUnreadCount();
+  };
 
   return (
     <SidebarMenu>
@@ -137,7 +143,7 @@ export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
             <DropdownMenuSeparator className='bg-white/10' />
             <DropdownMenuItem
               className='text-destructive focus:text-destructive cursor-pointer gap-2 hover:bg-red-500/10'
-              onClick={() => logout()}
+              onClick={handleLogout}
             >
               <IconLogout className='h-4 w-4' />
               <span>Log out</span>

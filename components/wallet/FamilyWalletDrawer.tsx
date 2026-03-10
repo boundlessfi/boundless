@@ -212,6 +212,10 @@ export function FamilyWalletDrawer({
     setValidateResult('idle');
     try {
       const result = await validateSendDestination(dest, currency);
+
+      // Protect against stale responses if the user has changed the destination
+      if (sendDestination.trim() !== dest) return;
+
       if (result.valid) {
         setValidateResult('valid');
         setValidateError('');
@@ -222,12 +226,18 @@ export function FamilyWalletDrawer({
         );
       }
     } catch (err: unknown) {
+      // Protect against stale responses
+      if (sendDestination.trim() !== dest) return;
+
       const { message, details } = getErrorDisplay(err);
       setValidateResult('invalid');
       setValidateError(message);
       setValidateErrorDetails(details);
     } finally {
-      setValidateLoading(false);
+      // We still want to clear loading if it's the latest call
+      if (sendDestination.trim() === dest) {
+        setValidateLoading(false);
+      }
     }
   }, [sendDestination, sendCurrency, getErrorDisplay]);
 

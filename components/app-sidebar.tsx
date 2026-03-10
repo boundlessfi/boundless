@@ -141,7 +141,7 @@ export function AppSidebar({
   const userId = session?.user?.id;
 
   // Initialize notifications hook to ensure it fetches globally and syncs with store
-  useNotifications(userId || undefined);
+  useNotifications({ enabled: !!userId });
 
   const unreadNotifications = useNotificationStore(state => state.unreadCount);
 
