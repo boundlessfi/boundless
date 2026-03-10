@@ -166,17 +166,6 @@ export function AppSidebar({
               size='lg'
               className='group hover:bg-sidebar-accent/0 transition-all duration-200'
             >
-              {/* <Link href='/' className='flex items-center gap-3'>
-                <div className='flex items-center justify-center rounded-lg'>
-                  <Image
-                    width={24}
-                    height={24}
-                    className='h-auto w-4/5 object-contain'
-                    src='/logo.svg'
-                    alt='Boundless Logo'
-                  />
-                </div>
-              </Link> */}
               <Logo />
             </SidebarMenuButton>
           </SidebarMenuItem>
