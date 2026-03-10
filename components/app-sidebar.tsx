@@ -27,7 +27,6 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useNotificationStore } from '@/lib/stores/notification-store';
 import { Logo } from './landing-page/navbar';
 import { useNotifications } from '@/hooks/useNotifications';
