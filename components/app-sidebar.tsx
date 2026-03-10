@@ -115,8 +115,8 @@ const getNavigationData = (counts?: {
       url: '/me/notifications',
       icon: IconBell,
       badge:
-        counts?.unreadNotifications && counts.unreadNotifications > 0
-          ? counts.unreadNotifications.toString()
+        (counts?.unreadNotifications ?? 0) > 0
+          ? String(counts?.unreadNotifications)
           : undefined,
     },
   ],
