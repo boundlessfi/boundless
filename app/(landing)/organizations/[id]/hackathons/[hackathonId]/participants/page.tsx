@@ -53,6 +53,7 @@ const ParticipantsPage: React.FC = () => {
   const hackathonId = params.hackathonId as string;
 
   const [view, setView] = useState<'table' | 'grid'>('table');
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     status: 'all',
@@ -63,9 +64,9 @@ const ParticipantsPage: React.FC = () => {
     () => ({
       organizationId,
       autoFetch: false,
-      pageSize: PAGE_SIZE, // Grid looks better with multiples of 3/4
+      pageSize, // Use dynamic page size
     }),
-    [organizationId]
+    [organizationId, pageSize]
   );
 
   const {
@@ -110,7 +111,7 @@ const ParticipantsPage: React.FC = () => {
       fetchParticipants(
         actualHackathonId,
         1,
-        PAGE_SIZE,
+        pageSize,
         mapFiltersToParams(filters, debouncedSearch)
       );
     }
@@ -120,6 +121,7 @@ const ParticipantsPage: React.FC = () => {
     debouncedSearch,
     filters.status,
     filters.type,
+    pageSize,
   ]);
 
   // Statistics
@@ -161,12 +163,12 @@ const ParticipantsPage: React.FC = () => {
   }, [organizationId, actualHackathonId]);
 
   // Handlers
-  const handlePageChange = (page: number) => {
+  const handlePageChange = (page: number, limit?: number) => {
     if (actualHackathonId) {
       fetchParticipants(
         actualHackathonId,
         page,
-        PAGE_SIZE,
+        limit ?? pageSize,
         mapFiltersToParams(filters, debouncedSearch)
       );
     }
@@ -220,7 +222,7 @@ const ParticipantsPage: React.FC = () => {
       fetchParticipants(
         actualHackathonId,
         participantsPagination.currentPage,
-        PAGE_SIZE,
+        pageSize,
         mapFiltersToParams(filters, debouncedSearch)
       );
     }
@@ -241,16 +243,17 @@ const ParticipantsPage: React.FC = () => {
     },
     onPaginationChange: updater => {
       if (typeof updater === 'function') {
-        const newState = (
-          updater as (old: { pageIndex: number; pageSize: number }) => {
-            pageIndex: number;
-            pageSize: number;
-          }
-        )({
+        const newState = updater({
           pageIndex: participantsPagination.currentPage - 1,
           pageSize: participantsPagination.itemsPerPage,
         });
-        handlePageChange(newState.pageIndex + 1);
+
+        if (newState.pageSize !== participantsPagination.itemsPerPage) {
+          setPageSize(newState.pageSize);
+          handlePageChange(1, newState.pageSize);
+        } else {
+          handlePageChange(newState.pageIndex + 1);
+        }
       }
     },
   });
