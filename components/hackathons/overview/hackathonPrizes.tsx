@@ -149,7 +149,7 @@ export function HackathonPrizes({
                       className='border-b border-white/10 transition-colors hover:bg-white/5'
                     >
                       <td className='px-4 py-4 text-left text-sm font-medium text-white'>
-                        {prize.place || getOrdinal(index + 4)}
+                        {getOrdinal(index + 4)}
                       </td>
                       <td className='px-4 py-4 text-left text-sm text-white/90'>
                         {prize.prizeAmount}
