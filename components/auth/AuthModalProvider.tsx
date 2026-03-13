@@ -85,9 +85,8 @@ export const AuthModalProvider = ({ children }: { children: ReactNode }) => {
           </DialogHeader>
           <div className='mt-2'>
             <LoginWrapper
-              // We keep the existing login flow but surface its loading state
-              // to prevent closing the modal while a request is in-flight.
               setLoadingState={isLoading => setIsSubmitting(isLoading)}
+              callbackUrl={redirectTo}
             />
           </div>
           {redirectTo && (

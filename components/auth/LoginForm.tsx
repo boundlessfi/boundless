@@ -79,7 +79,7 @@ const LoginForm = ({
             }
             className={`group bg-background hover:!text-background flex items-center justify-center gap-2 text-base !text-white transition-all duration-200 ${
               isGoogleLastUsed
-                ? 'border-2 !border-[#a7f950] shadow-sm shadow-[#a7f950]/20'
+                ? '!border-primary shadow-primary/20 border-2 shadow-sm'
                 : 'border !border-[#484848]'
             }`}
             onClick={onGoogleSignIn}
@@ -90,7 +90,7 @@ const LoginForm = ({
               {isGoogleLastUsed && (
                 <Badge
                   variant='secondary'
-                  className='group-hover:bg-background-card ml-2 border-[#a7f950]/30 bg-[#a7f950]/20 text-[#a7f950]'
+                  className='group-hover:bg-background-card border-primary/30 bg-primary/20 text-primary ml-2'
                 >
                   Last used
                 </Badge>
@@ -117,9 +117,9 @@ const LoginForm = ({
               </div>
             )}
             {isEmailLastUsed && (
-              <div className='rounded-lg border border-[#a7f950]/30 bg-[#a7f950]/10 p-3'>
-                <p className='flex items-center gap-2 text-xs text-[#a7f950]'>
-                  <span className='h-1.5 w-1.5 rounded-full bg-[#a7f950]'></span>
+              <div className='border-primary/30 bg-primary/10 rounded-lg border p-3'>
+                <p className='text-primary flex items-center gap-2 text-xs'>
+                  <span className='bg-primary h-1.5 w-1.5 rounded-full'></span>
                   Last signed in with Email
                 </p>
               </div>

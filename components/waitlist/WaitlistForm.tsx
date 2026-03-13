@@ -546,7 +546,7 @@ export default function WaitlistForm() {
                         <Input
                           {...field}
                           placeholder='Enter your email'
-                          className='focus-visible:ring-none absolute top-0 left-0 h-full border-none bg-transparent pl-10 text-white caret-[#A7F950] placeholder:text-[#B5B5B5] focus-visible:ring-[0px]'
+                          className='focus-visible:ring-none caret-primary absolute top-0 left-0 h-full border-none bg-transparent pl-10 text-white placeholder:text-[#B5B5B5] focus-visible:ring-[0px]'
                         />
                       </div>
                     </FormControl>
@@ -605,7 +605,7 @@ export default function WaitlistForm() {
         <p className='text-[#D9D9D9]'>
           By joining, you agree to receive updates from Boundless. Learn more in
           our{' '}
-          <Link className='text-[#A7F950]' href='/privacy'>
+          <Link className='text-primary' href='/privacy'>
             Privacy policy
           </Link>
           .

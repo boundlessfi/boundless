@@ -156,7 +156,7 @@ export function HackathonDiscussions({
   if (loading)
     return (
       <div className='flex w-full items-center justify-center py-8'>
-        <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
+        <Loader2 className='text-primary h-8 w-8 animate-spin' />
         <span className='ml-3 text-gray-400'>Loading discussions...</span>
       </div>
     );
@@ -169,7 +169,7 @@ export function HackathonDiscussions({
         </p>
         <button
           onClick={() => commentsHook.refetch()}
-          className='rounded-md bg-[#a7f950] px-4 py-2 text-black hover:bg-[#8fd93f]'
+          className='bg-primary rounded-md px-4 py-2 text-black hover:bg-[#8fd93f]'
         >
           Retry
         </button>

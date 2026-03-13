@@ -168,14 +168,14 @@ const BlogGrid: React.FC<BlogGridProps> = ({
                       className={cn(
                         'flex items-center gap-2 rounded-lg border px-2 py-2 text-sm font-medium transition-colors sm:px-4 sm:text-base',
                         sortOrder
-                          ? 'border-[#A7F950]/30 bg-[#0F1A0B] text-[#A7F950]'
+                          ? 'border-primary/30 text-primary bg-[#0F1A0B]'
                           : 'border-white/24 text-white hover:bg-[#2A2A2A]'
                       )}
                     >
                       <svg
                         width='20'
                         height='20'
-                        className={sortOrder ? 'text-[#A7F950]' : 'text-white'}
+                        className={sortOrder ? 'text-primary' : 'text-white'}
                         viewBox='0 0 20 20'
                         fill='none'
                         xmlns='http://www.w3.org/2000/svg'
@@ -213,12 +213,12 @@ const BlogGrid: React.FC<BlogGridProps> = ({
                             className={cn(
                               'mr-3 inline-flex h-5 w-5 items-center justify-center rounded-full border-2',
                               opt === sortOrder
-                                ? 'border-[#A7F950]'
+                                ? 'border-primary'
                                 : 'border-[#B5B5B5]'
                             )}
                           >
                             {opt === sortOrder && (
-                              <span className='h-2.5 w-2.5 rounded-full bg-[#A7F950]' />
+                              <span className='bg-primary h-2.5 w-2.5 rounded-full' />
                             )}
                           </span>
                           <span className=''>{opt}</span>
@@ -235,7 +235,7 @@ const BlogGrid: React.FC<BlogGridProps> = ({
                       className={cn(
                         'flex items-center gap-2 rounded-lg border border-white/24 px-2 py-2 text-sm font-medium text-white transition-colors sm:px-4 sm:text-base',
                         selectedCategories.length > 0 &&
-                          'border-[#A7F950]/30 bg-[#0F1A0B] text-[#A7F950]'
+                          'border-primary/30 text-primary bg-[#0F1A0B]'
                       )}
                     >
                       <svg
@@ -272,12 +272,12 @@ const BlogGrid: React.FC<BlogGridProps> = ({
                             className={cn(
                               'mr-3 inline-flex h-5 w-5 items-center justify-center rounded-full border-2',
                               selectedCategories.includes(cat)
-                                ? 'border-[#A7F950]'
+                                ? 'border-primary'
                                 : 'border-[#B5B5B5]'
                             )}
                           >
                             {selectedCategories.includes(cat) && (
-                              <span className='h-2.5 w-2.5 rounded-full bg-[#A7F950]' />
+                              <span className='bg-primary h-2.5 w-2.5 rounded-full' />
                             )}
                           </span>
                           <span className=''>{cat}</span>
@@ -294,7 +294,7 @@ const BlogGrid: React.FC<BlogGridProps> = ({
                 <Input
                   type='text'
                   placeholder='Search article'
-                  className='w-full rounded-lg border border-white/10 bg-[#101010] py-2 pr-4 pl-10 text-sm text-white placeholder:text-[#B5B5B5] focus:outline-none focus-visible:border-[#A7F950] focus-visible:ring-[3px] focus-visible:ring-[#A7F950]/30 md:h-[42px] md:text-base'
+                  className='focus-visible:border-primary focus-visible:ring-primary/30 w-full rounded-lg border border-white/10 bg-[#101010] py-2 pr-4 pl-10 text-sm text-white placeholder:text-[#B5B5B5] focus:outline-none focus-visible:ring-[3px] md:h-[42px] md:text-base'
                   value={searchQuery}
                   onChange={handleSearchChange}
                 />
@@ -333,7 +333,7 @@ const BlogGrid: React.FC<BlogGridProps> = ({
             <div className='mt-12 flex justify-center'>
               <button
                 onClick={handleLoadMore}
-                className='flex items-center gap-2 rounded-lg border border-[#2B2B2B] bg-[#1A1A1A] px-6 py-3 text-white transition-colors hover:bg-[#2A2A2A] hover:text-white focus:ring-2 focus:ring-[#A7F950] focus:outline-none'
+                className='focus:ring-primary flex items-center gap-2 rounded-lg border border-[#2B2B2B] bg-[#1A1A1A] px-6 py-3 text-white transition-colors hover:bg-[#2A2A2A] hover:text-white focus:ring-2 focus:outline-none'
               >
                 View More
               </button>

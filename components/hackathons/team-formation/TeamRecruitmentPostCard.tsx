@@ -295,11 +295,11 @@ export function TeamRecruitmentPostCard({
   return (
     <div
       onClick={handleCardClick}
-      className={`group hover:border-primary/45 bg-background-main-bg mx-auto w-full max-w-[397px] overflow-hidden rounded-lg border border-[#2B2B2B] p-4 transition-all sm:p-5 ${onClick ? 'cursor-pointer hover:border-[#A7F950]/50' : ''}`}
+      className={`group hover:border-primary/45 bg-background-main-bg mx-auto w-full max-w-[397px] overflow-hidden rounded-lg border border-[#2B2B2B] p-4 transition-all sm:p-5 ${onClick ? 'hover:border-primary/50 cursor-pointer' : ''}`}
     >
       {isPinned && (
-        <div className='mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#A7F950]'>
-          <Pin className='h-3.5 w-3.5 fill-[#A7F950]' />
+        <div className='text-primary mb-2 flex items-center gap-1.5 text-xs font-semibold'>
+          <Pin className='fill-primary h-3.5 w-3.5' />
           <span>Your Team</span>
         </div>
       )}
@@ -307,7 +307,7 @@ export function TeamRecruitmentPostCard({
       <div className='mb-3 flex items-center justify-between sm:mb-4'>
         <div className='flex items-center gap-2'>
           <Avatar
-            className={`h-8 w-8 border-2 transition-all duration-300 group-hover:border-[#A7F950] sm:h-10 sm:w-10 ${isPinned ? 'border-[#A7F950]' : 'border-[#2B2B2B]'}`}
+            className={`group-hover:border-primary h-8 w-8 border-2 transition-all duration-300 sm:h-10 sm:w-10 ${isPinned ? 'border-primary' : 'border-[#2B2B2B]'}`}
           >
             <AvatarImage
               src={displayLeader?.image}
@@ -332,7 +332,7 @@ export function TeamRecruitmentPostCard({
           <Badge
             className={`shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
               post.isOpen
-                ? 'border-[#A7F950] bg-[#E5FFE5] text-[#4E9E00]'
+                ? 'border-primary bg-[#E5FFE5] text-[#4E9E00]'
                 : 'border-[#FF5757] bg-[#FFEAEA] text-[#D33]'
             }`}
           >
@@ -470,7 +470,7 @@ export function TeamRecruitmentPostCard({
           onClick={handleContactClick}
           variant='ghost'
           size='icon'
-          className='text-[#A7F950] hover:bg-[#A7F950]/10 hover:text-[#8fd93f]'
+          className='text-primary hover:bg-primary/10 hover:text-[#8fd93f]'
         >
           <ContactIcon className='h-6 w-6' />
         </Button>

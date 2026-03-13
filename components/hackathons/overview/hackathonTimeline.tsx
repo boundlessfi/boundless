@@ -43,9 +43,9 @@ export function HackathonTimeline({ events }: HackathonTimelineProps) {
       <div className='mx-auto'>
         {/* Header Section */}
         <div className='mb-12 text-center md:text-left'>
-          <div className='mb-4 inline-flex items-center gap-2 rounded-full border border-[#a7f950]/20 bg-gradient-to-r from-[#a7f950]/10 to-[#a7f950]/5 px-4 py-2'>
-            <Clock className='h-4 w-4 text-[#a7f950]' />
-            <span className='text-sm font-medium text-[#a7f950]'>
+          <div className='border-primary/20 from-primary/10 to-primary/5 mb-4 inline-flex items-center gap-2 rounded-full border bg-gradient-to-r px-4 py-2'>
+            <Clock className='text-primary h-4 w-4' />
+            <span className='text-primary text-sm font-medium'>
               Event Schedule
             </span>
           </div>
@@ -60,8 +60,8 @@ export function HackathonTimeline({ events }: HackathonTimelineProps) {
         {/* Timeline Container */}
         <div className='relative'>
           {/* Enhanced gradient line */}
-          <div className='absolute top-0 bottom-0 left-6 w-[3px] rounded-full bg-gradient-to-b from-[#a7f950] via-[#a7f950]/70 to-[#a7f950]/30 opacity-30 md:left-8' />
-          <div className='absolute top-0 bottom-0 left-6 w-[3px] bg-gradient-to-b from-[#a7f950]/50 via-[#a7f950]/30 to-transparent blur-sm md:left-8' />
+          <div className='from-primary via-primary/70 to-primary/30 absolute top-0 bottom-0 left-6 w-[3px] rounded-full bg-gradient-to-b opacity-30 md:left-8' />
+          <div className='from-primary/50 via-primary/30 absolute top-0 bottom-0 left-6 w-[3px] bg-gradient-to-b to-transparent blur-sm md:left-8' />
 
           {/* Timeline events */}
           <div className='space-y-8'>
@@ -72,39 +72,39 @@ export function HackathonTimeline({ events }: HackathonTimelineProps) {
 
               const colorClasses = {
                 emerald: {
-                  bg: 'bg-[#a7f950]/20',
-                  border: 'border-[#a7f950]/50',
-                  text: 'text-[#a7f950]',
-                  glow: 'group-hover:shadow-[#a7f950]/30',
-                  iconBg: 'bg-[#a7f950]/10',
+                  bg: 'bg-primary/20',
+                  border: 'border-primary/50',
+                  text: 'text-primary',
+                  glow: 'group-hover:shadow-primary/30',
+                  iconBg: 'bg-primary/10',
                 },
                 amber: {
-                  bg: 'bg-[#a7f950]/20',
-                  border: 'border-[#a7f950]/50',
-                  text: 'text-[#a7f950]',
-                  glow: 'group-hover:shadow-[#a7f950]/30',
-                  iconBg: 'bg-[#a7f950]/10',
+                  bg: 'bg-primary/20',
+                  border: 'border-primary/50',
+                  text: 'text-primary',
+                  glow: 'group-hover:shadow-primary/30',
+                  iconBg: 'bg-primary/10',
                 },
                 blue: {
-                  bg: 'bg-[#a7f950]/20',
-                  border: 'border-[#a7f950]/50',
-                  text: 'text-[#a7f950]',
-                  glow: 'group-hover:shadow-[#a7f950]/30',
-                  iconBg: 'bg-[#a7f950]/10',
+                  bg: 'bg-primary/20',
+                  border: 'border-primary/50',
+                  text: 'text-primary',
+                  glow: 'group-hover:shadow-primary/30',
+                  iconBg: 'bg-primary/10',
                 },
                 purple: {
-                  bg: 'bg-[#a7f950]/20',
-                  border: 'border-[#a7f950]/50',
-                  text: 'text-[#a7f950]',
-                  glow: 'group-hover:shadow-[#a7f950]/30',
-                  iconBg: 'bg-[#a7f950]/10',
+                  bg: 'bg-primary/20',
+                  border: 'border-primary/50',
+                  text: 'text-primary',
+                  glow: 'group-hover:shadow-primary/30',
+                  iconBg: 'bg-primary/10',
                 },
                 slate: {
-                  bg: 'bg-[#a7f950]/20',
-                  border: 'border-[#a7f950]/50',
-                  text: 'text-[#a7f950]',
-                  glow: 'group-hover:shadow-[#a7f950]/30',
-                  iconBg: 'bg-[#a7f950]/10',
+                  bg: 'bg-primary/20',
+                  border: 'border-primary/50',
+                  text: 'text-primary',
+                  glow: 'group-hover:shadow-primary/30',
+                  iconBg: 'bg-primary/10',
                 },
               };
 
@@ -128,7 +128,7 @@ export function HackathonTimeline({ events }: HackathonTimelineProps) {
                   </div>
 
                   {/* Content card */}
-                  <div className='relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent transition-all duration-500 group-hover:-translate-y-2 group-hover:border-[#a7f950]/50 group-hover:shadow-2xl group-hover:shadow-[#a7f950]/10'>
+                  <div className='group-hover:border-primary/50 group-hover:shadow-primary/10 relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl'>
                     {/* Wave background */}
                     <div className='absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-2xl opacity-10'>
                       <Image

@@ -87,7 +87,7 @@ const ActionButtons = () => {
     <div className='flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center'>
       {!isParticipant ? (
         <BoundlessButton
-          className='s d h-12 w-full rounded-xl bg-[#A7F950] px-8 font-bold text-black hover:bg-[#A7F950]/90 disabled:bg-white/5 disabled:text-white/20 md:w-auto'
+          className='s d bg-primary hover:bg-primary/90 h-12 w-full rounded-xl px-8 font-bold text-black disabled:bg-white/5 disabled:text-white/20 md:w-auto'
           icon={!isRegistrationClosed && <IconUserPlus size={20} />}
           onClick={handleJoin}
           loading={joinMutation.isPending}
@@ -99,7 +99,7 @@ const ActionButtons = () => {
         <div className='flex w-full items-center gap-2 md:w-auto'>
           <BoundlessButton
             variant='outline'
-            className='h-12 flex-1 rounded-xl border-[#A7F950]/20 bg-[#232B20]/40 px-8 font-black text-[#A7F950] md:flex-none'
+            className='border-primary/20 text-primary h-12 flex-1 rounded-xl bg-[#232B20]/40 px-8 font-black md:flex-none'
             disabled
           >
             REGISTERED

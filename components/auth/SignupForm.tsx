@@ -148,7 +148,7 @@ const SignupForm = ({
             centerContent={true}
             className={`group bg-background !text-white transition-all duration-200 ${
               isGoogleLastUsed
-                ? 'border-2 !border-[#a7f950] shadow-sm shadow-[#a7f950]/20'
+                ? '!border-primary shadow-primary/20 border-2 shadow-sm'
                 : 'border !border-[#484848]'
             }`}
             onClick={onGoogleSignIn}
@@ -169,7 +169,7 @@ const SignupForm = ({
               {isGoogleLastUsed && (
                 <Badge
                   variant='secondary'
-                  className='group-hover:bg-background-card ml-2 border-[#a7f950]/30 bg-[#a7f950]/20 text-[#a7f950]'
+                  className='group-hover:bg-background-card border-primary/30 bg-primary/20 text-primary ml-2'
                 >
                   Last used
                 </Badge>

@@ -60,10 +60,14 @@ export default function PoolAndAction() {
   const { user } = useOptionalAuth();
   const slug = params.slug as string;
 
-  const { currentHackathon: hackathon, submissions } = useHackathonData();
-  const hackathonLoading = !hackathon;
-  const hackathonError = false; // Handled by parent
-  const participantsLoading = false; // Already available in hackathon object
+  const {
+    currentHackathon: hackathon,
+    submissions,
+    error,
+    loading,
+  } = useHackathonData();
+  const hackathonError = error;
+  const isDataLoading = loading || !hackathon;
   const participants = hackathon?.participants || [];
   const deadline = hackathon?.submissionDeadline;
   const timeLeft = useCountdown(deadline);
@@ -99,7 +103,7 @@ export default function PoolAndAction() {
     router.push(`/hackathons/${slug}/submit`);
   });
 
-  if (hackathonLoading || participantsLoading) {
+  if (isDataLoading) {
     return (
       <div className='space-y-6 overflow-hidden rounded-2xl border border-white/5 bg-[#1C1D1B] p-5'>
         <div className='flex gap-2'>
@@ -126,7 +130,9 @@ export default function PoolAndAction() {
           Failed to load hackathon
         </h3>
         <p className='mt-1 text-xs text-gray-400'>
-          Please refresh the page and try again.
+          {typeof hackathonError === 'string'
+            ? hackathonError
+            : 'Please refresh the page and try again.'}
         </p>
       </div>
     );

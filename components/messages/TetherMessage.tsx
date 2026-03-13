@@ -65,8 +65,9 @@ const isApiError = (e: unknown): e is ApiError => {
   );
 };
 
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
+/** Returns null during SSR and first client render; only set to boolean inside useEffect to avoid hydration mismatch. */
+const useIsMobile = (): boolean | null => {
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -283,6 +284,7 @@ export const TetherMessage: React.FC<TetherMessageProps> = ({
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const initialFocusRef = useRef<HTMLTextAreaElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const sendButtonRef = useRef<HTMLButtonElement | null>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
 
   const tether = useSmartTether(
@@ -321,10 +323,11 @@ export const TetherMessage: React.FC<TetherMessageProps> = ({
         onClose();
       }
       if (event.key === 'Tab') {
-        // Simple focus trap between close button and textarea/send button
+        // Simple focus trap: close → textarea → send
         const focusable: HTMLElement[] = [];
         if (closeButtonRef.current) focusable.push(closeButtonRef.current);
         if (initialFocusRef.current) focusable.push(initialFocusRef.current);
+        if (sendButtonRef.current) focusable.push(sendButtonRef.current);
         if (!focusable.length) return;
 
         const currentIndex = focusable.indexOf(
@@ -398,6 +401,7 @@ export const TetherMessage: React.FC<TetherMessageProps> = ({
               conversationId={conversationId}
               initialFocusRef={initialFocusRef}
               closeButtonRef={closeButtonRef}
+              sendButtonRef={sendButtonRef}
               onClose={onClose}
               isMobile
             />
@@ -439,6 +443,7 @@ export const TetherMessage: React.FC<TetherMessageProps> = ({
             conversationId={conversationId}
             initialFocusRef={initialFocusRef}
             closeButtonRef={closeButtonRef}
+            sendButtonRef={sendButtonRef}
             onClose={onClose}
             isMobile={false}
           />
@@ -462,6 +467,7 @@ interface ThreadContentProps {
   conversationId: string;
   initialFocusRef: React.RefObject<HTMLTextAreaElement | null>;
   closeButtonRef: React.RefObject<HTMLButtonElement | null>;
+  sendButtonRef: React.RefObject<HTMLButtonElement | null>;
   onClose: () => void;
   isMobile: boolean;
 }
@@ -472,6 +478,7 @@ const ThreadContent: React.FC<ThreadContentProps> = ({
   conversationId,
   initialFocusRef,
   closeButtonRef,
+  sendButtonRef,
   onClose,
   isMobile,
 }) => {
@@ -545,11 +552,16 @@ const ThreadContent: React.FC<ThreadContentProps> = ({
   const loadOlder = useCallback(async () => {
     if (!nextCursor || loadingOlder) return;
     setLoadingOlder(true);
+    setError(null);
     try {
       const res = await getMessages(conversationId, 50, nextCursor);
       setMessages(prev => [...(res.data ?? []), ...prev]);
       setHasMore(res.pagination.hasMore ?? false);
       setNextCursor(res.pagination.nextCursor ?? null);
+    } catch (e) {
+      console.error('loadOlder failed', e);
+      const msg = isApiError(e) ? e.message : 'Failed to load older messages';
+      setError(msg);
     } finally {
       setLoadingOlder(false);
     }
@@ -718,6 +730,7 @@ const ThreadContent: React.FC<ThreadContentProps> = ({
               )}
             />
             <Button
+              ref={sendButtonRef}
               type='button'
               size='icon'
               className='shrink-0'

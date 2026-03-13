@@ -42,18 +42,18 @@ export function ProjectAbout({ project }: ProjectAboutProps) {
       {/* Creator Info */}
       <div className='rounded-xl border border-gray-800/50 bg-gradient-to-br from-gray-900/50 to-gray-950/50 p-6 backdrop-blur-sm'>
         <div className='mb-4 flex items-center gap-2'>
-          <div className='h-1 w-1 rounded-full bg-[#a7f950]' />
+          <div className='bg-primary h-1 w-1 rounded-full' />
           <h2 className='text-lg font-semibold text-white'>Creator</h2>
         </div>
         <div className='flex items-center gap-4'>
           <div className='relative'>
-            <div className='absolute -inset-0.5 rounded-full bg-gradient-to-br from-[#a7f950]/30 to-transparent opacity-50 blur-sm' />
+            <div className='from-primary/30 absolute -inset-0.5 rounded-full bg-gradient-to-br to-transparent opacity-50 blur-sm' />
             <Avatar className='relative h-14 w-14 ring-2 ring-gray-800/50'>
               <AvatarImage
                 src={project.additionalCreator?.avatar || '/placeholder.svg'}
                 alt={project.additionalCreator?.name}
               />
-              <AvatarFallback className='bg-gradient-to-br from-[#a7f950] to-[#8fd93f] text-sm font-semibold text-black'>
+              <AvatarFallback className='from-primary bg-gradient-to-br to-[#8fd93f] text-sm font-semibold text-black'>
                 {(project.additionalCreator?.name || project.creator.name)
                   .split(' ')
                   .map(n => n[0])
@@ -66,7 +66,7 @@ export function ProjectAbout({ project }: ProjectAboutProps) {
             <p className='text-lg leading-tight font-semibold text-white'>
               {project.additionalCreator?.name || project.creator.name}
             </p>
-            <p className='mt-1.5 inline-block rounded-lg border border-[#a7f950]/30 bg-[#a7f950]/10 px-2.5 py-1 text-xs font-semibold tracking-wide text-[#a7f950] uppercase'>
+            <p className='border-primary/30 bg-primary/10 text-primary mt-1.5 inline-block rounded-lg border px-2.5 py-1 text-xs font-semibold tracking-wide uppercase'>
               {project.additionalCreator?.role || 'CREATOR'}
             </p>
           </div>
@@ -77,7 +77,7 @@ export function ProjectAbout({ project }: ProjectAboutProps) {
       {project.links && project.links.length > 0 && (
         <div className='rounded-xl border border-gray-800/50 bg-gradient-to-br from-gray-900/50 to-gray-950/50 p-6 backdrop-blur-sm'>
           <div className='mb-4 flex items-center gap-2'>
-            <div className='h-1 w-1 rounded-full bg-[#a7f950]' />
+            <div className='bg-primary h-1 w-1 rounded-full' />
             <h2 className='text-lg font-semibold text-white'>Project Links</h2>
           </div>
           <div className='space-y-2'>
@@ -89,9 +89,9 @@ export function ProjectAbout({ project }: ProjectAboutProps) {
                 }
                 target='_blank'
                 rel='noopener noreferrer'
-                className='group flex items-center gap-3 rounded-lg border border-gray-800/50 bg-gray-900/30 p-3 text-sm text-white transition-all hover:border-[#a7f950]/30 hover:bg-[#a7f950]/5'
+                className='group hover:border-primary/30 hover:bg-primary/5 flex items-center gap-3 rounded-lg border border-gray-800/50 bg-gray-900/30 p-3 text-sm text-white transition-all'
               >
-                <span className='flex h-8 w-8 items-center justify-center rounded-lg bg-gray-800/50 text-gray-400 transition-colors group-hover:bg-[#a7f950]/10 group-hover:text-[#a7f950]'>
+                <span className='group-hover:bg-primary/10 group-hover:text-primary flex h-8 w-8 items-center justify-center rounded-lg bg-gray-800/50 text-gray-400 transition-colors'>
                   {getIcon(link.icon)}
                 </span>
                 <span className='flex-1 truncate font-medium'>{link.url}</span>

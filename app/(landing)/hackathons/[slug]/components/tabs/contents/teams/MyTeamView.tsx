@@ -132,7 +132,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
       {/* Team Header */}
       <div className='bg-background-card flex flex-col justify-between gap-6 rounded-3xl border border-white/5 p-6 md:flex-row md:items-center md:p-10'>
         <div className='flex flex-col items-start gap-4 sm:flex-row sm:gap-6'>
-          <div className='flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#232B20] text-xl font-black text-[#A7F950] sm:h-16 sm:w-16 sm:text-2xl'>
+          <div className='text-primary flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#232B20] text-xl font-black sm:h-16 sm:w-16 sm:text-2xl'>
             {team.teamName.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -140,7 +140,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
               {team.teamName}
             </h2>
             <div className='mt-1 flex flex-wrap items-center gap-2 sm:gap-3'>
-              <span className='text-sm font-bold text-[#A7F950]'>
+              <span className='text-primary text-sm font-bold'>
                 {team.memberCount} / {team.maxSize} Members
               </span>
               <span className='hidden h-1 w-1 rounded-full bg-gray-700 sm:block' />
@@ -158,7 +158,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
                 {team.lookingFor.map((roleObj, idx) => (
                   <div
                     key={idx}
-                    className='rounded-lg border border-[#A7F950]/20 bg-[#A7F950]/5 px-3 py-1.5 text-[10px] font-black tracking-wider text-[#A7F950] uppercase'
+                    className='border-primary/20 bg-primary/5 text-primary rounded-lg border px-3 py-1.5 text-[10px] font-black tracking-wider uppercase'
                   >
                     {typeof roleObj === 'string' ? roleObj : roleObj.role}
                   </div>
@@ -197,7 +197,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
             <div className='flex flex-col gap-6 lg:flex-row lg:items-end'>
               <div className='flex-1 space-y-4'>
                 <div className='flex items-center gap-2'>
-                  <UserPlus className='h-5 w-5 text-[#A7F950]' />
+                  <UserPlus className='text-primary h-5 w-5' />
                   <h3 className='text-lg font-bold text-white'>
                     Invite Builders
                   </h3>
@@ -215,7 +215,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
                         setInviteIdentifier(e.target.value);
                         setVerificationError(null);
                       }}
-                      className='w-full rounded-xl border border-white/10 bg-white/5 p-4 font-mono text-sm text-white placeholder-gray-500 transition-all outline-none focus:border-[#A7F950]/50'
+                      className='focus:border-primary/50 w-full rounded-xl border border-white/10 bg-white/5 p-4 font-mono text-sm text-white placeholder-gray-500 transition-all outline-none'
                     />
                     {verificationError && (
                       <p className='mt-1 text-xs font-bold text-red-500/80'>
@@ -232,7 +232,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
                       placeholder='Join our team for this hackathon!'
                       value={inviteMessage}
                       onChange={e => setInviteMessage(e.target.value)}
-                      className='w-full rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white placeholder-gray-500 transition-all outline-none focus:border-[#A7F950]/50'
+                      className='focus:border-primary/50 w-full rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white placeholder-gray-500 transition-all outline-none'
                     />
                   </div>
                 </div>
@@ -253,13 +253,13 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
         <div className='space-y-6'>
           <div className='flex items-center justify-between'>
             <h3 className='flex items-center gap-2 text-xl font-bold text-white'>
-              <Users className='h-5 w-5 text-[#A7F950]' /> Team Members
+              <Users className='text-primary h-5 w-5' /> Team Members
             </h3>
           </div>
 
           <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
             {/* Leader Card */}
-            <div className='flex items-center justify-between rounded-2xl border border-[#A7F950]/20 bg-[#232B20]/10 p-4 sm:p-5'>
+            <div className='border-primary/20 flex items-center justify-between rounded-2xl border bg-[#232B20]/10 p-4 sm:p-5'>
               <div className='flex items-center gap-3 sm:gap-4'>
                 <div className='shrink-0'>
                   <BasicAvatar
@@ -270,14 +270,14 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
                 </div>
                 <div className='min-w-0'>
                   <div className='flex flex-wrap items-center gap-1.5'>
-                    <span className='flex items-center gap-1 rounded-full bg-[#A7F950]/10 px-2.5 py-1 text-[10px] leading-none font-black text-[#A7F950] uppercase'>
+                    <span className='bg-primary/10 text-primary flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] leading-none font-black uppercase'>
                       <Crown className='h-3 w-3' /> Leader
                     </span>
                   </div>
                 </div>
               </div>
               {isLeader && (
-                <ShieldCheck className='hidden h-5 w-5 text-[#A7F950]/50 sm:block' />
+                <ShieldCheck className='text-primary/50 hidden h-5 w-5 sm:block' />
               )}
             </div>
 
@@ -308,7 +308,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
                       <BoundlessButton
                         variant='outline'
                         size='sm'
-                        className='mt-2 h-9 w-full border-white/5 text-[10px] font-black tracking-widest text-gray-400 uppercase hover:text-[#A7F950] sm:opacity-0 sm:group-hover:opacity-100'
+                        className='hover:text-primary mt-2 h-9 w-full border-white/5 text-[10px] font-black tracking-widest text-gray-400 uppercase sm:opacity-0 sm:group-hover:opacity-100'
                         onClick={() => {
                           setSelectedMember({
                             id: member.userId,
@@ -379,7 +379,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleTransfer}
-              className='bg-[#A7F950] text-black hover:bg-[#A7F950]/90'
+              className='bg-primary hover:bg-primary/90 text-black'
             >
               Transfer
             </AlertDialogAction>

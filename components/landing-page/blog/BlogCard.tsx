@@ -16,7 +16,7 @@ interface BlogCardProps {
 
 const BlogCard = ({ post, onCardClick }: BlogCardProps) => {
   return (
-    <Card className='group bg-background-card flex h-full w-full max-w-none flex-col overflow-hidden rounded-xl border border-[#1B1B1B] p-0 transition-all duration-300 hover:border-[#A7F950]/30 hover:shadow-lg hover:shadow-[#A7F950]/5'>
+    <Card className='group bg-background-card hover:border-primary/30 hover:shadow-primary/5 flex h-full w-full max-w-none flex-col overflow-hidden rounded-xl border border-[#1B1B1B] p-0 transition-all duration-300 hover:shadow-lg'>
       {/* Image Header with 2:1 Aspect Ratio */}
       <CardHeader className='relative overflow-hidden p-0'>
         <div className='relative aspect-2/1 w-full bg-[#1A1A1A]'>
@@ -42,7 +42,7 @@ const BlogCard = ({ post, onCardClick }: BlogCardProps) => {
               <Badge
                 key={category}
                 variant='secondary'
-                className='rounded-md border border-[#A7F950]/20 bg-[#A7F950]/10 px-2.5 py-1 text-xs font-medium text-[#A7F950] transition-colors hover:bg-[#A7F950]/20'
+                className='border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors'
               >
                 {category}
               </Badge>
@@ -50,7 +50,7 @@ const BlogCard = ({ post, onCardClick }: BlogCardProps) => {
             {post.categories && post.categories.length > 2 && (
               <Badge
                 variant='secondary'
-                className='rounded-md border border-[#A7F950]/20 bg-[#A7F950]/10 px-2.5 py-1 text-xs font-medium text-[#A7F950]'
+                className='border-primary/20 bg-primary/10 text-primary rounded-md border px-2.5 py-1 text-xs font-medium'
               >
                 +{post.categories.length - 2}
               </Badge>
@@ -64,7 +64,7 @@ const BlogCard = ({ post, onCardClick }: BlogCardProps) => {
         </div>
 
         {/* Title */}
-        <h2 className='line-clamp-2 text-xl leading-tight font-semibold text-white transition-colors duration-300 group-hover:text-[#A7F950]'>
+        <h2 className='group-hover:text-primary line-clamp-2 text-xl leading-tight font-semibold text-white transition-colors duration-300'>
           {post.title}
         </h2>
 
@@ -91,10 +91,10 @@ const BlogCard = ({ post, onCardClick }: BlogCardProps) => {
           }}
           className='group/btn flex w-full items-center justify-between gap-2 rounded-lg px-0 py-3 text-left transition-all duration-300'
         >
-          <span className='text-sm font-semibold text-[#A7F950] group-hover/btn:text-[#A7F950]'>
+          <span className='text-primary group-hover/btn:text-primary text-sm font-semibold'>
             Continue Reading
           </span>
-          <ArrowRight className='h-4 w-4 text-[#A7F950]' />
+          <ArrowRight className='text-primary h-4 w-4' />
         </button>
       </CardFooter>
     </Card>

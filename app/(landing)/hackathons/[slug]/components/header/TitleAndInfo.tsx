@@ -76,10 +76,10 @@ const TitleAndInfo = ({
 
       <div className='flex flex-wrap items-center gap-3 text-sm font-medium text-white md:gap-4'>
         <span
-          className={`flex items-center gap-1.5 ${isActive ? 'text-[#A7F950]' : 'text-gray-400'}`}
+          className={`flex items-center gap-1.5 ${isActive ? 'text-primary' : 'text-gray-400'}`}
         >
           <span
-            className={`h-2 w-2 rounded-full ${isActive ? 'animate-pulse bg-[#A7F950]' : 'bg-gray-500'}`}
+            className={`h-2 w-2 rounded-full ${isActive ? 'bg-primary animate-pulse' : 'bg-gray-500'}`}
           />
           {statusLabel}
           <ExtendedBadge

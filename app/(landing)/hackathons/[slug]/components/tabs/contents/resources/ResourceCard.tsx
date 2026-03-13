@@ -70,7 +70,7 @@ export const ResourceCard = ({
   const cardContent = (
     <>
       <div className='space-y-6'>
-        <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-[#232B20] text-[#A7F950] transition-colors group-hover:bg-[#A7F950] group-hover:text-black'>
+        <div className='text-primary group-hover:bg-primary flex h-12 w-12 items-center justify-center rounded-xl bg-[#232B20] transition-colors group-hover:text-black'>
           <Icon className='h-6 w-6' />
         </div>
         <div>
@@ -81,7 +81,7 @@ export const ResourceCard = ({
         </div>
       </div>
 
-      <div className='flex items-center gap-2 text-sm font-black tracking-wider text-[#A7F950] uppercase'>
+      <div className='text-primary flex items-center gap-2 text-sm font-black tracking-wider uppercase'>
         {actionText}
         {getActionIcon()}
       </div>
@@ -89,7 +89,7 @@ export const ResourceCard = ({
   );
 
   const containerClassName =
-    'group flex flex-col justify-between gap-8 rounded-3xl border border-white/5 bg-[#0D0E10] p-8 transition-all duration-300 hover:border-[#A7F950]/30 hover:bg-[#141517]';
+    'group flex flex-col justify-between gap-8 rounded-3xl border border-white/5 bg-[#0D0E10] p-8 transition-all duration-300 hover:border-primary/30 hover:bg-[#141517]';
 
   if (actionHref) {
     return (

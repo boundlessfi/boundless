@@ -27,11 +27,15 @@ const TeamCard = ({ team, onJoin, onMessageLeader }: TeamCardProps) => {
   const status = isOpen ? 'ACTIVE' : 'CLOSED';
   const category = 'DEFI';
 
+  const isTeamMember = (member: string | TeamMember): member is TeamMember => {
+    return typeof member !== 'string';
+  };
+
   return (
     <div className='group hover:border-primary/20 flex h-full flex-col overflow-hidden rounded-2xl border border-white/5 bg-[#0A0B0D] p-8 transition-all hover:bg-[#0D0F12]'>
       <div className='mb-6 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between'>
         <div className='flex items-start gap-4'>
-          <div className='flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#232B20] text-xl font-black text-[#A7F950]'>
+          <div className='text-primary flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#232B20] text-xl font-black'>
             {teamName.charAt(0).toUpperCase()}
           </div>
           <div className='pt-1'>
@@ -39,7 +43,7 @@ const TeamCard = ({ team, onJoin, onMessageLeader }: TeamCardProps) => {
               {teamName}
             </h3>
             <div className='mt-2 flex flex-wrap items-center gap-2'>
-              <span className='rounded border border-[#2B3026] bg-[#232B20]/50 px-2 py-0.5 text-[10px] font-bold tracking-wider text-[#A7F950] uppercase'>
+              <span className='text-primary rounded border border-[#2B3026] bg-[#232B20]/50 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase'>
                 {category}
               </span>
               <span
@@ -75,7 +79,7 @@ const TeamCard = ({ team, onJoin, onMessageLeader }: TeamCardProps) => {
           <BoundlessButton
             variant='outline'
             size='sm'
-            className='h-11 w-full rounded-xl border-[#A7F950]/20 bg-[#232B20]/30 px-6 text-sm font-bold text-[#A7F950] transition-all hover:bg-[#A7F950] hover:text-black sm:w-auto'
+            className='border-primary/20 text-primary hover:bg-primary h-11 w-full rounded-xl bg-[#232B20]/30 px-6 text-sm font-bold transition-all hover:text-black sm:w-auto'
             onClick={() => onJoin?.(team)}
             disabled={!isOpen || memberCount >= maxSize}
           >
@@ -116,7 +120,7 @@ const TeamCard = ({ team, onJoin, onMessageLeader }: TeamCardProps) => {
             )}
           </div>
           <GroupAvatar
-            members={(members as TeamMember[]).map(m => m.image ?? '')}
+            members={members.map(m => (isTeamMember(m) ? (m.image ?? '') : ''))}
           />
         </div>
       </div>

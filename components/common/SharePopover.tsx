@@ -78,7 +78,7 @@ const SharePopover = ({
             onClick={handleCopyLink}
             className='flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-white/5'
           >
-            <IconCopy size={18} className='text-[#A7F950]' />
+            <IconCopy size={18} className='text-primary' />
             <span>Copy Link</span>
           </PopoverButton>
           <PopoverButton
