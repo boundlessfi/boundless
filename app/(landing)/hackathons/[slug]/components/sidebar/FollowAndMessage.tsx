@@ -29,13 +29,16 @@ export default function FollowAndMessage() {
   } = useFollow('ORGANIZATION', org?.id || '', false);
 
   const handleToggleFollow = async () => {
+    const nextState = !isFollowing;
     try {
       await toggleFollow();
       toast.success(
-        isFollowing ? `Unfollowed ${orgName}` : `Following ${orgName}`
+        nextState ? `Following ${orgName}` : `Unfollowed ${orgName}`
       );
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update follow status');
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to update follow status';
+      toast.error(errorMessage);
     }
   };
 
@@ -58,7 +61,7 @@ export default function FollowAndMessage() {
     );
   }
 
-  if (hackathonError || !org) {
+  if (hackathonError || !org?.id) {
     return (
       <div className='mt-4 flex flex-col items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/5 p-8 text-center'>
         <AlertCircle className='mb-3 h-8 w-8 text-red-500' />

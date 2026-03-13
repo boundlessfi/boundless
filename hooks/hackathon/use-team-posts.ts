@@ -151,6 +151,11 @@ export function useTeamPosts({
         if (response.success && response.data) {
           setPosts(prev => [response.data!, ...prev]);
           setMyPosts(prev => [response.data!, ...prev]);
+          setMyTeam(prev =>
+            prev
+              ? { ...prev, posts: [response.data!, ...(prev.posts || [])] }
+              : null
+          );
           toast.success('Team post created successfully');
           return response.data;
         } else {
@@ -190,6 +195,16 @@ export function useTeamPosts({
           );
           setMyPosts(prev =>
             prev.map(post => (post.id === postId ? response.data! : post))
+          );
+          setMyTeam(prev =>
+            prev
+              ? {
+                  ...prev,
+                  posts: (prev.posts || []).map(p =>
+                    p.id === postId ? response.data! : p
+                  ),
+                }
+              : null
           );
           toast.success('Team post updated successfully');
           return response.data;

@@ -48,6 +48,9 @@ const FindTeam = () => {
       page,
       limit: 12,
       search: searchQuery,
+      category:
+        categoryFilter !== 'All Categories' ? categoryFilter : undefined,
+      role: roleFilter !== 'Role' ? roleFilter : undefined,
       openOnly: true,
     },
     !!hackathon?.id && hackathon.participantType !== 'INDIVIDUAL'
@@ -142,14 +145,20 @@ const FindTeam = () => {
                   className='w-[calc(100vw-2rem)] border-white/10 bg-[#0D0E10] text-gray-300 lg:w-48'
                 >
                   <DropdownMenuItem
-                    onClick={() => setCategoryFilter('All Categories')}
+                    onClick={() => {
+                      setCategoryFilter('All Categories');
+                      setPage(1);
+                    }}
                   >
                     All Categories
                   </DropdownMenuItem>
                   {hackathon.categories?.map(cat => (
                     <DropdownMenuItem
                       key={cat}
-                      onClick={() => setCategoryFilter(cat)}
+                      onClick={() => {
+                        setCategoryFilter(cat);
+                        setPage(1);
+                      }}
                     >
                       {cat}
                     </DropdownMenuItem>
@@ -168,7 +177,12 @@ const FindTeam = () => {
                   align='end'
                   className='w-[calc(100vw-2rem)] border-white/10 bg-[#0D0E10] text-gray-300 lg:w-48'
                 >
-                  <DropdownMenuItem onClick={() => setRoleFilter('Role')}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setRoleFilter('Role');
+                      setPage(1);
+                    }}
+                  >
                     All Roles
                   </DropdownMenuItem>
                   {[
@@ -180,7 +194,10 @@ const FindTeam = () => {
                   ].map(role => (
                     <DropdownMenuItem
                       key={role}
-                      onClick={() => setRoleFilter(role)}
+                      onClick={() => {
+                        setRoleFilter(role);
+                        setPage(1);
+                      }}
                     >
                       {role}
                     </DropdownMenuItem>

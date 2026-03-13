@@ -1,51 +1,39 @@
 'use client';
 
-import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { BoundlessButton } from '@/components/buttons';
-import {
-  IconUsers,
-  IconUserPlus,
-  IconLogout,
-  IconChevronDown,
-} from '@tabler/icons-react';
+import { IconUsers, IconUserPlus, IconLogout } from '@tabler/icons-react';
 import {
   useHackathon,
   useMyTeam,
-  useHackathonParticipants,
   useJoinHackathon,
   useLeaveHackathon,
 } from '@/hooks/hackathon/use-hackathon-queries';
+import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useAuth } from '@/hooks/use-auth';
 import SharePopover from '@/components/common/SharePopover';
-import {
-  PopoverRoot,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverBody,
-  PopoverButton,
-} from '@/components/ui/popover-cult';
 import { toast } from 'sonner';
 
 const ActionButtons = () => {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const { data: hackathon } = useHackathon(slug);
+  const { currentHackathon: hackathon, refreshCurrentHackathon } =
+    useHackathonData();
   const { data: myTeam } = useMyTeam(slug);
-  const { data: participantsData } = useHackathonParticipants(slug);
-  const participants = participantsData?.participants || [];
 
   const joinMutation = useJoinHackathon(slug);
   const leaveMutation = useLeaveHackathon(slug);
 
   const isParticipant = user
-    ? participants.some((p: any) => p.userId === user.id)
+    ? !!hackathon?.isParticipant ||
+      (hackathon?.participants || []).some((p: any) => p.userId === user.id)
     : false;
 
   const handleJoin = async () => {
     try {
       await joinMutation.mutateAsync();
+      await refreshCurrentHackathon();
       toast.success('Successfully joined the hackathon!');
     } catch (error: any) {
       toast.error(error.message || 'Failed to join hackathon');
@@ -66,7 +54,6 @@ const ActionButtons = () => {
     searchParams.set('tab', tab);
     router.push(`?${searchParams.toString()}`);
 
-    // Smooth scroll to tabs
     const tabsElement = document.getElementById('hackathon-tabs');
     if (tabsElement) {
       tabsElement.scrollIntoView({ behavior: 'smooth' });

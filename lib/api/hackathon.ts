@@ -71,12 +71,13 @@ export const getFeaturedHackathons =
 // Get participants for a hackathon
 export const getHackathonParticipants = async (
   slug: string,
-  params?: { page?: number; limit?: number; status?: string }
+  params?: { page?: number; limit?: number; status?: string; skill?: string }
 ): Promise<ParticipantsResponse> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.limit) queryParams.append('limit', params.limit.toString());
   if (params?.status) queryParams.append('status', params.status);
+  if (params?.skill) queryParams.append('skill', params.skill);
 
   const response = await api.get<ParticipantsResponse>(
     `/hackathons/${slug}/participants?${queryParams.toString()}`

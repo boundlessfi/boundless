@@ -39,21 +39,37 @@ import type { GetTeamOptions } from '@/lib/api/hackathons/teams';
 import type { Hackathon, HackathonWinner } from '@/lib/api/hackathons';
 import type { SubmissionCardProps, Participant } from '@/types/hackathon';
 
+export interface ParticipantsQueryParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  skill?: string;
+}
+
+export interface SubmissionsQueryParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  sort?: string;
+}
+
 // ─── Query Keys ──────────────────────────────────────────────────────────────
 // Centralised so any component can invalidate the right cache.
 
 export const hackathonKeys = {
   all: ['hackathon'] as const,
   detail: (slug: string) => ['hackathon', 'detail', slug] as const,
-  participants: (slug: string, params?: any) =>
+  participants: (slug: string, params?: ParticipantsQueryParams) =>
     ['hackathon', 'participants', slug, params] as const,
   submissions: (slug: string) => ['hackathon', 'submissions', slug] as const,
+  submissionsList: (slug: string, params?: SubmissionsQueryParams) =>
+    ['hackathon', 'submissions', slug, params] as const,
   exploreSubmissions: (id: string) =>
     ['hackathon', 'exploreSubmissions', id] as const,
   winners: (idOrSlug: string) => ['hackathon', 'winners', idOrSlug] as const,
   announcements: (idOrSlug: string) =>
     ['hackathon', 'announcements', idOrSlug] as const,
-  teams: (idOrSlug: string, params?: any) =>
+  teams: (idOrSlug: string, params?: GetTeamOptions) =>
     ['hackathon', 'teams', idOrSlug, params] as const,
   myTeam: (idOrSlug: string) => ['hackathon', 'myTeam', idOrSlug] as const,
   myInvitations: (idOrSlug: string, status?: string) =>
@@ -106,7 +122,7 @@ export function useHackathon(slug: string, initialData?: Hackathon) {
  */
 export function useHackathonParticipants(
   slug: string,
-  params: { page?: number; limit?: number; status?: string } = {
+  params: ParticipantsQueryParams = {
     page: 1,
     limit: 12,
   }
@@ -142,13 +158,13 @@ export function useHackathonParticipants(
  */
 export function useHackathonSubmissions(
   slug: string,
-  params: { page?: number; limit?: number; status?: string; sort?: string } = {
+  params: SubmissionsQueryParams = {
     page: 1,
     limit: 12,
   }
 ) {
   return useQuery({
-    queryKey: hackathonKeys.submissions(slug),
+    queryKey: hackathonKeys.submissionsList(slug, params),
     queryFn: async (): Promise<SubmissionCardProps[]> => {
       const response = await getHackathonSubmissions(slug, params);
       if (!response.success || !response.data) return [];
@@ -168,6 +184,7 @@ export function useExploreSubmissions(
     limit?: number;
     search?: string;
     category?: string;
+    status?: string;
     sort?: string;
   } = { page: 1, limit: 12 },
   enabled = true
@@ -178,7 +195,10 @@ export function useExploreSubmissions(
       const response = await getExploreSubmissions(
         hackathonId,
         params.page,
-        params.limit
+        params.limit,
+        params.search,
+        params.category,
+        params.status
       );
       if (!response.success || !response.data) {
         return {
@@ -392,11 +412,12 @@ export function useInvitationActions(slug: string) {
   });
 
   const cancelAction = useMutation({
-    mutationFn: (inviteId: string) => cancelInvitation(slug, inviteId),
-    onSuccess: (_, inviteId) => {
+    mutationFn: ({ teamId, inviteId }: { teamId: string; inviteId: string }) =>
+      cancelInvitation(slug, inviteId),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: hackathonKeys.teamInvitations(slug, ''),
-      }); // Simplified, usually we'd pass teamId if we had it
+        queryKey: hackathonKeys.teamInvitations(slug, variables.teamId),
+      });
     },
   });
 
@@ -444,9 +465,9 @@ export function useInviteToTeam(slug: string) {
         params.inviteeIdentifier,
         params.message
       ),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: hackathonKeys.teamInvitations(slug, ''),
+        queryKey: hackathonKeys.teamInvitations(slug, variables.teamId),
       });
     },
   });

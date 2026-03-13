@@ -94,9 +94,9 @@ export function CreateTeamPostModal({
     defaultValues: {
       teamName: initialData?.teamName || '',
       description: initialData?.description || '',
-      lookingFor: initialData?.lookingFor.map(role => ({
-        role,
-        skills: [],
+      lookingFor: initialData?.lookingFor.map(roleObj => ({
+        role: typeof roleObj === 'string' ? roleObj : roleObj.role,
+        skills: typeof roleObj === 'string' ? [] : roleObj.skills || [],
       })) || [{ role: '', skills: [] }],
       maxSize: initialData?.maxSize || 5,
       contactMethod: initialData?.contactMethod || 'email',
@@ -112,7 +112,10 @@ export function CreateTeamPostModal({
       form.reset({
         teamName: initialData.teamName,
         description: initialData.description,
-        lookingFor: initialData.lookingFor.map(role => ({ role, skills: [] })),
+        lookingFor: initialData.lookingFor.map(roleObj => ({
+          role: typeof roleObj === 'string' ? roleObj : roleObj.role,
+          skills: typeof roleObj === 'string' ? [] : roleObj.skills || [],
+        })),
         maxSize: initialData.maxSize,
         contactMethod: initialData.contactMethod || 'email',
         contactInfo: initialData.contactInfo,
@@ -194,7 +197,8 @@ export function CreateTeamPostModal({
         const updatePayload = {
           teamName: data.teamName,
           description: data.description,
-          lookingFor: data.lookingFor.map(r => r.role),
+          maxSize: data.maxSize,
+          lookingFor: data.lookingFor,
           isOpen: data.lookingFor.length > 0,
           contactMethod: data.contactMethod,
           contactInfo: data.contactInfo,
@@ -203,7 +207,7 @@ export function CreateTeamPostModal({
       } else {
         const createPayload = {
           ...data,
-          lookingFor: data.lookingFor.map(r => r.role),
+          lookingFor: data.lookingFor,
         };
         await createPost(createPayload);
       }
@@ -212,8 +216,13 @@ export function CreateTeamPostModal({
       form.reset();
       setStep('IDENTITY');
       onSuccess?.();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save team post:', err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to save team post. Please try again.';
+      toast.error(errorMessage);
     }
   };
 

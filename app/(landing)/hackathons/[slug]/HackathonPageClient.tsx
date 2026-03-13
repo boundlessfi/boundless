@@ -83,10 +83,8 @@ export default function HackathonPageClient({
   });
 
   // React Query replaces the useEffect+useState announcements pattern
-  const { data: announcements = [] } = useHackathonAnnouncements(
-    hackathonId,
-    !!hackathonId
-  );
+  const { data: announcements = [], isLoading: announcementsLoading } =
+    useHackathonAnnouncements(hackathonId, !!hackathonId);
 
   const hackathonTabs = useMemo(() => {
     const hasParticipants =
@@ -98,7 +96,8 @@ export default function HackathonPageClient({
     const isTeamHackathon =
       participantType === 'TEAM' || participantType === 'TEAM_OR_INDIVIDUAL';
 
-    const hasWinners = winners && winners.length > 0;
+    const hasWinners = (winners && winners.length > 0) || loading;
+    const hasAnnouncements = announcements.length > 0 || announcementsLoading;
 
     const tabs = [
       { id: 'overview', label: 'Overview' },
@@ -120,7 +119,7 @@ export default function HackathonPageClient({
             },
           ]
         : []),
-      ...(announcements.length > 0
+      ...(hasAnnouncements
         ? [
             {
               id: 'announcements',
@@ -212,6 +211,8 @@ export default function HackathonPageClient({
     teamPosts.length,
     winners,
     announcements,
+    announcementsLoading,
+    loading,
   ]);
 
   // Refresh hackathon data
@@ -323,12 +324,26 @@ export default function HackathonPageClient({
       return;
     }
 
-    // Tab is disabled or unrecognised — fall back to overview
-    setActiveTab('overview');
-    const queryParams = new URLSearchParams(searchParams.toString());
-    queryParams.set('tab', 'overview');
-    router.replace(`?${queryParams.toString()}`, { scroll: false });
-  }, [searchParams, hackathonTabs, router, currentHackathon]);
+    // If the tab is not in the list yet, check if it's because we're still loading data
+    const isKnownTabLoading =
+      (tabFromUrl === 'announcements' && announcementsLoading) ||
+      (tabFromUrl === 'winners' && loading);
+
+    if (!isKnownTabLoading) {
+      // Tab is disabled or unrecognised — fall back to overview
+      setActiveTab('overview');
+      const queryParams = new URLSearchParams(searchParams.toString());
+      queryParams.set('tab', 'overview');
+      router.replace(`?${queryParams.toString()}`, { scroll: false });
+    }
+  }, [
+    searchParams,
+    hackathonTabs,
+    router,
+    currentHackathon,
+    announcementsLoading,
+    loading,
+  ]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);

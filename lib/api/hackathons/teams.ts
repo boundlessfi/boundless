@@ -1,5 +1,5 @@
 import api from '../api';
-import { ApiResponse, PaginatedResponse } from '../types';
+import { ApiResponse, PaginatedResponse, User } from '../types';
 import { Hackathon, Participant } from '@/types/hackathon';
 
 // Team Member Type
@@ -18,6 +18,12 @@ export interface TeamRole {
   hired: boolean;
 }
 
+// Role structure for recruitment posts
+export interface LookingForRole {
+  role: string;
+  skills?: string[];
+}
+
 // Team Interface (Updated from TeamRecruitmentPost)
 export interface Team {
   id: string;
@@ -33,7 +39,7 @@ export interface Team {
   members: string[] | TeamMember[]; // Backend returns IDs or full objects depending on endpoint
   memberCount: number;
   maxSize: number;
-  lookingFor: string[];
+  lookingFor: LookingForRole[];
   rolesStatus?: TeamRole[]; // Track hired status for each role
   contactMethod?: 'email' | 'telegram' | 'discord' | 'github' | 'other';
   contactInfo: string;
@@ -43,6 +49,7 @@ export interface Team {
   contactCount?: number;
   createdAt: string;
   updatedAt: string;
+  posts?: Team[];
 }
 
 // Legacy alias to avoid breaking existing code
@@ -51,8 +58,10 @@ export type TeamRecruitmentPost = Team;
 export interface CreateTeamRequest {
   teamName: string;
   description: string;
-  lookingFor: string[];
-  contactInfo: any;
+  lookingFor: LookingForRole[];
+  maxSize?: number;
+  contactMethod?: 'email' | 'telegram' | 'discord' | 'github' | 'other';
+  contactInfo: string;
 }
 
 export interface UpdateTeamRequest extends Partial<CreateTeamRequest> {
@@ -64,6 +73,8 @@ export interface GetTeamOptions {
   limit?: number;
   openOnly?: boolean;
   search?: string;
+  category?: string;
+  role?: string;
 }
 
 export interface GetTeamsResponse extends ApiResponse<{
@@ -83,9 +94,9 @@ export interface GetTeamsResponse extends ApiResponse<{
 export interface TeamInvitation {
   id: string;
   teamId: string;
-  hackathon: any;
-  invitee: any;
-  inviter: any;
+  hackathon: Hackathon;
+  invitee: User;
+  inviter: User;
   status: 'pending' | 'accepted' | 'rejected' | 'expired';
   message: string;
   role: string;
@@ -112,6 +123,8 @@ export const getTeams = async (
   if (options?.page) params.append('page', options.page.toString());
   if (options?.limit) params.append('limit', options.limit.toString());
   if (options?.search) params.append('search', options.search);
+  if (options?.category) params.append('category', options.category);
+  if (options?.role) params.append('role', options.role);
   if (options?.openOnly) params.append('openOnly', 'true');
 
   const res = await api.get(`/hackathons/${id}/teams?${params.toString()}`);
@@ -119,8 +132,10 @@ export const getTeams = async (
 };
 
 // Legacy alias for compatibility
-export const getTeamPosts = async (hackathonId: string, options?: any) =>
-  getTeams(hackathonId, options);
+export const getTeamPosts = async (
+  hackathonId: string,
+  options?: GetTeamOptions
+) => getTeams(hackathonId, options);
 
 /**
  * Create a team
@@ -163,8 +178,11 @@ export const updateTeam = async (
 };
 
 // Legacy alias
-export const updateTeamPost = async (id: string, teamId: string, data: any) =>
-  updateTeam(id, teamId, data);
+export const updateTeamPost = async (
+  id: string,
+  teamId: string,
+  data: UpdateTeamRequest
+) => updateTeam(id, teamId, data);
 
 /**
  * Join a team

@@ -1,6 +1,4 @@
-import React from 'react';
 import { LayoutGrid } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import GroupAvatar from '@/components/avatars/GroupAvatar';
 import BasicAvatar from '@/components/avatars/BasicAvatar';
 import { BoundlessButton } from '@/components/buttons/BoundlessButton';
@@ -43,7 +41,7 @@ const SubmissionCard = ({ submission, onViewClick }: SubmissionCardProps) => {
 
       {/* Project Info */}
       <div className='mb-6 flex-1 space-y-3'>
-        <h3 className='group-hover:text-primary line-clamp-1 text-2xl font-black text-white transition-colors'>
+        <h3 className='group-hover:text-primary line-clamp-1 text-xl font-bold text-white transition-colors'>
           {projectName}
         </h3>
         <p className='line-clamp-2 text-sm leading-relaxed text-gray-500'>

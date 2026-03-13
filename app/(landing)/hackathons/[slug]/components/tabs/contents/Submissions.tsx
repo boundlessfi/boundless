@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   useHackathon,
   useExploreSubmissions,
 } from '@/hooks/hackathon/use-hackathon-queries';
+import { ExploreSubmissionsResponse } from '@/lib/api/hackathons';
 import { TabsContent } from '@/components/ui/tabs';
 import {
   Search,
@@ -26,6 +27,7 @@ import { cn } from '@/lib/utils';
 
 const Submissions = () => {
   const { slug } = useParams<{ slug: string }>();
+  const router = useRouter();
   const { data: hackathon } = useHackathon(slug);
 
   // State for filtering and pagination
@@ -42,6 +44,7 @@ const Submissions = () => {
       limit,
       search: searchQuery,
       category: trackFilter === 'All Projects' ? undefined : trackFilter,
+      status: statusFilter === 'Status' ? undefined : statusFilter,
     },
     !!hackathon?.id
   );
@@ -154,11 +157,13 @@ const Submissions = () => {
       ) : submissions.length > 0 ? (
         <>
           <div className='grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3'>
-            {submissions.map((sub: any) => (
+            {submissions.map((sub: ExploreSubmissionsResponse) => (
               <SubmissionCard
                 key={sub.id}
                 submission={sub}
-                onViewClick={() => {}} // TODO: Add navigation to project detail
+                onViewClick={id =>
+                  router.push(`/projects/${id}?type=submission`)
+                }
               />
             ))}
           </div>

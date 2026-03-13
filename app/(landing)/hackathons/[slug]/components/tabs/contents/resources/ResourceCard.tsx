@@ -31,7 +31,11 @@ export const ResourceCard = ({
 }: ResourceCardProps) => {
   if (isComingSoon) {
     return (
-      <div className='group relative flex flex-col gap-4 rounded-3xl border border-white/5 bg-white/3 p-8 text-center transition-all duration-300'>
+      <div
+        className='group relative flex flex-col gap-4 rounded-3xl border border-white/5 bg-white/3 p-8 text-center transition-all duration-300'
+        aria-disabled='true'
+        aria-label={`Coming soon: ${title}`}
+      >
         <div className='mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-gray-500'>
           <Icon className='h-6 w-6' />
         </div>
@@ -48,9 +52,6 @@ export const ResourceCard = ({
   const getActionIcon = () => {
     switch (type) {
       case 'read':
-        return (
-          <ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-1' />
-        );
       case 'repo':
         return (
           <ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-1' />
@@ -66,12 +67,8 @@ export const ResourceCard = ({
     }
   };
 
-  return (
-    <a
-      href={actionHref || '#'}
-      target={type === 'read' || type === 'download' ? '_self' : '_blank'}
-      className='group flex flex-col justify-between gap-8 rounded-3xl border border-white/5 bg-[#0D0E10] p-8 transition-all duration-300 hover:border-[#A7F950]/30 hover:bg-[#141517]'
-    >
+  const cardContent = (
+    <>
       <div className='space-y-6'>
         <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-[#232B20] text-[#A7F950] transition-colors group-hover:bg-[#A7F950] group-hover:text-black'>
           <Icon className='h-6 w-6' />
@@ -88,6 +85,23 @@ export const ResourceCard = ({
         {actionText}
         {getActionIcon()}
       </div>
-    </a>
+    </>
   );
+
+  const containerClassName =
+    'group flex flex-col justify-between gap-8 rounded-3xl border border-white/5 bg-[#0D0E10] p-8 transition-all duration-300 hover:border-[#A7F950]/30 hover:bg-[#141517]';
+
+  if (actionHref) {
+    return (
+      <a
+        href={actionHref}
+        target={type === 'read' || type === 'download' ? '_self' : '_blank'}
+        className={containerClassName}
+      >
+        {cardContent}
+      </a>
+    );
+  }
+
+  return <div className={containerClassName}>{cardContent}</div>;
 };

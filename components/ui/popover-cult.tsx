@@ -113,6 +113,7 @@ export function PopoverTrigger({ children, className }: PopoverTriggerProps) {
       style={{
         borderRadius: 8,
       }}
+      type='button'
       onClick={openPopover}
     >
       <motion.span layoutId={`popover-label-${uniqueId}`} className='text-sm'>
@@ -210,8 +211,8 @@ export function PopoverLabel({ children, className }: PopoverLabelProps) {
 
   return (
     <motion.span
+      id={`popover-label-${uniqueId}`}
       layoutId={`popover-label-${uniqueId}`}
-      aria-hidden='true'
       style={{
         opacity: note ? 0 : 1,
       }}
@@ -227,10 +228,16 @@ export function PopoverLabel({ children, className }: PopoverLabelProps) {
 
 interface PopoverTextareaProps {
   className?: string;
+  ariaLabel?: string;
+  ariaLabelledby?: string;
 }
 
-export function PopoverTextarea({ className }: PopoverTextareaProps) {
-  const { note, setNote } = usePopover();
+export function PopoverTextarea({
+  className,
+  ariaLabel,
+  ariaLabelledby,
+}: PopoverTextareaProps) {
+  const { note, setNote, uniqueId } = usePopover();
 
   return (
     <textarea
@@ -241,6 +248,10 @@ export function PopoverTextarea({ className }: PopoverTextareaProps) {
       autoFocus
       value={note}
       onChange={e => setNote(e.target.value)}
+      aria-label={ariaLabel}
+      aria-labelledby={
+        ariaLabel ? undefined : ariaLabelledby || `popover-label-${uniqueId}`
+      }
     />
   );
 }
@@ -344,6 +355,7 @@ export function PopoverButton({
         'flex w-full items-center gap-2 rounded-md px-4 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700',
         className
       )}
+      type='button'
       onClick={onClick}
     >
       {children}

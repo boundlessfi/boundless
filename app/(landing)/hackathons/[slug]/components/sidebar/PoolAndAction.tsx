@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { BoundlessButton } from '@/components/buttons';
 import { cn } from '@/lib/utils';
 import { ExtendedBadge } from '@/components/hackathons/ExtendedBadge';
+import { Participant } from '@/lib/api/hackathons';
 
 function useCountdown(deadline?: string) {
   const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
@@ -80,20 +81,11 @@ export default function PoolAndAction() {
   const categories = hackathon?.categories ?? [];
 
   const isParticipant = user
-    ? participants.some((p: any) => p.userId === user.id)
+    ? participants.some((p: Participant) => p.userId === user.id)
     : false;
 
   const handleSubmit = () => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-    if (!isParticipant) {
-      // Scroll to registration button or show toast?
-      // For now, let's just push to submit which should have its own checks
-      router.push(`/hackathons/${slug}/submit`);
-      return;
-    }
+    if (isButtonDisabled) return;
     router.push(`/hackathons/${slug}/submit`);
   };
 
@@ -131,13 +123,12 @@ export default function PoolAndAction() {
   }
 
   const getButtonText = () => {
-    if (!user) return 'Login to Submit';
-    if (!isParticipant) return 'Register to Submit';
     if (isEnded) return 'Submissions Closed';
+    if (!isParticipant) return 'Register to Submit';
     return 'Submit Now';
   };
 
-  const isButtonDisabled = isEnded;
+  const isButtonDisabled = isEnded || !isParticipant;
 
   return (
     <div className='overflow-hidden rounded-2xl border border-white/5 bg-linear-to-b from-[#1C1D1B] to-[#07090E]'>

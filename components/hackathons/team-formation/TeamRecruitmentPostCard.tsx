@@ -19,7 +19,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { type Team as TeamRecruitmentPost } from '@/lib/api/hackathons/teams';
+import {
+  type Team as TeamRecruitmentPost,
+  type TeamMember,
+} from '@/lib/api/hackathons/teams';
 import { toast } from 'sonner';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useLeaveTeam } from '@/hooks/hackathon/use-leave-team';
@@ -34,6 +37,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+interface DisplayLeader {
+  name: string;
+  username: string;
+  image?: string;
+}
 
 interface TeamRecruitmentPostCardProps {
   post: TeamRecruitmentPost;
@@ -272,16 +281,16 @@ export function TeamRecruitmentPostCard({
   };
 
   // Determine leader for display
-  const leader =
+  const leaderObject =
     (Array.isArray(post.members) &&
-      post.members.find(m =>
-        typeof m === 'string'
-          ? m === post.leader?.id
-          : m.role === 'leader' || m.userId === post.leader?.id
+      post.members.find(
+        (m): m is TeamMember =>
+          typeof m !== 'string' &&
+          (m.role === 'leader' || m.userId === post.leader?.id)
       )) ||
     post.leader;
 
-  const displayLeader = leader as any;
+  const displayLeader: DisplayLeader = leaderObject;
 
   return (
     <div

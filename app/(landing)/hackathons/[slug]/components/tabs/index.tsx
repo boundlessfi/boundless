@@ -28,8 +28,14 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
   const params = useParams();
   const slug = params?.slug as string;
 
-  const { currentHackathon, winners, submissions } = useHackathonData();
-  const { data: announcements = [] } = useHackathonAnnouncements(slug, !!slug);
+  const {
+    currentHackathon,
+    winners,
+    submissions,
+    loading: generalLoading,
+  } = useHackathonData();
+  const { data: announcements = [], isLoading: announcementsLoading } =
+    useHackathonAnnouncements(slug, !!slug);
 
   const { comments: discussionComments } = useCommentSystem({
     entityType: CommentEntityType.HACKATHON,
@@ -43,11 +49,10 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
 
   const hackathonTabs = useMemo(() => {
     if (!currentHackathon) return [];
-    console.log({ currentHackathon });
     const hasParticipants = currentHackathon._count?.participants > 0;
     const hasResources = currentHackathon.resources?.length > 0;
-    const hasWinners = winners && winners.length > 0;
-    const hasAnnouncements = announcements.length > 0;
+    const hasWinners = (winners && winners.length > 0) || generalLoading;
+    const hasAnnouncements = announcements.length > 0 || announcementsLoading;
 
     const participantType = currentHackathon.participantType;
     const isTeamHackathon =
@@ -127,7 +132,6 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
       return tabs.filter(tab => {
         if (tab.id === 'overview') return true;
         const key = tabIdToEnabledKey[tab.id] || tab.id;
-        console.log(key);
         return enabledSet.has(key as any);
       });
     }
@@ -137,8 +141,9 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
     currentHackathon,
     winners,
     submissions,
-    announcements,
     discussionComments.pagination.totalItems,
+    announcementsLoading,
+    generalLoading,
   ]);
 
   useEffect(() => {
@@ -153,12 +158,26 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
     if (hackathonTabs.some(tab => tab.id === tabFromUrl)) {
       setActiveTab(tabFromUrl);
     } else {
-      setActiveTab('overview');
-      const queryParams = new URLSearchParams(searchParams.toString());
-      queryParams.set('tab', 'overview');
-      router.replace(`?${queryParams.toString()}`, { scroll: false });
+      // If the tab is not in the list yet, check if it's because we're still loading data
+      const isKnownTabLoading =
+        (tabFromUrl === 'announcements' && announcementsLoading) ||
+        (tabFromUrl === 'winners' && generalLoading);
+
+      if (!isKnownTabLoading) {
+        setActiveTab('overview');
+        const queryParams = new URLSearchParams(searchParams.toString());
+        queryParams.set('tab', 'overview');
+        router.replace(`?${queryParams.toString()}`, { scroll: false });
+      }
     }
-  }, [searchParams, hackathonTabs, router, currentHackathon]);
+  }, [
+    searchParams,
+    hackathonTabs,
+    router,
+    currentHackathon,
+    announcementsLoading,
+    generalLoading,
+  ]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);

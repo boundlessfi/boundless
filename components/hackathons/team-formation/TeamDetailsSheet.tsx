@@ -351,10 +351,11 @@ export function TeamDetailsSheet({
                     Looking For
                   </h3>
                   <div className='space-y-2'>
-                    {post.lookingFor.map((role, index) => {
-                      const roleSkill = typeof role === 'string' ? role : role;
-                      const isHired = hiredRoles.has(roleSkill);
-                      const isToggling = togglingRole === roleSkill;
+                    {post.lookingFor.map((roleObj, index) => {
+                      const roleName =
+                        typeof roleObj === 'string' ? roleObj : roleObj.role;
+                      const isHired = hiredRoles.has(roleName);
+                      const isToggling = togglingRole === roleName;
 
                       return (
                         <div
@@ -368,7 +369,7 @@ export function TeamDetailsSheet({
                                 : 'bg-gray-800 text-gray-200'
                             }`}
                           >
-                            {roleSkill}
+                            {roleName}
                           </Badge>
                           {isHired && (
                             <Badge className='border-[#A7F950] bg-[#A7F950]/10 text-xs text-[#A7F950]'>
@@ -384,7 +385,7 @@ export function TeamDetailsSheet({
                               <Switch
                                 checked={isHired}
                                 onCheckedChange={() =>
-                                  handleToggleRoleHired(roleSkill)
+                                  handleToggleRoleHired(roleName)
                                 }
                                 disabled={isToggling}
                                 className='data-[state=checked]:bg-[#A7F950]'

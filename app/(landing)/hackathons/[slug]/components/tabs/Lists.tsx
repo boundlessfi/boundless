@@ -24,6 +24,7 @@ export default function Lists({ tabs }: ListsProps) {
             key={id}
             value={id}
             className={[
+              'group',
               'relative shrink-0 rounded-none border-0 bg-transparent px-0! pt-0! pb-0!',
               'text-sm font-medium text-gray-400 transition-colors',
               'max-w-fit hover:text-white',

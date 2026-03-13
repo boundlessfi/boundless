@@ -1735,11 +1735,17 @@ export interface ExploreSubmissionsApiResponse {
 export const getExploreSubmissions = async (
   hackathonId: string,
   page?: number,
-  limit?: number
+  limit?: number,
+  search?: string,
+  category?: string,
+  status?: string
 ): Promise<ExploreSubmissionsApiResponse> => {
   const params = new URLSearchParams();
   if (page) params.append('page', page.toString());
   if (limit) params.append('limit', limit.toString());
+  if (search) params.append('search', search);
+  if (category) params.append('category', category);
+  if (status) params.append('status', status);
 
   const res = await api.get<ExploreSubmissionsApiResponse>(
     `/hackathons/${hackathonId}/submissions/explore${params.toString() ? `?${params.toString()}` : ''}`

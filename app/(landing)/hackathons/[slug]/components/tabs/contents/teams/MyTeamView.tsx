@@ -74,29 +74,42 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
     setIsVerifying(true);
     setVerificationError(null);
 
+    // 1. Verify user exists first
     try {
-      // Verify user exists first
       const profile = await getUserProfileByUsername(inviteIdentifier);
       if (!profile) {
         setVerificationError('User not found. Please check the username.');
         setIsVerifying(false);
         return;
       }
-
-      await inviteMutation.mutateAsync({
-        teamId: team.id,
-        inviteeIdentifier: inviteIdentifier,
-        message: inviteMessage,
-      });
-      setInviteIdentifier('');
-      setInviteMessage('');
-      setVerificationError(null);
     } catch (err: any) {
       setVerificationError(
         err.response?.status === 404
           ? 'User not found. Please check the username.'
           : 'Failed to verify user. Please try again.'
       );
+      setIsVerifying(false);
+      return;
+    }
+
+    // 2. Send invitation
+    try {
+      await inviteMutation.mutateAsync({
+        teamId: team.id,
+        inviteeIdentifier: inviteIdentifier,
+        message: inviteMessage,
+      });
+
+      // Only clear inputs and errors on successful invite
+      setInviteIdentifier('');
+      setInviteMessage('');
+      setVerificationError(null);
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to send invitation. Please try again.';
+      setVerificationError(errorMessage);
     } finally {
       setIsVerifying(false);
     }
@@ -140,12 +153,12 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
             {/* Roles Needed inside Header */}
             {team.lookingFor && team.lookingFor.length > 0 && (
               <div className='mt-5 flex flex-wrap gap-2'>
-                {team.lookingFor.map((role, idx) => (
+                {team.lookingFor.map((roleObj, idx) => (
                   <div
                     key={idx}
                     className='rounded-lg border border-[#A7F950]/20 bg-[#A7F950]/5 px-3 py-1.5 text-[10px] font-black tracking-wider text-[#A7F950] uppercase'
                   >
-                    {role}
+                    {typeof roleObj === 'string' ? roleObj : roleObj.role}
                   </div>
                 ))}
               </div>

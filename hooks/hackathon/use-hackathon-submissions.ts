@@ -29,7 +29,10 @@ export function useHackathonSubmissions(
         const response = await getExploreSubmissions(
           hackathonId,
           page,
-          pagination.limit
+          pagination.limit,
+          undefined, // search
+          undefined, // category
+          undefined // status
         );
         setSubmissions(response.data.submissions);
         setPagination(prev => ({

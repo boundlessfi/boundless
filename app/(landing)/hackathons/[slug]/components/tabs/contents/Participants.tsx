@@ -10,6 +10,7 @@ import { TabsContent } from '@/components/ui/tabs';
 import { ChevronDown, Search, Filter, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ParticipantCard from './participants/ParticipantCard';
+import { Participant } from '@/types/hackathon/participant';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,9 @@ const Participants = () => {
   >('all');
   const [skillFilter, setSkillFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
+  const [accumulatedParticipants, setAccumulatedParticipants] = useState<
+    Participant[]
+  >([]);
   const limit = 12;
 
   const {
@@ -37,24 +41,56 @@ const Participants = () => {
     page,
     limit,
     status: statusFilter === 'all' ? undefined : statusFilter,
+    skill: skillFilter === 'all' ? undefined : skillFilter,
   });
+
+  // Reset page and list when filters change
+  React.useEffect(() => {
+    setPage(1);
+    setAccumulatedParticipants([]);
+  }, [statusFilter, skillFilter]);
+
+  // Accumulate participants as they are fetched
+  React.useEffect(() => {
+    if (participantsData?.participants) {
+      if (page === 1) {
+        setAccumulatedParticipants(participantsData.participants);
+      } else {
+        setAccumulatedParticipants(prev => [
+          ...prev,
+          ...participantsData.participants,
+        ]);
+      }
+    }
+  }, [participantsData?.participants, page]);
 
   if (!hackathon) return null;
 
-  const participants = participantsData?.participants || [];
   const totalBuilders = participantsData?.pagination?.total || 0;
   const hasNextPage = participantsData?.pagination?.hasNext || false;
 
-  // Mock skills for the filter dropdown
-  const availableSkills = [
-    'Solidity',
-    'Rust',
-    'React',
-    'TypeScript',
-    'Python',
-    'Go',
-    'Design',
-  ];
+  // Dynamically derive unique skills from participants
+  const availableSkills = useMemo(() => {
+    const skillsSet = new Set<string>();
+    // Try to get skills from all participants fetchable (if we had them all)
+    // For now, we derive from what we have in the current view or mock if empty
+    accumulatedParticipants.forEach((p: Participant) => {
+      p.user.profile.skills?.forEach((s: string) => skillsSet.add(s));
+    });
+
+    if (skillsSet.size === 0) {
+      return [
+        'Solidity',
+        'Rust',
+        'React',
+        'TypeScript',
+        'Python',
+        'Go',
+        'Design',
+      ];
+    }
+    return Array.from(skillsSet).sort();
+  }, [accumulatedParticipants]);
 
   const handleLoadMore = () => {
     if (hasNextPage) {
@@ -152,8 +188,8 @@ const Participants = () => {
               className='h-[200px] animate-pulse rounded-xl bg-white/5'
             />
           ))
-        ) : participants.length > 0 ? (
-          participants.map(p => (
+        ) : accumulatedParticipants.length > 0 ? (
+          accumulatedParticipants.map(p => (
             <ParticipantCard
               key={p.id}
               name={p.user.profile.name}

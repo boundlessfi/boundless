@@ -132,7 +132,7 @@ export function ContactTeamModal({
                 variant='outline'
                 className='h-12 flex-1 rounded-xl border-white/10 bg-white/5 font-bold hover:bg-white/10'
                 onClick={() => {
-                  window.open(contactInfo, '_blank');
+                  window.open(contactInfo, '_blank', 'noopener,noreferrer');
                   onTrackContact?.(id);
                 }}
               >

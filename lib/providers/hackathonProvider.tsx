@@ -24,6 +24,15 @@ import {
   hackathonKeys,
 } from '@/hooks/hackathon/use-hackathon-queries';
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function mapSubmissionStatus(raw?: string): SubmissionCardProps['status'] {
+  const status = raw?.toUpperCase();
+  if (status === 'SHORTLISTED') return 'Approved';
+  if (status === 'DISQUALIFIED') return 'Rejected';
+  return 'Pending';
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface HackathonDataContextType {
@@ -74,10 +83,17 @@ export function HackathonDataProvider({
     error: hackathonError,
   } = useHackathon(hackathonSlug, initialData);
 
-  const { data: submissions = [], isLoading: submissionsLoading } =
-    useHackathonSubmissions(hackathonSlug);
+  const {
+    data: submissions = [],
+    isLoading: submissionsLoading,
+    error: submissionsError,
+  } = useHackathonSubmissions(hackathonSlug);
 
-  const { data: exploreSubmissionsData } = useExploreSubmissions(
+  const {
+    data: exploreSubmissionsData,
+    isLoading: exploreLoading,
+    error: exploreError,
+  } = useExploreSubmissions(
     currentHackathon?.id ?? '',
     { page: 1, limit: 12 },
     !!currentHackathon?.id
@@ -96,22 +112,24 @@ export function HackathonDataProvider({
     upvotes: 0, // votes field missing in ExploreSubmissionsResponse
     comments: s.comments,
     submittedDate: s.submissionDate || s.submittedAt,
-    status: (s.status?.toUpperCase() === 'SHORTLISTED'
-      ? 'Approved'
-      : s.status?.toUpperCase() === 'DISQUALIFIED'
-        ? 'Rejected'
-        : 'Pending') as any,
+    status: mapSubmissionStatus(s.status),
   }));
 
-  const { data: winners = [] } = useHackathonWinners(
-    currentHackathon?.id ?? '',
-    !!currentHackathon?.id
-  );
+  const {
+    data: winners = [],
+    isLoading: winnersLoading,
+    error: winnersError,
+  } = useHackathonWinners(hackathonSlug, !!hackathonSlug);
 
   const refreshCurrentHackathon = useRefreshHackathon(hackathonSlug);
 
-  const loading = hackathonLoading || submissionsLoading;
-  const error = hackathonError instanceof Error ? hackathonError.message : null;
+  const loading =
+    hackathonLoading || submissionsLoading || exploreLoading || winnersLoading;
+  const error =
+    (hackathonError instanceof Error ? hackathonError.message : null) ||
+    (submissionsError instanceof Error ? submissionsError.message : null) ||
+    (exploreError instanceof Error ? exploreError.message : null) ||
+    (winnersError instanceof Error ? winnersError.message : null);
 
   const value: HackathonDataContextType = {
     currentHackathon,

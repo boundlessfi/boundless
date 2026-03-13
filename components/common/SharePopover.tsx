@@ -41,21 +41,19 @@ const SharePopover = ({
   };
 
   const handleTwitterShare = () => {
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-        shareTitle
-      )}&url=${encodeURIComponent(shareUrl)}`,
-      '_blank'
-    );
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+      shareTitle
+    )}&url=${encodeURIComponent(shareUrl)}`;
+    const newWindow = window.open(twitterUrl, '_blank', 'noopener,noreferrer');
+    if (newWindow) newWindow.opener = null;
   };
 
   const handleLinkedinShare = () => {
-    window.open(
-      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-        shareUrl
-      )}`,
-      '_blank'
-    );
+    const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+      shareUrl
+    )}`;
+    const newWindow = window.open(linkedinUrl, '_blank', 'noopener,noreferrer');
+    if (newWindow) newWindow.opener = null;
   };
 
   const handleEmailShare = () => {

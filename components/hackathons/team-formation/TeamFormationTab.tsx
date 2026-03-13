@@ -80,8 +80,9 @@ export function TeamFormationTab({
   const allRoles = useMemo(() => {
     const roles = new Set<string>();
     posts.forEach(post => {
-      post.lookingFor.forEach(role => {
-        roles.add(role);
+      post.lookingFor.forEach(roleObj => {
+        const roleName = typeof roleObj === 'string' ? roleObj : roleObj.role;
+        roles.add(roleName);
       });
     });
     return Array.from(roles).sort();
@@ -98,14 +99,21 @@ export function TeamFormationTab({
         post =>
           post.teamName?.toLowerCase().includes(searchLower) ||
           post.description?.toLowerCase().includes(searchLower) ||
-          post.lookingFor.some(role => role.toLowerCase().includes(searchLower))
+          post.lookingFor.some(roleObj => {
+            const roleName =
+              typeof roleObj === 'string' ? roleObj : roleObj.role;
+            return roleName.toLowerCase().includes(searchLower);
+          })
       );
     }
 
     // Filter by role
     if (selectedRole !== 'all') {
       filtered = filtered.filter(post =>
-        post.lookingFor.some(role => role === selectedRole)
+        post.lookingFor.some(roleObj => {
+          const roleName = typeof roleObj === 'string' ? roleObj : roleObj.role;
+          return roleName === selectedRole;
+        })
       );
     }
 

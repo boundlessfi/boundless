@@ -73,6 +73,7 @@ const ParticipantCard = ({
           size='icon'
           className='hover:border-primary/30 h-9 w-9 border-white/10'
           onClick={onMessage}
+          aria-label='Message participant'
         >
           <IconMessage size={18} />
         </BoundlessButton>

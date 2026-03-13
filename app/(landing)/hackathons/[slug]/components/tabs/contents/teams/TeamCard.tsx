@@ -83,7 +83,7 @@ const TeamCard = ({ team, onJoin }: TeamCardProps) => {
                 key={idx}
                 className='rounded-xl border border-[#232B35] bg-[#14191F] px-4 py-2 text-[11px] font-bold text-[#E0E0E0]'
               >
-                {role}
+                {typeof role === 'string' ? role : role.role}
               </span>
             ))}
             {lookingFor.length > 3 && (

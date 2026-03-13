@@ -20,9 +20,15 @@ import { cn } from '@/lib/utils';
 import { useParams } from 'next/navigation';
 import { useHackathon } from '@/hooks/hackathon/use-hackathon-queries';
 import { Skeleton } from '@/components/ui/skeleton';
+import { type HackathonResourceItem } from '@/lib/api/hackathons';
+import { ResourceCardProps } from './ResourceCard';
+
+interface MappedResource extends ResourceCardProps {
+  category: string;
+}
 
 // Helper to map API resources to UI format
-const mapApiResource = (resource: any) => {
+const mapApiResource = (resource: HackathonResourceItem): MappedResource => {
   const content = (
     (resource.description || '') +
     ' ' +
@@ -133,7 +139,8 @@ export const ResourcesList = () => {
     );
   }
 
-  const apiResources = hackathon?.resources?.map(mapApiResource) || [];
+  const apiResources: MappedResource[] =
+    hackathon?.resources?.map(mapApiResource) || [];
 
   // Add "More Coming Soon" if there are fewer than 3 resources
   if (apiResources.length < 3) {
@@ -145,13 +152,12 @@ export const ResourcesList = () => {
       actionHref: '#',
       type: 'read',
       category: 'All',
-      // @ts-ignore - custom property for ResourceCard
       isComingSoon: true,
-    } as any);
+    });
   }
 
   const filteredResources = apiResources.filter(
-    (r: any) =>
+    (r: MappedResource) =>
       activeTab === 'All' || r.category === activeTab || r.isComingSoon
   );
 
@@ -160,8 +166,8 @@ export const ResourcesList = () => {
       <ResourceHeader activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <div className='grid gap-6 sm:grid-cols-2 lg:grid-cols-3'>
-        {filteredResources.map((resource: any, idx: number) => (
-          <ResourceCard key={resource.id || idx} {...resource} />
+        {filteredResources.map((resource: MappedResource, idx: number) => (
+          <ResourceCard key={resource.title || idx} {...resource} />
         ))}
       </div>
     </div>
