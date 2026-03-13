@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { FamilyWalletButton } from './FamilyWalletButton';
 import { FamilyWalletDrawer, DrawerView } from './FamilyWalletDrawer';
 import { useAuthStatus } from '@/hooks/use-auth';
+import { useWalletContext } from '@/components/providers/wallet-provider';
 
 export function LandingWalletWrapper() {
-  const [open, setOpen] = useState(false);
   const [drawerView, setDrawerView] = useState<DrawerView>('main');
   const { isAuthenticated, isLoading } = useAuthStatus();
+  const { isWalletOpen, onOpenWallet, onCloseWallet } = useWalletContext();
 
   if (isLoading || !isAuthenticated) {
     return null;
@@ -19,13 +20,13 @@ export function LandingWalletWrapper() {
       <FamilyWalletButton
         onOpenDrawer={view => {
           if (view) setDrawerView(view);
-          setOpen(true);
+          onOpenWallet();
         }}
       />
       <FamilyWalletDrawer
-        open={open}
+        open={isWalletOpen}
         initialView={drawerView}
-        onOpenChange={setOpen}
+        onOpenChange={onCloseWallet}
       />
     </>
   );

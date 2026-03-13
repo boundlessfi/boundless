@@ -30,6 +30,7 @@ interface HackathonBannerProps {
   onLeaveClick?: () => void;
   isLeaving?: boolean;
   participantType?: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
+  submissionDeadlineExtendedAt?: string | null;
 }
 
 export function HackathonBanner({
@@ -46,6 +47,7 @@ export function HackathonBanner({
   registrationDeadline,
   isLeaving,
   participantType,
+  submissionDeadlineExtendedAt,
   onJoinClick,
   onSubmitClick,
   onViewSubmissionClick,
@@ -252,6 +254,11 @@ export function HackathonBanner({
                   <span className='text-xs tracking-wide text-gray-400 uppercase'>
                     {status === 'ongoing' ? 'Ends In' : 'Starts In'}
                   </span>
+                  {status === 'ongoing' && submissionDeadlineExtendedAt && (
+                    <span className='ml-1.5 rounded-full bg-[#a7f950]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#a7f950] uppercase'>
+                      Extended
+                    </span>
+                  )}
                 </div>
                 <CountdownTimer
                   targetDate={status === 'ongoing' ? deadline : startDate}

@@ -3,11 +3,13 @@ import { useSocket } from './useSocket';
 import { getNotifications } from '@/lib/api/notifications';
 import { Notification } from '@/types/notifications';
 import { reportError } from '@/lib/error-reporting';
+import { useNotificationStore } from '@/lib/stores/notification-store';
 
 interface UseNotificationsOptions {
   page?: number;
   limit?: number;
   autoFetch?: boolean;
+  enabled?: boolean;
 }
 
 export interface UseNotificationsReturn {
@@ -32,11 +34,17 @@ export function useNotifications(
   // Handle overloaded arguments
   const userId = typeof input === 'string' ? input : undefined;
   const options = typeof input === 'object' ? input : {};
-  const { page: initialPage = 1, limit = 10, autoFetch = true } = options;
+  const {
+    page: initialPage = 1,
+    limit = 10,
+    autoFetch = true,
+    enabled = true,
+  } = options;
 
   const { socket, isConnected } = useSocket({
     namespace: '/notifications',
     userId,
+    autoConnect: enabled && autoFetch,
   });
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -45,6 +53,16 @@ export function useNotifications(
   const [error, setError] = useState<Error | null>(null);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(initialPage);
+  const [hasFetched, setHasFetched] = useState(false);
+
+  const { setUnreadCount: setGlobalUnreadCount } = useNotificationStore();
+
+  // Sync with global store
+  useEffect(() => {
+    if (hasFetched) {
+      setGlobalUnreadCount(unreadCount);
+    }
+  }, [unreadCount, setGlobalUnreadCount, hasFetched]);
 
   // Merge server list with current state: dedupe by id, preserve optimistic read state (short rollback path)
   const mergeNotifications = useCallback(
@@ -79,6 +97,7 @@ export function useNotifications(
           mergeNotifications(prev, response.notifications)
         );
         setTotal(response.total || 0);
+        setHasFetched(true);
       }
     } catch (err) {
       reportError(err, { context: 'notifications-fetch' });
@@ -142,6 +161,7 @@ export function useNotifications(
     // Listen for unread count updates
     const handleUnreadCount = (data: { count: number }) => {
       setUnreadCount(data.count);
+      setHasFetched(true);
     };
 
     // Listen for notification updates
