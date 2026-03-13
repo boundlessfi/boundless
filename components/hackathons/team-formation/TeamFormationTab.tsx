@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { type TeamRecruitmentPost } from '@/lib/api/hackathons';
+import { type TeamRecruitmentPost } from '@/lib/api/hackathons/teams';
 import { MyInvitationsList } from './MyInvitationsList';
 
 interface TeamFormationTabProps {
@@ -299,7 +299,7 @@ export function TeamFormationTab({
               placeholder='Search by project name or description...'
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className='w-full rounded-lg border-gray-900 bg-[#030303] py-3 pr-4 pl-10 text-base text-white placeholder-gray-400 focus:border-gray-400 focus:ring-1 focus:ring-gray-400'
+              className='bg-background-main-bg w-full rounded-lg border-gray-900 py-3 pr-4 pl-10 text-base text-white placeholder-gray-400 focus:border-gray-400 focus:ring-1 focus:ring-gray-400'
             />
           </div>
         </div>
@@ -312,7 +312,7 @@ export function TeamFormationTab({
               <TeamRecruitmentPostCard
                 key={myTeam.id}
                 post={myTeam}
-                isMyPost={myTeam.leaderId === user?.id}
+                isMyPost={myTeam?.leader?.id === user?.id}
                 onContactClick={handleContactClick}
                 onEditClick={handleEditClick}
                 onDeleteClick={handleDeleteClick}
@@ -415,7 +415,7 @@ export function TeamFormationTab({
             }
           }}
         >
-          <AlertDialogContent className='border-gray-800 bg-[#030303] text-white'>
+          <AlertDialogContent className='bg-background-main-bg border-gray-800 text-white'>
             <AlertDialogHeader>
               <AlertDialogTitle>Close Team Post</AlertDialogTitle>
               <AlertDialogDescription className='text-gray-400'>

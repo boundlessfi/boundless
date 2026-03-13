@@ -16,7 +16,13 @@ export const useFollow = (
   const checkFollowStatus = useCallback(async () => {
     try {
       const response = await followApi.checkFollowStatus(entityType, entityId);
-      setIsFollowing(response.data.isFollowing);
+      // Backend returns { success: true, data: { isFollowing: true }, ... }
+      // api.get returns { data: { success: true, data: { isFollowing: true } }, ... }
+      // Backend returns { success: true, data: { isFollowing: true }, ... }
+      // api.get returns { data: { success: true, data: { isFollowing: true } }, ... }
+      const isFollowingStatus =
+        response.data?.data?.isFollowing ?? response.data?.isFollowing ?? false;
+      setIsFollowing(isFollowingStatus);
     } catch {
       // Silently fail for status check - don't set error state
     }

@@ -107,6 +107,7 @@ export interface Participant {
       name: string;
       username: string;
       image?: string;
+      skills?: string[];
     };
     email: string;
   };

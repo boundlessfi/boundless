@@ -17,7 +17,7 @@ export default function HackathonLayout({
 
   return (
     <OrganizationProvider>
-      <HackathonDataProvider hackathonSlug={resolvedParams.slug}>
+      <HackathonDataProvider hackathonSlug={resolvedParams.slug ?? ''}>
         {children}
       </HackathonDataProvider>
     </OrganizationProvider>

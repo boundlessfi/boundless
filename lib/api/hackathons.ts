@@ -347,6 +347,8 @@ export type Hackathon = {
 
   startDate: string; // ISO date
   submissionDeadline: string; // ISO date
+  submissionDeadlineOriginal?: string; // ISO date
+  submissionDeadlineExtendedAt?: string; // ISO date
   registrationDeadline: string; // ISO date
   judgingDeadline?: string; // ISO date
 
@@ -1734,7 +1736,7 @@ export const getExploreSubmissions = async (
   hackathonId: string,
   page?: number,
   limit?: number
-): Promise<ExploreSubmissionsResponse[]> => {
+): Promise<ExploreSubmissionsApiResponse> => {
   const params = new URLSearchParams();
   if (page) params.append('page', page.toString());
   if (limit) params.append('limit', limit.toString());
@@ -1743,9 +1745,7 @@ export const getExploreSubmissions = async (
     `/hackathons/${hackathonId}/submissions/explore${params.toString() ? `?${params.toString()}` : ''}`
   );
 
-  const body = res.data;
-  if (!body?.data?.submissions) return [];
-  return body.data.submissions;
+  return res.data;
 };
 
 /**
@@ -2809,14 +2809,14 @@ export const getTeamInvitations = async (
 };
 
 // export const GetHackathonBySlug = async (slug): Promise<Hackathon> => {
-//   const res = await api.get(`hackathons/s/${slug}`);
+//   const res = await api.get(`hackathons/${slug}`);
 //   return
 // }
 
 export const GetHackathonBySlug = async (
   slug: string
 ): Promise<GetHackathonResponse> => {
-  const res = await api.get(`/hackathons/s/${slug}`);
+  const res = await api.get(`/hackathons/${slug}`);
 
   return {
     success: true,

@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useHackathonData } from '@/lib/providers/hackathonProvider';
+import { useHackathon } from '@/hooks/hackathon/use-hackathon-queries';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useSubmission } from '@/hooks/hackathon/use-submission';
 import { SubmissionFormContent } from '@/components/hackathons/submissions/SubmissionForm';
@@ -22,17 +22,9 @@ export default function SubmitProjectPage({
   const resolvedParams = use(params);
   const hackathonSlug = resolvedParams.slug;
 
-  const {
-    currentHackathon,
-    loading: hackathonLoading,
-    setCurrentHackathon,
-  } = useHackathonData();
-
-  useEffect(() => {
-    if (hackathonSlug) {
-      setCurrentHackathon(hackathonSlug);
-    }
-  }, [hackathonSlug, setCurrentHackathon]);
+  // React Query fetches the hackathon — no manual setCurrentHackathon or useEffect needed.
+  const { data: currentHackathon, isLoading: hackathonLoading } =
+    useHackathon(hackathonSlug);
 
   const hackathonId = currentHackathon?.id || '';
   const orgId = currentHackathon?.organizationId || undefined;

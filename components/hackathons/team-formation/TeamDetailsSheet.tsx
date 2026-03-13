@@ -19,10 +19,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import BoundlessSheet from '@/components/sheet/boundless-sheet';
 import {
-  type TeamRecruitmentPost,
-  getTeamPostDetails,
+  type Team as TeamRecruitmentPost,
+  getTeamDetails as getTeamPostDetails,
   toggleRoleHired,
-} from '@/lib/api/hackathons';
+} from '@/lib/api/hackathons/teams';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { toast } from 'sonner';
@@ -138,7 +138,7 @@ export function TeamDetailsSheet({
   const [hiredRoles, setHiredRoles] = useState<Set<string>>(new Set());
   const [togglingRole, setTogglingRole] = useState<string | null>(null);
 
-  const isLeader = post.leaderId === user?.id;
+  const isLeader = post.leader?.id === user?.id;
 
   useEffect(() => {
     if (open && initialPost) {
@@ -159,8 +159,7 @@ export function TeamDetailsSheet({
         try {
           const response = await getTeamPostDetails(
             hackathonSlugOrId,
-            initialPost.id,
-            organizationId
+            initialPost.id
           );
           if (response.success && response.data) {
             setPost(response.data);
@@ -202,8 +201,13 @@ export function TeamDetailsSheet({
   // Find leader
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const leader =
-    post.members.find(m => m.role === 'leader' || m.userId === post.leaderId) ||
-    post.members[0];
+    (Array.isArray(post.members) &&
+      post.members.find(m =>
+        typeof m === 'string'
+          ? m === post.leader?.id
+          : m.role === 'leader' || m.userId === post.leader?.id
+      )) ||
+    post.leader;
 
   const handleContactClick = () => {
     onContactClick(post);
@@ -230,16 +234,12 @@ export function TeamDetailsSheet({
     });
 
     try {
-      const response = await toggleRoleHired(
-        hackathonSlugOrId,
-        post.id,
-        { skill },
-        organizationId
-      );
+      const response = await toggleRoleHired(hackathonSlugOrId, post.id, skill);
 
-      if (response.success) {
+      if (response.success && response.data) {
+        const data = response.data as { skill: string; hired: boolean };
         toast.success(
-          response.data.hired
+          data.hired
             ? `Marked "${skill}" as filled`
             : `Marked "${skill}" as open`
         );
@@ -406,19 +406,33 @@ export function TeamDetailsSheet({
                 <div className='grid gap-3'>
                   {post.members.map(member => (
                     <div
-                      key={member.userId}
+                      key={typeof member === 'string' ? member : member.userId}
                       className='flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-900/30 p-3'
                     >
                       <Avatar className='h-10 w-10 border border-gray-700'>
-                        <AvatarImage src={member.image} alt={member.name} />
-                        <AvatarFallback className='bg-gray-800 text-gray-400'>
-                          {member.name.charAt(0).toUpperCase()}
+                        <AvatarImage
+                          src={
+                            typeof member === 'string'
+                              ? undefined
+                              : member.image
+                          }
+                          alt={
+                            typeof member === 'string' ? 'Member' : member.name
+                          }
+                        />
+                        <AvatarFallback className='bg-gray-700 text-white'>
+                          {(typeof member === 'string'
+                            ? 'M'
+                            : member.name.charAt(0)
+                          ).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className='font-medium text-white'>
-                          {member.name}
-                          {member.userId === post.leaderId && (
+                          {typeof member === 'string' ? 'Member' : member.name}
+                          {(typeof member === 'string'
+                            ? member
+                            : member.userId) === post.leader?.id && (
                             <span className='ml-2 text-xs text-[#A7F950]'>
                               (Leader)
                             </span>

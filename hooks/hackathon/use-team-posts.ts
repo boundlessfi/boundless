@@ -11,11 +11,11 @@ import {
   deleteTeamPost,
   getMyTeam,
   trackContactClick,
-  type TeamRecruitmentPost,
-  type CreateTeamPostRequest,
-  type UpdateTeamPostRequest,
-  type GetTeamPostsOptions,
-} from '@/lib/api/hackathons';
+  type Team as TeamRecruitmentPost,
+  type CreateTeamRequest as CreateTeamPostRequest,
+  type UpdateTeamRequest as UpdateTeamPostRequest,
+  type GetTeamOptions as GetTeamPostsOptions,
+} from '@/lib/api/hackathons/teams';
 import { reportError } from '@/lib/error-reporting';
 
 interface UseTeamPostsProps {
@@ -52,11 +52,7 @@ export function useTeamPosts({
       setError(null);
 
       try {
-        const response = await getTeamPosts(
-          hackathonSlugOrId,
-          options,
-          organizationId
-        );
+        const response = await getTeamPosts(hackathonSlugOrId, options);
 
         if (response.success && response.data) {
           const teams = response.data.teams || [];
@@ -65,7 +61,7 @@ export function useTeamPosts({
           // Separate user's posts if authenticated
           if (isAuthenticated && currentUserId) {
             const userPosts = teams.filter(
-              post => post.leaderId === currentUserId
+              post => post.leader?.id === currentUserId
             );
             setMyPosts(userPosts);
           } else {
@@ -95,16 +91,14 @@ export function useTeamPosts({
     try {
       // Fetch all posts and filter client-side
       // Backend could provide a /team-posts/me endpoint for better performance
-      const response = await getTeamPosts(
-        hackathonSlugOrId,
-        undefined,
-        organizationId
-      );
+      const response = await getTeamPosts(hackathonSlugOrId, undefined);
 
       if (response.success && response.data && currentUserId) {
         // Filter posts created by current user
         const teams = response.data.teams || [];
-        const userPosts = teams.filter(post => post.leaderId === currentUserId);
+        const userPosts = teams.filter(
+          post => post.leader?.id === currentUserId
+        );
         setMyPosts(userPosts);
       } else {
         setMyPosts([]);
@@ -152,15 +146,11 @@ export function useTeamPosts({
       setError(null);
 
       try {
-        const response = await createTeamPost(
-          hackathonSlugOrId,
-          data,
-          organizationId
-        );
+        const response = await createTeamPost(hackathonSlugOrId, data);
 
         if (response.success && response.data) {
-          setPosts(prev => [response.data, ...prev]);
-          setMyPosts(prev => [response.data, ...prev]);
+          setPosts(prev => [response.data!, ...prev]);
+          setMyPosts(prev => [response.data!, ...prev]);
           toast.success('Team post created successfully');
           return response.data;
         } else {
@@ -192,19 +182,14 @@ export function useTeamPosts({
       setError(null);
 
       try {
-        const response = await updateTeamPost(
-          hackathonSlugOrId,
-          postId,
-          data,
-          organizationId
-        );
+        const response = await updateTeamPost(hackathonSlugOrId, postId, data);
 
         if (response.success && response.data) {
           setPosts(prev =>
-            prev.map(post => (post.id === postId ? response.data : post))
+            prev.map(post => (post.id === postId ? response.data! : post))
           );
           setMyPosts(prev =>
-            prev.map(post => (post.id === postId ? response.data : post))
+            prev.map(post => (post.id === postId ? response.data! : post))
           );
           toast.success('Team post updated successfully');
           return response.data;

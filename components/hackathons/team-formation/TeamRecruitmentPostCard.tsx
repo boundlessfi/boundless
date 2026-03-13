@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { type TeamRecruitmentPost } from '@/lib/api/hackathons';
+import { type Team as TeamRecruitmentPost } from '@/lib/api/hackathons/teams';
 import { toast } from 'sonner';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useLeaveTeam } from '@/hooks/hackathon/use-leave-team';
@@ -209,9 +209,14 @@ export function TeamRecruitmentPostCard({
   const { user } = useAuthStatus();
   const [showLeaveDialog, setShowLeaveDialog] = React.useState(false);
 
-  const isMember = user ? post.members.some(m => m.userId === user.id) : false;
+  const isMember = user
+    ? Array.isArray(post.members) &&
+      post.members.some(m =>
+        typeof m === 'string' ? m === user.id : m.userId === user.id
+      )
+    : false;
   // Leader is also a member, so isMember is true for leader. Check specifically for leader capability
-  const isLeader = user ? post.leaderId === user.id : false;
+  const isLeader = user ? post.leader?.id === user.id : false;
 
   const { leaveTeam, isLeaving } = useLeaveTeam({
     hackathonSlugOrId: post.hackathonId,
@@ -266,10 +271,17 @@ export function TeamRecruitmentPostCard({
     onClick?.(post);
   };
 
-  // Find leader
+  // Determine leader for display
   const leader =
-    post.members.find(m => m.role === 'leader' || m.userId === post.leaderId) ||
-    post.members[0];
+    (Array.isArray(post.members) &&
+      post.members.find(m =>
+        typeof m === 'string'
+          ? m === post.leader?.id
+          : m.role === 'leader' || m.userId === post.leader?.id
+      )) ||
+    post.leader;
+
+  const displayLeader = leader as any;
 
   return (
     <div
@@ -289,20 +301,20 @@ export function TeamRecruitmentPostCard({
             className={`h-8 w-8 border-2 transition-all duration-300 group-hover:border-[#A7F950] sm:h-10 sm:w-10 ${isPinned ? 'border-[#A7F950]' : 'border-[#2B2B2B]'}`}
           >
             <AvatarImage
-              src={leader?.image}
-              alt={leader?.name}
+              src={displayLeader?.image}
+              alt={displayLeader?.name}
               className='object-cover'
             />
             <AvatarFallback className='bg-gray-700 text-white'>
-              {(leader?.name || 'U').charAt(0).toUpperCase()}
+              {(displayLeader?.name || 'U').charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className='flex flex-col'>
             <h4 className='text-sm font-medium text-white'>
-              {leader?.name || 'Unknown User'}
+              {displayLeader?.name || 'Unknown User'}
             </h4>
             <span className='text-xs text-gray-500'>
-              @{leader?.username || 'user'}
+              @{displayLeader?.username || 'user'}
             </span>
           </div>
         </div>
@@ -358,7 +370,7 @@ export function TeamRecruitmentPostCard({
       </div>
 
       <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
-        <AlertDialogContent className='border-gray-800 bg-[#030303] text-white'>
+        <AlertDialogContent className='bg-background-main-bg border-gray-800 text-white'>
           <AlertDialogHeader>
             <AlertDialogTitle>Leave Team</AlertDialogTitle>
             <AlertDialogDescription className='text-gray-400'>

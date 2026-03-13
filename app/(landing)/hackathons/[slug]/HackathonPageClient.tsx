@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
+import { useHackathonAnnouncements } from '@/hooks/hackathon/use-hackathon-queries';
 import { useRegisterHackathon } from '@/hooks/hackathon/use-register-hackathon';
 import { useLeaveHackathon } from '@/hooks/hackathon/use-leave-hackathon';
 import { useSubmission } from '@/hooks/hackathon/use-submission';
@@ -19,31 +20,34 @@ import { WinnersTab } from '@/components/hackathons/winners/WinnersTab';
 import LoadingScreen from '@/features/projects/components/CreateProjectModal/LoadingScreen';
 import { useTimelineEvents } from '@/hooks/hackathon/use-timeline-events';
 import { toast } from 'sonner';
-import type { Participant } from '@/lib/api/hackathons';
+import type { Hackathon, Participant } from '@/lib/api/hackathons';
 import { HackathonStickyCard } from '@/components/hackathons/hackathonStickyCard';
 import { HackathonParticipants } from '@/components/hackathons/participants/hackathonParticipant';
 import { useCommentSystem } from '@/hooks/use-comment-system';
 import { CommentEntityType } from '@/types/comment';
 import { useTeamPosts } from '@/hooks/hackathon/use-team-posts';
-import {
-  listAnnouncements,
-  type HackathonAnnouncement,
-} from '@/lib/api/hackathons/index';
 import { Megaphone } from 'lucide-react';
 import { AnnouncementsTab } from '@/components/hackathons/announcements/AnnouncementsTab';
-import { reportError, reportMessage } from '@/lib/error-reporting';
+import { reportMessage } from '@/lib/error-reporting';
 
-export default function HackathonPageClient() {
+interface HackathonPageClientProps {
+  /** Server-fetched hackathon — seeds React Query cache, eliminates loading state on first render. */
+  initialHackathon: Hackathon;
+}
+
+export default function HackathonPageClient({
+  initialHackathon,
+}: HackathonPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams();
 
+  // `currentHackathon` is immediately available — seeded from server via initialData
   const {
     currentHackathon,
     submissions,
     winners,
     loading,
-    setCurrentHackathon,
     refreshCurrentHackathon,
   } = useHackathonData();
 
@@ -78,32 +82,11 @@ export default function HackathonPageClient() {
     autoFetch: !!hackathonId,
   });
 
-  // Fetch announcements for public view
-  const [announcements, setAnnouncements] = useState<HackathonAnnouncement[]>(
-    []
+  // React Query replaces the useEffect+useState announcements pattern
+  const { data: announcements = [] } = useHackathonAnnouncements(
+    hackathonId,
+    !!hackathonId
   );
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
-
-  useEffect(() => {
-    async function fetchAnnouncements() {
-      if (!hackathonId) return;
-      try {
-        setAnnouncementsLoading(true);
-        const data = await listAnnouncements(hackathonId);
-        // Only show published announcements for public view
-        setAnnouncements(data.filter(a => !a.isDraft));
-      } catch (error) {
-        reportError(error, {
-          context: 'hackathon-fetchAnnouncements',
-          hackathonId,
-        });
-      } finally {
-        setAnnouncementsLoading(false);
-      }
-    }
-    fetchAnnouncements();
-  }, [hackathonId]);
 
   const hackathonTabs = useMemo(() => {
     const hasParticipants =
@@ -318,33 +301,13 @@ export default function HackathonPageClient() {
     router.push('?tab=team-formation');
   };
 
-  // Set current hackathon on mount
-  const [isInitializing, setIsInitializing] = useState(true);
+  // No longer needed — currentHackathon is seeded from server via React Query initialData.
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const initHackathon = async () => {
-      if (hackathonId) {
-        await setCurrentHackathon(hackathonId);
-      }
-      if (isMounted) {
-        setIsInitializing(false);
-      }
-    };
-
-    initHackathon();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [hackathonId, setCurrentHackathon]);
-
-  // Handle tab changes from URL
-  // Now also defaults to 'overview' if the URL tab is not in the filtered hackathonTabs list.
+  // Handle tab changes from URL.
+  // Defaults to 'overview' if the URL tab is not in the filtered hackathonTabs list.
   // This handles direct URL access to a disabled tab — user is silently redirected to overview.
   useEffect(() => {
-    if (loading || !currentHackathon) return;
+    if (!currentHackathon) return;
 
     const tabFromUrl = searchParams.get('tab');
 
@@ -365,7 +328,7 @@ export default function HackathonPageClient() {
     const queryParams = new URLSearchParams(searchParams.toString());
     queryParams.set('tab', 'overview');
     router.replace(`?${queryParams.toString()}`, { scroll: false });
-  }, [searchParams, hackathonTabs, router, loading, currentHackathon]);
+  }, [searchParams, hackathonTabs, router, currentHackathon]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -374,8 +337,8 @@ export default function HackathonPageClient() {
     router.push(`?${queryParams.toString()}`, { scroll: false });
   };
 
-  // Loading state
-  if (loading || isInitializing) {
+  // Only show a loading screen if data is still being fetched (e.g., window refocus refresh).
+  if (loading && !currentHackathon) {
     return <LoadingScreen />;
   }
 
