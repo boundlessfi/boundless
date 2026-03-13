@@ -919,7 +919,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                         Team Members:
                       </p>
                       <div className='flex flex-wrap gap-2'>
-                        {myTeam.members.map((member, idx) => (
+                        {(myTeam.members ?? []).map((member, idx) => (
                           <Badge
                             key={
                               typeof member === 'string'
