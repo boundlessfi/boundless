@@ -20,7 +20,8 @@ import {
 } from '@/hooks/hackathon/use-hackathon-queries';
 import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import BasicAvatar from '@/components/avatars/BasicAvatar';
-import { useAuth } from '@/hooks/use-auth';
+import { useOptionalAuth } from '@/hooks/use-auth';
+import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
 import { getUserProfileByUsername } from '@/lib/api/auth';
 import {
   AlertDialog,
@@ -40,13 +41,14 @@ interface MyTeamViewProps {
 }
 
 const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const isLeader = team.leader.id === user?.id;
 
   const leaveMutation = useLeaveTeam(hackathonSlug);
   const inviteMutation = useInviteToTeam(hackathonSlug);
   const transferMutation = useTransferLeadership(hackathonSlug);
   const refresh = useRefreshHackathon(hackathonSlug);
+  const { withAuth } = useRequireAuthForAction();
 
   const [inviteIdentifier, setInviteIdentifier] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
@@ -62,10 +64,10 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
     name: string;
   } | null>(null);
 
-  const handleLeave = async () => {
+  const handleLeave = withAuth(async () => {
     await leaveMutation.mutateAsync(team.id);
     setIsLeaveDialogOpen(false);
-  };
+  });
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -283,9 +285,10 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
             {Array.isArray(team.members) &&
               team.members
                 .filter(
-                  m => typeof m !== 'string' && m.userId !== team.leader.id
+                  (m): m is TeamMember =>
+                    typeof m !== 'string' && m.userId !== team.leader.id
                 )
-                .map((member: any) => (
+                .map(member => (
                   <div
                     key={member.userId}
                     className='group flex gap-4 rounded-2xl border border-white/5 bg-[#141517] p-4 transition-all hover:bg-[#1A1B1E] sm:p-5'

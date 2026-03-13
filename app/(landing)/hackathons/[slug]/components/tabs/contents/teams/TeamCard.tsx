@@ -1,15 +1,19 @@
+'use client';
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Team, TeamMember } from '@/lib/api/hackathons/teams';
 import GroupAvatar from '@/components/avatars/GroupAvatar';
 import { BoundlessButton } from '@/components/buttons/BoundlessButton';
+import { MessageCircle } from 'lucide-react';
 
 interface TeamCardProps {
   team: Team;
   onJoin?: (team: Team) => void;
+  onMessageLeader?: (team: Team, trigger: HTMLElement) => void;
 }
 
-const TeamCard = ({ team, onJoin }: TeamCardProps) => {
+const TeamCard = ({ team, onJoin, onMessageLeader }: TeamCardProps) => {
   const {
     teamName,
     description,
@@ -55,15 +59,29 @@ const TeamCard = ({ team, onJoin }: TeamCardProps) => {
           </div>
         </div>
 
-        <BoundlessButton
-          variant='outline'
-          size='sm'
-          className='h-11 w-full rounded-xl border-[#A7F950]/20 bg-[#232B20]/30 px-6 text-sm font-bold text-[#A7F950] transition-all hover:bg-[#A7F950] hover:text-black sm:w-auto'
-          onClick={() => onJoin?.(team)}
-          disabled={!isOpen || memberCount >= maxSize}
-        >
-          Join Team
-        </BoundlessButton>
+        <div className='flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap'>
+          {onMessageLeader && team.leader?.id && (
+            <BoundlessButton
+              variant='outline'
+              size='sm'
+              className='h-11 shrink-0 rounded-xl border-white/10 bg-white/5 px-4 text-sm font-bold text-white transition-all hover:bg-white/10'
+              onClick={e => onMessageLeader(team, e.currentTarget)}
+              aria-label='Message team leader'
+            >
+              <MessageCircle className='mr-2 h-4 w-4' />
+              Message
+            </BoundlessButton>
+          )}
+          <BoundlessButton
+            variant='outline'
+            size='sm'
+            className='h-11 w-full rounded-xl border-[#A7F950]/20 bg-[#232B20]/30 px-6 text-sm font-bold text-[#A7F950] transition-all hover:bg-[#A7F950] hover:text-black sm:w-auto'
+            onClick={() => onJoin?.(team)}
+            disabled={!isOpen || memberCount >= maxSize}
+          >
+            Join Team
+          </BoundlessButton>
+        </div>
       </div>
 
       {/* Description */}

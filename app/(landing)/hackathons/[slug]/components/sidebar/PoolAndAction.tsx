@@ -9,9 +9,9 @@ import {
   Flower,
   AlertCircle,
 } from 'lucide-react';
-import { useHackathon } from '@/hooks/hackathon/use-hackathon-queries';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
-import { useAuth } from '@/hooks/use-auth';
+import { useOptionalAuth } from '@/hooks/use-auth';
+import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -57,7 +57,7 @@ function useCountdown(deadline?: string) {
 export default function PoolAndAction() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const slug = params.slug as string;
 
   const { currentHackathon: hackathon, submissions } = useHackathonData();
@@ -74,9 +74,17 @@ export default function PoolAndAction() {
       0
     ) ?? 0;
 
-  const isLive = hackathon?.status === 'ACTIVE';
+  const now = new Date();
+  const isSubmissionClosed =
+    ['COMPLETED', 'JUDGING', 'ARCHIVED', 'CANCELLED'].includes(
+      hackathon?.status || ''
+    ) || (deadline ? now > new Date(deadline) : false);
+
+  const isLive = hackathon?.status === 'ACTIVE' && !isSubmissionClosed;
   const isEnded =
-    hackathon?.status === 'COMPLETED' || hackathon?.status === 'JUDGING';
+    ['COMPLETED', 'JUDGING', 'ARCHIVED', 'CANCELLED'].includes(
+      hackathon?.status || ''
+    ) || (deadline ? now > new Date(deadline) : false);
   const currency = hackathon?.prizeTiers[0]?.currency ?? 'USDC';
   const categories = hackathon?.categories ?? [];
 
@@ -84,10 +92,12 @@ export default function PoolAndAction() {
     ? participants.some((p: Participant) => p.userId === user.id)
     : false;
 
-  const handleSubmit = () => {
+  const { withAuth } = useRequireAuthForAction();
+
+  const handleSubmit = withAuth(() => {
     if (isButtonDisabled) return;
     router.push(`/hackathons/${slug}/submit`);
-  };
+  });
 
   if (hackathonLoading || participantsLoading) {
     return (
@@ -123,12 +133,17 @@ export default function PoolAndAction() {
   }
 
   const getButtonText = () => {
+    if (hackathon?.status === 'ARCHIVED') return 'Hackathon Archived';
+    if (hackathon?.status === 'CANCELLED') return 'Hackathon Cancelled';
     if (isEnded) return 'Submissions Closed';
     if (!isParticipant) return 'Register to Submit';
     return 'Submit Now';
   };
 
-  const isButtonDisabled = isEnded || !isParticipant;
+  const isButtonDisabled =
+    isEnded ||
+    !isParticipant ||
+    ['ARCHIVED', 'CANCELLED'].includes(hackathon?.status || '');
 
   return (
     <div className='overflow-hidden rounded-2xl border border-white/5 bg-linear-to-b from-[#1C1D1B] to-[#07090E]'>

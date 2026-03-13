@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import BasicAvatar from '@/components/avatars/BasicAvatar';
 import { Badge } from '@/components/ui/badge';
@@ -11,8 +13,8 @@ interface ParticipantCardProps {
   image?: string;
   submitted?: boolean;
   skills?: string[];
-  onViewProfile?: () => void;
-  onMessage?: () => void;
+  userId?: string;
+  onMessage?: (trigger: HTMLElement) => void;
 }
 
 const ParticipantCard = ({
@@ -21,7 +23,7 @@ const ParticipantCard = ({
   image,
   submitted,
   skills = [],
-  onViewProfile,
+  userId,
   onMessage,
 }: ParticipantCardProps) => {
   const visibleSkills = skills.slice(0, 3);
@@ -65,14 +67,22 @@ const ParticipantCard = ({
       </div>
 
       <div className='flex items-center gap-2 pt-2'>
-        <BoundlessButton fullWidth size='sm' onClick={onViewProfile}>
-          View Profile
-        </BoundlessButton>
+        <a
+          href={`/profile/${username}`}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='flex-1'
+        >
+          <BoundlessButton fullWidth size='sm'>
+            View Profile
+          </BoundlessButton>
+        </a>
         <BoundlessButton
           variant='outline'
           size='icon'
           className='hover:border-primary/30 h-9 w-9 border-white/10'
-          onClick={onMessage}
+          onClick={e => userId && onMessage?.(e.currentTarget)}
+          disabled={!userId || !onMessage}
           aria-label='Message participant'
         >
           <IconMessage size={18} />

@@ -6,10 +6,9 @@ import type { ExploreSubmissionsResponse } from '@/lib/api/hackathons';
 
 interface SubmissionCardProps {
   submission: ExploreSubmissionsResponse;
-  onViewClick?: (id: string) => void;
 }
 
-const SubmissionCard = ({ submission, onViewClick }: SubmissionCardProps) => {
+const SubmissionCard = ({ submission }: SubmissionCardProps) => {
   const {
     id,
     projectName,
@@ -32,6 +31,8 @@ const SubmissionCard = ({ submission, onViewClick }: SubmissionCardProps) => {
     ? (teamMembers?.[0]?.avatar ?? '')
     : (participant?.image ?? '');
 
+  const projectUrl = `/projects/${id}?type=submission`;
+
   return (
     <div className='group hover:border-primary/20 bg-background-card hover:bg-background-card-hover flex h-full flex-col overflow-hidden rounded-2xl border border-white/5 p-4 transition-all'>
       {/* Project Icon/Logo */}
@@ -53,9 +54,11 @@ const SubmissionCard = ({ submission, onViewClick }: SubmissionCardProps) => {
           <span className='text-primary rounded-md bg-[#232B20]/50 px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase'>
             {category}
           </span>
-          <span className='rounded-md bg-white/5 px-2.5 py-1 text-[10px] font-bold tracking-wider text-gray-400 uppercase'>
-            Infrastructure
-          </span>
+          {submission.category && (
+            <span className='rounded-md bg-white/5 px-2.5 py-1 text-[10px] font-bold tracking-wider text-gray-400 uppercase'>
+              {submission.category}
+            </span>
+          )}
         </div>
       </div>
 
@@ -73,14 +76,15 @@ const SubmissionCard = ({ submission, onViewClick }: SubmissionCardProps) => {
           )}
         </div>
 
-        <BoundlessButton
-          variant='outline'
-          size='sm'
-          className='hover:bg-primary h-9 rounded-xl border-white/5 bg-white/5 px-4 text-xs font-bold transition-all hover:text-black'
-          onClick={() => onViewClick?.(id)}
-        >
-          View Project
-        </BoundlessButton>
+        <a href={projectUrl} target='_blank' rel='noopener noreferrer'>
+          <BoundlessButton
+            variant='outline'
+            size='sm'
+            className='hover:bg-primary h-9 rounded-xl border-white/5 bg-white/5 px-4 text-xs font-bold transition-all hover:text-black'
+          >
+            View Project
+          </BoundlessButton>
+        </a>
       </div>
     </div>
   );

@@ -4,8 +4,10 @@ import FollowAndMessage from './FollowAndMessage';
 
 const Sidebar = () => {
   return (
-    <div className='w-full'>
-      <PoolAndAction />
+    <div className='sticky top-24 w-full space-y-4'>
+      <div className=''>
+        <PoolAndAction />
+      </div>
       <FollowAndMessage />
     </div>
   );

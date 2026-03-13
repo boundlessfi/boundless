@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import {
   useHackathon,
@@ -17,10 +17,36 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useMessages } from '@/components/messages/MessagesProvider';
+import { createConversation } from '@/lib/api/messages';
+import { toast } from 'sonner';
+import type { ApiError } from '@/lib/api/api';
+
+const isApiError = (e: unknown): e is ApiError =>
+  e !== null &&
+  typeof e === 'object' &&
+  'message' in e &&
+  typeof (e as ApiError).message === 'string';
 
 const Participants = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: hackathon } = useHackathon(slug);
+  const { openMessages } = useMessages();
+
+  const handleMessageParticipant = useCallback(
+    async (userId: string, trigger: HTMLElement) => {
+      try {
+        const { conversation } = await createConversation(userId);
+        openMessages({ conversationId: conversation.id, trigger });
+      } catch (err) {
+        const msg = isApiError(err)
+          ? err.message
+          : 'Failed to start conversation';
+        toast.error(msg);
+      }
+    },
+    [openMessages]
+  );
 
   // State for filtering and pagination
   const [statusFilter, setStatusFilter] = useState<
@@ -64,18 +90,15 @@ const Participants = () => {
     }
   }, [participantsData?.participants, page]);
 
-  if (!hackathon) return null;
-
-  const totalBuilders = participantsData?.pagination?.total || 0;
-  const hasNextPage = participantsData?.pagination?.hasNext || false;
-
   // Dynamically derive unique skills from participants
   const availableSkills = useMemo(() => {
     const skillsSet = new Set<string>();
     // Try to get skills from all participants fetchable (if we had them all)
     // For now, we derive from what we have in the current view or mock if empty
     accumulatedParticipants.forEach((p: Participant) => {
-      p.user.profile.skills?.forEach((s: string) => skillsSet.add(s));
+      p.user.profile.skills?.forEach((s: string) => {
+        skillsSet.add(s);
+      });
     });
 
     if (skillsSet.size === 0) {
@@ -91,6 +114,11 @@ const Participants = () => {
     }
     return Array.from(skillsSet).sort();
   }, [accumulatedParticipants]);
+
+  if (!hackathon) return null;
+
+  const totalBuilders = participantsData?.pagination?.total || 0;
+  const hasNextPage = participantsData?.pagination?.hasNext || false;
 
   const handleLoadMore = () => {
     if (hasNextPage) {
@@ -197,6 +225,10 @@ const Participants = () => {
               image={p.user.profile.image}
               submitted={!!p.submittedAt}
               skills={p.user.profile.skills}
+              userId={p.userId ?? p.user?.id}
+              onMessage={trigger =>
+                handleMessageParticipant(p.userId ?? p.user.id, trigger)
+              }
             />
           ))
         ) : (

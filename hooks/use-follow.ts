@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { EntityType, UseFollowReturn } from '@/types/follow';
 import { followApi } from '@/lib/api/follow';
-import { useAuth } from './use-auth';
+import { useOptionalAuth } from './use-auth';
 
 export const useFollow = (
   entityType: EntityType,
   entityId: string,
   initialIsFollowing = false
 ): UseFollowReturn => {
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

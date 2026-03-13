@@ -105,7 +105,7 @@ export function HackathonDataProvider({
     _id: s.id,
     projectName: s.projectName,
     description: s.description,
-    submitterName: s.participant?.name || s.teamName || 'Anonym',
+    submitterName: s.participant?.name || s.teamName || 'Anonymous',
     submitterAvatar: s.participant?.image,
     category: s.category,
     logo: s.logo || undefined,

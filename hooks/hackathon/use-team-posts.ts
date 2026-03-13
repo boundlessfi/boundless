@@ -154,18 +154,25 @@ export function useTeamPosts({
           setMyTeam(prev =>
             prev
               ? { ...prev, posts: [response.data!, ...(prev.posts || [])] }
-              : null
+              : {
+                  ...response.data!,
+                  posts: [response.data!],
+                }
           );
           toast.success('Team post created successfully');
           return response.data;
         } else {
           throw new Error(response.message || 'Failed to create team post');
         }
-      } catch (err: any) {
-        const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          'Failed to create team post';
+      } catch (err: unknown) {
+        let errorMessage = 'Failed to create team post';
+        if (err && typeof err === 'object') {
+          if ('response' in err && (err as any).response?.data?.message) {
+            errorMessage = (err as any).response.data.message;
+          } else if (err instanceof Error) {
+            errorMessage = err.message;
+          }
+        }
         setError(errorMessage);
         toast.error('Error', { description: errorMessage });
         throw err;
@@ -211,11 +218,15 @@ export function useTeamPosts({
         } else {
           throw new Error(response.message || 'Failed to update team post');
         }
-      } catch (err: any) {
-        const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          'Failed to update team post';
+      } catch (err: unknown) {
+        let errorMessage = 'Failed to update team post';
+        if (err && typeof err === 'object') {
+          if ('response' in err && (err as any).response?.data?.message) {
+            errorMessage = (err as any).response.data.message;
+          } else if (err instanceof Error) {
+            errorMessage = err.message;
+          }
+        }
         setError(errorMessage);
         toast.error('Error', { description: errorMessage });
         throw err;
@@ -250,11 +261,15 @@ export function useTeamPosts({
         } else {
           throw new Error(response.message || 'Failed to delete team post');
         }
-      } catch (err: any) {
-        const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          'Failed to delete team post';
+      } catch (err: unknown) {
+        let errorMessage = 'Failed to delete team post';
+        if (err && typeof err === 'object') {
+          if ('response' in err && (err as any).response?.data?.message) {
+            errorMessage = (err as any).response.data.message;
+          } else if (err instanceof Error) {
+            errorMessage = err.message;
+          }
+        }
         setError(errorMessage);
         toast.error('Error', { description: errorMessage });
         throw err;

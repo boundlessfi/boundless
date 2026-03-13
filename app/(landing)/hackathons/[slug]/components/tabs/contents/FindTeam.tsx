@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Search,
@@ -28,11 +28,39 @@ import {
 import { CreateTeamPostModal } from '@/components/hackathons/team-formation/CreateTeamPostModal';
 import { ContactTeamModal } from '@/components/hackathons/team-formation/ContactTeamModal';
 import { Team } from '@/lib/api/hackathons/teams';
+import { useMessages } from '@/components/messages/MessagesProvider';
+import { createConversation } from '@/lib/api/messages';
+import { toast } from 'sonner';
+import type { ApiError } from '@/lib/api/api';
+
+const isApiError = (e: unknown): e is ApiError =>
+  e !== null &&
+  typeof e === 'object' &&
+  'message' in e &&
+  typeof (e as ApiError).message === 'string';
 
 const FindTeam = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: hackathon } = useHackathon(slug);
   const { data: myTeam, isLoading: isMyTeamLoading } = useMyTeam(slug);
+  const { openMessages } = useMessages();
+
+  const handleMessageLeader = useCallback(
+    async (team: Team, trigger: HTMLElement) => {
+      const leaderId = team.leader?.id;
+      if (!leaderId) return;
+      try {
+        const { conversation } = await createConversation(leaderId);
+        openMessages({ conversationId: conversation.id, trigger });
+      } catch (err) {
+        const msg = isApiError(err)
+          ? err.message
+          : 'Failed to start conversation';
+        toast.error(msg);
+      }
+    },
+    [openMessages]
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All Categories');
@@ -221,6 +249,7 @@ const FindTeam = () => {
                   key={team.id}
                   team={team}
                   onJoin={() => handleJoin(team)}
+                  onMessageLeader={handleMessageLeader}
                 />
               ))}
             </div>

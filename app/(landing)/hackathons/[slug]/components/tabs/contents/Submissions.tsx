@@ -135,7 +135,10 @@ const Submissions = () => {
               {['Status', 'Submitted', 'Shortlisted'].map(status => (
                 <DropdownMenuItem
                   key={status}
-                  onClick={() => setStatusFilter(status)}
+                  onClick={() => {
+                    setStatusFilter(status);
+                    setPage(1);
+                  }}
                   className='cursor-pointer hover:bg-white/5'
                 >
                   {status}
@@ -158,13 +161,7 @@ const Submissions = () => {
         <>
           <div className='grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3'>
             {submissions.map((sub: ExploreSubmissionsResponse) => (
-              <SubmissionCard
-                key={sub.id}
-                submission={sub}
-                onViewClick={id =>
-                  router.push(`/projects/${id}?type=submission`)
-                }
-              />
+              <SubmissionCard key={sub.id} submission={sub} />
             ))}
           </div>
 

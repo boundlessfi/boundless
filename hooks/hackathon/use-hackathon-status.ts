@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 
-export function useHackathonStatus(startDate?: string, deadline?: string) {
+export function useHackathonStatus(
+  startDate?: string,
+  deadline?: string,
+  backendStatus?: string
+) {
   const [status, setStatus] = useState<'upcoming' | 'ongoing' | 'ended'>(
     'upcoming'
   );
@@ -21,16 +25,28 @@ export function useHackathonStatus(startDate?: string, deadline?: string) {
 
     let newStatus: 'upcoming' | 'ongoing' | 'ended' = 'upcoming';
 
-    if (end && now > end) {
+    // Terminal states always result in "ended" for submissions
+    const isTerminal = [
+      'COMPLETED',
+      'JUDGING',
+      'ARCHIVED',
+      'CANCELLED',
+    ].includes(backendStatus || '');
+
+    if (isTerminal || (end && now > end)) {
       newStatus = 'ended';
-    } else if (start && now >= start) {
+    } else if (
+      (backendStatus === 'ACTIVE' || !backendStatus) &&
+      start &&
+      now >= start
+    ) {
       newStatus = 'ongoing';
     } else {
       newStatus = 'upcoming';
     }
 
     setStatus(newStatus);
-  }, [startDate, deadline]);
+  }, [startDate, deadline, backendStatus]);
 
   useEffect(() => {
     const target =

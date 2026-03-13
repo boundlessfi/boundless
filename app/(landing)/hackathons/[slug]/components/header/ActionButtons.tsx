@@ -10,44 +10,57 @@ import {
   useLeaveHackathon,
 } from '@/hooks/hackathon/use-hackathon-queries';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
-import { useAuth } from '@/hooks/use-auth';
+import { useOptionalAuth } from '@/hooks/use-auth';
+import type { Participant } from '@/types/hackathon';
 import SharePopover from '@/components/common/SharePopover';
 import { toast } from 'sonner';
+import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
+import { useHackathonStatus } from '@/hooks/hackathon/use-hackathon-status';
 
 const ActionButtons = () => {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const { currentHackathon: hackathon, refreshCurrentHackathon } =
     useHackathonData();
   const { data: myTeam } = useMyTeam(slug);
+  const { withAuth } = useRequireAuthForAction();
 
   const joinMutation = useJoinHackathon(slug);
   const leaveMutation = useLeaveHackathon(slug);
 
+  const { status: hackathonStatus } = useHackathonStatus(
+    hackathon?.startDate,
+    hackathon?.submissionDeadline,
+    hackathon?.status
+  );
+
   const isParticipant = user
     ? !!hackathon?.isParticipant ||
-      (hackathon?.participants || []).some((p: any) => p.userId === user.id)
+      (hackathon?.participants || []).some(
+        (p: Participant) => p.userId === user.id
+      )
     : false;
 
-  const handleJoin = async () => {
+  const handleJoin = withAuth(async () => {
     try {
       await joinMutation.mutateAsync();
       await refreshCurrentHackathon();
       toast.success('Successfully joined the hackathon!');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to join hackathon');
+      toast.error(error?.message || 'Failed to join hackathon');
     }
-  };
+  });
 
-  const handleLeave = async () => {
+  const handleLeave = withAuth(async () => {
     try {
       await leaveMutation.mutateAsync();
+      await refreshCurrentHackathon();
       toast.success('You have left the hackathon');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to leave hackathon');
+      toast.error(error?.message || 'Failed to leave hackathon');
     }
-  };
+  });
 
   const handleTabChange = (tab: string) => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -97,6 +110,7 @@ const ActionButtons = () => {
             className='h-12 w-12 shrink-0 rounded-xl border-red-500/20 bg-red-500/5 text-red-500 hover:border-red-500/30 hover:bg-red-500/10'
             onClick={handleLeave}
             loading={leaveMutation.isPending}
+            disabled={hackathonStatus === 'ended'}
             title='Leave Hackathon'
           >
             <IconLogout size={20} />

@@ -196,9 +196,12 @@ export function useExploreSubmissions(
         hackathonId,
         params.page,
         params.limit,
-        params.search,
-        params.category,
-        params.status
+        {
+          search: params.search,
+          category: params.category,
+          status: params.status,
+          sort: params.sort,
+        }
       );
       if (!response.success || !response.data) {
         return {

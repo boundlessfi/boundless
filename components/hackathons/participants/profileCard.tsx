@@ -81,7 +81,7 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
     setMessageLoading(true);
     try {
       const { conversation } = await createConversation(participant.userId);
-      openMessages(conversation.id);
+      openMessages({ conversationId: conversation.id });
     } catch (err) {
       reportError(err, {
         context: 'profile-card-message',

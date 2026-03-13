@@ -1736,16 +1736,20 @@ export const getExploreSubmissions = async (
   hackathonId: string,
   page?: number,
   limit?: number,
-  search?: string,
-  category?: string,
-  status?: string
+  options?: {
+    search?: string;
+    category?: string;
+    status?: string;
+    sort?: string;
+  }
 ): Promise<ExploreSubmissionsApiResponse> => {
   const params = new URLSearchParams();
   if (page) params.append('page', page.toString());
   if (limit) params.append('limit', limit.toString());
-  if (search) params.append('search', search);
-  if (category) params.append('category', category);
-  if (status) params.append('status', status);
+  if (options?.search) params.append('search', options.search);
+  if (options?.category) params.append('category', options.category);
+  if (options?.status) params.append('status', options.status);
+  if (options?.sort) params.append('sort', options.sort);
 
   const res = await api.get<ExploreSubmissionsApiResponse>(
     `/hackathons/${hackathonId}/submissions/explore${params.toString() ? `?${params.toString()}` : ''}`

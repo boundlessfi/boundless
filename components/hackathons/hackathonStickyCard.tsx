@@ -35,6 +35,7 @@ interface HackathonStickyCardProps {
   onLeaveClick?: () => void;
   participantType?: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
   submissionDeadlineExtendedAt?: string | null;
+  status?: string;
 }
 
 export function HackathonStickyCard(props: HackathonStickyCardProps) {
@@ -56,9 +57,10 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
     isLeaving,
     participantType,
     submissionDeadlineExtendedAt,
+    status: backendStatus,
   } = props;
 
-  const { status } = useHackathonStatus(startDate, deadline);
+  const { status } = useHackathonStatus(startDate, deadline, backendStatus);
   const { isAuthenticated } = useAuthStatus();
   const router = useRouter();
   const pathname = usePathname();

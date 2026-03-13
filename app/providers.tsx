@@ -8,6 +8,7 @@ import { WalletProvider } from '@/components/providers/wallet-provider';
 import { MessagesProvider } from '@/components/messages/MessagesProvider';
 import { TrustlessWorkProvider } from '@/lib/providers/TrustlessWorkProvider';
 import { EscrowProvider } from '@/lib/providers/EscrowProvider';
+import { AuthModalProvider } from '@/components/auth/AuthModalProvider';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -31,15 +32,17 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SocketProvider>
-          <WalletProvider>
-            <MessagesProvider>
-              <TrustlessWorkProvider>
-                <EscrowProvider>{children}</EscrowProvider>
-              </TrustlessWorkProvider>
-            </MessagesProvider>
-          </WalletProvider>
-        </SocketProvider>
+        <AuthModalProvider>
+          <SocketProvider>
+            <WalletProvider>
+              <MessagesProvider>
+                <TrustlessWorkProvider>
+                  <EscrowProvider>{children}</EscrowProvider>
+                </TrustlessWorkProvider>
+              </MessagesProvider>
+            </WalletProvider>
+          </SocketProvider>
+        </AuthModalProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

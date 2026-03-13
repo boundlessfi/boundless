@@ -216,12 +216,16 @@ export function CreateTeamPostModal({
       form.reset();
       setStep('IDENTITY');
       onSuccess?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to save team post:', err);
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        'Failed to save team post. Please try again.';
+      let errorMessage = 'Failed to save team post. Please try again.';
+      if (err && typeof err === 'object') {
+        if ('response' in err && (err as any).response?.data?.message) {
+          errorMessage = (err as any).response.data.message;
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+      }
       toast.error(errorMessage);
     }
   };

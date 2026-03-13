@@ -128,11 +128,11 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
     const enabledTabs = currentHackathon.enabledTabs;
 
     if (Array.isArray(enabledTabs)) {
-      const enabledSet = new Set(enabledTabs);
+      const enabledSet = new Set<string>(enabledTabs);
       return tabs.filter(tab => {
         if (tab.id === 'overview') return true;
         const key = tabIdToEnabledKey[tab.id] || tab.id;
-        return enabledSet.has(key as any);
+        return enabledSet.has(key);
       });
     }
 
@@ -142,6 +142,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
     winners,
     submissions,
     discussionComments.pagination.totalItems,
+    announcements,
     announcementsLoading,
     generalLoading,
   ]);
@@ -209,7 +210,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
             {isTabVisible('resources') && <ResourcesTab />}
             {isTabVisible('team-formation') && <FindTeam />}
           </div>
-          <div className='sticky top-8 hidden max-w-[411px] shrink-0 lg:block'>
+          <div className='sticky top-20 hidden max-w-[411px] shrink-0 lg:block'>
             {sidebar}
           </div>
         </div>

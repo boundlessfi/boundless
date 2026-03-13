@@ -53,10 +53,12 @@ export function HackathonBanner({
   onViewSubmissionClick,
   onFindTeamClick,
   onLeaveClick,
+  status: backendStatus,
 }: HackathonBannerProps) {
   const { status, timeRemaining, formatCountdown } = useHackathonStatus(
     startDate,
-    deadline
+    deadline,
+    backendStatus
   );
   const { isAuthenticated } = useAuthStatus();
   const router = useRouter();
