@@ -96,6 +96,11 @@ export const ResourceCard = ({
       <a
         href={actionHref}
         target={type === 'read' || type === 'download' ? '_self' : '_blank'}
+        rel={
+          type === 'read' || type === 'download'
+            ? undefined
+            : 'noopener noreferrer'
+        }
         className={containerClassName}
       >
         {cardContent}
