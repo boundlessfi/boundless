@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuth } from '@/hooks/use-auth';
+import { useOptionalAuth } from '@/hooks/use-auth';
 import { GenericCommentThread } from '@/components/comments/GenericCommentThread';
 import { useCommentSystem } from '@/hooks/use-comment-system';
 import { CommentEntityType } from '@/types/comment';
@@ -10,9 +10,8 @@ interface HackathonCommentsProps {
 }
 
 export function HackathonComments({ hackathonId }: HackathonCommentsProps) {
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
 
-  // Initialize the comment system for this hackathon
   const commentSystem = useCommentSystem({
     entityType: CommentEntityType.HACKATHON,
     entityId: hackathonId,
@@ -21,7 +20,6 @@ export function HackathonComments({ hackathonId }: HackathonCommentsProps) {
     enabled: true,
   });
 
-  // Current user info for the comment system
   const currentUser = user
     ? {
         id: user.id,

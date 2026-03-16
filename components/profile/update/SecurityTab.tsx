@@ -68,8 +68,8 @@ const SecurityTab = ({ user }: SecurityTabProps) => {
     <div className='space-y-6'>
       <div className='space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 md:p-8'>
         <div className='flex items-center gap-3'>
-          <div className='rounded-lg bg-[#a7f950]/10 p-2'>
-            <LockIcon className='h-5 w-5 text-[#a7f950]' />
+          <div className='bg-primary/10 rounded-lg p-2'>
+            <LockIcon className='text-primary h-5 w-5' />
           </div>
           <div>
             <h3 className='text-lg font-semibold text-white'>
@@ -136,8 +136,8 @@ const SecurityTab = ({ user }: SecurityTabProps) => {
       <div className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 md:p-8'>
         <div className='flex items-start justify-between'>
           <div className='flex gap-3'>
-            <div className='rounded-lg bg-[#a7f950]/10 p-2'>
-              <ShieldCheck className='h-5 w-5 text-[#a7f950]' />
+            <div className='bg-primary/10 rounded-lg p-2'>
+              <ShieldCheck className='text-primary h-5 w-5' />
             </div>
             <div>
               <h3 className='text-lg font-semibold text-white'>
@@ -151,7 +151,7 @@ const SecurityTab = ({ user }: SecurityTabProps) => {
           </div>
           <div className='flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1'>
             <div
-              className={`h-2 w-2 rounded-full ${user.twoFactorEnabled ? 'bg-[#a7f950]' : 'bg-[#B5B5B5]'}`}
+              className={`h-2 w-2 rounded-full ${user.twoFactorEnabled ? 'bg-primary' : 'bg-[#B5B5B5]'}`}
             />
             <span className='text-xs font-medium text-white uppercase'>
               {user.twoFactorEnabled ? 'Enabled' : 'Disabled'}

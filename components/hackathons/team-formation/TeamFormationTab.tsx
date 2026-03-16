@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { type TeamRecruitmentPost } from '@/lib/api/hackathons';
+import { type TeamRecruitmentPost } from '@/lib/api/hackathons/teams';
 import { MyInvitationsList } from './MyInvitationsList';
 
 interface TeamFormationTabProps {
@@ -80,8 +80,9 @@ export function TeamFormationTab({
   const allRoles = useMemo(() => {
     const roles = new Set<string>();
     posts.forEach(post => {
-      post.lookingFor.forEach(role => {
-        roles.add(role);
+      post.lookingFor.forEach(roleObj => {
+        const roleName = typeof roleObj === 'string' ? roleObj : roleObj.role;
+        roles.add(roleName);
       });
     });
     return Array.from(roles).sort();
@@ -98,14 +99,21 @@ export function TeamFormationTab({
         post =>
           post.teamName?.toLowerCase().includes(searchLower) ||
           post.description?.toLowerCase().includes(searchLower) ||
-          post.lookingFor.some(role => role.toLowerCase().includes(searchLower))
+          post.lookingFor.some(roleObj => {
+            const roleName =
+              typeof roleObj === 'string' ? roleObj : roleObj.role;
+            return roleName.toLowerCase().includes(searchLower);
+          })
       );
     }
 
     // Filter by role
     if (selectedRole !== 'all') {
       filtered = filtered.filter(post =>
-        post.lookingFor.some(role => role === selectedRole)
+        post.lookingFor.some(roleObj => {
+          const roleName = typeof roleObj === 'string' ? roleObj : roleObj.role;
+          return roleName === selectedRole;
+        })
       );
     }
 
@@ -155,7 +163,7 @@ export function TeamFormationTab({
   if (isLoading && posts.length === 0) {
     return (
       <div className='flex min-h-[400px] items-center justify-center'>
-        <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
+        <Loader2 className='text-primary h-8 w-8 animate-spin' />
         <span className='ml-3 text-gray-400'>Loading team posts...</span>
       </div>
     );
@@ -167,7 +175,7 @@ export function TeamFormationTab({
         <p className='mb-4 text-red-400'>{error}</p>
         <Button
           onClick={() => fetchPosts()}
-          className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
+          className='bg-primary text-black hover:bg-[#8fd93f]'
         >
           Retry
         </Button>
@@ -185,13 +193,11 @@ export function TeamFormationTab({
         <div className='mb-6 flex items-center justify-between text-left text-sm'>
           <div className='flex items-center gap-4'>
             <span className='text-gray-400'>
-              <span className='font-semibold text-[#a7f950]'>
-                {posts.length}
-              </span>{' '}
+              <span className='text-primary font-semibold'>{posts.length}</span>{' '}
               total posts
             </span>
             <span className='text-gray-400'>
-              <span className='font-semibold text-[#a7f950]'>
+              <span className='text-primary font-semibold'>
                 {activePostsCount}
               </span>{' '}
               active
@@ -203,7 +209,7 @@ export function TeamFormationTab({
               setEditingPost(null);
               setShowCreateModal(true);
             }}
-            className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
+            className='bg-primary text-black hover:bg-[#8fd93f]'
           >
             <Plus className='mr-2 h-4 w-4' />
             Create Post
@@ -299,7 +305,7 @@ export function TeamFormationTab({
               placeholder='Search by project name or description...'
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className='w-full rounded-lg border-gray-900 bg-[#030303] py-3 pr-4 pl-10 text-base text-white placeholder-gray-400 focus:border-gray-400 focus:ring-1 focus:ring-gray-400'
+              className='bg-background-main-bg w-full rounded-lg border-gray-900 py-3 pr-4 pl-10 text-base text-white placeholder-gray-400 focus:border-gray-400 focus:ring-1 focus:ring-gray-400'
             />
           </div>
         </div>
@@ -312,7 +318,7 @@ export function TeamFormationTab({
               <TeamRecruitmentPostCard
                 key={myTeam.id}
                 post={myTeam}
-                isMyPost={myTeam.leaderId === user?.id}
+                isMyPost={myTeam?.leader?.id === user?.id}
                 onContactClick={handleContactClick}
                 onEditClick={handleEditClick}
                 onDeleteClick={handleDeleteClick}
@@ -366,7 +372,7 @@ export function TeamFormationTab({
                     setEditingPost(null);
                     setShowCreateModal(true);
                   }}
-                  className='mt-4 bg-[#a7f950] text-black hover:bg-[#8fd93f]'
+                  className='bg-primary mt-4 text-black hover:bg-[#8fd93f]'
                 >
                   <Plus className='mr-2 h-4 w-4' />
                   Create First Post
@@ -415,7 +421,7 @@ export function TeamFormationTab({
             }
           }}
         >
-          <AlertDialogContent className='border-gray-800 bg-[#030303] text-white'>
+          <AlertDialogContent className='bg-background-main-bg border-gray-800 text-white'>
             <AlertDialogHeader>
               <AlertDialogTitle>Close Team Post</AlertDialogTitle>
               <AlertDialogDescription className='text-gray-400'>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,10 +25,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import BoundlessSheet from '@/components/sheet/boundless-sheet';
+import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import { useTeamPosts } from '@/hooks/hackathon/use-team-posts';
 import { toast } from 'sonner';
 import { Loader2, Plus, X, Trash2 } from 'lucide-react';
-import { type TeamRecruitmentPost } from '@/lib/api/hackathons';
+import { cn } from '@/lib/utils';
+import { type TeamRecruitmentPost } from '@/lib/api/hackathons/teams';
 
 const roleSchema = z.object({
   role: z.string().min(1, 'Role name is required'),
@@ -67,6 +69,8 @@ interface CreateTeamPostModalProps {
   onSuccess?: () => void;
 }
 
+type Step = 'IDENTITY' | 'ROLES' | 'CONTACT';
+
 export function CreateTeamPostModal({
   open,
   onOpenChange,
@@ -80,6 +84,7 @@ export function CreateTeamPostModal({
     autoFetch: false,
   });
 
+  const [step, setStep] = useState<Step>('IDENTITY');
   const [skillInputs, setSkillInputs] = useState<Record<number, string>>({});
 
   const isEditMode = !!initialData;
@@ -89,9 +94,9 @@ export function CreateTeamPostModal({
     defaultValues: {
       teamName: initialData?.teamName || '',
       description: initialData?.description || '',
-      lookingFor: initialData?.lookingFor.map(role => ({
-        role,
-        skills: [],
+      lookingFor: initialData?.lookingFor.map(roleObj => ({
+        role: typeof roleObj === 'string' ? roleObj : roleObj.role,
+        skills: typeof roleObj === 'string' ? [] : roleObj.skills || [],
       })) || [{ role: '', skills: [] }],
       maxSize: initialData?.maxSize || 5,
       contactMethod: initialData?.contactMethod || 'email',
@@ -107,13 +112,17 @@ export function CreateTeamPostModal({
       form.reset({
         teamName: initialData.teamName,
         description: initialData.description,
-        lookingFor: initialData.lookingFor.map(role => ({ role, skills: [] })),
+        lookingFor: initialData.lookingFor.map(roleObj => ({
+          role: typeof roleObj === 'string' ? roleObj : roleObj.role,
+          skills: typeof roleObj === 'string' ? [] : roleObj.skills || [],
+        })),
         maxSize: initialData.maxSize,
         contactMethod: initialData.contactMethod || 'email',
         contactInfo: initialData.contactInfo,
       });
     } else if (!open) {
       form.reset();
+      setStep('IDENTITY');
       setSkillInputs({});
     }
   }, [open, initialData, form]);
@@ -129,7 +138,6 @@ export function CreateTeamPostModal({
       'lookingFor',
       currentRoles.filter((_, i) => i !== index)
     );
-    // Clean up skill input for removed role
     const newSkillInputs = { ...skillInputs };
     delete newSkillInputs[index];
     setSkillInputs(newSkillInputs);
@@ -163,378 +171,400 @@ export function CreateTeamPostModal({
     form.setValue('lookingFor', updatedRoles);
   };
 
-  const validateContactInfo = (method: string, info: string): boolean => {
-    if (!info.trim()) return false;
-
-    switch (method) {
-      case 'email':
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(info);
-      case 'telegram':
-        // Accept @username or full URL
-        return /^@?[a-zA-Z0-9_]+$/.test(info) || info.startsWith('http');
-      case 'discord':
-        // Accept username or invite link
-        return info.length > 0;
-      case 'github':
-        // Accept username or full URL
-        return (
-          /^[a-zA-Z0-9]([a-zA-Z0-9]|-(?![.-])){0,38}$/.test(info) ||
-          info.startsWith('http')
-        );
-      default:
-        return info.length > 0;
+  const handleNext = async () => {
+    let fieldsToValidate: (keyof TeamPostFormData)[] = [];
+    if (step === 'IDENTITY') {
+      fieldsToValidate = ['teamName', 'description', 'maxSize'];
+    } else if (step === 'ROLES') {
+      fieldsToValidate = ['lookingFor'];
     }
+
+    const isValid = await form.trigger(fieldsToValidate);
+    if (isValid) {
+      if (step === 'IDENTITY') setStep('ROLES');
+      else if (step === 'ROLES') setStep('CONTACT');
+    }
+  };
+
+  const handleBack = () => {
+    if (step === 'ROLES') setStep('IDENTITY');
+    else if (step === 'CONTACT') setStep('ROLES');
   };
 
   const onSubmit = async (data: TeamPostFormData) => {
     try {
-      if (!validateContactInfo(data.contactMethod, data.contactInfo)) {
-        toast.error('Invalid contact information for selected method');
-        form.setError('contactInfo', {
-          type: 'manual',
-          message: 'Invalid contact information',
-        });
-        return;
-      }
-
       if (isEditMode && initialData) {
         const updatePayload = {
           teamName: data.teamName,
           description: data.description,
-          lookingFor: data.lookingFor.map(r => r.role),
+          maxSize: data.maxSize,
+          lookingFor: data.lookingFor,
           isOpen: data.lookingFor.length > 0,
-          contactInfo: {
-            method: data.contactMethod,
-            value: data.contactInfo,
-          },
+          contactMethod: data.contactMethod,
+          contactInfo: data.contactInfo,
         };
         await updatePost(initialData.id, updatePayload);
-        toast.success('Team post updated successfully');
       } else {
         const createPayload = {
           ...data,
-          lookingFor: data.lookingFor.map(r => r.role),
-          maxSize: data.maxSize,
+          lookingFor: data.lookingFor,
         };
         await createPost(createPayload);
-        toast.success('Team post created successfully');
       }
 
       onOpenChange(false);
       form.reset();
-      setSkillInputs({});
+      setStep('IDENTITY');
       onSuccess?.();
-    } catch {
-      // Error is already handled in the hook
+    } catch (err: unknown) {
+      console.error('Failed to save team post:', err);
+      let errorMessage = 'Failed to save team post. Please try again.';
+      if (err && typeof err === 'object') {
+        if ('response' in err && (err as any).response?.data?.message) {
+          errorMessage = (err as any).response.data.message;
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+      }
+      toast.error(errorMessage);
     }
   };
 
+  const steps = [
+    { id: 'IDENTITY', label: 'Team Details' },
+    { id: 'ROLES', label: 'Roles' },
+    { id: 'CONTACT', label: 'Contact' },
+  ];
+
   return (
     <BoundlessSheet open={open} setOpen={onOpenChange}>
-      <div className='flex-colbg-background-main-bg flex h-full text-white'>
-        <div className='border-b border-gray-800 p-6'>
-          <h2 className='text-2xl font-bold'>
-            {isEditMode ? 'Edit Team Post' : 'Create Team Post'}
-          </h2>
-          <p className='mt-1 text-sm text-gray-400'>
-            {isEditMode
-              ? 'Update your team recruitment post'
-              : 'Advertise your project and find team members'}
-          </p>
+      <div className='flex h-full flex-col text-white'>
+        {/* Header with Steps */}
+        <div className='border-b border-white/5 p-8'>
+          <div className='mb-8 flex items-center justify-between'>
+            <div>
+              <h2 className='text-2xl font-bold text-white'>
+                {isEditMode ? 'Edit Team Post' : 'Create Team Post'}
+              </h2>
+              <p className='mt-1 text-sm text-gray-500'>
+                {isEditMode
+                  ? 'Update your recruitment details'
+                  : 'Start your journey and find fellow builders'}
+              </p>
+            </div>
+          </div>
+
+          <div className='flex items-center gap-4'>
+            {steps.map((s, idx) => (
+              <React.Fragment key={s.id}>
+                <div className='flex items-center gap-3'>
+                  <div
+                    className={cn(
+                      'flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all',
+                      step === s.id
+                        ? 'bg-primary text-black'
+                        : steps.findIndex(x => x.id === step) > idx
+                          ? 'bg-primary/20 text-primary'
+                          : 'bg-white/5 text-gray-500'
+                    )}
+                  >
+                    {idx + 1}
+                  </div>
+                  <span
+                    className={cn(
+                      'text-xs font-bold tracking-wider uppercase',
+                      step === s.id ? 'text-white' : 'text-gray-600'
+                    )}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+                {idx < steps.length - 1 && (
+                  <div className='h-px w-8 bg-white/5' />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
-        <div className='flex-1 overflow-y-auto p-6'>
+        <div className='flex-1 overflow-y-auto p-8'>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-              {/* Team Name */}
-              <FormField
-                control={form.control}
-                name='teamName'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='My Awesome Team'
-                        className='border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription className='text-gray-400'>
-                      3-100 characters.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+              {step === 'IDENTITY' && (
+                <div className='animate-in fade-in slide-in-from-right-4 space-y-8 duration-300'>
+                  <FormField
+                    control={form.control}
+                    name='teamName'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-bold tracking-[0.2em] text-gray-400 uppercase'>
+                          Team Name
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder='e.g., Astra Protocol'
+                            className='focus:border-primary/20 h-12 border-white/5 bg-white/5 text-white placeholder:text-gray-600 focus:ring-0'
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className='text-xs font-bold text-red-500/80' />
+                      </FormItem>
+                    )}
+                  />
 
-              {/* Description */}
-              <FormField
-                control={form.control}
-                name='description'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder='Describe your project and team...'
-                        className='resize-y border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
-                        rows={5}
-                        {...field}
-                      />
-                    </FormControl>
+                  <FormField
+                    control={form.control}
+                    name='description'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-bold tracking-[0.2em] text-gray-400 uppercase'>
+                          Project Description
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder='What are you building? What is the vision?'
+                            className='focus:border-primary/20 min-h-[160px] resize-none border-white/5 bg-white/5 text-white placeholder:text-gray-600 focus:ring-0'
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className='text-xs font-bold text-red-500/80' />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormDescription className='text-gray-400'>
-                      10-500 characters. Describe your project idea and goals.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Roles Needed */}
-              <div className='space-y-4'>
-                <div className='flex items-center justify-between'>
-                  <FormLabel>Roles Needed</FormLabel>
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    onClick={addRole}
-                    className='border-gray-700 text-white hover:bg-gray-800'
-                  >
-                    <Plus className='mr-2 h-4 w-4' />
-                    Add Role
-                  </Button>
+                  <FormField
+                    control={form.control}
+                    name='maxSize'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-bold tracking-[0.2em] text-gray-400 uppercase'>
+                          Max Team Size
+                        </FormLabel>
+                        <FormControl>
+                          <div className='flex items-center gap-4'>
+                            <Input
+                              type='number'
+                              className='focus:border-primary/20 h-12 w-24 border-white/5 bg-white/5 text-center text-white'
+                              {...field}
+                              onChange={e =>
+                                field.onChange(parseInt(e.target.value) || 2)
+                              }
+                            />
+                            <p className='text-sm text-gray-500'>
+                              Maximum number of members (including yourself)
+                            </p>
+                          </div>
+                        </FormControl>
+                        <FormMessage className='text-xs font-bold text-red-500/80' />
+                      </FormItem>
+                    )}
+                  />
                 </div>
+              )}
 
-                {lookingFor.map((role, roleIndex) => (
-                  <div
-                    key={roleIndex}
-                    className='rounded-lg border border-gray-700 bg-gray-800/50 p-4'
-                  >
-                    <div className='mb-3 flex items-center justify-between'>
-                      <span className='text-sm font-medium text-gray-300'>
-                        Role {roleIndex + 1}
-                      </span>
-                      {lookingFor.length > 1 && (
-                        <Button
-                          type='button'
-                          variant='ghost'
-                          size='sm'
-                          onClick={() => removeRole(roleIndex)}
-                          className='text-red-400 hover:bg-red-500/20'
-                        >
-                          <Trash2 className='h-4 w-4' />
-                        </Button>
-                      )}
+              {step === 'ROLES' && (
+                <div className='animate-in fade-in slide-in-from-right-4 space-y-8 duration-300'>
+                  <div className='space-y-4'>
+                    <div className='flex items-center justify-between'>
+                      <FormLabel className='text-xs font-bold tracking-[0.2em] text-gray-400 uppercase'>
+                        Roles Needed
+                      </FormLabel>
+                      <BoundlessButton
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        onClick={addRole}
+                        className='hover:bg-primary h-8 rounded-lg border-white/5 bg-white/5 px-3 text-[10px] font-bold text-white hover:text-black'
+                      >
+                        <Plus className='h-3.1 w-3.1 mr-2' />
+                        Add Role
+                      </BoundlessButton>
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name={`lookingFor.${roleIndex}.role`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className='text-white'>
-                            Role Name
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder='e.g., Frontend Developer, Designer, Backend Engineer'
-                              className='border-gray-700 bg-gray-900/50 text-white placeholder:text-gray-500'
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Skills for this role */}
-                    <div className='mt-3'>
-                      <FormLabel className='text-sm text-gray-300'>
-                        Skills (Optional)
-                      </FormLabel>
-                      <div className='mt-2 flex flex-wrap gap-2'>
-                        {role.skills?.map((skill, skillIndex) => (
-                          <Badge
-                            key={skillIndex}
-                            className='flex items-center gap-1 bg-gray-700 text-white'
-                          >
-                            {skill}
+                    <div className='grid gap-4'>
+                      {lookingFor.map((role, roleIndex) => (
+                        <div
+                          key={roleIndex}
+                          className='relative rounded-2xl border border-white/5 bg-white/2 p-6 transition-all hover:bg-white/4'
+                        >
+                          {lookingFor.length > 1 && (
                             <button
                               type='button'
-                              onClick={() => removeSkill(roleIndex, skillIndex)}
-                              className='ml-1 hover:text-red-400'
+                              onClick={() => removeRole(roleIndex)}
+                              className='absolute top-4 right-4 text-gray-600 hover:text-red-400'
                             >
-                              <X className='h-3 w-3' />
+                              <Trash2 className='h-4 w-4' />
                             </button>
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className='mt-2 flex gap-2'>
-                        <Input
-                          placeholder='Add a skill (e.g., React, Python)'
-                          value={skillInputs[roleIndex] || ''}
-                          onChange={e =>
-                            setSkillInputs({
-                              ...skillInputs,
-                              [roleIndex]: e.target.value,
-                            })
-                          }
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addSkill(roleIndex);
-                            }
-                          }}
-                          className='border-gray-700 bg-gray-900/50 text-white placeholder:text-gray-500'
-                        />
-                        <Button
-                          type='button'
-                          variant='outline'
-                          size='sm'
-                          onClick={() => addSkill(roleIndex)}
-                          className='border-gray-700 text-white hover:bg-gray-800'
-                        >
-                          <Plus className='h-4 w-4' />
-                        </Button>
-                      </div>
+                          )}
+
+                          <FormField
+                            control={form.control}
+                            name={`lookingFor.${roleIndex}.role`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className='text-[10px] font-black tracking-widest text-gray-500 uppercase'>
+                                  Role Title
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder='e.g., Rust Developer, UI Designer'
+                                    className='h-10 border-white/5 bg-transparent p-0 text-sm font-bold text-white placeholder:text-gray-700 focus:border-transparent focus:ring-0'
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <div className='mt-4'>
+                            <div className='flex flex-wrap gap-2'>
+                              {role.skills?.map((skill, skillIndex) => (
+                                <Badge
+                                  key={skillIndex}
+                                  className='bg-primary/10 text-primary flex items-center gap-1.5 border-none px-2 py-1 text-[10px] font-bold'
+                                >
+                                  {skill}
+                                  <button
+                                    type='button'
+                                    onClick={() =>
+                                      removeSkill(roleIndex, skillIndex)
+                                    }
+                                    className='hover:text-red-400'
+                                  >
+                                    <X className='h-3 w-3' />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className='mt-3 flex gap-2'>
+                              <Input
+                                placeholder='Add required skill...'
+                                value={skillInputs[roleIndex] || ''}
+                                onChange={e =>
+                                  setSkillInputs({
+                                    ...skillInputs,
+                                    [roleIndex]: e.target.value,
+                                  })
+                                }
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    addSkill(roleIndex);
+                                  }
+                                }}
+                                className='h-9 border-white/5 bg-white/5 text-xs text-white placeholder:text-gray-600'
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
 
-              {/* Team Size */}
-              <div className='grid grid-cols-1 gap-4'>
-                <FormField
-                  control={form.control}
-                  name='maxSize'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Max Team Size</FormLabel>
-                      <FormControl>
-                        <Input
-                          type='number'
-                          min={2}
-                          max={50}
-                          className='border-gray-700 bg-gray-800/50 text-white'
-                          {...field}
-                          onChange={e =>
-                            field.onChange(parseInt(e.target.value) || 2)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {step === 'CONTACT' && (
+                <div className='animate-in fade-in slide-in-from-right-4 space-y-8 duration-300'>
+                  <FormField
+                    control={form.control}
+                    name='contactMethod'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-bold tracking-[0.2em] text-gray-400 uppercase'>
+                          Preferred Contact Method
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className='focus:border-primary/20 h-12 border-white/5 bg-white/5 text-white'>
+                              <SelectValue placeholder='Select method' />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className='border-white/10 bg-[#0D0E10] text-white'>
+                            <SelectItem value='email'>Email</SelectItem>
+                            <SelectItem value='telegram'>Telegram</SelectItem>
+                            <SelectItem value='discord'>Discord</SelectItem>
+                            <SelectItem value='github'>GitHub</SelectItem>
+                            <SelectItem value='other'>Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              {/* Contact Method */}
-              <FormField
-                control={form.control}
-                name='contactMethod'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact Method</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className='border-gray-700 bg-gray-800/50 text-white'>
-                          <SelectValue placeholder='Select contact method' />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className='border-gray-700 bg-gray-900 text-white'>
-                        <SelectItem value='email'>Email</SelectItem>
-                        <SelectItem value='telegram'>Telegram</SelectItem>
-                        <SelectItem value='discord'>Discord</SelectItem>
-                        <SelectItem value='github'>GitHub</SelectItem>
-                        <SelectItem value='other'>Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+                  <FormField
+                    control={form.control}
+                    name='contactInfo'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-bold tracking-[0.2em] text-gray-400 uppercase'>
+                          Contact Information
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={
+                              contactMethod === 'email'
+                                ? 'your.email@example.com'
+                                : contactMethod === 'telegram'
+                                  ? '@username or link'
+                                  : 'Enter your contact info'
+                            }
+                            className='focus:border-primary/20 h-12 border-white/5 bg-white/5 text-white placeholder:text-gray-600'
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className='text-[10px] text-gray-500'>
+                          This will only be shown to approved applicants.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className='flex items-center justify-between border-t border-white/5 pt-8'>
+                {step !== 'IDENTITY' ? (
+                  <BoundlessButton
+                    type='button'
+                    variant='outline'
+                    onClick={handleBack}
+                    className='h-11 rounded-xl border-white/5 bg-white/5 px-6 font-bold text-white'
+                  >
+                    Back
+                  </BoundlessButton>
+                ) : (
+                  <div />
                 )}
-              />
 
-              {/* Contact Info */}
-              <FormField
-                control={form.control}
-                name='contactInfo'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Contact Info{' '}
-                      {contactMethod === 'email' && '(email address)'}
-                      {contactMethod === 'telegram' && '(@username or link)'}
-                      {contactMethod === 'discord' &&
-                        '(username or invite link)'}
-                      {contactMethod === 'github' &&
-                        '(@username or profile URL)'}
-                      {contactMethod === 'other' && '(contact information)'}
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={
-                          contactMethod === 'email'
-                            ? 'your.email@example.com'
-                            : contactMethod === 'telegram'
-                              ? '@username or https://t.me/username'
-                              : contactMethod === 'discord'
-                                ? 'username#1234 or invite link'
-                                : contactMethod === 'github'
-                                  ? '@username or https://github.com/username'
-                                  : 'Your contact information'
-                        }
-                        className='border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription className='text-gray-400'>
-                      {contactMethod === 'email' && 'Enter your email address'}
-                      {contactMethod === 'telegram' &&
-                        'Enter your Telegram username (with or without @) or full link'}
-                      {contactMethod === 'discord' &&
-                        'Enter your Discord username or server invite link'}
-                      {contactMethod === 'github' &&
-                        'Enter your GitHub username (with or without @) or profile URL'}
-                      {contactMethod === 'other' &&
-                        'Enter your preferred contact information'}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
+                {step !== 'CONTACT' ? (
+                  <BoundlessButton
+                    type='button'
+                    onClick={handleNext}
+                    className='hover:bg-primary h-11 rounded-xl bg-white px-8 font-bold text-black'
+                  >
+                    Continue
+                  </BoundlessButton>
+                ) : (
+                  <BoundlessButton
+                    type='submit'
+                    disabled={isCreating || isUpdating}
+                    className='bg-primary h-11 rounded-xl px-10 font-black text-black'
+                  >
+                    {isCreating || isUpdating ? (
+                      <Loader2 className='h-4 w-4 animate-spin' />
+                    ) : isEditMode ? (
+                      'Update Post'
+                    ) : (
+                      'Finish & Post'
+                    )}
+                  </BoundlessButton>
                 )}
-              />
-
-              {/* Submit Buttons */}
-              <div className='flex justify-end gap-3 pt-4'>
-                <Button
-                  type='button'
-                  variant='outline'
-                  onClick={() => onOpenChange(false)}
-                  className='border-gray-700 text-white hover:bg-gray-800'
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type='submit'
-                  disabled={isCreating || isUpdating}
-                  className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
-                >
-                  {isCreating || isUpdating ? (
-                    <>
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                      {isEditMode ? 'Updating...' : 'Creating...'}
-                    </>
-                  ) : isEditMode ? (
-                    'Update Post'
-                  ) : (
-                    'Create Post'
-                  )}
-                </Button>
               </div>
             </form>
           </Form>

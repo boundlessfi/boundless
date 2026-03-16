@@ -74,7 +74,7 @@ export function RegisterHackathonModal({
           <Button
             onClick={handleRegister}
             disabled={isRegistering}
-            className='bg-[#a7f950] text-black hover:bg-[#8fd93f] disabled:opacity-50'
+            className='bg-primary text-black hover:bg-[#8fd93f] disabled:opacity-50'
           >
             {isRegistering ? (
               <>

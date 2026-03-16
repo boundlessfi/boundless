@@ -6,7 +6,7 @@ export default function NewsletterConfirmedPage() {
       <p className='text-[#D9D9D9]'>
         Your subscription has been confirmed. Welcome aboard!
       </p>
-      <Link href='/' className='text-[#A7F950] underline'>
+      <Link href='/' className='text-primary underline'>
         Back to home
       </Link>
     </main>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useOptionalAuth } from '@/hooks/use-auth';
 import { useCommentSystem } from '@/hooks/use-comment-system';
 import { useCommentRealtime } from '@/hooks/use-comment-realtime';
 import { CommentsSortDropdown } from './comments-sort-dropdown';
@@ -16,7 +16,7 @@ interface ProjectCommentsProps {
 }
 
 export function ProjectComments({ projectId }: ProjectCommentsProps) {
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const [sortBy, setSortBy] = useState<
     'createdAt' | 'updatedAt' | 'totalReactions'
   >('createdAt');

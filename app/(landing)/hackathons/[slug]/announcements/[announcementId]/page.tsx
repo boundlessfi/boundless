@@ -93,13 +93,13 @@ export default function AnnouncementDetailPage() {
     <div className='min-h-screen bg-black pb-24'>
       {/* Top Header */}
       <div className='sticky top-0 z-10 border-b border-zinc-900 bg-black/80 backdrop-blur-md'>
-        <div className='mx-auto max-w-4xl items-center justify-between px-6 py-4'>
+        <div className='mx-auto flex max-w-4xl items-center justify-between px-6 py-4'>
           <button
-            onClick={() => window.close()}
+            onClick={() => router.push(`/hackathons/${slug}?tab=announcements`)}
             className='flex items-center gap-2 text-sm text-zinc-400 transition-colors hover:text-white'
           >
             <ArrowLeft className='h-4 w-4' />
-            Close Tab
+            Back to Hackathon
           </button>
           <div className='flex items-center gap-2 text-zinc-500'>
             <Megaphone className='text-primary h-4 w-4' />
@@ -170,7 +170,6 @@ export default function AnnouncementDetailPage() {
             </div>
           </div>
         </div>
-
         {/* Content */}
         <div className='prose prose-invert prose-primary max-w-none'>
           {markdownLoading ? (
@@ -191,7 +190,7 @@ export default function AnnouncementDetailPage() {
             This announcement was published by the hackathon organizers.
           </p>
           <BoundlessButton
-            onClick={() => window.close()}
+            onClick={() => router.push(`/hackathons/${slug}?tab=announcements`)}
             variant='outline'
             size='sm'
           >

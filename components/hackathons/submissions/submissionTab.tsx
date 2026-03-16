@@ -150,7 +150,7 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
       {/* Stats Section */}
       <div className='mb-6 flex items-center justify-between text-left text-sm'>
         <span className='text-gray-400'>
-          <span className='font-semibold text-[#a7f950]'>
+          <span className='text-primary font-semibold'>
             {
               submissions.filter(
                 p =>
@@ -270,7 +270,7 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
       {/* Loading State */}
       {(isLoadingMySubmission || isHackathonDataLoading) && (
         <div className='flex w-full items-center justify-center py-8'>
-          <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
+          <Loader2 className='text-primary h-8 w-8 animate-spin' />
           <span className='ml-3 text-gray-400'>Loading submissions...</span>
         </div>
       )}
@@ -289,7 +289,7 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
             <Button
               onClick={() => router.push(`/hackathons/${hackathonSlug}/submit`)}
               disabled={isDeadlinePassed}
-              className='bg-[#a7f950] text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
+              className='bg-primary text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
             >
               <Plus className='mr-2 h-4 w-4' />
               {isDeadlinePassed

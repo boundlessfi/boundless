@@ -151,9 +151,9 @@ export function SortIcon({
   if (sortField !== field)
     return <ChevronsUpDown className='ml-1 inline h-3.5 w-3.5 text-zinc-600' />;
   return sortDir === 'asc' ? (
-    <ChevronUp className='ml-1 inline h-3.5 w-3.5 text-[#a7f950]' />
+    <ChevronUp className='text-primary ml-1 inline h-3.5 w-3.5' />
   ) : (
-    <ChevronDown className='ml-1 inline h-3.5 w-3.5 text-[#a7f950]' />
+    <ChevronDown className='text-primary ml-1 inline h-3.5 w-3.5' />
   );
 }
 
@@ -337,7 +337,7 @@ export function SubmissionsSheetContent({
             href={safeVideoUrl}
             target='_blank'
             rel='noopener noreferrer'
-            className='inline-flex items-center gap-2 rounded-lg border border-[#a7f950]/30 bg-[#a7f950]/5 px-3 py-2 text-sm text-[#a7f950] transition-colors hover:bg-[#a7f950]/10'
+            className='border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors'
           >
             <ExternalLink className='h-4 w-4' />
             Watch Demo
@@ -473,7 +473,7 @@ export function TableRow({
               tabIndex={isHoverOrFocus ? 0 : -1}
               aria-hidden={!isHoverOrFocus}
               title='Open submission in new tab'
-              className='rounded-sm text-zinc-500 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:text-zinc-200 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#a7f950] focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-900 focus-visible:outline-none'
+              className='focus-visible:ring-primary rounded-sm text-zinc-500 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:text-zinc-200 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-900 focus-visible:outline-none'
               aria-label={`Open ${submission.projectName} in new tab`}
             >
               <ExternalLink className='h-3.5 w-3.5' />

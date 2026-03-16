@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { getHackathonSubmissions } from '@/lib/api/hackathons';
 import type { ParticipantSubmission } from '@/lib/api/hackathons';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export type OrganizerSubmissionFilters = {
-  status?: 'SUBMITTED' | 'SHORTLISTED' | 'DISQUALIFIED' | 'WITHDRAWN';
+  status?: 'SUBMITTED' | 'SHORTLISTED' | 'DISQUALIFIED';
   type?: 'INDIVIDUAL' | 'TEAM';
   search?: string;
 };
@@ -33,6 +34,7 @@ export interface UseOrganizerSubmissionsReturn {
   ) => Promise<void>;
   goToPage: (page: number) => void;
   refresh: () => void;
+  updateLimit: (limit: number) => void;
 }
 
 export function useOrganizerSubmissions(
@@ -47,6 +49,8 @@ export function useOrganizerSubmissions(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const debouncedSearch = useDebounce(filters.search, 500);
+
   const fetchSubmissions = useCallback(
     async (page = 1, filterOverrides?: OrganizerSubmissionFilters) => {
       if (!hackathonId) return;
@@ -55,24 +59,32 @@ export function useOrganizerSubmissions(
       setError(null);
 
       try {
-        const appliedFilters = filterOverrides ?? filters;
+        const appliedFilters = filterOverrides ?? {
+          ...filters,
+          search: debouncedSearch,
+        };
         const res = await getHackathonSubmissions(
           hackathonId,
           page,
-          initialLimit,
+          pagination.limit || initialLimit,
           appliedFilters
         );
 
         const list = res.data?.submissions ?? [];
-        const pag = res.data?.pagination ?? {
-          page: 1,
-          limit: initialLimit,
-          total: 0,
-          totalPages: 0,
-        };
+        const rawPag = res.data?.pagination;
+
+        const currentPage = rawPag?.page || page;
+        const limit = rawPag?.limit || pagination.limit || initialLimit;
+        const total = rawPag?.total || 0;
+        const totalPages = rawPag?.totalPages || Math.ceil(total / limit) || 1;
 
         setSubmissions(list);
-        setPagination(pag);
+        setPagination({
+          page: currentPage,
+          limit,
+          total,
+          totalPages,
+        });
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Failed to fetch submissions'
@@ -83,16 +95,30 @@ export function useOrganizerSubmissions(
         setLoading(false);
       }
     },
-    [hackathonId, initialLimit, filters]
+    [
+      hackathonId,
+      initialLimit,
+      debouncedSearch,
+      pagination.limit,
+      filters.status,
+      filters.type,
+    ]
   );
 
-  const updateFilters = useCallback(
-    (next: OrganizerSubmissionFilters) => {
-      setFilters(next);
-      fetchSubmissions(1, next);
-    },
-    [fetchSubmissions]
-  );
+  // Sync with backend on filter/pagination changes
+  useEffect(() => {
+    fetchSubmissions(1);
+  }, [
+    fetchSubmissions,
+    debouncedSearch,
+    filters.status,
+    filters.type,
+    pagination.limit,
+  ]);
+
+  const updateFilters = useCallback((next: OrganizerSubmissionFilters) => {
+    setFilters(next);
+  }, []);
 
   const goToPage = useCallback(
     (page: number) => {
@@ -105,6 +131,10 @@ export function useOrganizerSubmissions(
     fetchSubmissions(pagination.page);
   }, [fetchSubmissions, pagination.page]);
 
+  const updateLimit = useCallback((nextLimit: number) => {
+    setPagination(prev => ({ ...prev, limit: nextLimit }));
+  }, []);
+
   return {
     submissions,
     pagination,
@@ -115,5 +145,6 @@ export function useOrganizerSubmissions(
     fetchSubmissions,
     goToPage,
     refresh,
+    updateLimit,
   };
 }

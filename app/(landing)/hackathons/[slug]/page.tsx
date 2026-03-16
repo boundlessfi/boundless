@@ -4,6 +4,10 @@ import { getHackathon } from '@/lib/api/hackathon';
 import { generateHackathonMetadata } from '@/lib/metadata';
 import { HackathonDataProvider } from '@/lib/providers/hackathonProvider';
 import HackathonPageClient from './HackathonPageClient';
+import Banner from './components/Banner';
+import Header from './components/header';
+import HackathonTabs from './components/tabs';
+import Sidebar from './components/sidebar';
 
 interface HackathonPageProps {
   params: Promise<{ slug: string }>;
@@ -41,9 +45,19 @@ export default async function HackathonPage({ params }: HackathonPageProps) {
       notFound();
     }
 
+    const hackathon = response.data;
+
     return (
-      <HackathonDataProvider hackathonSlug={slug}>
-        <HackathonPageClient />
+      <HackathonDataProvider hackathonSlug={slug} initialData={hackathon}>
+        <div className='relative'>
+          <Banner banner={hackathon.banner || ''} title={hackathon.name} />
+
+          <Header hackathon={hackathon} />
+          <div className='mb-6 block px-6 lg:hidden'>
+            <Sidebar />
+          </div>
+          <HackathonTabs sidebar={<Sidebar />} />
+        </div>
       </HackathonDataProvider>
     );
   } catch {

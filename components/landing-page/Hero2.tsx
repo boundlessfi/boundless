@@ -59,7 +59,7 @@ export default function Hero2() {
           <div className='space-y-4'>
             <h1 className='text-4xl leading-none font-bold tracking-tight md:text-6xl lg:text-7xl'>
               <span
-                className='bg-linear-to-r from-[#a7f950] to-[#8ae63a] bg-clip-text text-transparent'
+                className='from-primary bg-linear-to-r to-[#8ae63a] bg-clip-text text-transparent'
                 style={{ color: BRAND_COLOR }}
               >
                 Launch Projects

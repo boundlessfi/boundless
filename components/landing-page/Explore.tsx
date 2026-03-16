@@ -155,7 +155,7 @@ export default function Explore() {
   return (
     <section className='relative flex flex-col items-center justify-center text-white'>
       <div className='flex flex-col items-center gap-6 text-center'>
-        <p className='bg-gradient-to-r from-[#3AE6B2] to-[#A7F950] bg-clip-text text-transparent'>
+        <p className='to-primary bg-gradient-to-r from-[#3AE6B2] bg-clip-text text-transparent'>
           Active Opportunities
         </p>
         <h2 className='text-5xl max-sm:text-3xl'>Explore What's Happening</h2>
@@ -180,7 +180,7 @@ export default function Explore() {
           ))}
 
           <span
-            className='absolute bottom-0 h-[3px] bg-[#A7F950] transition-all duration-300 ease-in-out'
+            className='bg-primary absolute bottom-0 h-[3px] transition-all duration-300 ease-in-out'
             style={underlineStyle}
           />
         </div>

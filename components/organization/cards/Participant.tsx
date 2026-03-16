@@ -45,7 +45,7 @@ const Participant = ({
 
   // Check if submission is shortlisted
   const isShortlisted = useMemo(() => {
-    return participant.submission?.status === 'shortlisted';
+    return participant.submission?.status === 'SHORTLISTED';
   }, [participant.submission?.status]);
 
   // Fetch criteria when opening judge modal

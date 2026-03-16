@@ -67,8 +67,8 @@ export const ParticipantsGrid: React.FC<ParticipantsGridProps> = ({
         const user = participant.user;
         const submission = participant.submission;
         const hasSubmission = !!submission;
-        const isShortlisted = submission?.status === 'shortlisted';
-        const isDisqualified = submission?.status === 'disqualified';
+        const isShortlisted = submission?.status === 'SHORTLISTED';
+        const isDisqualified = submission?.status === 'DISQUALIFIED';
         const isTeam = participant.participationType === 'team';
 
         const votesCount = Array.isArray(submission?.votes)

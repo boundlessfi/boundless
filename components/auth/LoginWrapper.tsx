@@ -25,9 +25,14 @@ type FormData = z.infer<typeof formSchema>;
 
 interface LoginWrapperProps {
   setLoadingState: (isLoading: boolean) => void;
+  /** When provided (e.g. from AuthModalProvider), overrides URL search param and env default */
+  callbackUrl?: string;
 }
 
-const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
+const LoginWrapper = ({
+  setLoadingState,
+  callbackUrl: callbackUrlProp,
+}: LoginWrapperProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
@@ -35,9 +40,11 @@ const LoginWrapper = ({ setLoadingState }: LoginWrapperProps) => {
   const [lastMethod, setLastMethod] = useState<string | null>(null);
   const [twoFactorRequired, setTwoFactorRequired] = useState(false);
 
-  const rawCallbackUrl = searchParams.get('callbackUrl')
-    ? decodeURIComponent(searchParams.get('callbackUrl')!)
-    : process.env.NEXT_PUBLIC_APP_URL || '/';
+  const rawCallbackUrl =
+    callbackUrlProp ??
+    (searchParams.get('callbackUrl')
+      ? decodeURIComponent(searchParams.get('callbackUrl')!)
+      : process.env.NEXT_PUBLIC_APP_URL || '/');
 
   const appOrigin =
     typeof window !== 'undefined'

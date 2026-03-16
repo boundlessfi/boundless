@@ -81,7 +81,7 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
     setMessageLoading(true);
     try {
       const { conversation } = await createConversation(participant.userId);
-      openMessages(conversation.id);
+      openMessages({ conversationId: conversation.id });
     } catch (err) {
       reportError(err, {
         context: 'profile-card-message',
@@ -320,7 +320,7 @@ export function ProfileCard({ participant, onInviteClick }: ProfileCardProps) {
                   target='_blank'
                 >
                   <Avatar
-                    className='h-8 w-8 border-2 border-zinc-900 transition-all hover:z-10 hover:border-[#a7f950]'
+                    className='hover:border-primary h-8 w-8 border-2 border-zinc-900 transition-all hover:z-10'
                     title={member.name}
                   >
                     <AvatarImage

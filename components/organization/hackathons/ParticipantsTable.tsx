@@ -110,22 +110,25 @@ export function ParticipantsTable({
             );
           }
 
-          const status = submission.status;
+          const status = submission.status as
+            | 'SHORTLISTED'
+            | 'DISQUALIFIED'
+            | 'SUBMITTED';
           return (
             <Badge
               variant='outline'
               className={cn(
-                'capitalize',
-                status === 'shortlisted'
-                  ? 'border-green-500/30 bg-green-500/10 text-green-400'
-                  : status === 'disqualified'
-                    ? 'border-red-500/30 bg-red-500/10 text-red-400'
-                    : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400'
+                'rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors',
+                status === 'SHORTLISTED'
+                  ? 'border-primary/30 bg-primary/5 text-primary'
+                  : status === 'DISQUALIFIED'
+                    ? 'border-red-500/30 bg-red-500/5 text-red-400'
+                    : 'border-yellow-500/30 bg-yellow-500/5 text-yellow-400'
               )}
             >
-              {status === 'shortlisted'
+              {status === 'SHORTLISTED'
                 ? 'Shortlisted'
-                : status === 'disqualified'
+                : status === 'DISQUALIFIED'
                   ? 'Disqualified'
                   : 'Submitted'}
             </Badge>
@@ -150,7 +153,7 @@ export function ParticipantsTable({
           const participant = row.original;
           const hasSubmission = !!participant.submission;
           const isShortlisted =
-            participant.submission?.status === 'shortlisted';
+            participant.submission?.status === 'SHORTLISTED';
 
           return (
             <DropdownMenu>

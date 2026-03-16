@@ -78,10 +78,10 @@ export interface ParticipantSubmission {
   videoUrl?: string;
   introduction?: string;
   links?: Array<{ type: string; url: string }>;
-  votes: number | ParticipantVote[];
-  comments: number | ParticipantComment[];
-  submissionDate: string;
-  status: 'submitted' | 'shortlisted' | 'disqualified';
+  votes?: number | ParticipantVote[];
+  comments?: number | ParticipantComment[];
+  submissionDate?: string;
+  status: 'submitted' | 'shortlisted' | 'disqualified' | string;
   disqualificationReason?: string | null;
   reviewedBy?: {
     id: string;
@@ -107,6 +107,7 @@ export interface Participant {
       name: string;
       username: string;
       image?: string;
+      skills?: string[];
     };
     email: string;
   };

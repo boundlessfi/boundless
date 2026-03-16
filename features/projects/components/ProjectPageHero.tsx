@@ -55,7 +55,7 @@ export default function ProjectPageHero() {
             <BoundlessButton
               onClick={scrollToProjects}
               size='xl'
-              className='group relative transform rounded-lg bg-[#A7F950] px-6 py-3 text-sm font-semibold text-black transition-none duration-300 hover:!scale-none hover:shadow-lg hover:shadow-[#A7F950]/25 md:px-7 md:py-3.5 md:text-base lg:px-8 lg:py-4 lg:text-base'
+              className='group bg-primary hover:shadow-primary/25 relative transform rounded-lg px-6 py-3 text-sm font-semibold text-black transition-none duration-300 hover:!scale-none hover:shadow-lg md:px-7 md:py-3.5 md:text-base lg:px-8 lg:py-4 lg:text-base'
             >
               <span className='flex items-center gap-2'>
                 Start Exploring Projects

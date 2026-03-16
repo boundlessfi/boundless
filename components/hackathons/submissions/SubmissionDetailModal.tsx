@@ -157,7 +157,7 @@ export function SubmissionDetailModal({
 
         {isLoading ? (
           <div className='flex min-h-[400px] items-center justify-center'>
-            <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
+            <Loader2 className='text-primary h-8 w-8 animate-spin' />
           </div>
         ) : submission ? (
           <div className='space-y-6'>
@@ -166,16 +166,16 @@ export function SubmissionDetailModal({
               <div className='flex items-center gap-4'>
                 <Badge
                   className={`${
-                    submission.status === 'shortlisted'
-                      ? 'border-[#A7F950] bg-[#E5FFE5] text-[#4E9E00]'
-                      : submission.status === 'disqualified'
+                    submission.status === 'SHORTLISTED'
+                      ? 'border-primary bg-[#E5FFE5] text-[#4E9E00]'
+                      : submission.status === 'DISQUALIFIED'
                         ? 'border-[#FF5757] bg-[#FFEAEA] text-[#D33]'
                         : 'border-[#645D5D] bg-[#E4DBDB] text-[#645D5D]'
                   }`}
                 >
-                  {submission.status === 'shortlisted'
+                  {submission.status === 'SHORTLISTED'
                     ? 'Shortlisted'
-                    : submission.status === 'disqualified'
+                    : submission.status === 'DISQUALIFIED'
                       ? 'Disqualified'
                       : 'Submitted'}
                 </Badge>
@@ -190,7 +190,7 @@ export function SubmissionDetailModal({
                   className={`${
                     hasUserVoted
                       ? 'border-primary/20 bg-primary/10 text-primary border'
-                      : 'bg-[#A7F950] text-black hover:bg-[#8fd93f]'
+                      : 'bg-primary text-black hover:bg-[#8fd93f]'
                   }`}
                 >
                   {isVoting ? (
@@ -239,7 +239,7 @@ export function SubmissionDetailModal({
                   href={submission.videoUrl}
                   target='_blank'
                   rel='noopener noreferrer'
-                  className='flex items-center gap-2 text-[#a7f950] hover:underline'
+                  className='text-primary flex items-center gap-2 hover:underline'
                 >
                   <ExternalLink className='h-4 w-4' />
                   Watch Demo Video
@@ -258,7 +258,7 @@ export function SubmissionDetailModal({
                       href={link.url}
                       target='_blank'
                       rel='noopener noreferrer'
-                      className='flex items-center gap-2 text-[#a7f950] hover:underline'
+                      className='text-primary flex items-center gap-2 hover:underline'
                     >
                       <ExternalLink className='h-4 w-4' />
                       {link.type}: {link.url}
@@ -295,7 +295,7 @@ export function SubmissionDetailModal({
             </div>
 
             {/* Disqualification Reason */}
-            {submission.status === 'disqualified' &&
+            {submission.status === 'DISQUALIFIED' &&
               submission.disqualificationReason && (
                 <div className='rounded-lg border border-red-500/50 bg-red-500/10 p-4'>
                   <h4 className='mb-2 font-semibold text-red-400'>

@@ -638,7 +638,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     if (
       data.participationType === 'TEAM' &&
       myTeam &&
-      myTeam.leaderId !== user?.id
+      myTeam?.leader?.id !== user?.id
     ) {
       toast.error('Only the team leader can submit the project');
       return;
@@ -862,7 +862,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
               <div className='rounded-lg border border-blue-900/50 bg-blue-900/20 p-4'>
                 <p className='text-sm text-blue-200'>
                   This hackathon is set for{' '}
-                  <span className='font-bold text-[#a7f950]'>
+                  <span className='text-primary font-bold'>
                     {currentHackathon?.participantType === 'TEAM'
                       ? 'Team'
                       : 'Individual'}
@@ -876,7 +876,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
               <div className='mt-6 space-y-6 rounded-lg border border-gray-800 bg-gray-900/50 p-6'>
                 {isLoadingMyTeam ? (
                   <div className='flex items-center justify-center py-4'>
-                    <Loader2 className='h-6 w-6 animate-spin text-[#a7f950]' />
+                    <Loader2 className='text-primary h-6 w-6 animate-spin' />
                   </div>
                 ) : myTeam ? (
                   // Existing Team UI
@@ -892,13 +892,13 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                       </div>
                       <Badge
                         variant='outline'
-                        className='border-[#a7f950] text-[#a7f950]'
+                        className='border-primary text-primary'
                       >
                         Your Team
                       </Badge>
                     </div>
 
-                    {myTeam.leaderId !== user?.id && (
+                    {myTeam?.leader?.id !== user?.id && (
                       <Alert
                         variant='destructive'
                         className='mt-4 border-red-900/50 bg-red-900/20'
@@ -919,14 +919,21 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                         Team Members:
                       </p>
                       <div className='flex flex-wrap gap-2'>
-                        {myTeam.members?.map(member => (
+                        {(myTeam.members ?? []).map((member, idx) => (
                           <Badge
-                            key={member.userId}
-                            variant='secondary'
+                            key={
+                              typeof member === 'string'
+                                ? member
+                                : member.userId || idx
+                            }
+                            variant='outline'
                             className='bg-gray-800 text-gray-300'
                           >
-                            {member.name}{' '}
-                            {member.userId === myTeam.leaderId && '(Leader)'}
+                            {typeof member === 'string' ? member : member.name}{' '}
+                            {(typeof member === 'string'
+                              ? member === myTeam?.leader?.id
+                              : member.userId === myTeam?.leader?.id) &&
+                              '(Leader)'}
                           </Badge>
                         ))}
                       </div>
@@ -1452,7 +1459,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                       href={form.watch('videoUrl')}
                       target='_blank'
                       rel='noopener noreferrer'
-                      className='text-[#a7f950] hover:underline'
+                      className='text-primary hover:underline'
                     >
                       {form.watch('videoUrl')}
                     </a>
@@ -1485,7 +1492,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                               href={link.url}
                               target='_blank'
                               rel='noopener noreferrer'
-                              className='text-[#a7f950] hover:underline'
+                              className='text-primary hover:underline'
                             >
                               {link.url}
                             </a>
@@ -1548,10 +1555,10 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                     !!(
                       form.watch('participationType') === 'TEAM' &&
                       myTeam &&
-                      myTeam.leaderId !== user?.id
+                      myTeam?.leader?.id !== user?.id
                     )
                   }
-                  className='bg-[#a7f950] text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
+                  className='bg-primary text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
                 >
                   Next
                 </Button>
@@ -1563,10 +1570,10 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                       isSubmitting ||
                       (form.watch('participationType') === 'TEAM' &&
                         myTeam &&
-                        myTeam.leaderId !== user?.id)
+                        myTeam?.leader?.id !== user?.id)
                     )
                   }
-                  className='bg-[#a7f950] text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
+                  className='bg-primary text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
                 >
                   {isSubmitting ? (
                     <>

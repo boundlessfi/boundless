@@ -25,7 +25,7 @@ export function TeamInvitationsList({
   if (isLoading) {
     return (
       <div className='flex justify-center py-8'>
-        <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
+        <Loader2 className='text-primary h-8 w-8 animate-spin' />
       </div>
     );
   }
@@ -76,7 +76,7 @@ export function TeamInvitationsList({
                           variant='outline'
                           className={`h-4 px-1 py-0 text-[10px] ${
                             invite.status === 'pending'
-                              ? 'border-[#a7f950]/30 text-[#a7f950]'
+                              ? 'border-primary/30 text-primary'
                               : 'border-zinc-700 text-zinc-500'
                           }`}
                         >

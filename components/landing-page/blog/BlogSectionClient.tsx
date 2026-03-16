@@ -38,7 +38,7 @@ const BlogSectionClient = ({ posts }: BlogSectionClientProps) => {
       >
         <header className='mb-16 flex items-end justify-between'>
           <div className='max-w-[628px]'>
-            <h3 className='bg-gradient-to-r from-[#3AE6B2] to-[#A7F950] bg-clip-text text-transparent'>
+            <h3 className='to-primary bg-gradient-to-r from-[#3AE6B2] bg-clip-text text-transparent'>
               From the Blog
             </h3>
             <h2

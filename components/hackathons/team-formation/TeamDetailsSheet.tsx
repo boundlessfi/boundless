@@ -19,10 +19,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import BoundlessSheet from '@/components/sheet/boundless-sheet';
 import {
-  type TeamRecruitmentPost,
-  getTeamPostDetails,
+  type Team as TeamRecruitmentPost,
+  getTeamDetails as getTeamPostDetails,
   toggleRoleHired,
-} from '@/lib/api/hackathons';
+} from '@/lib/api/hackathons/teams';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { toast } from 'sonner';
@@ -138,7 +138,7 @@ export function TeamDetailsSheet({
   const [hiredRoles, setHiredRoles] = useState<Set<string>>(new Set());
   const [togglingRole, setTogglingRole] = useState<string | null>(null);
 
-  const isLeader = post.leaderId === user?.id;
+  const isLeader = post.leader?.id === user?.id;
 
   useEffect(() => {
     if (open && initialPost) {
@@ -159,8 +159,7 @@ export function TeamDetailsSheet({
         try {
           const response = await getTeamPostDetails(
             hackathonSlugOrId,
-            initialPost.id,
-            organizationId
+            initialPost.id
           );
           if (response.success && response.data) {
             setPost(response.data);
@@ -202,8 +201,13 @@ export function TeamDetailsSheet({
   // Find leader
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const leader =
-    post.members.find(m => m.role === 'leader' || m.userId === post.leaderId) ||
-    post.members[0];
+    (Array.isArray(post.members) &&
+      post.members.find(m =>
+        typeof m === 'string'
+          ? m === post.leader?.id
+          : m.role === 'leader' || m.userId === post.leader?.id
+      )) ||
+    post.leader;
 
   const handleContactClick = () => {
     onContactClick(post);
@@ -230,16 +234,12 @@ export function TeamDetailsSheet({
     });
 
     try {
-      const response = await toggleRoleHired(
-        hackathonSlugOrId,
-        post.id,
-        { skill },
-        organizationId
-      );
+      const response = await toggleRoleHired(hackathonSlugOrId, post.id, skill);
 
-      if (response.success) {
+      if (response.success && response.data) {
+        const data = response.data as { skill: string; hired: boolean };
         toast.success(
-          response.data.hired
+          data.hired
             ? `Marked "${skill}" as filled`
             : `Marked "${skill}" as open`
         );
@@ -276,7 +276,7 @@ export function TeamDetailsSheet({
                   <Badge
                     className={`rounded border px-2 py-0.5 text-xs font-medium ${
                       post.isOpen
-                        ? 'border-[#A7F950] bg-[#A7F950]/10 text-[#A7F950]'
+                        ? 'border-primary bg-primary/10 text-primary'
                         : 'border-gray-500 bg-gray-500/10 text-gray-500'
                     }`}
                   >
@@ -284,7 +284,7 @@ export function TeamDetailsSheet({
                   </Badge>
                   {/* Pinned Badge if applicable (can be passed as prop or inferred if myTeam) */}
                   {isLeader && (
-                    <Badge className='flex items-center gap-1 border-[#A7F950]/50 bg-[#A7F950]/10 text-[#A7F950]'>
+                    <Badge className='border-primary/50 bg-primary/10 text-primary flex items-center gap-1'>
                       <Pin className='h-3 w-3' />
                       Your Team
                     </Badge>
@@ -347,14 +347,15 @@ export function TeamDetailsSheet({
               {post.lookingFor.length > 0 && (
                 <section>
                   <h3 className='mb-3 flex items-center gap-2 text-lg font-semibold text-white'>
-                    <Briefcase className='h-5 w-5 text-[#A7F950]' />
+                    <Briefcase className='text-primary h-5 w-5' />
                     Looking For
                   </h3>
                   <div className='space-y-2'>
-                    {post.lookingFor.map((role, index) => {
-                      const roleSkill = typeof role === 'string' ? role : role;
-                      const isHired = hiredRoles.has(roleSkill);
-                      const isToggling = togglingRole === roleSkill;
+                    {post.lookingFor.map((roleObj, index) => {
+                      const roleName =
+                        typeof roleObj === 'string' ? roleObj : roleObj.role;
+                      const isHired = hiredRoles.has(roleName);
+                      const isToggling = togglingRole === roleName;
 
                       return (
                         <div
@@ -368,10 +369,10 @@ export function TeamDetailsSheet({
                                 : 'bg-gray-800 text-gray-200'
                             }`}
                           >
-                            {roleSkill}
+                            {roleName}
                           </Badge>
                           {isHired && (
-                            <Badge className='border-[#A7F950] bg-[#A7F950]/10 text-xs text-[#A7F950]'>
+                            <Badge className='border-primary bg-primary/10 text-primary text-xs'>
                               <Check className='mr-1 h-3 w-3' />
                               Filled
                             </Badge>
@@ -384,10 +385,10 @@ export function TeamDetailsSheet({
                               <Switch
                                 checked={isHired}
                                 onCheckedChange={() =>
-                                  handleToggleRoleHired(roleSkill)
+                                  handleToggleRoleHired(roleName)
                                 }
                                 disabled={isToggling}
-                                className='data-[state=checked]:bg-[#A7F950]'
+                                className='data-[state=checked]:bg-primary'
                               />
                             </div>
                           )}
@@ -406,20 +407,34 @@ export function TeamDetailsSheet({
                 <div className='grid gap-3'>
                   {post.members.map(member => (
                     <div
-                      key={member.userId}
+                      key={typeof member === 'string' ? member : member.userId}
                       className='flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-900/30 p-3'
                     >
                       <Avatar className='h-10 w-10 border border-gray-700'>
-                        <AvatarImage src={member.image} alt={member.name} />
-                        <AvatarFallback className='bg-gray-800 text-gray-400'>
-                          {member.name.charAt(0).toUpperCase()}
+                        <AvatarImage
+                          src={
+                            typeof member === 'string'
+                              ? undefined
+                              : member.image
+                          }
+                          alt={
+                            typeof member === 'string' ? 'Member' : member.name
+                          }
+                        />
+                        <AvatarFallback className='bg-gray-700 text-white'>
+                          {(typeof member === 'string'
+                            ? 'M'
+                            : member.name.charAt(0)
+                          ).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className='font-medium text-white'>
-                          {member.name}
-                          {member.userId === post.leaderId && (
-                            <span className='ml-2 text-xs text-[#A7F950]'>
+                          {typeof member === 'string' ? 'Member' : member.name}
+                          {(typeof member === 'string'
+                            ? member
+                            : member.userId) === post.leader?.id && (
+                            <span className='text-primary ml-2 text-xs'>
                               (Leader)
                             </span>
                           )}
@@ -466,7 +481,7 @@ export function TeamDetailsSheet({
         <div className='border-t border-gray-800 p-6'>
           <Button
             onClick={handleContactClick}
-            className='bg-[#A7F950] text-lg font-semibold text-black hover:bg-[#8fd93f]'
+            className='bg-primary text-lg font-semibold text-black hover:bg-[#8fd93f]'
           >
             <ContactIcon className='mr-2 h-5 w-5' />
             Contact Team

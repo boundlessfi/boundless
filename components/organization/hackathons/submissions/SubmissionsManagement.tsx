@@ -32,11 +32,7 @@ import { useUpdateRank } from '@/hooks/hackathon/use-update-rank';
 /*                                   Types                                    */
 /* -------------------------------------------------------------------------- */
 
-type SubmissionStatus =
-  | 'SUBMITTED'
-  | 'SHORTLISTED'
-  | 'DISQUALIFIED'
-  | 'WITHDRAWN';
+type SubmissionStatus = 'SUBMITTED' | 'SHORTLISTED' | 'DISQUALIFIED';
 
 type SubmissionType = 'INDIVIDUAL' | 'TEAM';
 
@@ -58,6 +54,7 @@ interface SubmissionsManagementProps {
   loading: boolean;
   onFilterChange: (filters: SubmissionFilters) => void;
   onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
   onRefresh: () => void;
   organizationId?: string;
   hackathonId?: string;
@@ -83,7 +80,6 @@ export function SubmissionsManagement({
   hackathon,
 }: SubmissionsManagementProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-  const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showBulkDisqualifyDialog, setShowBulkDisqualifyDialog] =
     useState(false);
@@ -143,9 +139,8 @@ export function SubmissionsManagement({
     onRefresh();
   };
 
-  const handleSearchSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    onFilterChange({ ...filters, search: searchTerm });
+  const handleSearchTermChange = (value: string) => {
+    onFilterChange({ ...filters, search: value });
   };
 
   const handleStatusChange = (value: string) => {
@@ -214,18 +209,16 @@ export function SubmissionsManagement({
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSearchSubmit}>
-              <div className='relative'>
-                <Search className='pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400' />
-                <Input
-                  type='text'
-                  placeholder='Search submissions...'
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className='focus:border-primary focus:ring-primary border-gray-700/50 bg-gray-900/50 pl-10 text-white placeholder:text-gray-500'
-                />
-              </div>
-            </form>
+            <div className='relative'>
+              <Search className='pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400' />
+              <Input
+                type='text'
+                placeholder='Search submissions...'
+                value={filters.search || ''}
+                onChange={e => handleSearchTermChange(e.target.value)}
+                className='focus:border-primary focus:ring-primary border-gray-700/50 bg-gray-900/50 pl-10 text-white placeholder:text-gray-500'
+              />
+            </div>
           )}
         </div>
 
@@ -244,7 +237,6 @@ export function SubmissionsManagement({
               <SelectItem value='SUBMITTED'>Submitted</SelectItem>
               <SelectItem value='SHORTLISTED'>Shortlisted</SelectItem>
               <SelectItem value='DISQUALIFIED'>Disqualified</SelectItem>
-              <SelectItem value='WITHDRAWN'>Withdrawn</SelectItem>
             </SelectContent>
           </Select>
 
@@ -338,32 +330,7 @@ export function SubmissionsManagement({
         isSubmitting={isBulkLoading}
       />
 
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className='flex items-center justify-center gap-2'>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => onPageChange(pagination.page - 1)}
-            disabled={pagination.page <= 1 || loading}
-            className='border-gray-700/50 bg-gray-900/50 text-white hover:bg-gray-800'
-          >
-            Previous
-          </Button>
-          <span className='text-sm text-gray-400'>
-            Page {pagination.page} of {pagination.totalPages}
-          </span>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => onPageChange(pagination.page + 1)}
-            disabled={pagination.page >= pagination.totalPages || loading}
-            className='border-gray-700/50 bg-gray-900/50 text-white hover:bg-gray-800'
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      {/* Pagination removed - controlled externally by page.tsx */}
     </div>
   );
 }

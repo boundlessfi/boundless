@@ -26,14 +26,18 @@ export function useHackathonSubmissions(
       setError(null);
 
       try {
-        const data = await getExploreSubmissions(
+        const response = await getExploreSubmissions(
           hackathonId,
           page,
           pagination.limit
         );
-        setSubmissions(data);
-        // No pagination info from getExploreSubmissions, so just update page/limit
-        setPagination(prev => ({ ...prev, page }));
+        setSubmissions(response.data.submissions);
+        setPagination(prev => ({
+          ...prev,
+          page,
+          total: response.data.pagination.total,
+          totalPages: response.data.pagination.totalPages,
+        }));
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Failed to fetch submissions'
