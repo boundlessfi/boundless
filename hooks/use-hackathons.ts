@@ -582,7 +582,8 @@ export function useHackathons(
         const responsePage = pagination?.page || 1;
         const totalItems = pagination?.total || 0;
         const itemsPerPage = pagination?.limit || pageSize;
-        const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+        const totalPages =
+          pagination?.totalPages || Math.ceil(totalItems / itemsPerPage) || 1;
 
         setParticipants(response.data?.participants || []);
         setParticipantsPagination({

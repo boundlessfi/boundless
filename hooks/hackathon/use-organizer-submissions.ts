@@ -76,7 +76,7 @@ export function useOrganizerSubmissions(
         const currentPage = rawPag?.page || page;
         const limit = rawPag?.limit || pagination.limit || initialLimit;
         const total = rawPag?.total || 0;
-        const totalPages = Math.ceil(total / limit) || 1;
+        const totalPages = rawPag?.totalPages || Math.ceil(total / limit) || 1;
 
         setSubmissions(list);
         setPagination({
