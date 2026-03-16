@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useOrganizerSubmissions } from '@/hooks/hackathon/use-organizer-submissions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -9,8 +9,14 @@ import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
 import { SubmissionsManagement } from '@/components/organization/hackathons/submissions/SubmissionsManagement';
 import { authClient } from '@/lib/auth-client';
-import { getHackathon, type Hackathon } from '@/lib/api/hackathons';
+import {
+  getHackathon,
+  type Hackathon,
+  type ParticipantSubmission,
+} from '@/lib/api/hackathons';
 import { reportError } from '@/lib/error-reporting';
+import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
 
 export default function SubmissionsPage() {
   const params = useParams();
@@ -18,7 +24,7 @@ export default function SubmissionsPage() {
   const organizationId = params.id as string;
 
   const {
-    submissions,
+    submissions: allSubmissions,
     pagination,
     filters,
     loading,
@@ -27,6 +33,7 @@ export default function SubmissionsPage() {
     updateFilters,
     goToPage,
     refresh,
+    updateLimit,
   } = useOrganizerSubmissions(hackathonId);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -34,7 +41,6 @@ export default function SubmissionsPage() {
 
   useEffect(() => {
     if (hackathonId) {
-      fetchSubmissions();
       const fetchHackathonDetails = async () => {
         try {
           const res = await getHackathon(hackathonId);
@@ -50,7 +56,7 @@ export default function SubmissionsPage() {
       };
       fetchHackathonDetails();
     }
-  }, [hackathonId, fetchSubmissions]);
+  }, [hackathonId]);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -65,6 +71,33 @@ export default function SubmissionsPage() {
     };
     fetchSession();
   }, []);
+
+  const table = useReactTable({
+    data: allSubmissions,
+    columns: [],
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    pageCount: pagination.totalPages,
+    state: {
+      pagination: {
+        pageIndex: pagination.page - 1,
+        pageSize: pagination.limit,
+      },
+    },
+    onPaginationChange: updater => {
+      if (typeof updater === 'function') {
+        const newState = updater({
+          pageIndex: pagination.page - 1,
+          pageSize: pagination.limit,
+        });
+        if (newState.pageSize !== pagination.limit) {
+          updateLimit(newState.pageSize);
+        } else {
+          goToPage(newState.pageIndex + 1);
+        }
+      }
+    },
+  });
 
   if (error) {
     return (
@@ -100,7 +133,7 @@ export default function SubmissionsPage() {
 
         {/* Main Content */}
         <div className='mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-12'>
-          {loading && submissions.length === 0 ? (
+          {loading && allSubmissions.length === 0 ? (
             <div className='flex items-center justify-center py-20'>
               <div className='flex flex-col items-center gap-3'>
                 <Loader2 className='h-6 w-6 animate-spin text-gray-400' />
@@ -108,19 +141,25 @@ export default function SubmissionsPage() {
               </div>
             </div>
           ) : (
-            <SubmissionsManagement
-              submissions={submissions}
-              pagination={pagination}
-              filters={filters}
-              loading={loading}
-              onFilterChange={updateFilters}
-              onPageChange={goToPage}
-              onRefresh={refresh}
-              organizationId={organizationId}
-              hackathonId={hackathonId}
-              currentUserId={currentUserId || undefined}
-              hackathon={hackathon || undefined}
-            />
+            <div className='space-y-6'>
+              <SubmissionsManagement
+                submissions={allSubmissions}
+                pagination={pagination}
+                filters={filters}
+                loading={loading}
+                onFilterChange={updateFilters}
+                onPageChange={goToPage}
+                onRefresh={refresh}
+                organizationId={organizationId}
+                hackathonId={hackathonId}
+                currentUserId={currentUserId || undefined}
+                hackathon={hackathon || undefined}
+              />
+
+              <div className='flex justify-end'>
+                <DataTablePagination table={table} loading={loading} />
+              </div>
+            </div>
           )}
         </div>
       </div>

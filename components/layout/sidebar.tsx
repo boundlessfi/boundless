@@ -31,7 +31,7 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion } from 'motion/react';
 import { fadeInUp, staggerContainer } from '@/lib/motion';
-import { useAuth } from '@/hooks/use-auth';
+import { useOptionalAuth } from '@/hooks/use-auth';
 
 const navigationItems = [
   {
@@ -84,7 +84,7 @@ const utilityItems = [
 const SidebarLayout: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -250,7 +250,7 @@ const SidebarLayout: React.FC = () => {
                               />
                               {isActive && (
                                 <motion.span
-                                  className='absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-r-[2px] bg-[#A7F950] sm:h-7'
+                                  className='bg-primary absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-r-[2px] sm:h-7'
                                   initial={{ scaleX: 0 }}
                                   animate={{ scaleX: 1 }}
                                   transition={{ delay: 0.1 }}

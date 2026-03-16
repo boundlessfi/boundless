@@ -35,6 +35,7 @@ interface HackathonStickyCardProps {
   onLeaveClick?: () => void;
   participantType?: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
   submissionDeadlineExtendedAt?: string | null;
+  status?: string;
 }
 
 export function HackathonStickyCard(props: HackathonStickyCardProps) {
@@ -56,9 +57,10 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
     isLeaving,
     participantType,
     submissionDeadlineExtendedAt,
+    status: backendStatus,
   } = props;
 
-  const { status } = useHackathonStatus(startDate, deadline);
+  const { status } = useHackathonStatus(startDate, deadline, backendStatus);
   const { isAuthenticated } = useAuthStatus();
   const router = useRouter();
   const pathname = usePathname();
@@ -100,7 +102,7 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
 
   return (
     <div className='sticky top-18 hidden lg:block'>
-      <Card className='overflow-hidden border border-[#a7f950]/30 bg-linear-to-br from-[#a7f950]/10 to-transparent p-0'>
+      <Card className='border-primary/30 from-primary/10 overflow-hidden border bg-linear-to-br to-transparent p-0'>
         {imageUrl && (
           <div className='relative h-60 w-full'>
             <Image
@@ -127,12 +129,12 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
         <div className='m-0 space-y-3 p-4'>
           {/* Prize Pool Section */}
           {totalPrizePool && (
-            <div className='rounded-lg border border-[#a7f950]/30 bg-[#a7f950]/10 py-2 text-center'>
+            <div className='border-primary/30 bg-primary/10 rounded-lg border py-2 text-center'>
               <div className='mb-0.5 flex items-center justify-center gap-1.5'>
-                <Trophy className='h-3.5 w-3.5 text-[#a7f950]' />
+                <Trophy className='text-primary h-3.5 w-3.5' />
                 <span className='text-xs text-gray-400'>Prize Pool</span>
               </div>
-              <div className='text-xl font-black text-[#a7f950]'>
+              <div className='text-primary text-xl font-black'>
                 ${totalPrizePool}
               </div>
             </div>
@@ -165,7 +167,7 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
                 <span className='text-xs text-white'>
                   {formatDateWithFallback(deadline)}
                   {submissionDeadlineExtendedAt && (
-                    <span className='ml-1.5 rounded-full bg-[#a7f950]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#a7f950] uppercase'>
+                    <span className='bg-primary/20 text-primary ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase'>
                       Extended
                     </span>
                   )}
@@ -209,7 +211,7 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
                   onClick={
                     !isAuthenticated ? handleRedirectToAuth : onJoinClick
                   }
-                  className='w-full bg-[#a7f950] py-4 text-sm font-bold text-black hover:bg-[#8fd93f]'
+                  className='bg-primary w-full py-4 text-sm font-bold text-black hover:bg-[#8fd93f]'
                 >
                   <Calendar className='mr-1.5 h-3.5 w-3.5' />
                   {getRegisterButtonText || 'Join'}
@@ -238,7 +240,7 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
             {status === 'ongoing' && isRegistered && !hasSubmitted && (
               <Button
                 onClick={onSubmitClick}
-                className='w-full bg-[#a7f950] py-4 text-sm text-black hover:bg-[#8fd93f]'
+                className='bg-primary w-full py-4 text-sm text-black hover:bg-[#8fd93f]'
               >
                 <Plus className='mr-1.5 h-3.5 w-3.5' />
                 Submit Project

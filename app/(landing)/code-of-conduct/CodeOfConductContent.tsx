@@ -192,7 +192,7 @@ const CodeOfConductContent = () => {
                   placeholder='Search keyword'
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className='bg-background-card w-full rounded-lg border border-[#2B2B2B] py-2.5 pr-4 pl-10 text-sm text-white placeholder:text-gray-500 focus:border-[#A7F950] focus:ring-1 focus:ring-[#A7F950] focus:outline-none'
+                  className='bg-background-card focus:border-primary focus:ring-primary w-full rounded-lg border border-[#2B2B2B] py-2.5 pr-4 pl-10 text-sm text-white placeholder:text-gray-500 focus:ring-1 focus:outline-none'
                 />
               </div>
 
@@ -209,7 +209,7 @@ const CodeOfConductContent = () => {
                         onClick={() => scrollToSection(item.id)}
                         className={`block w-full rounded px-3 py-2 text-left text-sm transition-colors hover:bg-[#1a1a1a] ${
                           activeSection === item.id
-                            ? 'bg-[#1a1a1a] text-[#A7F950]'
+                            ? 'text-primary bg-[#1a1a1a]'
                             : 'text-gray-300'
                         }`}
                       >
@@ -755,7 +755,7 @@ const CodeOfConductContent = () => {
                     href='https://www.contributor-covenant.org/faq'
                     target='_blank'
                     rel='noopener noreferrer'
-                    className='text-[#A7F950] hover:underline'
+                    className='text-primary hover:underline'
                   >
                     https://www.contributor-covenant.org/faq
                   </a>
@@ -785,14 +785,14 @@ const CodeOfConductContent = () => {
                 <div className='flex flex-col gap-3'>
                   <a
                     href='mailto:collins@boundlessfi.xyz?cc=benjamin@boundlessfi.xyz&subject=Code%20of%20Conduct%20Inquiry'
-                    className='flex items-center gap-2 text-[#A7F950] hover:underline'
+                    className='text-primary flex items-center gap-2 hover:underline'
                   >
                     <Mail className='h-4 w-4' />
                     <span>collins@boundlessfi.xyz</span>
                   </a>
                   <a
                     href='https://boundlessfi.xyz'
-                    className='flex items-center gap-2 text-[#A7F950] hover:underline'
+                    className='text-primary flex items-center gap-2 hover:underline'
                   >
                     <Globe className='h-4 w-4' />
                     <span>https://boundlessfi.xyz</span>

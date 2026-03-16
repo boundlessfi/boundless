@@ -133,7 +133,7 @@ export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
                   <IconBell className='h-4 w-4' />
                   <span>Notifications</span>
                   {unreadNotifications > 0 && (
-                    <Badge className='ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#a7f950] text-xs font-bold text-black'>
+                    <Badge className='bg-primary ml-auto flex h-5 min-w-5 items-center justify-center rounded-full text-xs font-bold text-black'>
                       {unreadNotifications}
                     </Badge>
                   )}

@@ -18,7 +18,7 @@ const MilestoneSubmissionSuccess: React.FC<MilestoneSubmissionSuccessProps> = ({
         <h1 className='text-3xl font-bold text-white'>Proof Submitted!</h1>
 
         <div className='flex justify-center'>
-          <div className='flex h-20 w-20 items-center justify-center rounded-full bg-[#A7F950]'>
+          <div className='bg-primary flex h-20 w-20 items-center justify-center rounded-full'>
             <Check className='h-10 w-10 text-white' />
           </div>
         </div>
@@ -34,7 +34,7 @@ const MilestoneSubmissionSuccess: React.FC<MilestoneSubmissionSuccessProps> = ({
             You can track the status of your submission anytime on the{' '}
             <Link
               href='/user/projects'
-              className='font-medium text-[#A7F950] underline transition-colors hover:text-[#8BE03A]'
+              className='text-primary font-medium underline transition-colors hover:text-[#8BE03A]'
             >
               Projects page.
             </Link>
@@ -44,7 +44,7 @@ const MilestoneSubmissionSuccess: React.FC<MilestoneSubmissionSuccessProps> = ({
         <div className='pt-4'>
           <BoundlessButton
             onClick={onContinue}
-            className='min-w-[200px] rounded-lg bg-[#A7F950] px-8 py-3 text-base font-medium text-black transition-colors hover:bg-[#8BE03A]'
+            className='bg-primary min-w-[200px] rounded-lg px-8 py-3 text-base font-medium text-black transition-colors hover:bg-[#8BE03A]'
           >
             Continue
           </BoundlessButton>

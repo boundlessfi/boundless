@@ -179,7 +179,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({
               <div className='flex gap-3 lg:flex-col'>
                 <button
                   onClick={() => handleShare('twitter')}
-                  className='bg-active-bg flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-[#A7F950]/80 focus:ring-2 focus:ring-[#A7F950]/50 focus:outline-none'
+                  className='bg-active-bg hover:bg-primary/80 focus:ring-primary/50 flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors focus:ring-2 focus:outline-none'
                   aria-label='Share on Twitter'
                 >
                   <svg
@@ -200,7 +200,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({
                 </button>
                 <button
                   onClick={() => handleShare('discord')}
-                  className='bg-active-bg flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-[#A7F950]/80 focus:ring-2 focus:ring-[#A7F950]/50 focus:outline-none'
+                  className='bg-active-bg hover:bg-primary/80 focus:ring-primary/50 flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors focus:ring-2 focus:outline-none'
                   aria-label='Copy for Discord'
                 >
                   {copiedStates.discord ? (
@@ -223,7 +223,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({
                 </button>
                 <button
                   onClick={() => handleShare('send')}
-                  className='bg-active-bg flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-[#A7F950]/80 focus:ring-2 focus:ring-[#A7F950]/50 focus:outline-none'
+                  className='bg-active-bg hover:bg-primary/80 focus:ring-primary/50 flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors focus:ring-2 focus:outline-none'
                   aria-label='Share via native share'
                 >
                   <svg
@@ -244,7 +244,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({
                 </button>
                 <button
                   onClick={() => handleShare('link')}
-                  className='bg-active-bg flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-[#A7F950]/80 focus:ring-2 focus:ring-[#A7F950]/50 focus:outline-none'
+                  className='bg-active-bg hover:bg-primary/80 focus:ring-primary/50 flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors focus:ring-2 focus:outline-none'
                   aria-label='Copy link'
                 >
                   {copiedStates.link ? (

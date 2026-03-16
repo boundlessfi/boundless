@@ -53,10 +53,12 @@ export function HackathonBanner({
   onViewSubmissionClick,
   onFindTeamClick,
   onLeaveClick,
+  status: backendStatus,
 }: HackathonBannerProps) {
   const { status, timeRemaining, formatCountdown } = useHackathonStatus(
     startDate,
-    deadline
+    deadline,
+    backendStatus
   );
   const { isAuthenticated } = useAuthStatus();
   const router = useRouter();
@@ -172,7 +174,7 @@ export function HackathonBanner({
     return (
       <Button
         onClick={!isAuthenticated ? handleRedirectToAuthScreen : onJoinClick}
-        className='w-full bg-[#a7f950] py-5 text-base font-bold text-black hover:bg-[#8fd93f]'
+        className='bg-primary w-full py-5 text-base font-bold text-black hover:bg-[#8fd93f]'
       >
         <Calendar className='mr-2 h-4 w-4' />
         {buttonText}
@@ -183,7 +185,7 @@ export function HackathonBanner({
 
   return (
     <div className='mb-6 w-full'>
-      <div className='relative overflow-hidden rounded-xl border border-[#a7f950]/30 bg-linear-to-br from-[#a7f950]/10 to-transparent'>
+      <div className='border-primary/30 from-primary/10 relative overflow-hidden rounded-xl border bg-linear-to-br to-transparent'>
         {/* Wave Background */}
         <div className='absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-xl opacity-5'>
           <Image
@@ -196,7 +198,7 @@ export function HackathonBanner({
         </div>
 
         {/* Gradient overlay */}
-        <div className='absolute inset-0 bg-linear-to-br from-[#a7f950]/5 via-transparent to-[#a7f950]/5' />
+        <div className='from-primary/5 to-primary/5 absolute inset-0 bg-linear-to-br via-transparent' />
 
         <div className='relative z-10 p-5 lg:p-6'>
           {/* Status Badge */}
@@ -210,7 +212,7 @@ export function HackathonBanner({
             {participantType && (
               <>
                 <div className='h-1 w-1 rounded-full bg-gray-600' />
-                <span className='text-xs font-semibold tracking-wide text-[#a7f950] uppercase'>
+                <span className='text-primary text-xs font-semibold tracking-wide uppercase'>
                   {participantType === 'TEAM_OR_INDIVIDUAL'
                     ? 'Hybrid'
                     : participantType.toLowerCase()}
@@ -237,7 +239,7 @@ export function HackathonBanner({
               {categories.map((cat, i) => (
                 <span
                   key={i}
-                  className='rounded-full border border-[#a7f950]/30 bg-[#a7f950]/20 px-3 py-1 text-xs font-medium text-[#a7f950]'
+                  className='border-primary/30 bg-primary/20 text-primary rounded-full border px-3 py-1 text-xs font-medium'
                 >
                   {cat}
                 </span>
@@ -255,7 +257,7 @@ export function HackathonBanner({
                     {status === 'ongoing' ? 'Ends In' : 'Starts In'}
                   </span>
                   {status === 'ongoing' && submissionDeadlineExtendedAt && (
-                    <span className='ml-1.5 rounded-full bg-[#a7f950]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#a7f950] uppercase'>
+                    <span className='bg-primary/20 text-primary ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase'>
                       Extended
                     </span>
                   )}
@@ -289,12 +291,12 @@ export function HackathonBanner({
             {totalPrizePool && (
               <div className='col-span-2 block rounded-lg border border-gray-800 bg-gray-900/60 p-3 backdrop-blur-sm lg:hidden'>
                 <div className='mb-1 flex items-center gap-1.5'>
-                  <Trophy className='h-3.5 w-3.5 text-[#a7f950]' />
+                  <Trophy className='text-primary h-3.5 w-3.5' />
                   <span className='text-xs tracking-wide text-gray-400 uppercase'>
                     Total Prize Pool
                   </span>
                 </div>
-                <div className='text-lg font-bold text-[#a7f950]'>
+                <div className='text-primary text-lg font-bold'>
                   ${totalPrizePool}
                 </div>
               </div>
@@ -311,7 +313,7 @@ export function HackathonBanner({
               onSubmitClick && (
                 <Button
                   onClick={onSubmitClick}
-                  className='w-full bg-[#a7f950] py-5 font-bold text-black hover:bg-[#8fd93f]'
+                  className='bg-primary w-full py-5 font-bold text-black hover:bg-[#8fd93f]'
                 >
                   <FileText className='mr-2 h-4 w-4' />
                   Submit Project

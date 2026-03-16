@@ -28,7 +28,7 @@ interface SubmissionCardProps {
   title: string;
   description: string;
   submitterName: string;
-  submitterAvatar?: string;
+  submitterAvatar?: string | null;
   category?: string;
   categories?: string[];
   status?: 'Pending' | 'Approved' | 'Rejected';
@@ -140,11 +140,11 @@ const SubmissionCard = ({
   return (
     <div
       onClick={onViewClick}
-      className={`group hover:border-primary/45 bg-background-main-bg mx-auto w-full max-w-[397px] cursor-pointer overflow-hidden rounded-lg border border-[#2B2B2B] p-4 transition-all sm:p-5 ${onViewClick ? 'hover:border-[#A7F950]/50' : ''}`}
+      className={`group hover:border-primary/45 bg-background-main-bg mx-auto w-full max-w-[397px] cursor-pointer overflow-hidden rounded-lg border border-[#2B2B2B] p-4 transition-all sm:p-5 ${onViewClick ? 'hover:border-primary/50' : ''}`}
     >
       {isPinned && (
-        <div className='mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#A7F950]'>
-          <Pin className='h-3.5 w-3.5 fill-[#A7F950]' />
+        <div className='text-primary mb-2 flex items-center gap-1.5 text-xs font-semibold'>
+          <Pin className='fill-primary h-3.5 w-3.5' />
           <span>Your Submission</span>
         </div>
       )}
@@ -154,7 +154,7 @@ const SubmissionCard = ({
         <div className='flex items-center gap-2'>
           <div
             style={{ backgroundImage: `url(${submitterAvatar})` }}
-            className={`size-8 rounded-full border-2 bg-white bg-cover bg-center ${isPinned ? 'border-[#A7F950]' : 'border-[#2B2B2B]'}`}
+            className={`size-8 rounded-full border-2 bg-white bg-cover bg-center ${isPinned ? 'border-primary' : 'border-[#2B2B2B]'}`}
           ></div>
           <div className='flex flex-col'>
             <h4 className='text-sm font-medium text-white'>{submitterName}</h4>
@@ -166,7 +166,7 @@ const SubmissionCard = ({
           <Badge
             className={`shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
               status === 'Approved'
-                ? 'border-[#A7F950] bg-[#E5FFE5] text-[#4E9E00]'
+                ? 'border-primary bg-[#E5FFE5] text-[#4E9E00]'
                 : status === 'Rejected'
                   ? 'border-[#FF5757] bg-[#FFEAEA] text-[#D33]'
                   : 'border-[#645D5D] bg-[#E4DBDB] text-[#645D5D]'
@@ -254,7 +254,7 @@ const SubmissionCard = ({
           <span>
             Submitted: {submittedDate ? formatDate(submittedDate) : 'Recently'}
           </span>
-          {/* {score && <span className="text-[#A7F950]">Score: {score}</span>} */}
+          {/* {score && <span className="text-primary">Score: {score}</span>} */}
         </div>
 
         <div className='flex items-center gap-2'>
@@ -265,7 +265,7 @@ const SubmissionCard = ({
             className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-lg text-base font-semibold shadow-lg transition-all duration-200 hover:shadow-xl ${
               userHasVoted
                 ? 'border-primary/20 bg-primary/10 text-primary border'
-                : 'bg-[#A7F950] text-black hover:bg-[#A7F950]'
+                : 'bg-primary hover:bg-primary text-black'
             }`}
           >
             <ThumbsUp

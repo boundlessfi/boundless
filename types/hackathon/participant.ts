@@ -26,7 +26,7 @@ export interface ParticipantTeamMember {
   name: string;
   username: string;
   role: string;
-  avatar?: string;
+  avatar?: string | null;
 }
 
 export interface ParticipantVote {
@@ -38,7 +38,7 @@ export interface ParticipantVote {
       firstName: string;
       lastName: string;
       username: string;
-      avatar?: string;
+      avatar?: string | null;
     };
     email: string;
   };
@@ -55,7 +55,7 @@ export interface ParticipantComment {
       firstName: string;
       lastName: string;
       username: string;
-      avatar?: string;
+      avatar?: string | null;
     };
     email: string;
   };
@@ -78,10 +78,10 @@ export interface ParticipantSubmission {
   videoUrl?: string;
   introduction?: string;
   links?: Array<{ type: string; url: string }>;
-  votes: number | ParticipantVote[];
-  comments: number | ParticipantComment[];
-  submissionDate: string;
-  status: 'submitted' | 'shortlisted' | 'disqualified';
+  votes?: number | ParticipantVote[];
+  comments?: number | ParticipantComment[];
+  submissionDate?: string;
+  status: 'submitted' | 'shortlisted' | 'disqualified' | string;
   disqualificationReason?: string | null;
   reviewedBy?: {
     id: string;
@@ -89,7 +89,7 @@ export interface ParticipantSubmission {
       firstName: string;
       lastName: string;
       username: string;
-      avatar?: string;
+      avatar?: string | null;
     };
     email: string;
   } | null;
@@ -106,7 +106,8 @@ export interface Participant {
     profile: {
       name: string;
       username: string;
-      image?: string;
+      image?: string | null;
+      skills?: string[];
     };
     email: string;
   };
@@ -149,7 +150,7 @@ export interface CreateSubmissionRequest {
     name: string;
     username?: string;
     role: string;
-    avatar?: string;
+    avatar?: string | null;
   }>;
   projectName: string;
   category: string;
@@ -180,7 +181,7 @@ export interface SubmissionCardProps {
   projectName: string;
   description: string;
   submitterName: string;
-  submitterAvatar?: string;
+  submitterAvatar?: string | null;
   category?: string;
   categories?: string[];
   status?: 'Pending' | 'Approved' | 'Rejected';

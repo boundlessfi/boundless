@@ -31,8 +31,8 @@ export interface UseHackathonsOptions {
     search?: string;
   };
   participantFilters?: {
-    status?: 'submitted' | 'not_submitted' | 'shortlisted' | 'disqualified';
-    type?: 'individual' | 'team';
+    status?: string;
+    type?: string;
     search?: string;
   };
 }
@@ -579,16 +579,21 @@ export function useHackathons(
 
         const pagination = (response.data?.pagination ||
           response.meta?.pagination) as any;
+        const responsePage = pagination?.page || 1;
+        const totalItems = pagination?.total || 0;
+        const itemsPerPage = pagination?.limit || pageSize;
+        const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
         setParticipants(response.data?.participants || []);
         setParticipantsPagination({
-          currentPage: pagination?.page || 1,
-          totalPages: pagination?.totalPages || 1,
-          totalItems: pagination?.total || 0,
-          itemsPerPage: pagination?.limit || pageSize,
-          hasNext: !!pagination?.hasNext,
-          hasPrev: !!pagination?.hasPrev,
+          currentPage: responsePage,
+          totalPages,
+          totalItems,
+          itemsPerPage,
+          hasNext: !!pagination?.hasNext || responsePage < totalPages,
+          hasPrev: !!pagination?.hasPrev || responsePage > 1,
         });
-        participantsPageRef.current = pagination?.page || 1;
+        participantsPageRef.current = responsePage;
       } catch (error) {
         const errorMessage =
           error instanceof Error

@@ -45,7 +45,7 @@ export function ParticipantAvatar({ participant }: ParticipantAvatarProps) {
           <TooltipTrigger asChild>
             <div className='group inline-flex cursor-pointer items-center gap-2'>
               <div className='relative flex-shrink-0'>
-                <Avatar className='h-12 w-12 border-2 border-gray-700 transition-all duration-300 group-hover:scale-110 group-hover:border-[#a7f950]'>
+                <Avatar className='group-hover:border-primary h-12 w-12 border-2 border-gray-700 transition-all duration-300 group-hover:scale-110'>
                   <AvatarImage
                     src={participant.avatar}
                     alt={participant.username}
@@ -69,7 +69,7 @@ export function ParticipantAvatar({ participant }: ParticipantAvatarProps) {
                 )}
               </div>
 
-              <span className='text-sm text-gray-200 transition-colors group-hover:text-[#a7f950]'>
+              <span className='group-hover:text-primary text-sm text-gray-200 transition-colors'>
                 {participant.username
                   ? participant.username.slice(0, 1).toUpperCase() +
                     participant.username.slice(1)

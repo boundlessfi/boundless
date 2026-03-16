@@ -43,8 +43,8 @@ interface FilterState {
 
 const mapFiltersToParams = (filters: FilterState, searchOverride?: string) => ({
   search: searchOverride !== undefined ? searchOverride : filters.search,
-  status: filters.status === 'all' ? undefined : filters.status,
-  type: filters.type === 'all' ? undefined : filters.type,
+  status: filters.status === 'all' ? undefined : filters.status.toUpperCase(),
+  type: filters.type === 'all' ? undefined : filters.type.toUpperCase(),
 });
 
 const ParticipantsPage: React.FC = () => {
@@ -227,6 +227,8 @@ const ParticipantsPage: React.FC = () => {
       );
     }
   };
+
+  // Removed redundant frontend-side filtering as backend now handles it.
 
   // Mock table instance for DataTablePagination
   const table = useReactTable({

@@ -186,7 +186,7 @@ const ProjectCard: React.FC<ProjectCardProps> = memo(
             <Badge className='flex-shrink-0 rounded-[4px] border border-[#645D5D] bg-[#E4DBDB] px-1 py-0.5 text-xs font-medium text-[#645D5D]'>
               {project.category}
             </Badge>
-            <Badge className='bg-active-bg flex-shrink-0 rounded-[4px] border border-[#A7F950] px-1 py-0.5 text-xs font-medium text-[#A7F950]'>
+            <Badge className='bg-active-bg border-primary text-primary flex-shrink-0 rounded-[4px] border px-1 py-0.5 text-xs font-medium'>
               {project.category}
             </Badge>
           </div>

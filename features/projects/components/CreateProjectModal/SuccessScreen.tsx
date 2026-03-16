@@ -138,7 +138,7 @@ const SuccessScreen = ({ onContinue }: { onContinue: () => void }) => {
           >
             Your project has been sent for admin review and will be processed
             within 72 hours. You can track its status anytime on the{' '}
-            <span className='font-medium text-[#A7F950] underline'>
+            <span className='text-primary font-medium underline'>
               Projects Page
             </span>
           </motion.p>

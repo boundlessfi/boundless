@@ -120,8 +120,8 @@ const CollapsibleTeamMember = ({
                   className={cn(
                     'rounded-lg border px-3 py-2 text-sm transition-all',
                     member.role === role.value
-                      ? 'border-[#A7F950] bg-[#A7F95014] text-[#A7F950]'
-                      : 'border-[#2B2B2B] bg-[#0A0A0A] text-white hover:border-[#A7F950]/50'
+                      ? 'border-primary text-primary bg-[#A7F95014]'
+                      : 'hover:border-primary/50 border-[#2B2B2B] bg-[#0A0A0A] text-white'
                   )}
                 >
                   {role.label}

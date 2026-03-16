@@ -7,6 +7,7 @@ export interface OtherUser {
   id: string;
   name: string;
   avatarUrl: string | null;
+  username: string;
 }
 
 export interface Message {

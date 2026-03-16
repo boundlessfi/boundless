@@ -16,7 +16,7 @@ export interface SubmissionData {
     id: string;
     name: string;
     role: string;
-    avatar?: string;
+    avatar?: string | null;
     username?: string;
   }>;
   links?: Array<{ type: string; url: string }>;
@@ -24,7 +24,7 @@ export interface SubmissionData {
     id: string;
     name: string;
     username: string;
-    avatar?: string;
+    avatar?: string | null;
     votedAt?: string;
     voteType: 'positive' | 'negative';
   }>;
@@ -34,7 +34,7 @@ export interface SubmissionData {
     author: {
       name: string;
       username: string;
-      avatar?: string;
+      avatar?: string | null;
     };
     createdAt: string;
     reactions?: {

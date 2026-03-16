@@ -2,7 +2,7 @@ export interface TeamMember {
   id: string;
   name: string;
   role: string;
-  avatar?: string;
+  avatar?: string | null;
   username?: string;
 }
 
@@ -10,7 +10,7 @@ export interface Voter {
   id: string;
   name: string;
   username: string;
-  avatar?: string;
+  avatar?: string | null;
   votedAt?: string;
   voteType?: 'positive' | 'negative';
 }
@@ -21,7 +21,7 @@ export interface Comment {
   author: {
     name: string;
     username: string;
-    avatar?: string;
+    avatar?: string | null;
   };
   createdAt: string;
   reactions?: {

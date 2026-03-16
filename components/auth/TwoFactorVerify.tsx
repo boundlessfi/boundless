@@ -82,8 +82,8 @@ const TwoFactorVerify = ({ onSuccess, onCancel }: TwoFactorVerifyProps) => {
     <div className='space-y-6'>
       <div className='space-y-2 text-center'>
         <div className='mb-4 flex justify-center'>
-          <div className='rounded-full bg-[#a7f950]/10 p-3'>
-            <LockIcon className='h-8 w-8 text-[#a7f950]' />
+          <div className='bg-primary/10 rounded-full p-3'>
+            <LockIcon className='text-primary h-8 w-8' />
           </div>
         </div>
         <h2 className='text-2xl font-bold text-white'>
@@ -117,7 +117,7 @@ const TwoFactorVerify = ({ onSuccess, onCancel }: TwoFactorVerifyProps) => {
                     <InputOTPSlot
                       key={i}
                       index={i}
-                      className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950] sm:h-16 sm:w-14'
+                      className='text-primary h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl sm:h-16 sm:w-14'
                     />
                   ))}
                 </InputOTPGroup>
@@ -140,14 +140,14 @@ const TwoFactorVerify = ({ onSuccess, onCancel }: TwoFactorVerifyProps) => {
                   placeholder='Enter backup code'
                   value={backupCode}
                   onChange={e => setBackupCode(e.target.value)}
-                  className='h-14 w-full rounded-lg border border-zinc-800 bg-zinc-900/50 text-center text-xl tracking-widest text-white focus:border-[#a7f950]/50 focus:outline-none'
+                  className='focus:border-primary/50 h-14 w-full rounded-lg border border-zinc-800 bg-zinc-900/50 text-center text-xl tracking-widest text-white focus:outline-none'
                   autoFocus
                 />
               </div>
               <button
                 type='submit'
                 disabled={isLoading || !backupCode}
-                className='h-12 w-full rounded-lg bg-[#a7f950] font-bold text-black transition-colors hover:bg-[#96e048] disabled:opacity-50'
+                className='bg-primary h-12 w-full rounded-lg font-bold text-black transition-colors hover:bg-[#96e048] disabled:opacity-50'
               >
                 {isLoading ? 'Verifying...' : 'Recover Account'}
               </button>

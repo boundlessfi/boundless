@@ -258,7 +258,7 @@ const SubmissionsPage: FC = () => {
                       <button
                         type='button'
                         onClick={() => handleSort('projectName')}
-                        className='flex w-full items-center gap-1 rounded-sm text-xs font-semibold tracking-wider uppercase hover:text-white focus-visible:ring-2 focus-visible:ring-[#a7f950] focus-visible:ring-offset-1 focus-visible:ring-offset-[#0e0c0c] focus-visible:outline-none'
+                        className='focus-visible:ring-primary flex w-full items-center gap-1 rounded-sm text-xs font-semibold tracking-wider uppercase hover:text-white focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0e0c0c] focus-visible:outline-none'
                         aria-label='Sort by Project Name'
                       >
                         Project
@@ -276,7 +276,7 @@ const SubmissionsPage: FC = () => {
                       <button
                         type='button'
                         onClick={() => handleSort('hackathon')}
-                        className='flex w-full items-center gap-1 rounded-sm text-xs font-semibold tracking-wider uppercase hover:text-white focus-visible:ring-2 focus-visible:ring-[#a7f950] focus-visible:ring-offset-1 focus-visible:ring-offset-[#0e0c0c] focus-visible:outline-none'
+                        className='focus-visible:ring-primary flex w-full items-center gap-1 rounded-sm text-xs font-semibold tracking-wider uppercase hover:text-white focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0e0c0c] focus-visible:outline-none'
                         aria-label='Sort by Hackathon'
                       >
                         Hackathon
@@ -294,7 +294,7 @@ const SubmissionsPage: FC = () => {
                       <button
                         type='button'
                         onClick={() => handleSort('status')}
-                        className='flex w-full items-center gap-1 rounded-sm text-xs font-semibold tracking-wider uppercase hover:text-white focus-visible:ring-2 focus-visible:ring-[#a7f950] focus-visible:ring-offset-1 focus-visible:ring-offset-[#0e0c0c] focus-visible:outline-none'
+                        className='focus-visible:ring-primary flex w-full items-center gap-1 rounded-sm text-xs font-semibold tracking-wider uppercase hover:text-white focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0e0c0c] focus-visible:outline-none'
                         aria-label='Sort by Status'
                       >
                         Status
@@ -312,7 +312,7 @@ const SubmissionsPage: FC = () => {
                       <button
                         type='button'
                         onClick={() => handleSort('submittedAt')}
-                        className='flex w-full items-center gap-1 rounded-sm text-xs font-semibold tracking-wider uppercase hover:text-white focus-visible:ring-2 focus-visible:ring-[#a7f950] focus-visible:ring-offset-1 focus-visible:ring-offset-[#0e0c0c] focus-visible:outline-none'
+                        className='focus-visible:ring-primary flex w-full items-center gap-1 rounded-sm text-xs font-semibold tracking-wider uppercase hover:text-white focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0e0c0c] focus-visible:outline-none'
                         aria-label='Sort by Submitted Date'
                       >
                         Submitted
@@ -330,7 +330,7 @@ const SubmissionsPage: FC = () => {
                       <button
                         type='button'
                         onClick={() => handleSort('rank')}
-                        className='flex w-full items-center gap-1 rounded-sm text-xs font-semibold tracking-wider uppercase hover:text-white focus-visible:ring-2 focus-visible:ring-[#a7f950] focus-visible:ring-offset-1 focus-visible:ring-offset-[#0e0c0c] focus-visible:outline-none'
+                        className='focus-visible:ring-primary flex w-full items-center gap-1 rounded-sm text-xs font-semibold tracking-wider uppercase hover:text-white focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0e0c0c] focus-visible:outline-none'
                         aria-label='Sort by Rank'
                       >
                         Rank

@@ -25,7 +25,7 @@ export const ParticipantInfo: React.FC<ParticipantInfoProps> = ({
     <div className='flex flex-row items-center justify-start p-5'>
       <div className='flex-1'>
         <Avatar className='h-10.5 w-10.5'>
-          <AvatarImage src={userAvatar} />
+          <AvatarImage src={userAvatar || undefined} />
           <AvatarFallback>{userName.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
         <h4 className='text-sm text-white'>{userName}</h4>

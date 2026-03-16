@@ -19,7 +19,7 @@ interface TeamMember {
   id: string;
   name: string;
   role: string;
-  avatar?: string;
+  avatar?: string | null;
 }
 
 type ParticipationType = 'team' | 'individual' | 'no-submission';
@@ -168,7 +168,10 @@ export default function TeamModal({
                       className='group flex cursor-pointer items-center gap-3 rounded-lg p-3 transition-colors hover:bg-gray-900/50'
                     >
                       <Avatar className='h-10 w-10 flex-shrink-0'>
-                        <AvatarImage src={member.avatar} alt={member.name} />
+                        <AvatarImage
+                          src={member.avatar || undefined}
+                          alt={member.name}
+                        />
                         <AvatarFallback>
                           {member.name.charAt(0).toUpperCase()}
                         </AvatarFallback>

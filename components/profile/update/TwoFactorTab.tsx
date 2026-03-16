@@ -188,9 +188,9 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
   if (user.twoFactorEnabled && step === 'status') {
     return (
       <div className='space-y-6'>
-        <div className='flex items-start gap-4 rounded-xl border border-[#a7f950]/20 bg-[#a7f950]/5 p-6 md:p-8'>
-          <div className='rounded-lg bg-[#a7f950]/10 p-2'>
-            <ShieldCheck className='h-6 w-6 text-[#a7f950]' />
+        <div className='border-primary/20 bg-primary/5 flex items-start gap-4 rounded-xl border p-6 md:p-8'>
+          <div className='bg-primary/10 rounded-lg p-2'>
+            <ShieldCheck className='text-primary h-6 w-6' />
           </div>
           <div className='flex-1'>
             <h3 className='text-lg font-semibold text-white'>2FA is Enabled</h3>
@@ -204,7 +204,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
         <div className='space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 md:p-8'>
           <div className='space-y-4'>
             <div className='flex items-center gap-3'>
-              <KeyRound className='h-5 w-5 text-[#a7f950]' />
+              <KeyRound className='text-primary h-5 w-5' />
               <h4 className='font-medium text-white'>Backup Codes</h4>
             </div>
             <p className='text-sm text-[#B5B5B5]'>
@@ -324,7 +324,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
     return (
       <div className='space-y-8'>
         <div className='flex items-center gap-4'>
-          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-[#a7f950] font-bold text-[#141414]'>
+          <div className='bg-primary flex h-8 w-8 items-center justify-center rounded-full font-bold text-[#141414]'>
             1
           </div>
           <h3 className='text-xl font-bold text-white'>Scan QR Code</h3>
@@ -336,13 +336,13 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
           </div>
           <div className='space-y-4'>
             <div className='flex items-center gap-3'>
-              <Smartphone className='h-5 w-5 text-[#a7f950]' />
+              <Smartphone className='text-primary h-5 w-5' />
               <p className='text-sm text-[#B5B5B5]'>
                 Scan this code with your authenticator app.
               </p>
             </div>
             <div className='flex items-center gap-3'>
-              <KeyRound className='h-5 w-5 text-[#a7f950]' />
+              <KeyRound className='text-primary h-5 w-5' />
               <p className='text-sm text-[#B5B5B5]'>
                 If you can't scan, you can manually enter the secret key.
               </p>
@@ -354,7 +354,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
                   <span className='mb-1 text-[10px] font-bold tracking-wider text-zinc-500 uppercase'>
                     Secret Key
                   </span>
-                  <code className='font-mono text-sm break-all text-[#a7f950]'>
+                  <code className='text-primary font-mono text-sm break-all'>
                     {secretKey}
                   </code>
                 </div>
@@ -390,7 +390,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
     return (
       <div className='space-y-8'>
         <div className='flex items-center gap-4'>
-          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-[#a7f950] font-bold text-[#141414]'>
+          <div className='bg-primary flex h-8 w-8 items-center justify-center rounded-full font-bold text-[#141414]'>
             2
           </div>
           <h3 className='text-xl font-bold text-white'>Verify Setup</h3>
@@ -419,27 +419,27 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
               <InputOTPGroup className='gap-2 sm:gap-4'>
                 <InputOTPSlot
                   index={0}
-                  className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950]'
+                  className='text-primary h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl'
                 />
                 <InputOTPSlot
                   index={1}
-                  className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950]'
+                  className='text-primary h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl'
                 />
                 <InputOTPSlot
                   index={2}
-                  className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950]'
+                  className='text-primary h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl'
                 />
                 <InputOTPSlot
                   index={3}
-                  className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950]'
+                  className='text-primary h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl'
                 />
                 <InputOTPSlot
                   index={4}
-                  className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950]'
+                  className='text-primary h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl'
                 />
                 <InputOTPSlot
                   index={5}
-                  className='h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl text-[#a7f950]'
+                  className='text-primary h-14 w-12 rounded-lg border-zinc-800 bg-zinc-900/50 text-2xl'
                 />
               </InputOTPGroup>
             </InputOTP>
@@ -462,8 +462,8 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
   if (step === 'backup') {
     return (
       <div className='space-y-8'>
-        <div className='space-y-4 rounded-xl border border-[#a7f950]/20 bg-[#a7f950]/10 p-6'>
-          <div className='flex items-center gap-3 text-[#a7f950]'>
+        <div className='border-primary/20 bg-primary/10 space-y-4 rounded-xl border p-6'>
+          <div className='text-primary flex items-center gap-3'>
             <ShieldCheck className='h-6 w-6' />
             <h3 className='text-xl font-bold'>2FA Enabled Successfully</h3>
           </div>

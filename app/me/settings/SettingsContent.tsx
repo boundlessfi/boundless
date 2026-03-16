@@ -127,7 +127,7 @@ const SettingsContent = () => {
               <Profile user={userData.user as User} />
             ) : (
               <div className='flex items-center justify-center p-12'>
-                <Loader2 className='mr-2 h-8 w-8 animate-spin text-[#a7f950]' />
+                <Loader2 className='text-primary mr-2 h-8 w-8 animate-spin' />
                 <span className='text-zinc-500'>Loading profile...</span>
               </div>
             )}
@@ -149,7 +149,7 @@ const SettingsContent = () => {
               <SecurityTab user={userData.user as User} />
             ) : (
               <div className='flex items-center justify-center p-12'>
-                <Loader2 className='mr-2 h-8 w-8 animate-spin text-[#a7f950]' />
+                <Loader2 className='text-primary mr-2 h-8 w-8 animate-spin' />
                 <span className='text-zinc-500'>
                   Loading security settings...
                 </span>
@@ -164,7 +164,7 @@ const SettingsContent = () => {
               />
             ) : (
               <div className='flex items-center justify-center p-12'>
-                <Loader2 className='mr-2 h-8 w-8 animate-spin text-[#a7f950]' />
+                <Loader2 className='text-primary mr-2 h-8 w-8 animate-spin' />
                 <span className='text-zinc-500'>Loading 2FA settings...</span>
               </div>
             )}

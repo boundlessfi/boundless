@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuth } from '@/hooks/use-auth';
+import { useOptionalAuth } from '@/hooks/use-auth';
 import { GenericCommentThread } from '@/components/comments/GenericCommentThread';
 import { useCommentSystem } from '@/hooks/use-comment-system';
 import { CommentEntityType } from '@/types/comment';
@@ -10,7 +10,7 @@ interface BountyCommentsProps {
 }
 
 export function BountyComments({ bountyId }: BountyCommentsProps) {
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
 
   // Initialize the comment system for this bounty
   const commentSystem = useCommentSystem({

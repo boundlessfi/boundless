@@ -12,7 +12,7 @@ import {
   Comment as CommentType,
   ReportReason,
 } from '@/types/comment';
-import { useAuth } from '@/hooks/use-auth';
+import { useOptionalAuth } from '@/hooks/use-auth';
 import { reportError } from '@/lib/error-reporting';
 import { Loader2, MessageCircle } from 'lucide-react';
 
@@ -26,7 +26,7 @@ export function CampaignCommentsTab({ campaignId }: CampaignCommentsTabProps) {
   >('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const { user } = useAuth(false);
+  const { user } = useOptionalAuth();
 
   // Use the generic comment system
   const {

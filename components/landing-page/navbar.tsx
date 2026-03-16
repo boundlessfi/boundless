@@ -337,7 +337,7 @@ function UnauthenticatedActions() {
         </Link>
         <Link
           href='/auth?mode=signup'
-          className='inline-flex h-9 min-h-[44px] items-center justify-center rounded-[10px] bg-[#a7f950] px-4 text-sm font-medium text-black shadow-sm shadow-[#a7f950]/20 transition-colors hover:bg-[#a7f950]/90'
+          className='bg-primary shadow-primary/20 hover:bg-primary/90 inline-flex h-9 min-h-[44px] items-center justify-center rounded-[10px] px-4 text-sm font-medium text-black shadow-sm transition-colors'
         >
           Get Started
         </Link>
@@ -537,7 +537,7 @@ const MobileMenu = ({
               <Link
                 href='/auth?mode=signup'
                 onClick={() => setIsOpen(false)}
-                className='inline-flex min-h-[44px] w-full items-center justify-center rounded-[10px] bg-[#a7f950] px-4 py-3 text-sm font-medium text-black shadow-sm shadow-[#a7f950]/20 transition-colors hover:bg-[#a7f950]/90'
+                className='bg-primary shadow-primary/20 hover:bg-primary/90 inline-flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-4 py-3 text-sm font-medium text-black shadow-sm transition-colors'
               >
                 Get Started
               </Link>

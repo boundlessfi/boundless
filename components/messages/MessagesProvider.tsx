@@ -1,15 +1,25 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+} from 'react';
 import { useAuthStatus } from '@/hooks/use-auth';
-import { MessagesSheet } from '@/components/messages/MessagesSheet';
+import { TetherMessage } from '@/components/messages/TetherMessage';
 
 interface MessagesContextValue {
-  sheetOpen: boolean;
-  setSheetOpen: (open: boolean) => void;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
   selectedConversationId: string | null;
   setSelectedConversationId: (id: string | null) => void;
-  openMessages: (conversationId?: string) => void;
+  triggerRef: React.RefObject<HTMLElement | null>;
+  openMessages: (options?: {
+    conversationId?: string;
+    trigger?: HTMLElement | null;
+  }) => void;
 }
 
 const MessagesContext = createContext<MessagesContextValue | null>(null);
@@ -23,34 +33,46 @@ export function useMessages(): MessagesContextValue {
 }
 
 export function MessagesProvider({ children }: { children: React.ReactNode }) {
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(null);
   const { user } = useAuthStatus();
+  const triggerRef = useRef<HTMLElement | null>(null);
 
-  const openMessages = useCallback((conversationId?: string) => {
-    setSheetOpen(true);
-    setSelectedConversationId(conversationId ?? null);
+  const openMessages = useCallback(
+    (options?: { conversationId?: string; trigger?: HTMLElement | null }) => {
+      if (options?.trigger) {
+        triggerRef.current = options.trigger;
+      }
+      setSelectedConversationId(options?.conversationId ?? null);
+      setIsOpen(true);
+    },
+    []
+  );
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
   }, []);
 
   const value: MessagesContextValue = {
-    sheetOpen,
-    setSheetOpen,
+    isOpen,
+    setIsOpen,
     selectedConversationId,
     setSelectedConversationId,
+    triggerRef,
     openMessages,
   };
 
   return (
     <MessagesContext.Provider value={value}>
       {children}
-      {user && (
-        <MessagesSheet
-          open={sheetOpen}
-          onOpenChange={setSheetOpen}
-          selectedConversationId={selectedConversationId}
-          onSelectConversation={setSelectedConversationId}
+      {user && selectedConversationId && (
+        <TetherMessage
+          triggerRef={triggerRef}
+          isOpen={isOpen}
+          onClose={handleClose}
+          conversationId={selectedConversationId}
         />
       )}
     </MessagesContext.Provider>

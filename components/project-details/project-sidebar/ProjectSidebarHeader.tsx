@@ -32,7 +32,7 @@ export function ProjectSidebarHeader({
     <div className='space-y-4'>
       <div className='flex gap-4'>
         <div className='relative shrink-0'>
-          <div className='absolute -inset-0.5 rounded-xl bg-gradient-to-br from-[#a7f950]/20 to-transparent opacity-50 blur-sm' />
+          <div className='from-primary/20 absolute -inset-0.5 rounded-xl bg-gradient-to-br to-transparent opacity-50 blur-sm' />
           <Image
             src={project.logo}
             alt={project.title}

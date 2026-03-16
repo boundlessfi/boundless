@@ -63,8 +63,8 @@ export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
       label: 'Hackathons',
       value: stats.totalHackathons,
       icon: Trophy,
-      color: 'text-[#a7f950]',
-      bgColor: 'bg-[#a7f950]/10',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
     },
     {
       label: 'Bounties',
@@ -85,9 +85,9 @@ export default function OrgProfileClient({ slug }: OrgProfileClientProps) {
   return (
     <section className='mx-auto max-w-[1440px] px-5 py-10 md:px-[50px] lg:px-[100px]'>
       {/* Banner / Header */}
-      <div className='relative mb-8 overflow-hidden rounded-2xl border border-[#a7f950]/20 bg-linear-to-br from-[#a7f950]/10 via-zinc-900/80 to-zinc-900/40'>
-        <div className='absolute -top-24 -right-24 h-64 w-64 rounded-full bg-[#a7f950]/5 blur-3xl' />
-        <div className='absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-[#a7f950]/5 blur-3xl' />
+      <div className='border-primary/20 from-primary/10 relative mb-8 overflow-hidden rounded-2xl border bg-linear-to-br via-zinc-900/80 to-zinc-900/40'>
+        <div className='bg-primary/5 absolute -top-24 -right-24 h-64 w-64 rounded-full blur-3xl' />
+        <div className='bg-primary/5 absolute -bottom-16 -left-16 h-48 w-48 rounded-full blur-3xl' />
 
         <div className='relative z-10 p-6 sm:p-8 lg:p-10'>
           <div className='flex flex-col gap-6 sm:flex-row sm:items-start'>

@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 interface SubmissionCard2Props {
   title: string;
   submitterName: string;
-  submitterAvatar?: string;
+  submitterAvatar?: string | null;
   image?: string;
   upvotes?: number;
   comments?: number;
@@ -48,7 +48,7 @@ const SubmissionCard2 = ({
       className={cn(
         'group bg-background-card flex w-fit items-center gap-3 rounded-xl border border-zinc-800 p-3 transition-all duration-200',
         onViewClick &&
-          'cursor-pointer hover:border-[#A7F950]/30 hover:bg-zinc-900 active:scale-[0.99]'
+          'hover:border-primary/30 cursor-pointer hover:bg-zinc-900 active:scale-[0.99]'
       )}
     >
       {/* Optional rank badge */}
@@ -74,7 +74,7 @@ const SubmissionCard2 = ({
         <h3
           className={cn(
             'mb-1 line-clamp-1 max-w-[200px] text-sm font-semibold text-zinc-100 transition-colors',
-            onViewClick && 'group-hover:text-[#A7F950]'
+            onViewClick && 'group-hover:text-primary'
           )}
         >
           {title}
@@ -115,7 +115,7 @@ const SubmissionCard2 = ({
           className={cn(
             'flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
             hasUserUpvoted
-              ? 'bg-[#A7F950]/10 text-[#A7F950]'
+              ? 'bg-primary/10 text-primary'
               : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100',
             isVoting && 'cursor-not-allowed opacity-50'
           )}

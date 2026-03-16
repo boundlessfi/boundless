@@ -104,7 +104,13 @@ export interface ApiFollowListResponse {
 
 export interface ApiFollowStatsResponse extends FollowStats {}
 
-export interface ApiFollowStatusResponse extends FollowStatus {}
+export interface ApiFollowStatusResponse {
+  isFollowing?: boolean;
+  success?: boolean;
+  data?: {
+    isFollowing: boolean;
+  };
+}
 
 // Error types
 export interface FollowApiError {

@@ -84,7 +84,7 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
   const getStatusVariant = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'border-[#a7f950]/30 bg-[#a7f950]/10 text-[#a7f950]';
+        return 'border-primary/30 bg-primary/10 text-primary';
       case 'accepted':
         return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500';
       case 'rejected':
@@ -123,7 +123,7 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
               className={cn(
                 'flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all',
                 activeTab === 'received'
-                  ? 'bg-zinc-800 text-[#a7f950] shadow-sm'
+                  ? 'text-primary bg-zinc-800 shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
@@ -131,7 +131,7 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
               Received
               {receivedInvitations.filter(i => i.status === 'pending').length >
                 0 && (
-                <span className='flex h-5 w-5 items-center justify-center rounded-full bg-[#a7f950] text-[10px] font-bold text-black'>
+                <span className='bg-primary flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-black'>
                   {
                     receivedInvitations.filter(i => i.status === 'pending')
                       .length
@@ -144,7 +144,7 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
               className={cn(
                 'flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all',
                 activeTab === 'sent'
-                  ? 'bg-zinc-800 text-[#a7f950] shadow-sm'
+                  ? 'text-primary bg-zinc-800 shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
@@ -157,7 +157,7 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
 
       {isLoading ? (
         <div className='flex justify-center py-12'>
-          <Loader2 className='h-10 w-10 animate-spin text-[#a7f950]' />
+          <Loader2 className='text-primary h-10 w-10 animate-spin' />
         </div>
       ) : error ? (
         <Card className='border border-red-500/20 bg-red-500/10'>
@@ -259,7 +259,7 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
                         </p>
 
                         {invite.message && (
-                          <p className='mt-3 rounded-lg border-l-2 border-[#a7f950] bg-zinc-800/80 p-3 text-sm text-zinc-300 italic'>
+                          <p className='border-primary mt-3 rounded-lg border-l-2 bg-zinc-800/80 p-3 text-sm text-zinc-300 italic'>
                             "{invite.message}"
                           </p>
                         )}
@@ -305,7 +305,7 @@ export function MyInvitationsList({ hackathonId }: MyInvitationsListProps) {
                           </Button>
                           <Button
                             size='sm'
-                            className='bg-[#a7f950] text-black transition-all hover:bg-[#8ae63a]'
+                            className='bg-primary text-black transition-all hover:bg-[#8ae63a]'
                             onClick={() => acceptInvite(invite.id)}
                             disabled={isProcessingReceived}
                           >

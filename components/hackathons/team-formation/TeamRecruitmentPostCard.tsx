@@ -19,7 +19,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { type TeamRecruitmentPost } from '@/lib/api/hackathons';
+import {
+  type Team as TeamRecruitmentPost,
+  type TeamMember,
+} from '@/lib/api/hackathons/teams';
 import { toast } from 'sonner';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useLeaveTeam } from '@/hooks/hackathon/use-leave-team';
@@ -34,6 +37,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+interface DisplayLeader {
+  name: string;
+  username: string;
+  image?: string;
+}
 
 interface TeamRecruitmentPostCardProps {
   post: TeamRecruitmentPost;
@@ -209,9 +218,14 @@ export function TeamRecruitmentPostCard({
   const { user } = useAuthStatus();
   const [showLeaveDialog, setShowLeaveDialog] = React.useState(false);
 
-  const isMember = user ? post.members.some(m => m.userId === user.id) : false;
+  const isMember = user
+    ? Array.isArray(post.members) &&
+      post.members.some(m =>
+        typeof m === 'string' ? m === user.id : m.userId === user.id
+      )
+    : false;
   // Leader is also a member, so isMember is true for leader. Check specifically for leader capability
-  const isLeader = user ? post.leaderId === user.id : false;
+  const isLeader = user ? post.leader?.id === user.id : false;
 
   const { leaveTeam, isLeaving } = useLeaveTeam({
     hackathonSlugOrId: post.hackathonId,
@@ -266,19 +280,26 @@ export function TeamRecruitmentPostCard({
     onClick?.(post);
   };
 
-  // Find leader
-  const leader =
-    post.members.find(m => m.role === 'leader' || m.userId === post.leaderId) ||
-    post.members[0];
+  // Determine leader for display
+  const leaderObject =
+    (Array.isArray(post.members) &&
+      post.members.find(
+        (m): m is TeamMember =>
+          typeof m !== 'string' &&
+          (m.role === 'leader' || m.userId === post.leader?.id)
+      )) ||
+    post.leader;
+
+  const displayLeader: DisplayLeader = leaderObject;
 
   return (
     <div
       onClick={handleCardClick}
-      className={`group hover:border-primary/45 bg-background-main-bg mx-auto w-full max-w-[397px] overflow-hidden rounded-lg border border-[#2B2B2B] p-4 transition-all sm:p-5 ${onClick ? 'cursor-pointer hover:border-[#A7F950]/50' : ''}`}
+      className={`group hover:border-primary/45 bg-background-main-bg mx-auto w-full max-w-[397px] overflow-hidden rounded-lg border border-[#2B2B2B] p-4 transition-all sm:p-5 ${onClick ? 'hover:border-primary/50 cursor-pointer' : ''}`}
     >
       {isPinned && (
-        <div className='mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#A7F950]'>
-          <Pin className='h-3.5 w-3.5 fill-[#A7F950]' />
+        <div className='text-primary mb-2 flex items-center gap-1.5 text-xs font-semibold'>
+          <Pin className='fill-primary h-3.5 w-3.5' />
           <span>Your Team</span>
         </div>
       )}
@@ -286,23 +307,23 @@ export function TeamRecruitmentPostCard({
       <div className='mb-3 flex items-center justify-between sm:mb-4'>
         <div className='flex items-center gap-2'>
           <Avatar
-            className={`h-8 w-8 border-2 transition-all duration-300 group-hover:border-[#A7F950] sm:h-10 sm:w-10 ${isPinned ? 'border-[#A7F950]' : 'border-[#2B2B2B]'}`}
+            className={`group-hover:border-primary h-8 w-8 border-2 transition-all duration-300 sm:h-10 sm:w-10 ${isPinned ? 'border-primary' : 'border-[#2B2B2B]'}`}
           >
             <AvatarImage
-              src={leader?.image}
-              alt={leader?.name}
+              src={displayLeader?.image}
+              alt={displayLeader?.name}
               className='object-cover'
             />
             <AvatarFallback className='bg-gray-700 text-white'>
-              {(leader?.name || 'U').charAt(0).toUpperCase()}
+              {(displayLeader?.name || 'U').charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className='flex flex-col'>
             <h4 className='text-sm font-medium text-white'>
-              {leader?.name || 'Unknown User'}
+              {displayLeader?.name || 'Unknown User'}
             </h4>
             <span className='text-xs text-gray-500'>
-              @{leader?.username || 'user'}
+              @{displayLeader?.username || 'user'}
             </span>
           </div>
         </div>
@@ -311,7 +332,7 @@ export function TeamRecruitmentPostCard({
           <Badge
             className={`shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${
               post.isOpen
-                ? 'border-[#A7F950] bg-[#E5FFE5] text-[#4E9E00]'
+                ? 'border-primary bg-[#E5FFE5] text-[#4E9E00]'
                 : 'border-[#FF5757] bg-[#FFEAEA] text-[#D33]'
             }`}
           >
@@ -358,7 +379,7 @@ export function TeamRecruitmentPostCard({
       </div>
 
       <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
-        <AlertDialogContent className='border-gray-800 bg-[#030303] text-white'>
+        <AlertDialogContent className='bg-background-main-bg border-gray-800 text-white'>
           <AlertDialogHeader>
             <AlertDialogTitle>Leave Team</AlertDialogTitle>
             <AlertDialogDescription className='text-gray-400'>
@@ -449,7 +470,7 @@ export function TeamRecruitmentPostCard({
           onClick={handleContactClick}
           variant='ghost'
           size='icon'
-          className='text-[#A7F950] hover:bg-[#A7F950]/10 hover:text-[#8fd93f]'
+          className='text-primary hover:bg-primary/10 hover:text-[#8fd93f]'
         >
           <ContactIcon className='h-6 w-6' />
         </Button>

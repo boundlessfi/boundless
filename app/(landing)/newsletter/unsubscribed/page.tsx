@@ -6,7 +6,7 @@ export default function NewsletterUnsubscribedPage() {
       <p className='text-[#D9D9D9]'>
         You won&apos;t receive any more emails from us.
       </p>
-      <Link href='/' className='text-[#A7F950] underline'>
+      <Link href='/' className='text-primary underline'>
         Back to home
       </Link>
     </main>

@@ -347,7 +347,8 @@ export type Hackathon = {
 
   startDate: string; // ISO date
   submissionDeadline: string; // ISO date
-  submissionDeadlineExtendedAt?: string | null;
+  submissionDeadlineOriginal?: string; // ISO date
+  submissionDeadlineExtendedAt?: string; // ISO date
   registrationDeadline: string; // ISO date
   judgingDeadline?: string; // ISO date
 
@@ -635,7 +636,7 @@ export interface ParticipantTeamMember {
   name: string;
   username: string;
   role: string;
-  avatar?: string;
+  avatar?: string | null;
 }
 
 export interface ParticipantVote {
@@ -691,7 +692,14 @@ export interface ParticipantSubmission {
   comments?: number | ParticipantComment[];
   submissionDate?: string;
   submittedAt?: string;
-  status: 'submitted' | 'shortlisted' | 'disqualified' | string;
+  status: SubmissionStatus;
+  participationType?: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
+  participant?: {
+    id: string;
+    name: string;
+    username: string;
+    image?: string | null;
+  };
   disqualificationReason?: string | null;
   reviewedBy?: {
     id: string;
@@ -764,7 +772,7 @@ export interface Participant {
     profile: {
       name: string;
       username: string;
-      image?: string;
+      image?: string | null;
     };
     email: string;
   };
@@ -1734,19 +1742,27 @@ export interface ExploreSubmissionsApiResponse {
 export const getExploreSubmissions = async (
   hackathonId: string,
   page?: number,
-  limit?: number
-): Promise<ExploreSubmissionsResponse[]> => {
+  limit?: number,
+  options?: {
+    search?: string;
+    category?: string;
+    status?: string;
+    sort?: string;
+  }
+): Promise<ExploreSubmissionsApiResponse> => {
   const params = new URLSearchParams();
   if (page) params.append('page', page.toString());
   if (limit) params.append('limit', limit.toString());
+  if (options?.search) params.append('search', options.search);
+  if (options?.category) params.append('category', options.category);
+  if (options?.status) params.append('status', options.status);
+  if (options?.sort) params.append('sort', options.sort);
 
   const res = await api.get<ExploreSubmissionsApiResponse>(
     `/hackathons/${hackathonId}/submissions/explore${params.toString() ? `?${params.toString()}` : ''}`
   );
 
-  const body = res.data;
-  if (!body?.data?.submissions) return [];
-  return body.data.submissions;
+  return res.data;
 };
 
 /**
@@ -2387,7 +2403,7 @@ export interface TeamMember {
   username: string;
   name: string;
   role: string;
-  image?: string;
+  image?: string | null;
   joinedAt: string;
 }
 
@@ -2810,14 +2826,14 @@ export const getTeamInvitations = async (
 };
 
 // export const GetHackathonBySlug = async (slug): Promise<Hackathon> => {
-//   const res = await api.get(`hackathons/s/${slug}`);
+//   const res = await api.get(`hackathons/${slug}`);
 //   return
 // }
 
 export const GetHackathonBySlug = async (
   slug: string
 ): Promise<GetHackathonResponse> => {
-  const res = await api.get(`/hackathons/s/${slug}`);
+  const res = await api.get(`/hackathons/${slug}`);
 
   return {
     success: true,

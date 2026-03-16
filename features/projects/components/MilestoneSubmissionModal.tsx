@@ -334,7 +334,7 @@ const MilestoneSubmissionModal: React.FC<MilestoneSubmissionModalProps> = ({
 
                     {link.trim() && link !== 'www.' && (
                       <BoundlessButton
-                        className='absolute top-1/2 right-2 h-[36px] w-[65px] -translate-y-1/2 transform rounded-[10px] border-[0.3px] border-[#A7F950] bg-[#A7F950] text-[14px] font-[500] text-black transition-colors'
+                        className='border-primary bg-primary absolute top-1/2 right-2 h-[36px] w-[65px] -translate-y-1/2 transform rounded-[10px] border-[0.3px] text-[14px] font-[500] text-black transition-colors'
                         style={{
                           backgroundImage:
                             'linear-gradient(314.7deg, rgba(147, 229, 60, 0.14) 3.33%, rgba(117, 199, 30, 0) 21.54%, rgba(107, 185, 20, 0.14) 87.82%)',
@@ -358,7 +358,7 @@ const MilestoneSubmissionModal: React.FC<MilestoneSubmissionModalProps> = ({
                 'h-[40px] w-[500px] rounded-[10px] border-[1.4px] text-[14px] font-[500] transition-all duration-200',
                 files.length === 0 || loading
                   ? 'cursor-not-allowed border-[#2B2B2B] bg-[#1C1C1C] text-white opacity-50'
-                  : 'border-[#A7F950] bg-[#A7F950] text-black hover:bg-[#8BE03A]'
+                  : 'border-primary bg-primary text-black hover:bg-[#8BE03A]'
               )}
               style={{
                 backgroundImage:

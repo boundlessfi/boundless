@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { EntityType, UseFollowReturn } from '@/types/follow';
 import { followApi } from '@/lib/api/follow';
-import { useAuth } from './use-auth';
+import { useOptionalAuth } from './use-auth';
 
 export const useFollow = (
   entityType: EntityType,
   entityId: string,
   initialIsFollowing = false
 ): UseFollowReturn => {
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +16,13 @@ export const useFollow = (
   const checkFollowStatus = useCallback(async () => {
     try {
       const response = await followApi.checkFollowStatus(entityType, entityId);
-      setIsFollowing(response.data.isFollowing);
+      // Backend returns { success: true, data: { isFollowing: true }, ... }
+      // api.get returns { data: { success: true, data: { isFollowing: true } }, ... }
+      // Backend returns { success: true, data: { isFollowing: true }, ... }
+      // api.get returns { data: { success: true, data: { isFollowing: true } }, ... }
+      const isFollowingStatus =
+        response.data?.data?.isFollowing ?? response.data?.isFollowing ?? false;
+      setIsFollowing(isFollowingStatus);
     } catch {
       // Silently fail for status check - don't set error state
     }

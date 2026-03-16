@@ -30,15 +30,15 @@ export function HackathonPrizes({
     <div className='space-y-6 py-8'>
       <div>
         <div className='flex justify-start'>
-          <div className='mb-4 inline-flex items-center justify-start gap-2 rounded-full border border-[#a7f950]/20 bg-gradient-to-r from-[#a7f950]/10 to-[#a7f950]/5 px-4 py-2'>
-            <Trophy className='h-4 w-4 text-[#a7f950]' />
-            <span className='text-sm font-medium text-[#a7f950]'>Prizes</span>
+          <div className='border-primary/20 from-primary/10 to-primary/5 mb-4 inline-flex items-center justify-start gap-2 rounded-full border bg-gradient-to-r px-4 py-2'>
+            <Trophy className='text-primary h-4 w-4' />
+            <span className='text-primary text-sm font-medium'>Prizes</span>
           </div>
         </div>
         <h2 className='mb-3 text-left text-3xl font-bold tracking-tight text-white md:text-4xl'>
           {title}
         </h2>
-        <div className='relative overflow-hidden rounded-lg border border-white/10 bg-white/5 p-4 transition-all duration-300 hover:border-[#a7f950]/30'>
+        <div className='hover:border-primary/30 relative overflow-hidden rounded-lg border border-white/10 bg-white/5 p-4 transition-all duration-300'>
           {/* Wave background */}
           <div className='absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-lg opacity-5'>
             <Image
@@ -54,7 +54,7 @@ export function HackathonPrizes({
               {totalPrizePool} USDC
             </span>
             {otherPrizes && (
-              <span className='text-xs font-medium text-[#a7f950]'>
+              <span className='text-primary text-xs font-medium'>
                 + {otherPrizes}
               </span>
             )}
@@ -68,7 +68,7 @@ export function HackathonPrizes({
           {firstThreePrizes.map((prize, index) => (
             <div
               key={index}
-              className='group relative overflow-hidden rounded-lg border border-[#a7f950]/30 bg-gradient-to-br from-[#a7f950]/10 to-transparent p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#a7f950]/50 hover:shadow-lg hover:shadow-[#a7f950]/10'
+              className='group border-primary/30 from-primary/10 hover:border-primary/50 hover:shadow-primary/10 relative overflow-hidden rounded-lg border bg-gradient-to-br to-transparent p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg'
             >
               {/* Wave background */}
               <div className='absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-lg opacity-5'>
@@ -82,7 +82,7 @@ export function HackathonPrizes({
               </div>
 
               {/* Animated background gradient on hover */}
-              <div className='absolute inset-0 bg-gradient-to-br from-[#a7f950]/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100' />
+              <div className='from-primary/20 absolute inset-0 bg-gradient-to-br to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100' />
 
               <div className='relative z-10'>
                 <div className='mb-4 flex items-start gap-3'>
@@ -104,7 +104,7 @@ export function HackathonPrizes({
                 </div>
 
                 <div className='space-y-3'>
-                  <div className='text-lg font-bold text-[#a7f950] transition-colors duration-300 group-hover:text-[#a7f950]'>
+                  <div className='text-primary group-hover:text-primary text-lg font-bold transition-colors duration-300'>
                     {prize.prizeAmount} {prize.currency || 'USDC'}
                   </div>
                 </div>
@@ -131,13 +131,13 @@ export function HackathonPrizes({
               <table className='w-full'>
                 <thead>
                   <tr className='border-b border-white/10'>
-                    <th className='px-4 py-3 text-left text-sm font-bold text-[#a7f950]'>
+                    <th className='text-primary px-4 py-3 text-left text-sm font-bold'>
                       POSITION
                     </th>
-                    <th className='px-4 py-3 text-left text-sm font-bold text-[#a7f950]'>
+                    <th className='text-primary px-4 py-3 text-left text-sm font-bold'>
                       PRIZE AMOUNT
                     </th>
-                    <th className='px-4 py-3 text-left text-sm font-bold text-[#a7f950]'>
+                    <th className='text-primary px-4 py-3 text-left text-sm font-bold'>
                       CURRENCY
                     </th>
                   </tr>
