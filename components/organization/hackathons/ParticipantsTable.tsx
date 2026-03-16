@@ -57,7 +57,10 @@ export function ParticipantsTable({
           return (
             <div className='flex items-center gap-3'>
               <Avatar className='h-9 w-9 border border-gray-800'>
-                <AvatarImage src={user.profile.image} alt={user.profile.name} />
+                <AvatarImage
+                  src={user.profile.image || undefined}
+                  alt={user.profile.name}
+                />
                 <AvatarFallback className='bg-background-card text-xs'>
                   {user.profile.name?.substring(0, 2).toUpperCase()}
                 </AvatarFallback>

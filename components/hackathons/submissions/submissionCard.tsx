@@ -28,7 +28,7 @@ interface SubmissionCardProps {
   title: string;
   description: string;
   submitterName: string;
-  submitterAvatar?: string;
+  submitterAvatar?: string | null;
   category?: string;
   categories?: string[];
   status?: 'Pending' | 'Approved' | 'Rejected';

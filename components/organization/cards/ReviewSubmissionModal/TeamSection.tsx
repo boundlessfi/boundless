@@ -11,7 +11,7 @@ interface TeamMember {
   id: string;
   name: string;
   role: string;
-  avatar?: string;
+  avatar?: string | null;
   username?: string;
 }
 
@@ -37,7 +37,10 @@ export const TeamSection: React.FC<TeamSectionProps> = ({ teamMembers }) => {
               className='group bg-background-card/20 hover:bg-background-card/40 flex items-center gap-4 rounded-xl border border-gray-900/60 p-4 transition-all hover:border-gray-800'
             >
               <Avatar className='h-12 w-12 border border-gray-800 transition-transform group-hover:scale-105'>
-                <AvatarImage src={member.avatar} alt={member.name} />
+                <AvatarImage
+                  src={member.avatar || undefined}
+                  alt={member.name}
+                />
                 <AvatarFallback className='bg-background-card font-bold text-gray-400'>
                   {member.name.charAt(0).toUpperCase()}
                 </AvatarFallback>

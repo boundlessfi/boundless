@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 interface SubmissionCard2Props {
   title: string;
   submitterName: string;
-  submitterAvatar?: string;
+  submitterAvatar?: string | null;
   image?: string;
   upvotes?: number;
   comments?: number;

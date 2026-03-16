@@ -277,7 +277,7 @@ const Participants = () => {
               key={p.id}
               name={p.user.profile.name}
               username={p.user.profile.username}
-              image={p.user.profile.image}
+              image={p.user.profile.image || undefined}
               submitted={!!p.submittedAt}
               skills={p.user.profile.skills}
               userId={p.userId ?? p.user?.id}

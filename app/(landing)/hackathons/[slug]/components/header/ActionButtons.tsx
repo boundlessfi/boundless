@@ -38,7 +38,8 @@ const ActionButtons = () => {
   const isParticipant = user
     ? !!hackathon?.isParticipant ||
       (hackathon?.participants || []).some(
-        (p: Participant) => p.userId === user.id
+        (p: Participant) =>
+          (p as any).userId === user.id || p.user?.id === user.id
       )
     : false;
 

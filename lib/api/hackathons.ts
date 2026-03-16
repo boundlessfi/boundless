@@ -636,7 +636,7 @@ export interface ParticipantTeamMember {
   name: string;
   username: string;
   role: string;
-  avatar?: string;
+  avatar?: string | null;
 }
 
 export interface ParticipantVote {
@@ -698,7 +698,7 @@ export interface ParticipantSubmission {
     id: string;
     name: string;
     username: string;
-    image?: string;
+    image?: string | null;
   };
   disqualificationReason?: string | null;
   reviewedBy?: {
@@ -772,7 +772,7 @@ export interface Participant {
     profile: {
       name: string;
       username: string;
-      image?: string;
+      image?: string | null;
     };
     email: string;
   };
@@ -2403,7 +2403,7 @@ export interface TeamMember {
   username: string;
   name: string;
   role: string;
-  image?: string;
+  image?: string | null;
   joinedAt: string;
 }
 

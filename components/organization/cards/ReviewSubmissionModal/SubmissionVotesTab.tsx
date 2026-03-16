@@ -11,7 +11,7 @@ interface Voter {
   id: string;
   name: string;
   username: string;
-  avatar?: string;
+  avatar?: string | null;
   votedAt?: string;
   voteType?: 'positive' | 'negative';
 }
@@ -42,7 +42,10 @@ export const SubmissionVotesTab: React.FC<SubmissionVotesTabProps> = ({
               <div className='flex min-w-0 items-center gap-4'>
                 <div className='relative'>
                   <Avatar className='h-12 w-12 shrink-0 border border-gray-800'>
-                    <AvatarImage src={voter.avatar} alt={voter.name} />
+                    <AvatarImage
+                      src={voter.avatar || undefined}
+                      alt={voter.name}
+                    />
                     <AvatarFallback className='bg-background-card font-bold text-gray-400'>
                       {voter.name.charAt(0).toUpperCase()}
                     </AvatarFallback>

@@ -122,6 +122,9 @@ export function useRegisterHackathon({
     hasCheckedInitially,
     // Expose setters for immediate updates
     setParticipant,
-    hasSubmitted: participant?.submission?.status === 'SUBMITTED',
+    hasSubmitted:
+      participant?.submission?.status === 'SUBMITTED' ||
+      participant?.submission?.status === 'SHORTLISTED' ||
+      participant?.submission?.status === 'DISQUALIFIED',
   };
 }
