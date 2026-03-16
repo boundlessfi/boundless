@@ -35,7 +35,7 @@ export const useSubmissionActions = ({
 
         if (response.success && response.data) {
           const newStatus = response.data.submission?.status;
-          const isShortlisted = newStatus === 'shortlisted';
+          const isShortlisted = newStatus === 'SHORTLISTED';
 
           toast.success(
             isShortlisted
@@ -84,7 +84,7 @@ export const useSubmissionActions = ({
 
         if (response.success && response.data) {
           const newStatus = response.data.submission?.status;
-          const isDisqualified = newStatus === 'disqualified';
+          const isDisqualified = newStatus === 'DISQUALIFIED';
 
           toast.success(
             isDisqualified

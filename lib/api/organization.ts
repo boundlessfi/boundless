@@ -277,7 +277,6 @@ export const getOrganizations = async (
 export const getOrganization = async (
   organizationId: string
 ): Promise<GetOrganizationResponse> => {
-  console.trace('org');
   const res = await api.get<ApiResponse<GetOrganizationResponse>>(
     `/organizations/${organizationId}`
   );

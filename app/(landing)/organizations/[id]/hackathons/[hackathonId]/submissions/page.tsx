@@ -75,23 +75,17 @@ export default function SubmissionsPage() {
   // Frontend-side filtering
   const filteredSubmissions = useMemo(() => {
     return allSubmissions.filter(sub => {
-      const subData = sub as any;
       const search = filters.search?.toLowerCase() || '';
       const matchesSearch = search
-        ? (subData.projectName || '').toLowerCase().includes(search) ||
-          (subData.participant?.name || '').toLowerCase().includes(search) ||
-          (subData.participant?.username || '').toLowerCase().includes(search)
+        ? (sub.projectName || '').toLowerCase().includes(search) ||
+          (sub.participant?.name || '').toLowerCase().includes(search) ||
+          (sub.participant?.username || '').toLowerCase().includes(search)
         : true;
 
-      const matchesStatus =
-        !filters.status || filters.status === ('all' as any)
-          ? true
-          : subData.status === filters.status;
+      const matchesStatus = !filters.status || sub.status === filters.status;
 
       const matchesType =
-        !filters.type || filters.type === ('all' as any)
-          ? true
-          : subData.participationType === filters.type;
+        !filters.type || sub.participationType === filters.type;
 
       return matchesSearch && matchesStatus && matchesType;
     });
@@ -170,9 +164,9 @@ export default function SubmissionsPage() {
               <SubmissionsManagement
                 submissions={filteredSubmissions}
                 pagination={pagination}
-                filters={filters as any}
+                filters={filters}
                 loading={loading}
-                onFilterChange={updateFilters as any}
+                onFilterChange={updateFilters}
                 onPageChange={goToPage}
                 onRefresh={refresh}
                 organizationId={organizationId}

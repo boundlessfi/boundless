@@ -166,16 +166,16 @@ export function SubmissionDetailModal({
               <div className='flex items-center gap-4'>
                 <Badge
                   className={`${
-                    submission.status === 'shortlisted'
+                    submission.status === 'SHORTLISTED'
                       ? 'border-primary bg-[#E5FFE5] text-[#4E9E00]'
-                      : submission.status === 'disqualified'
+                      : submission.status === 'DISQUALIFIED'
                         ? 'border-[#FF5757] bg-[#FFEAEA] text-[#D33]'
                         : 'border-[#645D5D] bg-[#E4DBDB] text-[#645D5D]'
                   }`}
                 >
-                  {submission.status === 'shortlisted'
+                  {submission.status === 'SHORTLISTED'
                     ? 'Shortlisted'
-                    : submission.status === 'disqualified'
+                    : submission.status === 'DISQUALIFIED'
                       ? 'Disqualified'
                       : 'Submitted'}
                 </Badge>
@@ -295,7 +295,7 @@ export function SubmissionDetailModal({
             </div>
 
             {/* Disqualification Reason */}
-            {submission.status === 'disqualified' &&
+            {submission.status === 'DISQUALIFIED' &&
               submission.disqualificationReason && (
                 <div className='rounded-lg border border-red-500/50 bg-red-500/10 p-4'>
                   <h4 className='mb-2 font-semibold text-red-400'>

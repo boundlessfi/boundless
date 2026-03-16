@@ -692,7 +692,14 @@ export interface ParticipantSubmission {
   comments?: number | ParticipantComment[];
   submissionDate?: string;
   submittedAt?: string;
-  status: 'submitted' | 'shortlisted' | 'disqualified' | string;
+  status: SubmissionStatus;
+  participationType?: 'INDIVIDUAL' | 'TEAM' | 'TEAM_OR_INDIVIDUAL';
+  participant?: {
+    id: string;
+    name: string;
+    username: string;
+    image?: string;
+  };
   disqualificationReason?: string | null;
   reviewedBy?: {
     id: string;

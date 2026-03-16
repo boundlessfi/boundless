@@ -95,13 +95,26 @@ export function useOrganizerSubmissions(
         setLoading(false);
       }
     },
-    [hackathonId, initialLimit, debouncedSearch, pagination.limit]
+    [
+      hackathonId,
+      initialLimit,
+      debouncedSearch,
+      pagination.limit,
+      filters.status,
+      filters.type,
+    ]
   );
 
   // Sync with backend on filter/pagination changes
   useEffect(() => {
     fetchSubmissions(1);
-  }, [debouncedSearch, filters.status, filters.type, pagination.limit]);
+  }, [
+    fetchSubmissions,
+    debouncedSearch,
+    filters.status,
+    filters.type,
+    pagination.limit,
+  ]);
 
   const updateFilters = useCallback((next: OrganizerSubmissionFilters) => {
     setFilters(next);
