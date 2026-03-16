@@ -43,6 +43,8 @@ export interface ParticipantsQueryParams {
   page?: number;
   limit?: number;
   status?: string;
+  search?: string;
+  type?: string;
   skill?: string;
 }
 
@@ -50,6 +52,7 @@ export interface SubmissionsQueryParams {
   page?: number;
   limit?: number;
   status?: string;
+  search?: string;
   sort?: string;
 }
 

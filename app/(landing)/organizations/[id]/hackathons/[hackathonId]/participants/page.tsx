@@ -228,45 +228,11 @@ const ParticipantsPage: React.FC = () => {
     }
   };
 
-  // Frontend-side filtering as per requirement
-  const filteredParticipants = useMemo(() => {
-    return participants.filter(participant => {
-      // Search: filter by name or username
-      const search = filters.search.toLowerCase();
-      const matchesSearch = search
-        ? (participant.user?.profile?.name || '')
-            .toLowerCase()
-            .includes(search) ||
-          (participant.user?.profile?.username || '')
-            .toLowerCase()
-            .includes(search)
-        : true;
-
-      // Status: filter by participant.submission.status
-      // Filter values are 'submitted', 'not_submitted', etc.
-      // ParticipantSubmission.status values are 'submitted', 'shortlisted', etc.
-      const matchesStatus =
-        filters.status === 'all'
-          ? true
-          : filters.status === 'not_submitted'
-            ? !participant.submission
-            : participant.submission?.status?.toLowerCase() ===
-              filters.status.toLowerCase();
-
-      // Type: filter by participant.participationType
-      const matchesType =
-        filters.type === 'all'
-          ? true
-          : participant.participationType?.toLowerCase() ===
-            filters.type.toLowerCase();
-
-      return matchesSearch && matchesStatus && matchesType;
-    });
-  }, [participants, filters.search, filters.status, filters.type]);
+  // Removed redundant frontend-side filtering as backend now handles it.
 
   // Mock table instance for DataTablePagination
   const table = useReactTable({
-    data: filteredParticipants,
+    data: participants,
     columns: [], // Not used for rendering here
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
@@ -352,7 +318,7 @@ const ParticipantsPage: React.FC = () => {
             <div className='space-y-6'>
               {view === 'table' ? (
                 <ParticipantsTable
-                  data={filteredParticipants}
+                  data={participants}
                   loading={participantsLoading}
                   onReview={handleReview}
                   onViewTeam={handleViewTeam}
@@ -360,7 +326,7 @@ const ParticipantsPage: React.FC = () => {
                 />
               ) : (
                 <ParticipantsGrid
-                  data={filteredParticipants}
+                  data={participants}
                   loading={participantsLoading}
                   onReview={handleReview}
                   onViewTeam={handleViewTeam}

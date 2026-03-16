@@ -72,27 +72,8 @@ export default function SubmissionsPage() {
     fetchSession();
   }, []);
 
-  // Frontend-side filtering
-  const filteredSubmissions = useMemo(() => {
-    return allSubmissions.filter(sub => {
-      const search = filters.search?.toLowerCase() || '';
-      const matchesSearch = search
-        ? (sub.projectName || '').toLowerCase().includes(search) ||
-          (sub.participant?.name || '').toLowerCase().includes(search) ||
-          (sub.participant?.username || '').toLowerCase().includes(search)
-        : true;
-
-      const matchesStatus = !filters.status || sub.status === filters.status;
-
-      const matchesType =
-        !filters.type || sub.participationType === filters.type;
-
-      return matchesSearch && matchesStatus && matchesType;
-    });
-  }, [allSubmissions, filters.search, filters.status, filters.type]);
-
   const table = useReactTable({
-    data: filteredSubmissions,
+    data: allSubmissions,
     columns: [],
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
@@ -162,7 +143,7 @@ export default function SubmissionsPage() {
           ) : (
             <div className='space-y-6'>
               <SubmissionsManagement
-                submissions={filteredSubmissions}
+                submissions={allSubmissions}
                 pagination={pagination}
                 filters={filters}
                 loading={loading}

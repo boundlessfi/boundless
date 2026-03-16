@@ -71,13 +71,22 @@ export const getFeaturedHackathons =
 // Get participants for a hackathon
 export const getHackathonParticipants = async (
   slug: string,
-  params?: { page?: number; limit?: number; status?: string; skill?: string }
+  params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    skill?: string;
+    search?: string;
+    type?: string;
+  }
 ): Promise<ParticipantsResponse> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.limit) queryParams.append('limit', params.limit.toString());
   if (params?.status) queryParams.append('status', params.status);
   if (params?.skill) queryParams.append('skill', params.skill);
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.type) queryParams.append('type', params.type);
 
   const response = await api.get<ParticipantsResponse>(
     `/hackathons/${slug}/participants?${queryParams.toString()}`
@@ -97,12 +106,19 @@ export const getHackathonAnalytics = async (
 // Get submissions for a hackathon
 export const getHackathonSubmissions = async (
   slug: string,
-  params?: { page?: number; limit?: number; status?: string; sort?: string }
+  params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+    sort?: string;
+  }
 ): Promise<SubmissionsResponse> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.limit) queryParams.append('limit', params.limit.toString());
   if (params?.status) queryParams.append('status', params.status);
+  if (params?.search) queryParams.append('search', params.search);
   if (params?.sort) queryParams.append('sort', params.sort);
 
   const response = await api.get<SubmissionsResponse>(
