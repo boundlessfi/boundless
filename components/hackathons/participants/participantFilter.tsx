@@ -99,7 +99,7 @@ const ParticipantsFilter = ({
       {/* Stats Section */}
       <div className='mb-6 flex items-center gap-4 text-sm'>
         <span className='text-gray-400'>
-          <span className='font-semibold text-[#a7f950]'>
+          <span className='text-primary font-semibold'>
             {totalParticipants}
           </span>{' '}
           total participants

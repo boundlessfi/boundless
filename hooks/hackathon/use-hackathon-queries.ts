@@ -64,8 +64,17 @@ export const hackathonKeys = {
   submissions: (slug: string) => ['hackathon', 'submissions', slug] as const,
   submissionsList: (slug: string, params?: SubmissionsQueryParams) =>
     ['hackathon', 'submissions', slug, params] as const,
-  exploreSubmissions: (id: string) =>
-    ['hackathon', 'exploreSubmissions', id] as const,
+  exploreSubmissions: (
+    id: string,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      category?: string;
+      status?: string;
+      sort?: string;
+    }
+  ) => ['hackathon', 'exploreSubmissions', id, params] as const,
   winners: (idOrSlug: string) => ['hackathon', 'winners', idOrSlug] as const,
   announcements: (idOrSlug: string) =>
     ['hackathon', 'announcements', idOrSlug] as const,
@@ -190,7 +199,7 @@ export function useExploreSubmissions(
   enabled = true
 ) {
   return useQuery({
-    queryKey: ['hackathon', 'exploreSubmissions', hackathonId, params],
+    queryKey: hackathonKeys.exploreSubmissions(hackathonId, params),
     queryFn: async () => {
       const response = await getExploreSubmissions(
         hackathonId,

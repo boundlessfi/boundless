@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useAuthStore } from '@/lib/stores/auth-store';
@@ -17,6 +18,14 @@ import {
   type GetTeamOptions as GetTeamPostsOptions,
 } from '@/lib/api/hackathons/teams';
 import { reportError } from '@/lib/error-reporting';
+
+function getErrorMessage(err: unknown, defaultMessage: string): string {
+  if (err instanceof AxiosError && err.response?.data?.message != null) {
+    return String(err.response.data.message);
+  }
+  if (err instanceof Error) return err.message;
+  return defaultMessage;
+}
 
 interface UseTeamPostsProps {
   hackathonSlugOrId: string;
@@ -165,14 +174,7 @@ export function useTeamPosts({
           throw new Error(response.message || 'Failed to create team post');
         }
       } catch (err: unknown) {
-        let errorMessage = 'Failed to create team post';
-        if (err && typeof err === 'object') {
-          if ('response' in err && (err as any).response?.data?.message) {
-            errorMessage = (err as any).response.data.message;
-          } else if (err instanceof Error) {
-            errorMessage = err.message;
-          }
-        }
+        const errorMessage = getErrorMessage(err, 'Failed to create team post');
         setError(errorMessage);
         toast.error('Error', { description: errorMessage });
         throw err;
@@ -219,14 +221,7 @@ export function useTeamPosts({
           throw new Error(response.message || 'Failed to update team post');
         }
       } catch (err: unknown) {
-        let errorMessage = 'Failed to update team post';
-        if (err && typeof err === 'object') {
-          if ('response' in err && (err as any).response?.data?.message) {
-            errorMessage = (err as any).response.data.message;
-          } else if (err instanceof Error) {
-            errorMessage = err.message;
-          }
-        }
+        const errorMessage = getErrorMessage(err, 'Failed to update team post');
         setError(errorMessage);
         toast.error('Error', { description: errorMessage });
         throw err;
@@ -262,14 +257,7 @@ export function useTeamPosts({
           throw new Error(response.message || 'Failed to delete team post');
         }
       } catch (err: unknown) {
-        let errorMessage = 'Failed to delete team post';
-        if (err && typeof err === 'object') {
-          if ('response' in err && (err as any).response?.data?.message) {
-            errorMessage = (err as any).response.data.message;
-          } else if (err instanceof Error) {
-            errorMessage = err.message;
-          }
-        }
+        const errorMessage = getErrorMessage(err, 'Failed to delete team post');
         setError(errorMessage);
         toast.error('Error', { description: errorMessage });
         throw err;

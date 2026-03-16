@@ -15,7 +15,7 @@ function Content() {
       <p className='text-[#D9D9D9]'>
         {msgs[p.get('reason') ?? ''] ?? 'An unexpected error occurred.'}
       </p>
-      <Link href='/' className='text-[#A7F950] underline'>
+      <Link href='/' className='text-primary underline'>
         Back to home
       </Link>
     </main>

@@ -28,10 +28,7 @@ export default function BlogNotFound() {
             </Link>
           </Button>
 
-          <Button
-            asChild
-            className='bg-[#A7F950] text-black hover:bg-[#A7F950]/90'
-          >
+          <Button asChild className='bg-primary hover:bg-primary/90 text-black'>
             <Link href='/'>
               <Home className='mr-2 h-4 w-4' />
               Go Home

@@ -52,7 +52,7 @@ export function ProjectSidebarActions({
             className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-lg text-base font-semibold shadow-lg transition-all duration-200 hover:shadow-xl ${
               userVote === 1
                 ? 'bg-primary/10 border-primary/24 text-primary border'
-                : 'bg-[#A7F950] text-black hover:bg-[#A7F950]'
+                : 'bg-primary hover:bg-primary text-black'
             } `}
           >
             <span>
@@ -78,7 +78,7 @@ export function ProjectSidebarActions({
           escrowAddress={crowdfund?.escrowAddress || ''}
         >
           <BoundlessButton
-            className='flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-[#A7F950] text-base font-semibold text-black shadow-lg transition-all duration-200 hover:bg-[#A7F950] hover:shadow-xl'
+            className='bg-primary hover:bg-primary flex h-12 flex-1 items-center justify-center gap-2 rounded-lg text-base font-semibold text-black shadow-lg transition-all duration-200 hover:shadow-xl'
             icon={<HandCoins className='h-5 w-5' />}
             iconPosition='left'
           >

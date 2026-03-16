@@ -72,7 +72,7 @@ export function InviteUserModal({
             <Textarea
               id='message'
               placeholder='e.g. We would love to have you on our team! We need someone with your skills.'
-              className='min-h-[100px] border-zinc-700 bg-zinc-800 text-white placeholder:text-zinc-500 focus:ring-[#a7f950]'
+              className='focus:ring-primary min-h-[100px] border-zinc-700 bg-zinc-800 text-white placeholder:text-zinc-500'
               value={message}
               onChange={e => setMessage(e.target.value)}
               maxLength={500}

@@ -181,7 +181,7 @@ const Contact = React.forwardRef<{ validate: () => boolean }, ContactProps>(
                 className={cn(
                   'relative flex items-center overflow-hidden rounded-[12px] border bg-[#101010] transition-all duration-200',
                   formData.backupType === 'discord'
-                    ? 'border-[#A7F950]'
+                    ? 'border-primary'
                     : 'border-[#2B2B2B]'
                 )}
               >
@@ -197,7 +197,7 @@ const Contact = React.forwardRef<{ validate: () => boolean }, ContactProps>(
                     className={cn(
                       'border-2',
                       formData.backupType === 'discord'
-                        ? 'border-[#A7F950]'
+                        ? 'border-primary'
                         : 'border-[#484848]'
                     )}
                   />
@@ -206,7 +206,7 @@ const Contact = React.forwardRef<{ validate: () => boolean }, ContactProps>(
                     className={cn(
                       'cursor-pointer text-sm',
                       formData.backupType === 'discord'
-                        ? 'text-[#A7F950]'
+                        ? 'text-primary'
                         : 'text-[#B5B5B5]'
                     )}
                   >
@@ -235,7 +235,7 @@ const Contact = React.forwardRef<{ validate: () => boolean }, ContactProps>(
                 className={cn(
                   'relative flex items-center overflow-hidden rounded-[12px] border bg-[#101010] transition-all duration-200',
                   formData.backupType === 'whatsapp'
-                    ? 'border-[#A7F950]'
+                    ? 'border-primary'
                     : 'border-[#2B2B2B]'
                 )}
               >
@@ -251,7 +251,7 @@ const Contact = React.forwardRef<{ validate: () => boolean }, ContactProps>(
                     className={cn(
                       'border',
                       formData.backupType === 'whatsapp'
-                        ? 'border-[#A7F950]'
+                        ? 'border-primary'
                         : 'border-[#484848]'
                     )}
                   />
@@ -260,7 +260,7 @@ const Contact = React.forwardRef<{ validate: () => boolean }, ContactProps>(
                     className={cn(
                       'cursor-pointer text-sm',
                       formData.backupType === 'whatsapp'
-                        ? 'text-[#A7F950]'
+                        ? 'text-primary'
                         : 'text-[#B5B5B5]'
                     )}
                   >

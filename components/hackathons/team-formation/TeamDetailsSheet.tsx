@@ -276,7 +276,7 @@ export function TeamDetailsSheet({
                   <Badge
                     className={`rounded border px-2 py-0.5 text-xs font-medium ${
                       post.isOpen
-                        ? 'border-[#A7F950] bg-[#A7F950]/10 text-[#A7F950]'
+                        ? 'border-primary bg-primary/10 text-primary'
                         : 'border-gray-500 bg-gray-500/10 text-gray-500'
                     }`}
                   >
@@ -284,7 +284,7 @@ export function TeamDetailsSheet({
                   </Badge>
                   {/* Pinned Badge if applicable (can be passed as prop or inferred if myTeam) */}
                   {isLeader && (
-                    <Badge className='flex items-center gap-1 border-[#A7F950]/50 bg-[#A7F950]/10 text-[#A7F950]'>
+                    <Badge className='border-primary/50 bg-primary/10 text-primary flex items-center gap-1'>
                       <Pin className='h-3 w-3' />
                       Your Team
                     </Badge>
@@ -347,7 +347,7 @@ export function TeamDetailsSheet({
               {post.lookingFor.length > 0 && (
                 <section>
                   <h3 className='mb-3 flex items-center gap-2 text-lg font-semibold text-white'>
-                    <Briefcase className='h-5 w-5 text-[#A7F950]' />
+                    <Briefcase className='text-primary h-5 w-5' />
                     Looking For
                   </h3>
                   <div className='space-y-2'>
@@ -372,7 +372,7 @@ export function TeamDetailsSheet({
                             {roleName}
                           </Badge>
                           {isHired && (
-                            <Badge className='border-[#A7F950] bg-[#A7F950]/10 text-xs text-[#A7F950]'>
+                            <Badge className='border-primary bg-primary/10 text-primary text-xs'>
                               <Check className='mr-1 h-3 w-3' />
                               Filled
                             </Badge>
@@ -388,7 +388,7 @@ export function TeamDetailsSheet({
                                   handleToggleRoleHired(roleName)
                                 }
                                 disabled={isToggling}
-                                className='data-[state=checked]:bg-[#A7F950]'
+                                className='data-[state=checked]:bg-primary'
                               />
                             </div>
                           )}
@@ -434,7 +434,7 @@ export function TeamDetailsSheet({
                           {(typeof member === 'string'
                             ? member
                             : member.userId) === post.leader?.id && (
-                            <span className='ml-2 text-xs text-[#A7F950]'>
+                            <span className='text-primary ml-2 text-xs'>
                               (Leader)
                             </span>
                           )}
@@ -481,7 +481,7 @@ export function TeamDetailsSheet({
         <div className='border-t border-gray-800 p-6'>
           <Button
             onClick={handleContactClick}
-            className='bg-[#A7F950] text-lg font-semibold text-black hover:bg-[#8fd93f]'
+            className='bg-primary text-lg font-semibold text-black hover:bg-[#8fd93f]'
           >
             <ContactIcon className='mr-2 h-5 w-5' />
             Contact Team

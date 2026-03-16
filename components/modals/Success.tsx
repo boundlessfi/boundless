@@ -235,7 +235,7 @@ const Success = ({
                   <a
                     key={index}
                     href={part.url}
-                    className='font-medium text-[#A7F950] underline transition-colors hover:text-[#A7F950]/80'
+                    className='text-primary hover:text-primary/80 font-medium underline transition-colors'
                     target={part.url.startsWith('http') ? '_blank' : '_self'}
                     rel={
                       part.url.startsWith('http')

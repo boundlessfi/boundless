@@ -27,13 +27,13 @@ export const HackathonParticipants = () => {
           <div className='flex flex-shrink-0 items-center gap-2'>
             <div className='relative'>
               <div className='h-8 w-8 rounded-full bg-gray-700' />
-              <div className='absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-gray-900 bg-[#a7f950]' />
+              <div className='bg-primary absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-gray-900' />
             </div>
           </div>
           <div>
             <p className='leading-relaxed'>
               Participants with a{' '}
-              <span className='font-semibold text-[#a7f950]'>
+              <span className='text-primary font-semibold'>
                 green indicator dot
               </span>{' '}
               on their avatar have successfully submitted their hackathon

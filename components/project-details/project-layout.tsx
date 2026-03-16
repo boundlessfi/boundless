@@ -175,8 +175,8 @@ export function ProjectLayout({
                       className={cn(
                         'relative rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
                         'text-gray-400 hover:text-gray-300',
-                        'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
-                        'data-[state=active]:border data-[state=active]:border-[#a7f950]/30'
+                        'data-[state=active]:bg-primary/10 data-[state=active]:text-primary',
+                        'data-[state=active]:border-primary/30 data-[state=active]:border'
                       )}
                     >
                       {tab.label}
@@ -252,9 +252,9 @@ export function ProjectLayout({
                       className={cn(
                         'relative rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200',
                         'text-gray-400 hover:bg-gray-800/30 hover:text-gray-300',
-                        'data-[state=active]:bg-[#a7f950]/10 data-[state=active]:text-[#a7f950]',
-                        'data-[state=active]:border data-[state=active]:border-[#a7f950]/30',
-                        'focus-visible:ring-2 focus-visible:ring-[#a7f950]/20',
+                        'data-[state=active]:bg-primary/10 data-[state=active]:text-primary',
+                        'data-[state=active]:border-primary/30 data-[state=active]:border',
+                        'focus-visible:ring-primary/20 focus-visible:ring-2',
                         'rounded-t-2xl rounded-b-none'
                       )}
                     >

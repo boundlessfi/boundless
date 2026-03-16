@@ -191,7 +191,7 @@ const Newsletter = ({
                               <Input
                                 {...field}
                                 placeholder='Enter your email'
-                                className='focus-visible:ring-none absolute top-0 left-0 h-full border-none bg-transparent pl-10 text-white caret-[#A7F950] placeholder:text-[#B5B5B5] focus-visible:ring-[0px]'
+                                className='focus-visible:ring-none caret-primary absolute top-0 left-0 h-full border-none bg-transparent pl-10 text-white placeholder:text-[#B5B5B5] focus-visible:ring-[0px]'
                               />
                             </div>
                           </FormControl>
@@ -215,7 +215,7 @@ const Newsletter = ({
                         >
                           <input
                             type='checkbox'
-                            className='accent-[#A7F950]'
+                            className='accent-primary'
                             checked={selectedTags.includes(tag)}
                             onChange={() =>
                               setSelectedTags(p =>

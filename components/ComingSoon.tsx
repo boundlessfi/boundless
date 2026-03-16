@@ -66,8 +66,8 @@ const FeatureBlock = ({
         <Icon className='h-64 w-64' />
       </div>
 
-      <div className='mb-6 flex items-center gap-2 text-sm text-[#a7f950]'>
-        <div className='h-2 w-2 animate-pulse rounded-full bg-[#a7f950]' />
+      <div className='text-primary mb-6 flex items-center gap-2 text-sm'>
+        <div className='bg-primary h-2 w-2 animate-pulse rounded-full' />
         In Progress
       </div>
 

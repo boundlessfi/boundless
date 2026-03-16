@@ -18,7 +18,9 @@ export const useRequireAuthForAction = () => {
       options?: RequireAuthOptions
     ) => {
       return async (...args: Args) => {
-        if (!isAuthenticated && !isLoading) {
+        if (isLoading) return;
+
+        if (!isAuthenticated) {
           const redirectTo =
             options?.redirectTo ??
             (typeof window !== 'undefined'

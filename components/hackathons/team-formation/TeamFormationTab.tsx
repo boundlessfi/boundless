@@ -163,7 +163,7 @@ export function TeamFormationTab({
   if (isLoading && posts.length === 0) {
     return (
       <div className='flex min-h-[400px] items-center justify-center'>
-        <Loader2 className='h-8 w-8 animate-spin text-[#a7f950]' />
+        <Loader2 className='text-primary h-8 w-8 animate-spin' />
         <span className='ml-3 text-gray-400'>Loading team posts...</span>
       </div>
     );
@@ -175,7 +175,7 @@ export function TeamFormationTab({
         <p className='mb-4 text-red-400'>{error}</p>
         <Button
           onClick={() => fetchPosts()}
-          className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
+          className='bg-primary text-black hover:bg-[#8fd93f]'
         >
           Retry
         </Button>
@@ -193,13 +193,11 @@ export function TeamFormationTab({
         <div className='mb-6 flex items-center justify-between text-left text-sm'>
           <div className='flex items-center gap-4'>
             <span className='text-gray-400'>
-              <span className='font-semibold text-[#a7f950]'>
-                {posts.length}
-              </span>{' '}
+              <span className='text-primary font-semibold'>{posts.length}</span>{' '}
               total posts
             </span>
             <span className='text-gray-400'>
-              <span className='font-semibold text-[#a7f950]'>
+              <span className='text-primary font-semibold'>
                 {activePostsCount}
               </span>{' '}
               active
@@ -211,7 +209,7 @@ export function TeamFormationTab({
               setEditingPost(null);
               setShowCreateModal(true);
             }}
-            className='bg-[#a7f950] text-black hover:bg-[#8fd93f]'
+            className='bg-primary text-black hover:bg-[#8fd93f]'
           >
             <Plus className='mr-2 h-4 w-4' />
             Create Post
@@ -374,7 +372,7 @@ export function TeamFormationTab({
                     setEditingPost(null);
                     setShowCreateModal(true);
                   }}
-                  className='mt-4 bg-[#a7f950] text-black hover:bg-[#8fd93f]'
+                  className='bg-primary mt-4 text-black hover:bg-[#8fd93f]'
                 >
                   <Plus className='mr-2 h-4 w-4' />
                   Create First Post
