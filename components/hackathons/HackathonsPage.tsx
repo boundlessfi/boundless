@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import HackathonCard from '@/components/landing-page/hackathon/HackathonCard';
+import { HackathonCard } from '@/components/landing-page/hackathon/HackathonCard';
 import HackathonsFiltersHeader from '@/components/hackathons/HackathonsFiltersHeader';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useHackathonFilters } from '@/hooks/hackathon/use-hackathon-filters';

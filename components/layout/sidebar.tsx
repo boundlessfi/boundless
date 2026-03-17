@@ -187,7 +187,7 @@ const SidebarLayout: React.FC = () => {
                 >
                   <Badge
                     variant='secondary'
-                    className='h-4 w-4 flex-shrink-0 rounded-full bg-[#2B2B2B] p-0 sm:h-5 sm:w-5'
+                    className='h-4 w-4 shrink-0 rounded-full bg-[#2B2B2B] p-0 sm:h-5 sm:w-5'
                   >
                     <svg
                       xmlns='http://www.w3.org/2000/svg'
@@ -244,7 +244,7 @@ const SidebarLayout: React.FC = () => {
                             >
                               <Icon
                                 className={cn(
-                                  'h-4 w-4 flex-shrink-0 sm:h-5 sm:w-5',
+                                  'h-4 w-4 shrink-0 sm:h-5 sm:w-5',
                                   isActive ? 'text-white' : 'text-gray-400'
                                 )}
                               />
@@ -301,7 +301,7 @@ const SidebarLayout: React.FC = () => {
                                   : 'text-gray-400 hover:bg-[#2A2A2A]/50 hover:text-white'
                               )}
                             >
-                              <Icon className='h-4 w-4 flex-shrink-0 sm:h-5 sm:w-5' />
+                              <Icon className='h-4 w-4 shrink-0 sm:h-5 sm:w-5' />
                               <span className='truncate text-xs font-medium sm:text-sm'>
                                 {item.label}
                               </span>

@@ -317,6 +317,7 @@ export type Hackathon = {
     id: string;
     name: string;
     logo: string;
+    slug?: string;
   };
 
   status:

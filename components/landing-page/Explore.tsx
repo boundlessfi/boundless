@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import HackathonCard from './hackathon/HackathonCard';
+import { HackathonCard } from './hackathon/HackathonCard';
 import Link from 'next/link';
 import { getPublicHackathonsList } from '@/lib/api/hackathons';
 import type { Hackathon } from '@/lib/api/hackathons';
