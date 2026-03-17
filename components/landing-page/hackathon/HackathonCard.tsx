@@ -250,25 +250,40 @@ export const HackathonCard = ({
       </div>
 
       <div className='flex flex-1 flex-col p-5 pt-2'>
-        {organization && (
-          <button
-            onClick={handleOrganizerClick}
-            className='group/org bg-card border-border hover:bg-muted relative z-20 -mt-8 flex w-fit items-center gap-2 rounded-full border p-1 pr-3 transition-colors hover:border-gray-600'
-          >
-            {organization.logo ? (
-              <div
-                style={{ backgroundImage: `url(${organization.logo})` }}
-                className='border-border bg-muted size-8 rounded-full border bg-cover bg-center shadow-md'
-              />
-            ) : (
-              <div className='bg-muted border-border size-8 rounded-full border' />
-            )}
-            <span className='text-muted-foreground group-hover/org:text-foreground flex items-center gap-1 text-sm font-medium transition-colors'>
-              {organization.name}
-              <ArrowUpRight className='text-muted-foreground group-hover/org:text-foreground size-3 transition-colors' />
-            </span>
-          </button>
-        )}
+        {organization &&
+          (organization.slug ? (
+            <button
+              onClick={handleOrganizerClick}
+              className='group/org bg-card border-border hover:bg-muted relative z-20 -mt-8 flex w-fit items-center gap-2 rounded-full border p-1 pr-3 transition-colors hover:border-gray-600'
+            >
+              {organization.logo ? (
+                <div
+                  style={{ backgroundImage: `url(${organization.logo})` }}
+                  className='border-border bg-muted size-8 rounded-full border bg-cover bg-center shadow-md'
+                />
+              ) : (
+                <div className='bg-muted border-border size-8 rounded-full border' />
+              )}
+              <span className='text-muted-foreground group-hover/org:text-foreground flex items-center gap-1 text-sm font-medium transition-colors'>
+                {organization.name}
+                <ArrowUpRight className='text-muted-foreground group-hover/org:text-foreground size-3 transition-colors' />
+              </span>
+            </button>
+          ) : (
+            <div className='bg-card border-border relative z-20 -mt-8 flex w-fit items-center gap-2 rounded-full border p-1 pr-3'>
+              {organization.logo ? (
+                <div
+                  style={{ backgroundImage: `url(${organization.logo})` }}
+                  className='border-border bg-muted size-8 rounded-full border bg-cover bg-center shadow-md'
+                />
+              ) : (
+                <div className='bg-muted border-border size-8 rounded-full border' />
+              )}
+              <span className='text-muted-foreground flex items-center gap-1 text-sm font-medium'>
+                {organization.name}
+              </span>
+            </div>
+          ))}
 
         <div className='mt-3'>
           <h2 className='text-foreground group-hover:text-primary line-clamp-2 text-xl leading-tight font-semibold text-balance transition-colors'>
