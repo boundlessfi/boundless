@@ -117,7 +117,7 @@ export const HackathonCard = ({
   className,
   target,
   isPrivate = false,
-  isExtended = true,
+  isExtended = false,
   _count: { participants: participantsCount, submissions, followers } = {
     participants: 0,
     submissions: 0,

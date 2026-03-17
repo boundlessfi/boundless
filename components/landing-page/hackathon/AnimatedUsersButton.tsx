@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { GitMerge, MessageCircle, MessagesSquare, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 // Register the hook to prevent React strict-mode double-firing issues
 gsap.registerPlugin(useGSAP);
@@ -55,7 +55,7 @@ export default function AnimatedUsersButton() {
       onMouseEnter={handleMouseEnter}
       className='group flex w-fit items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900 px-5 py-3 text-neutral-300 transition-colors hover:border-blue-500/50 hover:bg-neutral-800 hover:text-white'
     >
-      <MessageCircle ref={usersIconRef} className='size-5 text-blue-400' />
+      <Users ref={usersIconRef} className='size-5 text-blue-400' />
       <span className='text-sm font-medium'>View Participants</span>
     </button>
   );
