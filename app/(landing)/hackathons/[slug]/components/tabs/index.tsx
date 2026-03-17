@@ -31,7 +31,6 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
   const {
     currentHackathon,
     winners,
-    submissions,
     loading: generalLoading,
   } = useHackathonData();
   const { data: announcements = [], isLoading: announcementsLoading } =
@@ -91,7 +90,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
       {
         id: 'submissions',
         label: 'Submissions',
-        badge: submissions.filter(p => p.status === 'Approved').length,
+        badge: currentHackathon._count?.submissions ?? 0,
       },
       {
         id: 'discussions',
@@ -140,7 +139,6 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
   }, [
     currentHackathon,
     winners,
-    submissions,
     discussionComments.pagination.totalItems,
     announcements,
     announcementsLoading,
