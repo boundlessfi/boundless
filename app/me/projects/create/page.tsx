@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
 const page = () => {
-  redirect('/coming-soon');
+  redirect('/projects/create');
 };
 
 export default page;

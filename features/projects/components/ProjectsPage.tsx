@@ -16,9 +16,10 @@ import { Crowdfunding } from '@/features/projects/types';
 
 interface ProjectsClientProps {
   className?: string;
+  id?: string;
 }
 
-export default function ProjectsClient({ className }: ProjectsClientProps) {
+export default function ProjectsClient({ className, id }: ProjectsClientProps) {
   const {
     filters,
     handleSearch,
@@ -39,7 +40,10 @@ export default function ProjectsClient({ className }: ProjectsClientProps) {
   const showEmptyState = !loading && !error && projects.length === 0;
 
   return (
-    <div className={cn('flex flex-col gap-8', className)} id='explore-project'>
+    <div
+      className={cn('flex flex-col gap-8', className)}
+      id={id || 'explore-project'}
+    >
       <ExploreHeader
         onSearch={handleSearch}
         onSortChange={handleSort}
