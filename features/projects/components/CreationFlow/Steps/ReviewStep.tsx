@@ -58,6 +58,25 @@ export default function ReviewStep({ formData, onNavigate }: ReviewStepProps) {
           value: formData.bannerUrl || formData.banner,
           required: false,
         },
+        {
+          label: 'Repository',
+          value:
+            formData.githubUrl || formData.gitlabUrl || formData.bitbucketUrl,
+          required: false,
+          customLabel: formData.githubUrl
+            ? 'GitHub'
+            : formData.gitlabUrl
+              ? 'GitLab'
+              : formData.bitbucketUrl
+                ? 'Bitbucket'
+                : null,
+        },
+        {
+          label: 'Tags',
+          value: formData.tags,
+          required: false,
+          customLabel: `${formData.tags?.length || 0} tags added`,
+        },
       ],
     },
     {

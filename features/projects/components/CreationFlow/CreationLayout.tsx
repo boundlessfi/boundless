@@ -10,7 +10,17 @@ import ProjectDetails from './Steps/ProjectDetails';
 import TeamInfo from './Steps/TeamInfo';
 import SocialLinks from './Steps/SocialLinks';
 import CampaignDetails from './Steps/CampaignDetails';
-import { ArrowRight, ArrowLeft, Save, Sparkles, X, Rocket } from 'lucide-react';
+import {
+  ArrowRight,
+  ArrowLeft,
+  Save,
+  Sparkles,
+  X,
+  Rocket,
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+} from 'lucide-react';
 import ReviewStep from './Steps/ReviewStep';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -29,7 +39,18 @@ export default function CreationLayout() {
     prevStep,
     lastSaved,
     recentDrafts,
+    draftId,
+    isPersisting,
+    persistError,
+    isPublishing,
+    publishError,
+    handlePublish,
+    isLoadingDraft,
+    onDeleteDraft,
   } = useProjectCreation();
+
+  // Combined error (save or publish)
+  const activeError = persistError || publishError;
 
   // Track which steps have been visited
   const [visitedSteps, setVisitedSteps] = useState<Set<CreationStep>>(
@@ -85,7 +106,22 @@ export default function CreationLayout() {
   return (
     <div className='flex h-screen w-full overflow-hidden bg-[#050505] text-white'>
       {/* Sidebar */}
-      <CreationSidebar recentDrafts={recentDrafts} />
+      <CreationSidebar
+        recentDrafts={recentDrafts}
+        onDeleteDraft={onDeleteDraft}
+      />
+
+      {/* Loading Overlay */}
+      {isLoadingDraft && (
+        <div className='absolute inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-sm'>
+          <div className='flex flex-col items-center gap-4'>
+            <Loader2 className='text-primary h-12 w-12 animate-spin' />
+            <p className='text-sm font-bold tracking-widest text-white/40 uppercase'>
+              Loading Draft…
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Column — flex column, full height, NO overflow on the column itself */}
       <div className='relative flex min-h-0 flex-1 flex-col bg-[#060606]'>
@@ -114,14 +150,27 @@ export default function CreationLayout() {
           </div>
 
           <div className='flex items-center gap-4'>
-            {lastSaved && (
+            {/* Live save indicator */}
+            {isPersisting && (
+              <div className='animate-in fade-in flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-white/30 uppercase'>
+                <Loader2 className='h-3 w-3 animate-spin' />
+                Saving…
+              </div>
+            )}
+            {!isPersisting && lastSaved && (
               <div className='animate-in fade-in flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-white/20 uppercase'>
-                <Sparkles className='text-primary h-3 w-3' />
+                <CheckCircle2 className='text-primary h-3 w-3' />
                 Saved{' '}
                 {new Date(lastSaved).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
+              </div>
+            )}
+            {!isPersisting && persistError && !lastSaved && (
+              <div className='animate-in fade-in flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-amber-400 uppercase'>
+                <AlertTriangle className='h-3 w-3' />
+                Not saved
               </div>
             )}
             <Link
@@ -146,6 +195,23 @@ export default function CreationLayout() {
             visitedSteps={visitedSteps}
             completedSteps={completedSteps}
           />
+
+          {/* ── ERROR BANNER — shown below nav when save/publish fails ── */}
+          {activeError && (
+            <div className='animate-in slide-in-from-top-1 flex items-start gap-3 border-b border-red-500/20 bg-red-500/10 px-8 py-4'>
+              <AlertTriangle className='mt-0.5 h-4 w-4 shrink-0 text-red-500/60' />
+              <div className='flex flex-col gap-1.5'>
+                {activeError.split('\n').map((err, i) => (
+                  <p
+                    key={i}
+                    className='text-[10px] leading-tight font-bold tracking-widest text-red-400 uppercase'
+                  >
+                    • {err}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ── SCROLLABLE CONTENT AREA — flex-1, overflow here ── */}
           <div className='flex-1 overflow-y-auto'>
@@ -200,39 +266,60 @@ export default function CreationLayout() {
 
           {/* ── FIXED FOOTER — always visible at the bottom ── */}
           <footer className='z-20 flex shrink-0 items-center justify-between border-t border-white/5 bg-[#060606]/90 px-8 py-5 backdrop-blur-xl'>
-            {/* Left group — Back + Save */}
+            {/* Left group — Back + Save Draft */}
             <div className='flex items-center gap-3'>
               {!isFirstStep && (
                 <button
                   onClick={prevStep}
-                  className='flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-[11px] font-black tracking-[0.15em] text-white/60 uppercase transition-all hover:bg-white/10 hover:text-white active:scale-95'
+                  disabled={isPublishing}
+                  className='flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-[11px] font-black tracking-[0.15em] text-white/60 uppercase transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:pointer-events-none disabled:opacity-40'
                 >
                   <ArrowLeft className='h-4 w-4' />
                   Back
                 </button>
               )}
 
-              <button className='hidden items-center gap-2 rounded-xl border border-white/5 px-5 py-3.5 text-[11px] font-black tracking-[0.15em] text-white/30 uppercase transition-all hover:bg-white/5 hover:text-white/60 active:scale-95 md:flex'>
-                <Save className='h-3.5 w-3.5' />
-                Save Draft
+              {/* Save Draft — visible on md+, triggers an immediate autosave */}
+              <button
+                disabled={isPersisting || isPublishing}
+                onClick={() => {
+                  /* Autosave fires automatically; this is a manual nudge */
+                }}
+                className='hidden items-center gap-2 rounded-xl border border-white/5 px-5 py-3.5 text-[11px] font-black tracking-[0.15em] text-white/30 uppercase transition-all hover:bg-white/5 hover:text-white/60 active:scale-95 disabled:pointer-events-none disabled:opacity-40 md:flex'
+              >
+                {isPersisting ? (
+                  <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                ) : (
+                  <Save className='h-3.5 w-3.5' />
+                )}
+                {isPersisting ? 'Saving…' : 'Save Draft'}
               </button>
             </div>
 
-            {/* Right — Next / Publish */}
+            {/* Right — Continue / Publish Project */}
             <button
-              onClick={isLastStep ? undefined : handleNext}
+              onClick={isLastStep ? handlePublish : handleNext}
+              disabled={isLastStep ? isPublishing || !draftId : false}
               className={cn(
                 'flex items-center gap-2 rounded-xl px-8 py-3.5 text-[11px] font-black tracking-[0.2em] uppercase transition-all active:scale-[0.98]',
                 isLastStep
-                  ? 'bg-primary shadow-primary/20 hover:bg-primary/90 text-black shadow-lg'
-                  : 'bg-primary shadow-primary/10 hover:bg-primary/90 text-black shadow-lg'
+                  ? 'bg-primary shadow-primary/20 hover:bg-primary/90 text-black shadow-lg disabled:opacity-60'
+                  : 'bg-primary shadow-primary/10 hover:bg-primary/90 text-black shadow-lg',
+                'disabled:pointer-events-none disabled:cursor-not-allowed'
               )}
             >
               {isLastStep ? (
-                <>
-                  <Rocket className='h-4 w-4' />
-                  Publish Project
-                </>
+                isPublishing ? (
+                  <>
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                    Publishing…
+                  </>
+                ) : (
+                  <>
+                    <Rocket className='h-4 w-4' />
+                    {draftId ? 'Publish Project' : 'Save first to publish'}
+                  </>
+                )
               ) : (
                 <>
                   Continue

@@ -64,17 +64,22 @@ const SidebarContent = ({
               key={draft.id || idx}
               className='group relative flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all hover:bg-white/3'
             >
-              <div className='group-hover:border-primary/20 group-hover:bg-primary/5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-white/3 transition-all'>
-                <FileText className='group-hover:text-primary h-4 w-4 text-white/20 transition-colors' />
-              </div>
-              <div className='flex min-w-0 flex-1 flex-col'>
-                <span className='truncate text-sm font-bold text-white/60 transition-colors group-hover:text-white'>
-                  {draft.title || 'Untitled Project'}
-                </span>
-                <span className='text-[10px] font-black tracking-wider text-white/20 uppercase'>
-                  {draft.isCampaign ? 'Crowdfunding' : 'Standard'}
-                </span>
-              </div>
+              <Link
+                href={`/projects/create?id=${draft.id}`}
+                className='flex flex-1 items-center gap-3 overflow-hidden outline-none'
+              >
+                <div className='group-hover:border-primary/20 group-hover:bg-primary/5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-white/3 transition-all'>
+                  <FileText className='group-hover:text-primary h-4 w-4 text-white/20 transition-colors' />
+                </div>
+                <div className='flex min-w-0 flex-1 flex-col'>
+                  <span className='truncate text-sm font-bold text-white/60 transition-colors group-hover:text-white'>
+                    {draft.title || 'Untitled Project'}
+                  </span>
+                  <span className='text-[10px] font-black tracking-wider text-white/20 uppercase'>
+                    {draft.isCampaign ? 'Crowdfunding' : 'Standard'}
+                  </span>
+                </div>
+              </Link>
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -82,7 +87,7 @@ const SidebarContent = ({
                     <Trash2 className='h-3.5 w-3.5' />
                   </button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className='bg-background-main-bg border-white/10'>
+                <AlertDialogContent className='border-white/10 bg-[#0d0d0d]'>
                   <AlertDialogHeader>
                     <AlertDialogTitle className='text-white'>
                       Delete Draft?

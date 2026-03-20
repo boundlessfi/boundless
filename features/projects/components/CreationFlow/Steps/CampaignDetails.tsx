@@ -172,8 +172,11 @@ const SortableMilestoneItem = ({
 
             {/* Description */}
             <div className='space-y-2'>
+              <Label className='text-[10px] font-bold tracking-[0.15em] text-white/40 uppercase'>
+                Description
+              </Label>
               <Textarea
-                placeholder='Describe what will be achieved in this milestone, the key activities involved, and the expected outcome or deliverable.'
+                placeholder='What will be achieved?'
                 value={milestone.description}
                 onChange={e =>
                   onMilestoneChange(milestone.id, 'description', e.target.value)
@@ -182,8 +185,46 @@ const SortableMilestoneItem = ({
               />
             </div>
 
-            {/* Date Inputs */}
+            {/* Deliverable & Success Criteria */}
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+              <div className='space-y-2'>
+                <Label className='text-[10px] font-bold tracking-[0.15em] text-white/40 uppercase'>
+                  Deliverable
+                </Label>
+                <Textarea
+                  placeholder='e.g. GitHub Repo, UI Mockups'
+                  value={milestone.deliverable}
+                  onChange={e =>
+                    onMilestoneChange(
+                      milestone.id,
+                      'deliverable',
+                      e.target.value
+                    )
+                  }
+                  className='focus-visible:border-primary min-h-20 resize-none border-[#2B2B2B] bg-[#101010] p-4 text-white placeholder:text-[#919191]'
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label className='text-[10px] font-bold tracking-[0.15em] text-white/40 uppercase'>
+                  Success Criteria
+                </Label>
+                <Textarea
+                  placeholder='How will we know it is done?'
+                  value={milestone.successCriteria}
+                  onChange={e =>
+                    onMilestoneChange(
+                      milestone.id,
+                      'successCriteria',
+                      e.target.value
+                    )
+                  }
+                  className='focus-visible:border-primary min-h-20 resize-none border-[#2B2B2B] bg-[#101010] p-4 text-white placeholder:text-[#919191]'
+                />
+              </div>
+            </div>
+
+            {/* Date & Percentage */}
+            <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
               <div className='space-y-2'>
                 <Label className='text-sm text-[#B5B5B5]'>Start Date</Label>
                 <div className='relative'>
@@ -204,11 +245,6 @@ const SortableMilestoneItem = ({
                   />
                   <Calendar className='pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-[#919191]' />
                 </div>
-                {errors[`${milestone.id}-startDate`] && (
-                  <p className='text-sm text-red-500'>
-                    {errors[`${milestone.id}-startDate`]}
-                  </p>
-                )}
               </div>
 
               <div className='space-y-2'>
@@ -227,11 +263,25 @@ const SortableMilestoneItem = ({
                   />
                   <Calendar className='pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-[#919191]' />
                 </div>
-                {errors[`${milestone.id}-endDate`] && (
-                  <p className='text-sm text-red-500'>
-                    {errors[`${milestone.id}-endDate`]}
-                  </p>
-                )}
+              </div>
+
+              <div className='space-y-2'>
+                <Label className='text-sm text-[#B5B5B5]'>
+                  Funds release %
+                </Label>
+                <Input
+                  type='number'
+                  placeholder='e.g. 25'
+                  value={milestone.fundingPercentage || ''}
+                  onChange={e =>
+                    onMilestoneChange(
+                      milestone.id,
+                      'fundingPercentage',
+                      e.target.value
+                    )
+                  }
+                  className='focus-visible:border-primary border-[#2B2B2B] bg-[#101010] p-4 text-white placeholder:text-[#919191]'
+                />
               </div>
             </div>
           </div>
@@ -341,6 +391,9 @@ export default function CampaignDetails({
       id: `ms-${Date.now()}`,
       title: '',
       description: '',
+      deliverable: '',
+      successCriteria: '',
+      fundingPercentage: 0,
       startDate: '',
       endDate: '',
     };

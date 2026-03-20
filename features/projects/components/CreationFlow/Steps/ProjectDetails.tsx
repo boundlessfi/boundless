@@ -26,10 +26,18 @@ export default function ProjectDetails({
 
       <div className='flex flex-col gap-8'>
         <CreationTextarea
-          label='Project Summary'
+          label='Executive Summary'
           placeholder='A brief executive summary — what does your project do in 2-3 sentences?'
           value={formData.summary}
           onChange={e => updateFormData({ summary: e.target.value })}
+        />
+
+        <CreationTextarea
+          label='Short Description'
+          placeholder='A more detailed description of your project (required, e.g. 200-500 characters)'
+          value={formData.description}
+          onChange={e => updateFormData({ description: e.target.value })}
+          required
         />
 
         <div className='flex w-full flex-col gap-3'>

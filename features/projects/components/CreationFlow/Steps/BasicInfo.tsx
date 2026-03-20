@@ -9,6 +9,8 @@ import {
   Search,
   ChevronsUpDown,
   Check,
+  Gitlab,
+  Code2,
 } from 'lucide-react';
 import {
   CreationInput,
@@ -312,13 +314,24 @@ export default function BasicInfo({
         <div className='flex flex-col gap-6'>
           <SectionTitle>Project Identity</SectionTitle>
 
-          <CreationInput
-            label='Project Name'
-            placeholder='Enter your project name'
-            value={formData.projectName ?? ''}
-            onChange={e => updateFormData({ projectName: e.target.value })}
-            required
-          />
+          <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
+            <CreationInput
+              label='Project Name'
+              placeholder='Enter your project name'
+              value={formData.projectName ?? ''}
+              onChange={e => updateFormData({ projectName: e.target.value })}
+              required
+            />
+            <CreationInput
+              label='Tagline'
+              placeholder='A short, catchy one-liner'
+              value={formData.tagline ?? ''}
+              onChange={e =>
+                updateFormData({ tagline: e.target.value.slice(0, 100) })
+              }
+              required
+            />
+          </div>
 
           <div className='flex flex-col gap-2'>
             <div className='flex items-center justify-between'>
@@ -404,10 +417,24 @@ export default function BasicInfo({
             onChange={val => updateFormData({ category: val })}
           />
 
+          <CreationInput
+            label='Tags'
+            placeholder='DeFi, NFT, Soroban (comma separated)'
+            value={(formData.tags ?? []).join(', ')}
+            onChange={e => {
+              const val = e.target.value;
+              const tags = val
+                .split(',')
+                .map(t => t.trim())
+                .filter(Boolean);
+              updateFormData({ tags });
+            }}
+          />
+
           <p className='flex items-start gap-2 rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 text-[10px] font-medium text-blue-400/80'>
             <Info className='mt-0.5 h-3 w-3 shrink-0' />
-            Choose the category that best describes your project. This helps
-            users discover your project through filtered browsing.
+            Choose the category and add tags that best describe your project.
+            This helps users discover your project through filtered browsing.
           </p>
         </div>
 
@@ -415,46 +442,79 @@ export default function BasicInfo({
         <div className='flex flex-col gap-6'>
           <SectionTitle>Project Links</SectionTitle>
 
-          <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
-            <div className='flex flex-col gap-2'>
-              <CreationInput
-                label='Repository URL'
-                placeholder='https://github.com/username/repo'
-                value={formData.githubUrl ?? ''}
-                onChange={e => updateFormData({ githubUrl: e.target.value })}
-              />
-              <p className='flex items-center gap-1.5 text-[10px] font-medium text-white/30'>
-                <Github className='h-3 w-3' />
-                GitHub, GitLab, or Bitbucket
-              </p>
+          <div className='flex flex-col gap-5'>
+            <div className='grid grid-cols-1 gap-5 md:grid-cols-3'>
+              <div className='flex flex-col gap-2'>
+                <CreationInput
+                  label='GitHub URL'
+                  placeholder='https://github.com/…'
+                  value={formData.githubUrl ?? ''}
+                  onChange={e => updateFormData({ githubUrl: e.target.value })}
+                />
+                <p className='flex items-center gap-1.5 text-[10px] font-medium text-white/30'>
+                  <Github className='h-3 w-3' />
+                  GitHub repository
+                </p>
+              </div>
+
+              <div className='flex flex-col gap-2'>
+                <CreationInput
+                  label='GitLab URL'
+                  placeholder='https://gitlab.com/…'
+                  value={formData.gitlabUrl ?? ''}
+                  onChange={e => updateFormData({ gitlabUrl: e.target.value })}
+                />
+                <p className='flex items-center gap-1.5 text-[10px] font-medium text-white/30'>
+                  <Gitlab className='h-3 w-3' />
+                  GitLab repository
+                </p>
+              </div>
+
+              <div className='flex flex-col gap-2'>
+                <CreationInput
+                  label='Bitbucket URL'
+                  placeholder='https://bitbucket.org/…'
+                  value={formData.bitbucketUrl ?? ''}
+                  onChange={e =>
+                    updateFormData({ bitbucketUrl: e.target.value })
+                  }
+                />
+                <p className='flex items-center gap-1.5 text-[10px] font-medium text-white/30'>
+                  <Code2 className='h-3 w-3' />
+                  Bitbucket repository
+                </p>
+              </div>
             </div>
 
-            <div className='flex flex-col gap-2'>
-              <CreationInput
-                label='Project Website'
-                placeholder='https://yourproject.xyz'
-                value={formData.websiteUrl ?? ''}
-                onChange={e => updateFormData({ websiteUrl: e.target.value })}
-              />
-              <p className='flex items-center gap-1.5 text-[10px] font-medium text-white/30'>
-                <Globe className='h-3 w-3' />
-                Your project's homepage
-              </p>
-            </div>
-          </div>
+            <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
+              <div className='flex flex-col gap-2'>
+                <CreationInput
+                  label='Project Website'
+                  placeholder='https://yourproject.xyz'
+                  value={formData.websiteUrl ?? ''}
+                  onChange={e => updateFormData({ websiteUrl: e.target.value })}
+                />
+                <p className='flex items-center gap-1.5 text-[10px] font-medium text-white/30'>
+                  <Globe className='h-3 w-3' />
+                  Your project's homepage
+                </p>
+              </div>
 
-          <div className='flex flex-col gap-2'>
-            <CreationInput
-              label='Demo Video URL'
-              placeholder='https://youtube.com/watch?v=…'
-              value={formData.demoVideoUrl ?? ''}
-              onChange={e => updateFormData({ demoVideoUrl: e.target.value })}
-            />
-            <p className='border-primary/20 bg-primary/5 text-primary/90 flex items-center gap-2 rounded-lg border px-4 py-3 text-[10px] font-medium'>
-              <Video className='h-3 w-3 shrink-0' />
-              YouTube links will be embedded as a video player on your project
-              page.
-            </p>
+              <div className='flex flex-col gap-2'>
+                <CreationInput
+                  label='Demo Video URL'
+                  placeholder='https://youtube.com/watch?v=…'
+                  value={formData.demoVideoUrl ?? ''}
+                  onChange={e =>
+                    updateFormData({ demoVideoUrl: e.target.value })
+                  }
+                />
+                <p className='border-primary/20 bg-primary/5 text-primary/90 flex items-center gap-2 rounded-lg border px-4 py-3 text-[10px] font-medium'>
+                  <Video className='h-3 w-3 shrink-0' />
+                  YouTube links will be embedded.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
