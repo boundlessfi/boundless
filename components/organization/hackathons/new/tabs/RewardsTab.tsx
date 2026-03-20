@@ -14,10 +14,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import {
-  rewardsSchema,
-  RewardsFormData,
-  PrizeTier,
-} from './schemas/rewardsSchema';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { rewardsSchema, RewardsFormData } from './schemas/rewardsSchema';
 import {
   getFeeEstimate,
   type FeeEstimateData,
@@ -35,6 +41,11 @@ import {
   Sparkles,
   ChevronDown,
   Loader2,
+  Wallet,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  TriangleAlert,
+  X,
 } from 'lucide-react';
 import {
   DndContext,
@@ -59,16 +70,64 @@ interface RewardsTabProps {
 }
 
 const PRIZE_PRESETS = {
-  standard: { name: 'Standard', tiers: [50, 30, 20] },
-  topHeavy: { name: 'Winner Takes Most', tiers: [70, 20, 10] },
-  even: { name: 'Equal Split', tiers: [33.33, 33.33, 33.34] },
-  fiveWay: { name: 'Top 5', tiers: [40, 25, 20, 10, 5] },
+  standard: {
+    name: 'Standard',
+    description: 'Classic podium split',
+    tiers: [50, 30, 20],
+  },
+  topHeavy: {
+    name: 'Winner Takes Most',
+    description: 'Heavily rewards 1st place',
+    tiers: [70, 20, 10],
+  },
+  even: {
+    name: 'Equal Split',
+    description: 'Fair distribution for all',
+    tiers: [33.33, 33.33, 33.34],
+  },
+  fiveWay: {
+    name: 'Top 5',
+    description: 'Rewards top 5 finishers',
+    tiers: [40, 25, 20, 10, 5],
+  },
 };
 
-const RANK_EMOJIS = ['🥇', '🥈', '🥉', '🏅', '🏅'];
+const PLACE_LABELS = [
+  '1st',
+  '2nd',
+  '3rd',
+  '4th',
+  '5th',
+  '6th',
+  '7th',
+  '8th',
+  '9th',
+  '10th',
+];
+const RANK_EMOJIS = [
+  '🥇',
+  '🥈',
+  '🥉',
+  '🏅',
+  '🏅',
+  '🏅',
+  '🏅',
+  '🏅',
+  '🏅',
+  '🏅',
+];
+
+/** Build the initial funded amount from initialData so we can compute the top-up delta */
+function computeInitialFundedAmount(initialData?: RewardsFormData): number {
+  if (!initialData?.prizeTiers) return 0;
+  return initialData.prizeTiers.reduce((sum, tier) => {
+    const amount = parseFloat(String(tier.prizeAmount || '0'));
+    return sum + (isNaN(amount) || amount < 0 ? 0 : amount);
+  }, 0);
+}
 
 interface PrizeTierProps {
-  tier: any; // Using any for simplicity with FieldArray types
+  tier: any;
   index: number;
   onRemove: (id: string) => void;
   canRemove: boolean;
@@ -76,7 +135,7 @@ interface PrizeTierProps {
   totalTiers: number;
 }
 
-// Sortable Prize Tier Component
+// ─── Sortable Prize Tier ─────────────────────────────────────────────────────
 const PrizeTierComponent = ({
   tier,
   index,
@@ -129,7 +188,7 @@ const PrizeTierComponent = ({
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder='1st Place'
+                      placeholder={`${PLACE_LABELS[index] || `${index + 1}th`} Place`}
                       className='h-11 border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
                     />
                   </FormControl>
@@ -153,11 +212,16 @@ const PrizeTierComponent = ({
                         {...field}
                         type='number'
                         placeholder='0'
+                        min='0'
                         value={field.value || '0'}
                         onChange={e => {
-                          const value = e.target.value;
-                          // Update field value immediately for real-time calculation
-                          field.onChange(value === '' ? '0' : value);
+                          const raw = e.target.value;
+                          // Block negatives — clamp to 0
+                          const value =
+                            raw === ''
+                              ? '0'
+                              : String(Math.max(0, parseFloat(raw) || 0));
+                          field.onChange(value);
                         }}
                         onBlur={field.onBlur}
                         className='h-11 border-zinc-800 bg-zinc-900/50 pr-16 pl-7 text-right font-medium text-white placeholder:text-zinc-600'
@@ -210,20 +274,28 @@ const PrizeTierComponent = ({
   );
 };
 
+// ─── Prize Summary (with top-up delta) ───────────────────────────────────────
 interface PrizeSummaryProps {
   totalPool: number;
+  initialFundedAmount: number;
   feeEstimate: FeeEstimateData | null;
   feeEstimateLoading: boolean;
 }
 
-// Summary Card Component – fee breakdown from backend
 const PrizeSummary = ({
   totalPool,
+  initialFundedAmount,
   feeEstimate,
   feeEstimateLoading,
 }: PrizeSummaryProps) => {
   const formatCurrency = (amount: number) =>
-    amount.toLocaleString('en-US', { minimumFractionDigits: 0 });
+    amount.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+
+  const delta = totalPool - initialFundedAmount;
+  const hasExistingFunds = initialFundedAmount > 0;
 
   return (
     <div className='border-primary/20 from-primary/10 to-primary/5 rounded-xl border bg-linear-to-br p-4'>
@@ -241,6 +313,16 @@ const PrizeSummary = ({
             ${formatCurrency(totalPool)}
           </span>
         </div>
+
+        {/* Existing funds row */}
+        {hasExistingFunds && (
+          <div className='flex items-center justify-between text-xs'>
+            <span className='text-zinc-500'>Currently Funded</span>
+            <span className='text-zinc-400'>
+              ${formatCurrency(initialFundedAmount)}
+            </span>
+          </div>
+        )}
 
         <div className='flex items-center justify-between text-xs'>
           <span className='text-zinc-500'>
@@ -274,10 +356,47 @@ const PrizeSummary = ({
           </span>
         </div>
 
+        {/* ── Top-Up / Refund Delta ── */}
+        {hasExistingFunds && delta !== 0 && (
+          <div
+            className={cn(
+              'flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold',
+              delta > 0
+                ? 'border border-amber-500/20 bg-amber-500/10 text-amber-400'
+                : 'border border-blue-500/20 bg-blue-500/10 text-blue-400'
+            )}
+          >
+            <span className='flex items-center gap-1.5'>
+              {delta > 0 ? (
+                <ArrowUpCircle className='h-4 w-4' />
+              ) : (
+                <ArrowDownCircle className='h-4 w-4' />
+              )}
+              {delta > 0 ? 'Top-Up Required' : 'Reduction'}
+            </span>
+            <span>
+              {delta > 0 ? '+' : ''}${formatCurrency(Math.abs(delta))} USDC
+            </span>
+          </div>
+        )}
+
+        {/* New hackathon — show full amount going to escrow */}
+        {!hasExistingFunds && totalPool > 0 && (
+          <div className='flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-400'>
+            <span className='flex items-center gap-1.5'>
+              <ArrowUpCircle className='h-4 w-4' />
+              Sending to Escrow
+            </span>
+            <span>
+              ${formatCurrency(feeEstimate?.totalFunds ?? totalPool)} USDC
+            </span>
+          </div>
+        )}
+
         <div className='border-primary/10 flex items-start gap-2 border-t pt-3'>
           <Info className='text-primary mt-0.5 h-4 w-4 shrink-0' />
           <p className='text-xs text-zinc-400'>
-            Funds locked in escrow until winners announced
+            Funds are locked in escrow until winners are announced
           </p>
         </div>
       </div>
@@ -285,7 +404,7 @@ const PrizeSummary = ({
   );
 };
 
-// Validation Alert Component
+// ─── Validation Alert ─────────────────────────────────────────────────────────
 const ValidationAlert = ({ totalPool }: { totalPool: number }) => {
   const minPool = 1000;
   const isValid = totalPool >= minPool;
@@ -314,7 +433,7 @@ const ValidationAlert = ({ totalPool }: { totalPool: number }) => {
         </p>
         <p className='mt-1 text-xs opacity-80'>
           {isValid
-            ? 'Your prize pool meets the minimum threshold.'
+            ? 'Your prize pool meets the recommended threshold.'
             : `We recommend at least $${minPool.toLocaleString()} to attract quality participants.`}
         </p>
       </div>
@@ -322,6 +441,155 @@ const ValidationAlert = ({ totalPool }: { totalPool: number }) => {
   );
 };
 
+// ─── Wallet Debit Warning ─────────────────────────────────────────────────────
+// Shows only the NEW funds leaving the wallet:
+//   • New hackathon  → full fee-adjusted total
+//   • Existing hackathon top-up → delta only (totalPool - initialFundedAmount)
+//   • Reduction / unchanged → hidden (no new funds leaving)
+const WalletWarningAlert = ({
+  totalPool,
+  initialFundedAmount,
+  feeEstimate,
+}: {
+  totalPool: number;
+  initialFundedAmount: number;
+  feeEstimate: FeeEstimateData | null;
+}) => {
+  const formatAmt = (n: number) =>
+    n.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+
+  const hasExistingFunds = initialFundedAmount > 0;
+  const delta = totalPool - initialFundedAmount;
+
+  // Nothing new is leaving the wallet — hide the warning
+  if (hasExistingFunds && delta <= 0) return null;
+  if (!hasExistingFunds && totalPool <= 0) return null;
+
+  // For a top-up on an existing hackathon, only the delta leaves the wallet.
+  // For a new hackathon, the full fee-adjusted amount leaves.
+  const outgoingAmount = hasExistingFunds
+    ? formatAmt(delta) // just the extra being added
+    : feeEstimate
+      ? formatAmt(feeEstimate.totalFunds)
+      : formatAmt(totalPool);
+
+  const isTopUp = hasExistingFunds;
+
+  return (
+    <div className='flex items-start gap-3 rounded-xl border border-orange-500/30 bg-orange-500/10 p-4'>
+      <Wallet className='mt-0.5 h-5 w-5 shrink-0 text-orange-400' />
+      <div className='flex-1 space-y-1'>
+        <p className='text-sm font-semibold text-orange-300'>
+          ⚠️{' '}
+          {isTopUp
+            ? 'Additional funds will be moved from your wallet'
+            : 'Funds will be moved from your wallet'}
+        </p>
+        <p className='text-xs leading-relaxed text-orange-400/90'>
+          By clicking <strong>{isTopUp ? 'Save Rewards' : 'Continue'}</strong>,{' '}
+          {isTopUp ? (
+            <>
+              an additional{' '}
+              <strong className='text-orange-300'>
+                ${outgoingAmount} USDC
+              </strong>{' '}
+              (the top-up amount) will be transferred
+            </>
+          ) : (
+            <>
+              exactly{' '}
+              <strong className='text-orange-300'>
+                ${outgoingAmount} USDC
+              </strong>{' '}
+              will be transferred
+            </>
+          )}{' '}
+          from your connected wallet into a secure escrow smart contract. This
+          action is <strong>irreversible</strong> without contacting support.
+          Please ensure your wallet has sufficient balance before proceeding.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// ─── Preset Confirmation Banner ───────────────────────────────────────────────
+interface PresetConfirmBannerProps {
+  presetKey: keyof typeof PRIZE_PRESETS;
+  totalPool: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const PresetConfirmBanner = ({
+  presetKey,
+  totalPool,
+  onConfirm,
+  onCancel,
+}: PresetConfirmBannerProps) => {
+  const preset = PRIZE_PRESETS[presetKey];
+  const formatCurrency = (n: number) =>
+    n.toLocaleString('en-US', { minimumFractionDigits: 0 });
+
+  return (
+    <div className='flex flex-col gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4'>
+      <div className='flex items-start justify-between gap-3'>
+        <div className='flex items-start gap-2'>
+          <TriangleAlert className='mt-0.5 h-5 w-5 shrink-0 text-yellow-400' />
+          <div>
+            <p className='text-sm font-semibold text-yellow-300'>
+              Apply "{preset.name}" Preset?
+            </p>
+            <p className='mt-1 text-xs text-yellow-400/90'>
+              This will replace your current prize tiers with{' '}
+              <strong>{preset.tiers.length} new tiers</strong> using the{' '}
+              <strong>{preset.tiers.join(' / ')}%</strong> split.
+              {totalPool > 0 && (
+                <>
+                  {' '}
+                  Your current total of{' '}
+                  <strong>${formatCurrency(totalPool)}</strong> will be
+                  redistributed proportionally across the new tiers.
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+        <button
+          type='button'
+          onClick={onCancel}
+          className='text-yellow-400/60 transition-colors hover:text-yellow-300'
+        >
+          <X className='h-4 w-4' />
+        </button>
+      </div>
+      <div className='flex items-center gap-2'>
+        <Button
+          type='button'
+          size='sm'
+          onClick={onConfirm}
+          className='border border-yellow-500/30 bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+        >
+          Yes, apply preset
+        </Button>
+        <Button
+          type='button'
+          variant='ghost'
+          size='sm'
+          onClick={onCancel}
+          className='text-zinc-400 hover:text-white'
+        >
+          Keep current setup
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function RewardsTab({
   onSave,
   onContinue,
@@ -329,11 +597,42 @@ export default function RewardsTab({
   isLoading = false,
 }: RewardsTabProps) {
   const [showPresets, setShowPresets] = useState(false);
+  const [pendingPreset, setPendingPreset] = useState<
+    keyof typeof PRIZE_PRESETS | null
+  >(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const form = useForm<RewardsFormData>({
-    resolver: zodResolver(rewardsSchema),
-    mode: 'onChange',
-    defaultValues: initialData || {
+  /** The amount that was already funded when this form was opened (for top-up delta). */
+  const initialFundedAmount = useMemo(
+    () => computeInitialFundedAmount(initialData),
+    // intentionally only computed once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  /**
+   * Normalize initialData from the API into the shapes that Zod and the form expect:
+   *  - prizeAmount  → always a string  (API returns numbers like 30)
+   *  - rank         → always a number
+   *  - passMark     → always a number (default 0 if absent)
+   *  - id           → always present  (generate if the API tier lacks one)
+   */
+  const normalizedDefaultValues = useMemo<RewardsFormData>(() => {
+    if (initialData?.prizeTiers?.length) {
+      return {
+        ...initialData,
+        prizeTiers: initialData.prizeTiers.map((tier, idx) => ({
+          id: (tier as any).id || `tier-init-${idx}-${Date.now()}`,
+          place: tier.place || `${PLACE_LABELS[idx] || `${idx + 1}th`} Place`,
+          prizeAmount: String(tier.prizeAmount ?? '0'),
+          description: tier.description || '',
+          currency: tier.currency || 'USDC',
+          rank: Number(tier.rank ?? idx + 1),
+          passMark: Number((tier as any).passMark ?? 0),
+        })),
+      };
+    }
+    return {
       prizeTiers: [
         {
           id: `tier-${Date.now()}-1`,
@@ -363,7 +662,16 @@ export default function RewardsTab({
           passMark: 50,
         },
       ],
-    },
+    };
+    // Intentionally run only once on mount — initialData reference may change on
+    // parent re-renders but we don't want to reset the user's in-progress edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const form = useForm<RewardsFormData>({
+    resolver: zodResolver(rewardsSchema),
+    mode: 'onChange',
+    defaultValues: normalizedDefaultValues,
   });
 
   const { fields, append, remove, move, replace } = useFieldArray({
@@ -371,14 +679,12 @@ export default function RewardsTab({
     name: 'prizeTiers',
   });
 
-  // Watch prizeTiers in real-time for immediate updates using useWatch hook
   const prizeTiers = useWatch({
     control: form.control,
     name: 'prizeTiers',
     defaultValue: form.getValues('prizeTiers') || [],
   });
 
-  // Total prize pool from tiers (client-side sum)
   const totalPool = useMemo(() => {
     return prizeTiers.reduce((sum, tier) => {
       const amount = parseFloat(
@@ -431,21 +737,40 @@ export default function RewardsTab({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  const applyPreset = (presetKey: keyof typeof PRIZE_PRESETS) => {
-    const preset = PRIZE_PRESETS[presetKey];
+  /** Step 1: User clicks a preset card → show the confirmation banner */
+  const handlePresetClick = (presetKey: keyof typeof PRIZE_PRESETS) => {
+    setPendingPreset(presetKey);
+    setShowPresets(false); // collapse the grid while confirming
+  };
+
+  /** Step 2: User confirms → actually apply the preset */
+  const confirmApplyPreset = () => {
+    if (!pendingPreset) return;
+    const preset = PRIZE_PRESETS[pendingPreset];
     const baseAmount = totalPool || 0;
+
+    // Preserve descriptions from existing tiers where possible
+    const existingTiers = form.getValues('prizeTiers');
+
     const newTiers = preset.tiers.map((percentage, idx) => ({
       id: `tier-${Date.now()}-${idx}`,
-      place: `${['1st', '2nd', '3rd', '4th', '5th'][idx]} Place`,
+      place: `${PLACE_LABELS[idx] || `${idx + 1}th`} Place`,
       prizeAmount: String(Math.round((baseAmount * percentage) / 100)),
-      description: '',
+      // preserve description if same index existed
+      description: existingTiers[idx]?.description || '',
       currency: 'USDC',
       rank: idx + 1,
-      passMark: 80 - idx * 10,
+      passMark: Math.max(0, 80 - idx * 10),
     }));
+
     replace(newTiers);
-    toast.success(`Applied ${preset.name} preset`);
-    setShowPresets(false);
+    toast.success(`Applied "${preset.name}" preset`);
+    setPendingPreset(null);
+  };
+
+  const cancelPreset = () => {
+    setPendingPreset(null);
+    setShowPresets(true); // re-open grid so user can pick another
   };
 
   const handleRemove = (id: string) => {
@@ -457,15 +782,15 @@ export default function RewardsTab({
   };
 
   const handleAdd = () => {
-    const placeLabels = ['1st', '2nd', '3rd', '4th', '5th'];
-    const nextPlace = `${placeLabels[fields.length] || `${fields.length + 1}th`} Place`;
+    const nextIdx = fields.length;
+    const nextPlace = `${PLACE_LABELS[nextIdx] || `${nextIdx + 1}th`} Place`;
     append({
       id: `tier-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       place: nextPlace,
       prizeAmount: '0',
       description: '',
       currency: 'USDC',
-      rank: fields.length + 1,
+      rank: nextIdx + 1,
       passMark: 0,
     });
     toast.success('Prize tier added');
@@ -476,7 +801,19 @@ export default function RewardsTab({
     if (over && active.id !== over.id) {
       const oldIndex = fields.findIndex(tier => tier.id === active.id);
       const newIndex = fields.findIndex(tier => tier.id === over.id);
-      if (oldIndex !== -1 && newIndex !== -1) move(oldIndex, newIndex);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        move(oldIndex, newIndex);
+        // Re-sync rank values after reorder so the backend receives correct positions
+        // setTimeout allows useFieldArray to settle before we read the new order
+        setTimeout(() => {
+          const current = form.getValues('prizeTiers');
+          current.forEach((_, idx) => {
+            form.setValue(`prizeTiers.${idx}.rank`, idx + 1, {
+              shouldDirty: true,
+            });
+          });
+        }, 0);
+      }
     }
   };
 
@@ -497,9 +834,30 @@ export default function RewardsTab({
     }
   };
 
+  /**
+   * Called when Continue is clicked.
+   * Runs form validation; if it passes, opens the confirm dialog.
+   * If validation fails, react-hook-form will display inline errors as usual.
+   */
+  const handleContinueClick = async () => {
+    const isValid = await form.trigger();
+    if (isValid) {
+      setConfirmOpen(true);
+    }
+  };
+
+  /** Called only when the user clicks "Yes, lock funds" inside the AlertDialog. */
+  const handleConfirmedSubmit = form.handleSubmit(onSubmit);
+
+  // Derive root-level tier array error message (true schema failures only)
+  const tierArrayError =
+    form.formState.errors.prizeTiers?.message ||
+    (form.formState.errors.prizeTiers?.root as any)?.message;
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+      {/* onSubmit is intentionally preventDefault — submission goes through handleContinueClick → AlertDialog confirm */}
+      <form onSubmit={e => e.preventDefault()} className='space-y-6'>
         {/* Header */}
         <div>
           <h3 className='text-lg font-medium text-white'>Prize Distribution</h3>
@@ -508,9 +866,10 @@ export default function RewardsTab({
           </p>
         </div>
 
-        {/* Summary Card – fee from backend GET /api/hackathons/fee-estimate */}
+        {/* Summary Card */}
         <PrizeSummary
           totalPool={totalPool}
+          initialFundedAmount={initialFundedAmount}
           feeEstimate={feeEstimate}
           feeEstimateLoading={feeEstimateLoading}
         />
@@ -520,21 +879,47 @@ export default function RewardsTab({
 
         {/* Presets */}
         <div className='space-y-3'>
-          <Button
-            type='button'
-            variant='outline'
-            onClick={() => setShowPresets(!showPresets)}
-            className='w-full border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/50'
-          >
-            <Sparkles className='mr-2 h-4 w-4' />
-            {showPresets ? 'Hide' : 'Use'} Prize Presets
-            <ChevronDown
-              className={cn(
-                'ml-2 h-4 w-4 transition-transform',
-                showPresets && 'rotate-180'
-              )}
-            />
-          </Button>
+          <div className='flex items-center gap-2'>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => {
+                setPendingPreset(null); // clear any pending confirm
+                setShowPresets(!showPresets);
+              }}
+              className='flex-1 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/50'
+            >
+              <Sparkles className='mr-2 h-4 w-4' />
+              {showPresets ? 'Hide' : 'Use'} Prize Presets
+              <ChevronDown
+                className={cn(
+                  'ml-2 h-4 w-4 transition-transform',
+                  showPresets && 'rotate-180'
+                )}
+              />
+            </Button>
+          </div>
+
+          {/* Info callout about what presets do */}
+          {showPresets && (
+            <div className='flex items-start gap-2 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 text-xs text-zinc-400'>
+              <Info className='mt-0.5 h-4 w-4 shrink-0 text-zinc-500' />
+              <p>
+                Presets redistribute your current total prize pool (
+                <strong className='text-zinc-300'>
+                  ${totalPool.toLocaleString()}
+                </strong>
+                ) across tiers using a percentage split. You can still adjust
+                individual amounts after applying.{' '}
+                {totalPool === 0 && (
+                  <span className='text-amber-400'>
+                    Tip: enter prize amounts first so the preset can split them
+                    correctly.
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
 
           {showPresets && (
             <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
@@ -542,18 +927,33 @@ export default function RewardsTab({
                 <button
                   key={key}
                   type='button'
-                  onClick={() => applyPreset(key as keyof typeof PRIZE_PRESETS)}
+                  onClick={() =>
+                    handlePresetClick(key as keyof typeof PRIZE_PRESETS)
+                  }
                   className='group hover:border-primary/50 hover:bg-primary/5 rounded-lg border border-zinc-800 bg-zinc-900/30 p-3 text-left transition-all'
                 >
                   <p className='group-hover:text-primary font-medium text-white transition-colors'>
                     {preset.name}
                   </p>
-                  <p className='mt-1 text-xs text-zinc-500'>
-                    {preset.tiers.join('/')}
+                  <p className='mt-0.5 text-xs text-zinc-500'>
+                    {preset.description}
+                  </p>
+                  <p className='mt-1.5 font-mono text-xs text-zinc-400'>
+                    {preset.tiers.map(t => `${t}%`).join(' / ')}
                   </p>
                 </button>
               ))}
             </div>
+          )}
+
+          {/* Preset confirmation banner */}
+          {pendingPreset && (
+            <PresetConfirmBanner
+              presetKey={pendingPreset}
+              totalPool={totalPool}
+              onConfirm={confirmApplyPreset}
+              onCancel={cancelPreset}
+            />
           )}
         </div>
 
@@ -593,34 +993,23 @@ export default function RewardsTab({
             Add Prize Tier
           </Button>
 
-          {form.formState.errors.prizeTiers && (
+          {/* Generic schema validation error (not a "must use preset" message) */}
+          {tierArrayError && (
             <div className='rounded-lg border border-red-500/20 bg-red-500/10 p-3'>
               <p className='flex items-center gap-2 text-sm font-medium text-red-400'>
                 <AlertCircle className='h-4 w-4' />
-                {form.formState.errors.prizeTiers.message ||
-                  'Validation error in prize tiers'}
+                {tierArrayError}
               </p>
-              <div className='mt-2 space-y-3 text-xs text-red-400/80'>
-                <p>
-                  To proceed, you must use a <strong>Prize Preset</strong> to
-                  configure your rewards. Presets automatically apply the
-                  required ranking and score thresholds needed for the system.
-                </p>
-                <div className='rounded-lg border-red-500/30 bg-red-500/10 p-3 text-red-300'>
-                  <p className='mb-1 font-semibold tracking-wider uppercase'>
-                    Action Required:
-                  </p>
-                  <p>
-                    Scroll up and select one of the{' '}
-                    <strong>Prize Presets</strong> (Standard, Winner Takes Most,
-                    etc.). You can still adjust the total prize pool amounts
-                    after selecting a preset.
-                  </p>
-                </div>
-              </div>
             </div>
           )}
         </div>
+
+        {/* ── Wallet Debit Warning – shown before submit ── */}
+        <WalletWarningAlert
+          totalPool={totalPool}
+          initialFundedAmount={initialFundedAmount}
+          feeEstimate={feeEstimate}
+        />
 
         {/* Submit */}
         <div className='flex items-center justify-between border-t border-zinc-800 pt-6'>
@@ -628,23 +1017,129 @@ export default function RewardsTab({
             {fields.length} prize tier{fields.length !== 1 ? 's' : ''}{' '}
             configured
           </p>
+
           <BoundlessButton
-            type='submit'
+            type='button'
             size='lg'
             disabled={isLoading}
             className='min-w-32'
+            onClick={handleContinueClick}
           >
             {isLoading ? (
               <>
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Saving...
               </>
-            ) : (
+            ) : onContinue ? (
               'Continue'
+            ) : (
+              'Save Rewards'
             )}
           </BoundlessButton>
         </div>
       </form>
+
+      {/* ── Confirmation AlertDialog ── */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className='border-zinc-800 bg-zinc-950 text-white'>
+          <AlertDialogHeader>
+            <div className='mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/15'>
+              <Wallet className='h-6 w-6 text-orange-400' />
+            </div>
+            <AlertDialogTitle className='text-white'>
+              Confirm Fund Transfer
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className='space-y-3 text-zinc-400'>
+                <p>
+                  You are about to lock{' '}
+                  <strong className='text-white'>
+                    {(() => {
+                      const hasExisting = initialFundedAmount > 0;
+                      const delta = totalPool - initialFundedAmount;
+                      const amt = hasExisting
+                        ? delta
+                        : (feeEstimate?.totalFunds ?? totalPool);
+                      return `$${amt.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USDC`;
+                    })()}
+                  </strong>{' '}
+                  {initialFundedAmount > 0 ? '(top-up amount) ' : ''}into an
+                  escrow smart contract for this hackathon's prize pool.
+                </p>
+                <div className='rounded-lg border border-orange-500/20 bg-orange-500/10 p-3 text-sm text-orange-300'>
+                  <p className='font-semibold'>
+                    ⚠️ This action is irreversible
+                  </p>
+                  <p className='mt-1 text-orange-400/80'>
+                    Once confirmed, funds cannot be withdrawn without contacting
+                    support. Ensure your wallet has sufficient balance.
+                  </p>
+                </div>
+                <div className='rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 text-sm'>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-zinc-500'>Prize tiers</span>
+                    <span className='text-zinc-300'>{fields.length}</span>
+                  </div>
+                  <div className='mt-1.5 flex items-center justify-between'>
+                    <span className='text-zinc-500'>Total prize pool</span>
+                    <span className='text-zinc-300'>
+                      $
+                      {totalPool.toLocaleString('en-US', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })}{' '}
+                      USDC
+                    </span>
+                  </div>
+                  {feeEstimate && (
+                    <div className='mt-1.5 flex items-center justify-between'>
+                      <span className='text-zinc-500'>
+                        {feeEstimate.feeLabel ?? 'Platform fee'}
+                      </span>
+                      <span className='text-zinc-300'>
+                        $
+                        {feeEstimate.feeAmount.toLocaleString('en-US', {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        })}{' '}
+                        USDC
+                      </span>
+                    </div>
+                  )}
+                  {initialFundedAmount > 0 && (
+                    <div className='mt-1.5 flex items-center justify-between border-t border-zinc-800 pt-1.5'>
+                      <span className='text-zinc-500'>Already in escrow</span>
+                      <span className='text-zinc-300'>
+                        $
+                        {initialFundedAmount.toLocaleString('en-US', {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        })}{' '}
+                        USDC
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className='border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-white'>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={e => {
+                e.preventDefault();
+                setConfirmOpen(false);
+                handleConfirmedSubmit();
+              }}
+              className='bg-orange-500 text-white hover:bg-orange-600'
+            >
+              Yes, lock funds
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Form>
   );
 }
