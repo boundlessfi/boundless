@@ -6,7 +6,7 @@ interface DiditSessionData {
   session_id: string;
   session_number?: number;
   session_token: string;
-  verification_url: string;
+  url: string;
   vendor_data?: string;
   metadata?: unknown;
   status: string;
@@ -39,13 +39,13 @@ export const createDiditSession = async (
     params ?? {}
   );
   const session = res.data?.data;
-  if (!session?.session_token || !session?.verification_url) {
+  if (!session?.session_token || !session?.url) {
     throw new Error('Invalid session response');
   }
   return {
     session_id: session.session_id,
     session_token: session.session_token,
-    verification_url: session.verification_url,
+    verification_url: session.url,
     status: session.status,
   };
 };
