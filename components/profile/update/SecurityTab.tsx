@@ -134,9 +134,9 @@ const SecurityTab = ({ user }: SecurityTabProps) => {
       </div>
 
       <div className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 md:p-8'>
-        <div className='flex items-start justify-between'>
+        <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
           <div className='flex gap-3'>
-            <div className='bg-primary/10 rounded-lg p-2'>
+            <div className='bg-primary/10 shrink-0 rounded-lg p-2'>
               <ShieldCheck className='text-primary h-5 w-5' />
             </div>
             <div>
@@ -149,11 +149,11 @@ const SecurityTab = ({ user }: SecurityTabProps) => {
               </p>
             </div>
           </div>
-          <div className='flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1'>
+          <div className='flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1'>
             <div
-              className={`h-2 w-2 rounded-full ${user.twoFactorEnabled ? 'bg-primary' : 'bg-[#B5B5B5]'}`}
+              className={`h-2 w-2 shrink-0 rounded-full ${user.twoFactorEnabled ? 'bg-primary' : 'bg-[#B5B5B5]'}`}
             />
-            <span className='text-xs font-medium text-white uppercase'>
+            <span className='text-xs font-medium whitespace-nowrap text-white uppercase'>
               {user.twoFactorEnabled ? 'Enabled' : 'Disabled'}
             </span>
           </div>

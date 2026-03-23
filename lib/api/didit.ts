@@ -1,12 +1,12 @@
 import api from './api';
 import type { ApiResponse } from './types';
 
-/** Backend response shape: session is in data, verification URL is "url". */
+/** Backend response shape from POST /didit/create-session. */
 interface DiditSessionData {
   session_id: string;
   session_number?: number;
   session_token: string;
-  url: string;
+  verification_url: string;
   vendor_data?: string;
   metadata?: unknown;
   status: string;
@@ -39,13 +39,13 @@ export const createDiditSession = async (
     params ?? {}
   );
   const session = res.data?.data;
-  if (!session?.session_token || !session?.url) {
+  if (!session?.session_token || !session?.verification_url) {
     throw new Error('Invalid session response');
   }
   return {
     session_id: session.session_id,
     session_token: session.session_token,
-    verification_url: session.url,
+    verification_url: session.verification_url,
     status: session.status,
   };
 };

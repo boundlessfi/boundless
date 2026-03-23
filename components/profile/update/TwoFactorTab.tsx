@@ -188,7 +188,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
   if (user.twoFactorEnabled && step === 'status') {
     return (
       <div className='space-y-6'>
-        <div className='border-primary/20 bg-primary/5 flex items-start gap-4 rounded-xl border p-6 md:p-8'>
+        <div className='border-primary/20 bg-primary/5 flex items-start gap-4 rounded-xl border p-4 sm:p-6 md:p-8'>
           <div className='bg-primary/10 rounded-lg p-2'>
             <ShieldCheck className='text-primary h-6 w-6' />
           </div>
@@ -201,7 +201,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
           </div>
         </div>
 
-        <div className='space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 md:p-8'>
+        <div className='space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 sm:p-6 md:p-8'>
           <div className='space-y-4'>
             <div className='flex items-center gap-3'>
               <KeyRound className='text-primary h-5 w-5' />
@@ -227,7 +227,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
                     className='h-11 border-zinc-800 bg-zinc-900/50 text-white placeholder:text-zinc-600'
                   />
                 </div>
-                <div className='flex gap-3'>
+                <div className='flex flex-col gap-3 sm:flex-row'>
                   <BoundlessButton
                     variant='outline'
                     onClick={handleRegenerateCodes}
@@ -257,7 +257,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
                     </div>
                   ))}
                 </div>
-                <div className='flex gap-3'>
+                <div className='flex flex-col gap-3 sm:flex-row'>
                   <BoundlessButton
                     variant='outline'
                     size='sm'
@@ -284,7 +284,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
   if (step === 'status') {
     return (
       <div className='space-y-6'>
-        <div className='flex items-start gap-4 rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 md:p-8'>
+        <div className='flex items-start gap-4 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 sm:p-6 md:p-8'>
           <div className='rounded-lg bg-yellow-500/10 p-2'>
             <ShieldAlert className='h-6 w-6 text-yellow-500' />
           </div>
@@ -300,7 +300,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
           </div>
         </div>
 
-        <div className='space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 md:p-8'>
+        <div className='space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 sm:p-6 md:p-8'>
           <div className='space-y-2'>
             <Label htmlFor='setup-password'>Confirm Password to Setup</Label>
             <Input
@@ -330,7 +330,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
           <h3 className='text-xl font-bold text-white'>Scan QR Code</h3>
         </div>
 
-        <div className='flex flex-col items-center gap-8 rounded-xl border border-zinc-800 bg-zinc-900/30 p-8 md:flex-row'>
+        <div className='flex flex-col items-center gap-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 sm:p-6 md:flex-row md:gap-8 md:p-8'>
           <div className='rounded-lg bg-white p-4'>
             <QRCodeSVG value={totpUri} size={180} />
           </div>
@@ -396,7 +396,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
           <h3 className='text-xl font-bold text-white'>Verify Setup</h3>
         </div>
 
-        <div className='space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-8'>
+        <div className='space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 sm:p-6 md:p-8'>
           <div className='space-y-2 text-center'>
             <p className='text-[#B5B5B5]'>
               Enter the 6-digit code from your app to confirm everything is
@@ -462,7 +462,7 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
   if (step === 'backup') {
     return (
       <div className='space-y-8'>
-        <div className='border-primary/20 bg-primary/10 space-y-4 rounded-xl border p-6'>
+        <div className='border-primary/20 bg-primary/10 space-y-4 rounded-xl border p-4 sm:p-6'>
           <div className='text-primary flex items-center gap-3'>
             <ShieldCheck className='h-6 w-6' />
             <h3 className='text-xl font-bold'>2FA Enabled Successfully</h3>
@@ -473,18 +473,18 @@ const TwoFactorTab = ({ user, onStatusChange }: TwoFactorTabProps) => {
           </p>
         </div>
 
-        <div className='space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-8'>
-          <div className='grid grid-cols-2 gap-4'>
+        <div className='space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 sm:p-6 md:p-8'>
+          <div className='grid grid-cols-2 gap-3 sm:gap-4'>
             {backupCodes.map((code, i) => (
               <div
                 key={i}
-                className='rounded border border-white/10 bg-white/5 p-3 text-center font-mono tracking-widest text-white uppercase'
+                className='rounded border border-white/10 bg-white/5 p-2 text-center font-mono text-xs tracking-widest text-white uppercase sm:p-3 sm:text-sm'
               >
                 {code}
               </div>
             ))}
           </div>
-          <div className='flex gap-4'>
+          <div className='flex flex-col gap-3 sm:flex-row sm:gap-4'>
             <BoundlessButton
               fullWidth
               variant='outline'

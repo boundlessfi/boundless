@@ -54,15 +54,15 @@ const SettingsContent = () => {
     );
   }
   return (
-    <div className='p-10'>
+    <div className='p-4 sm:p-6 md:p-10'>
       <VerificationSubmittedModal
         open={showVerificationModal}
         onClose={() => setShowVerificationModal(false)}
       />
       <div className=''>
         {/* Header */}
-        <div className='mb-8'>
-          <h1 className='mb-2 text-2xl font-medium text-white'>
+        <div className='mb-6 sm:mb-8'>
+          <h1 className='mb-2 text-xl font-medium text-white sm:text-2xl'>
             Profile Settings
           </h1>
           <p className='text-sm text-zinc-500'>
@@ -73,56 +73,58 @@ const SettingsContent = () => {
           defaultValue={fromVerification ? 'identity' : 'profile'}
           className='w-full'
         >
-          <TabsList className='inline-flex h-auto gap-6 bg-transparent p-0'>
-            <TabsTrigger
-              value='profile'
-              className='text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-            >
-              Profile
-            </TabsTrigger>
-            <TabsTrigger
-              value='settings'
-              className='text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-            >
-              Settings
-            </TabsTrigger>
-            <TabsTrigger
-              value='notifications'
-              className='text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-            >
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger
-              value='privacy'
-              className='text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-            >
-              Privacy
-            </TabsTrigger>
-            <TabsTrigger
-              value='preferences'
-              className='text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-            >
-              Preferences
-            </TabsTrigger>
-            <TabsTrigger
-              value='security'
-              className='text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-            >
-              Security
-            </TabsTrigger>
-            <TabsTrigger
-              value='2fa'
-              className='text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-            >
-              2FA
-            </TabsTrigger>
-            <TabsTrigger
-              value='identity'
-              className='text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-            >
-              Identity
-            </TabsTrigger>
-          </TabsList>
+          <div className='-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0'>
+            <TabsList className='inline-flex h-auto gap-4 bg-transparent p-0 sm:gap-6'>
+              <TabsTrigger
+                value='profile'
+                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+              >
+                Profile
+              </TabsTrigger>
+              <TabsTrigger
+                value='settings'
+                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+              >
+                Settings
+              </TabsTrigger>
+              <TabsTrigger
+                value='notifications'
+                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+              >
+                Notifications
+              </TabsTrigger>
+              <TabsTrigger
+                value='privacy'
+                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+              >
+                Privacy
+              </TabsTrigger>
+              <TabsTrigger
+                value='preferences'
+                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+              >
+                Preferences
+              </TabsTrigger>
+              <TabsTrigger
+                value='security'
+                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+              >
+                Security
+              </TabsTrigger>
+              <TabsTrigger
+                value='2fa'
+                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+              >
+                2FA
+              </TabsTrigger>
+              <TabsTrigger
+                value='identity'
+                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
+              >
+                Identity
+              </TabsTrigger>
+            </TabsList>
+          </div>
           <TabsContent value='profile'>
             {userData?.user ? (
               <Profile user={userData.user as User} />
