@@ -109,9 +109,9 @@ const BottomLeftSvg: React.FC<BottomLeftSvgProps> = ({ svgRefs }) => {
             y2='39.5'
             gradientUnits='userSpaceOnUse'
           >
-            <stop stopColor='#A7F950' stopOpacity='0' />
-            <stop offset='0.494762' stopColor='#A7F950' />
-            <stop offset='1' stopColor='#A7F950' stopOpacity='0' />
+            <stop stopColor='#2EEDAA' stopOpacity='0' />
+            <stop offset='0.494762' stopColor='#2EEDAA' />
+            <stop offset='1' stopColor='#2EEDAA' stopOpacity='0' />
           </linearGradient>
           <linearGradient
             id='paint3_linear_2191_14135'
@@ -121,9 +121,9 @@ const BottomLeftSvg: React.FC<BottomLeftSvgProps> = ({ svgRefs }) => {
             y2='68.5'
             gradientUnits='userSpaceOnUse'
           >
-            <stop stopColor='#A7F950' stopOpacity='0' />
-            <stop offset='0.494762' stopColor='#A7F950' />
-            <stop offset='1' stopColor='#A7F950' stopOpacity='0' />
+            <stop stopColor='#2EEDAA' stopOpacity='0' />
+            <stop offset='0.494762' stopColor='#2EEDAA' />
+            <stop offset='1' stopColor='#2EEDAA' stopOpacity='0' />
           </linearGradient>
         </defs>
       </svg>

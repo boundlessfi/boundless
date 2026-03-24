@@ -44,7 +44,7 @@ export function ProjectSidebarActions({
             iconPosition={userVote === 1 ? 'right' : 'left'}
             icon={
               userVote === 1 ? (
-                <ThumbsUp className='h-5 w-5' fill='#A7F950' />
+                <ThumbsUp className='h-5 w-5' fill='#2EEDAA' />
               ) : (
                 <ArrowUp className='h-5 w-5' />
               )

@@ -31,7 +31,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 const chartConfig = {
   projects: {
     label: 'Projects Created',
-    color: '#a7f950',
+    color: '#2EEDAA',
   },
 } satisfies ChartConfig;
 

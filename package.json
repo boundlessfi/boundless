@@ -140,6 +140,7 @@
     "recharts": "^2.15.4",
     "rehype-prism-plus": "^2.0.2",
     "remark-gfm": "^4.0.1",
+    "smart-account-kit": "^0.2.10",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",

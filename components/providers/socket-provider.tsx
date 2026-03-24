@@ -3,7 +3,7 @@
 import React, { createContext, useContext } from 'react';
 import { Socket } from 'socket.io-client';
 import { useSocket } from '@/hooks/useSocket';
-import { authClient } from '@/lib/auth-client';
+import { useAuthContext } from '@/components/providers/AuthProvider';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -20,9 +20,9 @@ interface SocketProviderProps {
 }
 
 export function SocketProvider({ children }: SocketProviderProps) {
-  // Get userId from Better Auth session
-  const { data: session } = authClient.useSession();
-  const userId = session?.user?.id;
+  // Get userId from shared auth context (single session source)
+  const { session } = useAuthContext();
+  const userId = session.data?.user?.id;
 
   // Use main namespace (/) for general WebSocket events
   const { socket, isConnected } = useSocket({

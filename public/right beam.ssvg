@@ -17,11 +17,11 @@
 <stop offset="1" stop-color="#030303"/>
 </linearGradient>
 <linearGradient id="paint2_linear_1892_51555" x1="3.35449" y1="715.89" x2="3.35449" y2="678.245" gradientUnits="userSpaceOnUse">
-<stop stop-color="#A7F950" stopOpacity="0"/>
-<stop offset="1" stop-color="#A7F950"/>
+<stop stop-color="#2EEDAA" stopOpacity="0"/>
+<stop offset="1" stop-color="#2EEDAA"/>
 </linearGradient>
 <linearGradient id="paint3_linear_1892_51555" x1="-1.28477" y1="679.45" x2="-3.84399" y2="674.796" gradientUnits="userSpaceOnUse">
-<stop stop-color="#A7F950"/>
+<stop stop-color="#2EEDAA"/>
 <stop offset="1" stop-color="#3AE6B2" stopOpacity="0.8"/>
 </linearGradient>
 <clipPath id="clip0_1892_51555">

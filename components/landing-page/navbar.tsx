@@ -36,7 +36,7 @@ import CreateProjectModal from '@/features/projects/components/CreateProjectModa
 import WalletNotReadyModal from '@/components/wallet/WalletNotReadyModal';
 import { useWalletContext } from '../providers/wallet-provider';
 
-const BRAND_COLOR = '#a7f950';
+const BRAND_COLOR = '#2EEDAA';
 const ACTIONS = {
   CREATE_PROJECT: 'create project',
 } as const;
@@ -132,14 +132,14 @@ export function Logo() {
       aria-label='Go to homepage'
     >
       <Image
-        src='/logo-icon.png'
+        src='/logos/SVG_Coloured/BNDLSS__Colored_icon.svg'
         alt='Logo'
         width={32}
         height={32}
         className='md:hidden'
       />
       <Image
-        src='/logo.png'
+        src='/logos/SVG_Inverse/BNDLSS__Inverse.svg'
         alt='Logo'
         width={140}
         height={28}

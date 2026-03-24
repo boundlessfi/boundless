@@ -1,6 +1,5 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
 import { Providers } from './providers';
@@ -12,12 +11,58 @@ import {
 } from '@/lib/structured-data';
 import NextTopLoader from 'nextjs-toploader';
 import DevelopmentStatusModal from '@/components/DevelopmentStatusModal';
+import localFont from 'next/font/local';
 
-const inter = Inter({
-  variable: '--font-inter',
-  subsets: ['latin'],
+const gilroy = localFont({
+  src: [
+    {
+      path: '../public/fonts/Gilroy/Fonts/Gilroy-Light.ttf',
+      weight: '300',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Gilroy/Fonts/Gilroy-Regular.ttf',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Gilroy/Fonts/Gilroy-Medium.ttf',
+      weight: '500',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Gilroy/Fonts/Gilroy-SemiBold.ttf',
+      weight: '600',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Gilroy/Fonts/Gilroy-Bold.ttf',
+      weight: '700',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Gilroy/Fonts/Gilroy-ExtraBold.ttf',
+      weight: '800',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Gilroy/Fonts/Gilroy-Black.ttf',
+      weight: '900',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-gilroy',
 });
-
+const francy = localFont({
+  src: [
+    {
+      path: '../public/fonts/Francy/Francy.otf',
+      weight: '400',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-francy',
+});
 export const metadata: Metadata = {
   title: 'Boundless - Ideas Made Boundless',
   description:
@@ -75,8 +120,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='en' suppressHydrationWarning>
+    <html
+      lang='en'
+      className={`${francy.variable} ${gilroy.variable}`}
+      suppressHydrationWarning
+    >
       <head>
+        <link rel='manifest' href='/site.webmanifest' />
         <script
           type='application/ld+json'
           dangerouslySetInnerHTML={{
@@ -90,8 +140,8 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} font-inter antialiased`}>
-        <NextTopLoader />
+      <body className='antialiased'>
+        <NextTopLoader color='#2EEDAA' />
 
         <Providers>
           {children}

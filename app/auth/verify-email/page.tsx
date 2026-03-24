@@ -16,7 +16,7 @@ const VerifyEmail = () => {
       fetchOptions: {
         onSuccess: () => {
           toast.success('Email verified successfully');
-          router.push('/');
+          router.push('/onboarding');
         },
         onError: () => {
           toast.error('Failed to verify email');

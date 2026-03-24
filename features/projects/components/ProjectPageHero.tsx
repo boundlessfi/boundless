@@ -39,7 +39,7 @@ export default function ProjectPageHero() {
           {/* Left Text */}
           <div className='z-10 space-y-6 text-left md:space-y-6 lg:space-y-8'>
             <h1 className='text-3xl leading-[1.1] tracking-tight sm:text-4xl md:text-4xl lg:text-3xl'>
-              <span className='bg-gradient-to-r from-[#3AE6B2] to-[#A7F95080] bg-clip-text text-transparent'>
+              <span className='bg-gradient-to-r from-[#3AE6B2] to-[#2EEDAA80] bg-clip-text text-transparent'>
                 Discover projects
               </span>{' '}
               that are shaping the future on Stellar

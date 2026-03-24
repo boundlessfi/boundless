@@ -14,7 +14,7 @@ import { HackathonCard } from '@/components/landing-page/hackathon/HackathonCard
 import ProjectCard from '@/features/projects/components/ProjectCard';
 import { Crowdfunding } from '@/features/projects/types';
 
-const BRAND_COLOR = '#a7f950';
+const BRAND_COLOR = '#2EEDAA';
 
 export default function Hero2() {
   const router = useRouter();

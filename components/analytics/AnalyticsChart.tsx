@@ -139,8 +139,8 @@ export function AnalyticsChart({ chart }: Props) {
                         x2='1'
                         y2='0'
                       >
-                        <stop offset='0%' stopColor='#a7f950' />
-                        <stop offset='100%' stopColor='#3ae6b2' />
+                        <stop offset='0%' stopColor='#2EEDAA' />
+                        <stop offset='100%' stopColor='#2EEDAA' />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
@@ -167,7 +167,7 @@ export function AnalyticsChart({ chart }: Props) {
                       stroke='url(#primaryGradient)'
                       strokeWidth={2.5}
                       dot={false}
-                      activeDot={{ r: 5, fill: '#a7f950', strokeWidth: 0 }}
+                      activeDot={{ r: 5, fill: '#2EEDAA', strokeWidth: 0 }}
                       isAnimationActive
                       animationDuration={600}
                       animationEasing='ease-out'

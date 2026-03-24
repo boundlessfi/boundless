@@ -6,7 +6,7 @@ import {
   useCallback,
   ReactNode,
 } from 'react';
-import { authClient } from '@/lib/auth-client';
+import { useAuthContext } from '@/components/providers/AuthProvider';
 import { walletApi } from '@/lib/api/wallet';
 import type { SupportedTrustlineAsset } from '@/lib/api/wallet';
 import { WalletBalance, WalletTransaction } from '@/types/wallet';
@@ -36,8 +36,8 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 const WALLET_NAME = 'Boundless Wallet';
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
-  const { data: session, isPending: isSessionLoading } =
-    authClient.useSession();
+  const { session: authSession } = useAuthContext();
+  const { data: session, isPending: isSessionLoading } = authSession;
   const [walletDetails, setWalletDetails] = useState<{
     address: string;
     balances: WalletBalance[];

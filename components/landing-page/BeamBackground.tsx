@@ -281,8 +281,8 @@ export default function BeamBackground() {
                 y2='241.113'
                 gradientUnits='userSpaceOnUse'
               >
-                <stop stopColor='#A7F950' stopOpacity='0' />
-                <stop offset='1' stopColor='#A7F950' />
+                <stop stopColor='#2EEDAA' stopOpacity='0' />
+                <stop offset='1' stopColor='#2EEDAA' />
               </linearGradient>
               <linearGradient
                 id='paint3_linear_1892_51547'
@@ -292,7 +292,7 @@ export default function BeamBackground() {
                 y2='239.375'
                 gradientUnits='userSpaceOnUse'
               >
-                <stop stopColor='#A7F950' stopOpacity='0.5' />
+                <stop stopColor='#2EEDAA' stopOpacity='0.5' />
                 <stop offset='1' stopColor='#3AE6B2' />
               </linearGradient>
               <clipPath id='clip0_1892_51547'>
@@ -10832,8 +10832,8 @@ export default function BeamBackground() {
                 y2='678.245'
                 gradientUnits='userSpaceOnUse'
               >
-                <stop stopColor='#A7F950' stopOpacity='0' />
-                <stop offset='1' stopColor='#A7F950' />
+                <stop stopColor='#2EEDAA' stopOpacity='0' />
+                <stop offset='1' stopColor='#2EEDAA' />
               </linearGradient>
               <linearGradient
                 id='paint3_linear_1892_51547'
@@ -10843,7 +10843,7 @@ export default function BeamBackground() {
                 y2='674.796'
                 gradientUnits='userSpaceOnUse'
               >
-                <stop stopColor='#A7F950' />
+                <stop stopColor='#2EEDAA' />
                 <stop offset='1' stopColor='#3AE6B2' stopOpacity='0.8' />
               </linearGradient>
               <clipPath id='clip0_1892_51555'>

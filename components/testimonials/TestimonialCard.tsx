@@ -21,7 +21,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
   const [imageError, setImageError] = useState(false);
 
   return (
-    <div className='border-primary/20 hover:border-primary/40 mb-6 flex w-[300px] max-w-[300px] transform flex-col gap-4 rounded-[8px] border bg-[#101010] p-6 shadow-xl transition-all duration-500 hover:scale-105 hover:shadow-[0_0_30px_rgba(167,249,80,0.3)]'>
+    <div className='border-primary/20 hover:border-primary/40 mb-6 flex w-[300px] max-w-[300px] transform flex-col gap-4 rounded-[8px] border bg-[#101010] p-6 shadow-xl transition-all duration-500 hover:scale-105 hover:shadow-[0_0_30px_rgba(46,237,170,0.3)]'>
       <div className='flex flex-row items-start justify-between'>
         <div className='flex items-center gap-3'>
           <div className='relative'>

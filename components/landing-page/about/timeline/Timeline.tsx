@@ -209,7 +209,7 @@ export default function Timeline({ className = '' }: TimelineProps) {
               className='bg-clip-text text-sm leading-[140%] font-medium tracking-[-0.64px] text-transparent'
               style={{
                 backgroundImage:
-                  'linear-gradient(273deg, rgba(167, 249, 80, 0.50) 13.84%, #3AE6B2 73.28%)',
+                  'linear-gradient(273deg, rgba(46, 237, 170, 0.50) 13.84%, #2EEDAA 73.28%)',
                 WebkitBackgroundClip: 'text',
                 backgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',

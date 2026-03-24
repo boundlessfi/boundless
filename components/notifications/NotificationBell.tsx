@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { NotificationDropdown } from './NotificationDropdown';
 import { useNotifications } from '@/hooks/useNotifications';
-import { authClient } from '@/lib/auth-client';
+import { useAuthContext } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
 
 interface NotificationBellProps {
@@ -19,9 +19,9 @@ interface NotificationBellProps {
 export const NotificationBell = ({ className }: NotificationBellProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Get userId from auth session
-  const { data: session } = authClient.useSession();
-  const userId = session?.user?.id;
+  // Get userId from shared auth context (single session source)
+  const { session } = useAuthContext();
+  const userId = session.data?.user?.id;
 
   // Use WebSocket-based notifications hook (only connect if userId is available)
   const { notifications, unreadCount, isConnected, loading, markAllAsRead } =
