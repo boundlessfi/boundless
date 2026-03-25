@@ -32,7 +32,6 @@ import { useProtectedAction } from '@/hooks/use-protected-action';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 import { WalletTrigger } from '../wallet/WalletTrigger';
 import { NotificationBell } from '../notifications/NotificationBell';
-import CreateProjectModal from '@/features/projects/components/CreateProjectModal';
 import WalletNotReadyModal from '@/components/wallet/WalletNotReadyModal';
 import { useWalletContext } from '../providers/wallet-provider';
 
@@ -43,6 +42,7 @@ const ACTIONS = {
 
 const MENU_ITEMS = [
   { href: '/about', label: 'About' },
+  { href: '/campaigns', label: 'Campaigns' },
   { href: '/projects', label: 'Projects' },
   { href: '/hackathons', label: 'Hackathons' },
   { href: '/grants', label: 'Grants' },
@@ -196,7 +196,6 @@ function LoadingSkeleton() {
 }
 
 function AuthenticatedActions() {
-  const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const {
@@ -209,7 +208,7 @@ function AuthenticatedActions() {
     handleWalletConnected,
   } = useProtectedAction({
     actionName: ACTIONS.CREATE_PROJECT,
-    onSuccess: () => setCreateProjectModalOpen(true),
+    onSuccess: () => {}, // Handled by Link
   });
   const { onOpenWallet } = useWalletContext();
 
@@ -251,14 +250,23 @@ function AuthenticatedActions() {
             align='end'
             className='bg-background-main-bg/98 w-56 border-white/10 shadow-xl shadow-black/40 backdrop-blur-xl'
           >
-            <DropdownMenuItem
-              onClick={() =>
-                executeProtectedAction(() => setCreateProjectModalOpen(true))
-              }
-              className='cursor-pointer text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
-            >
-              <Plus className='mr-2 h-4 w-4' />
-              Add Project
+            <DropdownMenuItem asChild>
+              <Link
+                href='/projects/create'
+                className='cursor-pointer text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
+              >
+                <Plus className='mr-2 h-4 w-4' />
+                Add Project
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link
+                href='/projects/create?mode=campaign'
+                className='cursor-pointer text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
+              >
+                <Wand2 className='mr-2 h-4 w-4' />
+                Create Campaign
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link
@@ -290,10 +298,6 @@ function AuthenticatedActions() {
         />
       </div>
 
-      <CreateProjectModal
-        open={createProjectModalOpen}
-        setOpen={setCreateProjectModalOpen}
-      />
       <WalletRequiredModal
         open={showWalletModal}
         onOpenChange={closeWalletModal}
@@ -312,7 +316,6 @@ function AuthenticatedActions() {
 }
 
 function UnauthenticatedActions() {
-  const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
   const {
     showWalletModal,
     showNotReadyModal,
@@ -322,7 +325,7 @@ function UnauthenticatedActions() {
     handleWalletConnected,
   } = useProtectedAction({
     actionName: ACTIONS.CREATE_PROJECT,
-    onSuccess: () => setCreateProjectModalOpen(true),
+    onSuccess: () => {}, // Handled by Link
   });
   const { onOpenWallet } = useWalletContext();
 
@@ -342,11 +345,6 @@ function UnauthenticatedActions() {
           Get Started
         </Link>
       </div>
-
-      <CreateProjectModal
-        open={createProjectModalOpen}
-        setOpen={setCreateProjectModalOpen}
-      />
 
       <WalletRequiredModal
         open={showWalletModal}
