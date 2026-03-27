@@ -141,9 +141,9 @@ export function Logo() {
       <Image
         src='/logos/SVG_Inverse/BNDLSS__Inverse.svg'
         alt='Logo'
-        width={140}
+        width={32}
         height={28}
-        className='hidden md:block'
+        className='hidden h-auto w-24 md:block'
       />
     </Link>
   );

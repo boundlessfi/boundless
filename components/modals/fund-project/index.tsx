@@ -1,7 +1,7 @@
 'use client';
 
 import BoundlessSheet from '@/components/sheet/boundless-sheet';
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Header from './Header';
 import Footer from './Footer';
 import Amount, { AmountFormData, AmountHandle } from './Amount';
@@ -11,24 +11,10 @@ import Loading from '../Loading';
 import { fundCrowdfundingProject } from '@/features/projects/api';
 import { useWalletContext } from '@/components/providers/wallet-provider';
 import { useWalletProtection } from '@/hooks/use-wallet-protection';
-import { signTransaction } from '@/lib/config/wallet-kit';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 import WalletNotReadyModal from '@/components/wallet/WalletNotReadyModal';
 import { WalletSheet } from '@/components/wallet/WalletSheet';
-import {
-  useFundEscrow,
-  useSendTransaction,
-  useGetEscrowFromIndexerByContractIds,
-} from '@trustless-work/escrow';
-import {
-  FundEscrowPayload,
-  EscrowType,
-  EscrowRequestResponse,
-  Status,
-  MultiReleaseEscrow,
-  GetEscrowFromIndexerByContractIdsParams,
-} from '@trustless-work/escrow';
-import * as StellarSdk from '@stellar/stellar-sdk';
+import { fundPool, getPool, type EscrowPool } from '@/lib/api/escrow';
 
 interface FundProjectProps {
   open: boolean;
@@ -75,13 +61,8 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
     'form' | 'fetching' | 'signing' | 'confirming' | 'success'
   >('form');
   const [error, setError] = useState<string | null>(null);
-  const [escrow, setEscrow] = useState<MultiReleaseEscrow | null>(null);
+  const [escrow, setEscrow] = useState<EscrowPool | null>(null);
   const [isFetchingEscrow, setIsFetchingEscrow] = useState(false);
-
-  // Escrow hooks
-  const { fundEscrow } = useFundEscrow();
-  const { sendTransaction } = useSendTransaction();
-  const { getEscrowByContractIds } = useGetEscrowFromIndexerByContractIds();
 
   // Wallet hooks
   const { walletAddress } = useWalletContext();
@@ -203,37 +184,13 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
 
       setIsFetchingEscrow(true);
       try {
-        const params: GetEscrowFromIndexerByContractIdsParams = {
-          contractIds: [project.contractId],
-        };
-
-        const response = await getEscrowByContractIds(params);
-
-        // Handle both array response and object with escrows property
-        let escrows: MultiReleaseEscrow[] = [];
-
-        if (Array.isArray(response)) {
-          escrows = response as MultiReleaseEscrow[];
-        } else if (
-          response &&
-          typeof response === 'object' &&
-          'escrows' in response
-        ) {
-          escrows =
-            (response as { escrows: MultiReleaseEscrow[] }).escrows || [];
-        }
-
-        if (escrows.length > 0) {
-          const escrowData = escrows[0] as MultiReleaseEscrow;
-          setEscrow(escrowData);
-          setError(null); // Clear any previous errors
-        } else {
-          setError(
-            'Escrow not found for this project. The escrow contract may not be deployed yet, or the contract ID may be incorrect. Please contact support if this issue persists.'
-          );
-        }
+        const pool = await getPool(project.contractId);
+        setEscrow(pool);
+        setError(null);
       } catch {
-        setError('Failed to fetch escrow data');
+        setError(
+          'Escrow not found for this project. The escrow contract may not be deployed yet, or the contract ID may be incorrect. Please contact support if this issue persists.'
+        );
       } finally {
         setIsFetchingEscrow(false);
       }
@@ -248,7 +205,7 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
       setEscrow(null);
       setError(null);
     }
-  }, [open, project?.contractId, escrow, getEscrowByContractIds]);
+  }, [open, project?.contractId, escrow]);
 
   const handleSubmit = async () => {
     if (!project?._id) {
@@ -306,79 +263,22 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
 
     const walletValid = await requireWallet(async () => {
       try {
-        // Step 1: Prepare the payload according to FundEscrowPayload type
-        const payload: FundEscrowPayload = {
-          contractId: project.contractId!,
-          signer: walletAddress!,
-          amount: fundingAmount,
-        };
+        // Convert amount to stroops for the backend
+        const amountInStroops = Math.round(
+          fundingAmount * 10_000_000
+        ).toString();
 
-        // Step 2: Execute function from Trustless Work
-        const fundResponse: EscrowRequestResponse = await fundEscrow(
-          payload,
-          'multi-release' as EscrowType
-        );
-
-        // Type guard: Check if response is successful
-        if (
-          fundResponse.status !== ('SUCCESS' as Status) ||
-          !fundResponse.unsignedTransaction
-        ) {
-          const errorMessage =
-            'message' in fundResponse &&
-            typeof fundResponse.message === 'string'
-              ? fundResponse.message
-              : 'Failed to fund escrow';
-          throw new Error(errorMessage);
-        }
-
-        const { unsignedTransaction } = fundResponse;
-
-        // Step 3: Sign transaction with wallet
-        const signedXdr = await signTransaction({
-          unsignedTransaction,
-          address: walletAddress!,
-        });
-
-        // Extract transaction hash from signed XDR
-        let transactionHash = project.contractId || ''; // Fallback to contractId
-
-        try {
-          // Get network passphrase based on environment
-          const networkPassphrase =
-            process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'public'
-              ? 'Public Global Stellar Network ; September 2015'
-              : 'Test SDF Network ; September 2015';
-
-          // Parse the signed XDR and extract transaction hash
-          const tx = new StellarSdk.Transaction(signedXdr, networkPassphrase);
-          const hash = tx.hash();
-          transactionHash = hash.toString('hex');
-        } catch {
-          // Continue with contractId as fallback
-        }
-
-        // Step 4: Send transaction
+        // Fund escrow via backend API
         setFlowStep('confirming');
-        const sendResponse = await sendTransaction(signedXdr);
-
-        // Type guard: Check if response is successful
-        if (
-          'status' in sendResponse &&
-          sendResponse.status !== ('SUCCESS' as Status)
-        ) {
-          const errorMessage =
-            'message' in sendResponse &&
-            typeof sendResponse.message === 'string'
-              ? sendResponse.message
-              : 'Failed to send transaction';
-          throw new Error(errorMessage);
-        }
+        await fundPool({
+          poolId: project.contractId!,
+          amount: amountInStroops,
+        });
 
         // Notify backend about the funding
         await fundCrowdfundingProject(project._id, {
           amount: fundingAmount,
-          transactionHash,
+          transactionHash: project.contractId || '',
         });
 
         // Success - move to success state
@@ -392,7 +292,7 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
           if (typeof window !== 'undefined') {
             window.location.reload();
           }
-        }, 2000); // Give user time to see success message
+        }, 2000);
       } catch {
         setError('An error occurred');
         setSubmitErrors(['An error occurred']);

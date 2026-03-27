@@ -632,3 +632,8 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: white !important; /* Optional: Customize text color */
   transition: background-color 5000s ease-in-out 0s; /* Optional: Smooth transition */
 }
+
+/* ── Sonner toast overrides — Linear / Vercel inspired ── */
+
+/* Base toast surface */
+/* /* [data- */

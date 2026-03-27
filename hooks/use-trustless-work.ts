@@ -1,86 +1,40 @@
 /**
- * Trustless Work Hook
+ * @deprecated Trustless Work has been replaced by direct CoreEscrow Soroban contract calls.
+ * Use the backend escrow API (`lib/api/escrow.ts`) instead.
  *
- * Provides easy access to Trustless Work SDK functions and configuration.
- * This hook re-exports and provides convenient access to escrow operations.
+ * This file is kept temporarily to avoid breaking any remaining imports.
+ * All escrow operations now go through the backend.
  */
 
-import { useTrustlessWorkConfig } from '@/lib/providers/TrustlessWorkProvider';
-
-/**
- * Main hook to access Trustless Work functionality
- *
- * @returns Trustless Work configuration and utilities
- *
- * @example
- * ```tsx
- * function EscrowComponent() {
- *   const { apiKey, network, baseURL, isConfigured } = useTrustlessWork();
- *
- *   if (!isConfigured) {
- *     return <div>Please configure Trustless Work API key</div>;
- *   }
- *
- *   return (
- *     <div>
- *       <p>Network: {network}</p>
- *       <p>Base URL: {baseURL}</p>
- *     </div>
- *   );
- * }
- * ```
- */
+/** @deprecated Use backend escrow API instead */
 export function useTrustlessWork() {
-  const config = useTrustlessWorkConfig();
-
   return {
-    ...config,
-    /**
-     * Check if Trustless Work is properly configured
-     */
-    isReady: config.isConfigured && Boolean(config.apiKey),
+    apiKey: '',
+    network: 'testnet' as const,
+    baseURL: '',
+    isConfigured: false,
+    isReady: false,
   };
 }
 
-/**
- * Hook to get only the API key
- *
- * @returns API key string
- */
+/** @deprecated */
 export function useTrustlessWorkApiKey() {
-  const { apiKey } = useTrustlessWorkConfig();
-  return apiKey;
+  return '';
 }
 
-/**
- * Hook to get only the network configuration
- *
- * @returns Network type ('testnet' | 'public')
- */
+/** @deprecated */
 export function useTrustlessWorkNetwork() {
-  const { network } = useTrustlessWorkConfig();
-  return network;
+  return 'testnet' as const;
 }
 
-/**
- * Hook to get only the base URL
- *
- * @returns Base URL string
- */
+/** @deprecated */
 export function useTrustlessWorkBaseURL() {
-  const { baseURL } = useTrustlessWorkConfig();
-  return baseURL;
+  return '';
 }
 
-/**
- * Hook to check if Trustless Work is configured
- *
- * @returns Boolean indicating if Trustless Work is configured
- */
+/** @deprecated */
 export function useTrustlessWorkConfigured() {
-  const { isConfigured } = useTrustlessWorkConfig();
-  return isConfigured;
+  return false;
 }
 
-// Re-export the main hook as default
 export default useTrustlessWork;

@@ -142,10 +142,19 @@ export default function RootLayout({
       </head>
       <body className='antialiased'>
         <NextTopLoader color='#2EEDAA' />
-
         <Providers>
           {children}
-          <Toaster />
+          <Toaster
+            theme='dark'
+            position='top-center'
+            gap={8}
+            offset={16}
+            visibleToasts={3}
+            closeButton
+            toastOptions={{
+              duration: 4000,
+            }}
+          />
           <CookieConsent />
           <DevelopmentStatusModal />
         </Providers>

@@ -598,9 +598,11 @@ export const publishProject = async (
   id: string,
   payload: PublishProjectRequest
 ): Promise<Project> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { projectId, ...body } = payload;
   const res = await api.post<ProjectApiResponse<Project>>(
     `/projects/${id}/publish`,
-    payload
+    body
   );
   return res.data.data;
 };

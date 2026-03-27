@@ -1,7 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useEscrowContext } from '@/lib/providers/EscrowProvider';
-import { MultiReleaseMilestone } from '@trustless-work/escrow';
+import { getSlot, type EscrowSlot } from '@/lib/api/escrow';
 import {
   Card,
   CardContent,
@@ -16,33 +17,46 @@ import { toast } from 'sonner';
 import { formatAddress } from '@/lib/wallet-utils';
 
 /**
- * Component to display all properties of a MultiReleaseEscrow
- * Shows the escrow data returned directly from sendTransaction
+ * Component to display escrow pool details from the backend CoreEscrow contract.
  */
 export const EscrowDisplay = () => {
-  const { contractId, escrow, clearEscrowData } = useEscrowContext();
+  const { poolId, pool, clearPoolData } = useEscrowContext();
+  const [slots, setSlots] = useState<EscrowSlot[]>([]);
 
-  if (!contractId || !escrow) {
+  useEffect(() => {
+    if (!poolId) return;
+    // Try to fetch first 10 slots (best-effort)
+    const fetchSlots = async () => {
+      const fetched: EscrowSlot[] = [];
+      for (let i = 0; i < 10; i++) {
+        try {
+          const slot = await getSlot(poolId, i);
+          fetched.push(slot);
+        } catch {
+          break; // No more slots
+        }
+      }
+      setSlots(fetched);
+    };
+    fetchSlots();
+  }, [poolId]);
+
+  if (!poolId || !pool) {
     return null;
   }
 
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address);
-    toast.success('Address copied to clipboard');
+    toast.success('Copied to clipboard');
   };
 
-  const getStellarViewerUrl = (contractId: string): string => {
+  const getStellarViewerUrl = (id: string): string => {
     const network =
       process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'public' ||
       process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet'
         ? 'public'
         : 'testnet';
-    return `https://stellar.expert/explorer/${network}/contract/${contractId}`;
-  };
-
-  const formatAmount = (amount: number): string => {
-    // Assuming 7 decimals for USDC (10000000 = 1 USDC)
-    return (amount / 10000000).toFixed(7);
+    return `https://stellar.expert/explorer/${network}/contract/${id}`;
   };
 
   return (
@@ -52,28 +66,24 @@ export const EscrowDisplay = () => {
         <CardHeader>
           <div className='flex items-center gap-2'>
             <CheckCircle2 className='h-5 w-5 text-green-600' />
-            <CardTitle className='text-green-800'>
-              Escrow Initialized Successfully!
-            </CardTitle>
+            <CardTitle className='text-green-800'>Escrow Pool Active</CardTitle>
           </div>
           <CardDescription className='text-green-700'>
-            All escrow data returned from sendTransaction
+            On-chain CoreEscrow pool data
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className='flex items-center gap-4'>
             <div className='flex-1'>
-              <p className='mb-1 text-sm font-medium text-gray-700'>
-                Contract ID:
-              </p>
+              <p className='mb-1 text-sm font-medium text-gray-700'>Pool ID:</p>
               <div className='flex items-center gap-2'>
                 <code className='rounded bg-gray-100 px-3 py-1.5 font-mono text-sm'>
-                  {contractId}
+                  {poolId}
                 </code>
                 <Button
                   variant='ghost'
                   size='sm'
-                  onClick={() => handleCopyAddress(contractId)}
+                  onClick={() => handleCopyAddress(poolId)}
                   className='h-8 w-8 p-0'
                 >
                   <Copy className='h-4 w-4' />
@@ -81,57 +91,65 @@ export const EscrowDisplay = () => {
               </div>
             </div>
             <a
-              href={getStellarViewerUrl(contractId)}
+              href={getStellarViewerUrl(poolId)}
               target='_blank'
               rel='noopener noreferrer'
               className='inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline'
             >
               <ExternalLink className='h-4 w-4' />
-              View on Stellar Viewer
+              View on Stellar
             </a>
           </div>
         </CardContent>
       </Card>
 
-      {/* Basic Information */}
+      {/* Pool Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
-          <CardDescription>
-            Escrow identification and description
-          </CardDescription>
+          <CardTitle>Pool Information</CardTitle>
+          <CardDescription>On-chain escrow pool state</CardDescription>
         </CardHeader>
         <CardContent className='space-y-4'>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>
-              Engagement ID
-            </label>
-            <p className='mt-1 font-mono text-sm'>{escrow.engagementId}</p>
-          </div>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>Title</label>
-            <p className='mt-1 text-sm'>{escrow.title}</p>
-          </div>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>
-              Description
-            </label>
-            <p className='mt-1 text-sm text-gray-700'>{escrow.description}</p>
-          </div>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>Signer</label>
-            <div className='mt-1 flex items-center gap-2'>
-              <code className='rounded bg-gray-100 px-2 py-1 font-mono text-xs'>
-                {formatAddress(escrow.signer)}
-              </code>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => handleCopyAddress(escrow.signer)}
-                className='h-6 w-6 p-0'
-              >
-                <Copy className='h-3 w-3' />
-              </Button>
+          <div className='grid grid-cols-2 gap-4'>
+            <div>
+              <label className='text-sm font-medium text-gray-500'>
+                Module
+              </label>
+              <p className='mt-1 text-sm'>{pool.module}</p>
+            </div>
+            <div>
+              <label className='text-sm font-medium text-gray-500'>
+                Status
+              </label>
+              <p className='mt-1'>
+                <Badge variant={pool.locked ? 'default' : 'outline'}>
+                  {pool.locked ? 'Locked' : 'Open'}
+                </Badge>
+              </p>
+            </div>
+            <div>
+              <label className='text-sm font-medium text-gray-500'>Owner</label>
+              <div className='mt-1 flex items-center gap-2'>
+                <code className='rounded bg-gray-100 px-2 py-1 font-mono text-xs'>
+                  {formatAddress(pool.owner)}
+                </code>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => handleCopyAddress(pool.owner)}
+                  className='h-6 w-6 p-0'
+                >
+                  <Copy className='h-3 w-3' />
+                </Button>
+              </div>
+            </div>
+            <div>
+              <label className='text-sm font-medium text-gray-500'>Asset</label>
+              <div className='mt-1 flex items-center gap-2'>
+                <code className='rounded bg-gray-100 px-2 py-1 font-mono text-xs'>
+                  {formatAddress(pool.asset)}
+                </code>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -141,173 +159,52 @@ export const EscrowDisplay = () => {
       <Card>
         <CardHeader>
           <CardTitle>Financial Information</CardTitle>
-          <CardDescription>Platform fee and balance details</CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>
-              Platform Fee
-            </label>
-            <p className='mt-1 text-sm'>{escrow.platformFee}%</p>
-          </div>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>Balance</label>
-            <p className='mt-1 font-mono text-sm'>
-              {formatAmount(escrow.balance)} USDC
-            </p>
-          </div>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>
-              Trustline Address
-            </label>
-            <div className='mt-1 flex items-center gap-2'>
-              <code className='rounded bg-gray-100 px-2 py-1 font-mono text-xs'>
-                {formatAddress(escrow.trustline.address)}
-              </code>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => handleCopyAddress(escrow.trustline.address)}
-                className='h-6 w-6 p-0'
-              >
-                <Copy className='h-3 w-3' />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Roles */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Roles</CardTitle>
-          <CardDescription>
-            Addresses assigned to different escrow roles
-          </CardDescription>
         </CardHeader>
         <CardContent className='space-y-3'>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>
-              Approver
-            </label>
-            <div className='mt-1 flex items-center gap-2'>
-              <code className='rounded bg-gray-100 px-2 py-1 font-mono text-xs'>
-                {formatAddress(escrow.roles.approver)}
-              </code>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => handleCopyAddress(escrow.roles.approver)}
-                className='h-6 w-6 p-0'
-              >
-                <Copy className='h-3 w-3' />
-              </Button>
-            </div>
+          <div className='flex items-center justify-between'>
+            <span className='text-sm font-medium text-gray-500'>
+              Total Deposited
+            </span>
+            <span className='font-mono text-sm'>{pool.totalDeposited}</span>
           </div>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>
-              Service Provider
-            </label>
-            <div className='mt-1 flex items-center gap-2'>
-              <code className='rounded bg-gray-100 px-2 py-1 font-mono text-xs'>
-                {formatAddress(escrow.roles.serviceProvider)}
-              </code>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => handleCopyAddress(escrow.roles.serviceProvider)}
-                className='h-6 w-6 p-0'
-              >
-                <Copy className='h-3 w-3' />
-              </Button>
-            </div>
+          <div className='flex items-center justify-between'>
+            <span className='text-sm font-medium text-gray-500'>
+              Total Released
+            </span>
+            <span className='font-mono text-sm text-green-700'>
+              {pool.totalReleased}
+            </span>
           </div>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>
-              Platform Address
-            </label>
-            <div className='mt-1 flex items-center gap-2'>
-              <code className='rounded bg-gray-100 px-2 py-1 font-mono text-xs'>
-                {formatAddress(escrow.roles.platformAddress)}
-              </code>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => handleCopyAddress(escrow.roles.platformAddress)}
-                className='h-6 w-6 p-0'
-              >
-                <Copy className='h-3 w-3' />
-              </Button>
-            </div>
-          </div>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>
-              Release Signer
-            </label>
-            <div className='mt-1 flex items-center gap-2'>
-              <code className='rounded bg-gray-100 px-2 py-1 font-mono text-xs'>
-                {formatAddress(escrow.roles.releaseSigner)}
-              </code>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => handleCopyAddress(escrow.roles.releaseSigner)}
-                className='h-6 w-6 p-0'
-              >
-                <Copy className='h-3 w-3' />
-              </Button>
-            </div>
-          </div>
-          <div>
-            <label className='text-sm font-medium text-gray-500'>
-              Dispute Resolver
-            </label>
-            <div className='mt-1 flex items-center gap-2'>
-              <code className='rounded bg-gray-100 px-2 py-1 font-mono text-xs'>
-                {formatAddress(escrow.roles.disputeResolver)}
-              </code>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => handleCopyAddress(escrow.roles.disputeResolver)}
-                className='h-6 w-6 p-0'
-              >
-                <Copy className='h-3 w-3' />
-              </Button>
-            </div>
+          <div className='flex items-center justify-between'>
+            <span className='text-sm font-medium text-gray-500'>
+              Total Refunded
+            </span>
+            <span className='font-mono text-sm text-red-700'>
+              {pool.totalRefunded}
+            </span>
           </div>
         </CardContent>
       </Card>
 
-      {/* Milestones */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Milestones</CardTitle>
-          <CardDescription>
-            Multi-release milestones with amounts and receivers
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className='space-y-4'>
-            {escrow.milestones.map(
-              (milestone: MultiReleaseMilestone, index: number) => (
+      {/* Release Slots */}
+      {slots.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Release Slots</CardTitle>
+            <CardDescription>Milestone release slots</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className='space-y-4'>
+              {slots.map((slot, index) => (
                 <div
                   key={index}
                   className='rounded-lg border border-gray-200 bg-gray-50 p-4'
                 >
                   <div className='mb-3 flex items-center justify-between'>
                     <Badge variant='outline' className='font-mono'>
-                      Milestone {index + 1}
+                      Slot {index + 1}
                     </Badge>
-                    {milestone.flags?.approved && (
-                      <Badge variant='default' className='bg-green-600'>
-                        Approved
-                      </Badge>
-                    )}
-                    {milestone.flags?.disputed && (
-                      <Badge variant='destructive'>Disputed</Badge>
-                    )}
-                    {milestone.flags?.released && (
+                    {slot.released && (
                       <Badge variant='default' className='bg-blue-600'>
                         Released
                       </Badge>
@@ -316,65 +213,39 @@ export const EscrowDisplay = () => {
                   <div className='space-y-2'>
                     <div>
                       <label className='text-xs font-medium text-gray-500'>
-                        Description
-                      </label>
-                      <p className='mt-1 text-sm'>{milestone.description}</p>
-                    </div>
-                    <div>
-                      <label className='text-xs font-medium text-gray-500'>
                         Amount
                       </label>
-                      <p className='mt-1 font-mono text-sm'>
-                        {formatAmount(milestone.amount)} USDC
-                      </p>
+                      <p className='mt-1 font-mono text-sm'>{slot.amount}</p>
                     </div>
                     <div>
                       <label className='text-xs font-medium text-gray-500'>
-                        Receiver
+                        Recipient
                       </label>
                       <div className='mt-1 flex items-center gap-2'>
                         <code className='rounded bg-gray-100 px-2 py-1 font-mono text-xs'>
-                          {formatAddress(milestone.receiver)}
+                          {formatAddress(slot.recipient)}
                         </code>
                         <Button
                           variant='ghost'
                           size='sm'
-                          onClick={() => handleCopyAddress(milestone.receiver)}
+                          onClick={() => handleCopyAddress(slot.recipient)}
                           className='h-6 w-6 p-0'
                         >
                           <Copy className='h-3 w-3' />
                         </Button>
                       </div>
                     </div>
-                    {milestone.status && (
-                      <div>
-                        <label className='text-xs font-medium text-gray-500'>
-                          Status
-                        </label>
-                        <p className='mt-1 text-sm'>{milestone.status}</p>
-                      </div>
-                    )}
-                    {milestone.evidence && (
-                      <div>
-                        <label className='text-xs font-medium text-gray-500'>
-                          Evidence
-                        </label>
-                        <p className='mt-1 text-sm text-gray-700'>
-                          {milestone.evidence}
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
-              )
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Actions */}
       <div className='flex justify-end'>
-        <Button variant='outline' onClick={clearEscrowData}>
+        <Button variant='outline' onClick={clearPoolData}>
           Clear Escrow Data
         </Button>
       </div>

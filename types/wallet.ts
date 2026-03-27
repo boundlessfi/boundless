@@ -3,6 +3,8 @@ export interface WalletBalance {
   balance: string;
   asset_code?: string;
   asset_issuer?: string;
+  /** Human-readable asset name (e.g. "USD Coin", "Stellar Lumens") */
+  asset_name?: string;
   usdPrice?: number;
   usdValue?: number;
 }

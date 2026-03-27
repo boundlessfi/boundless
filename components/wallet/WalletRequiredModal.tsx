@@ -60,9 +60,10 @@ const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
           />
           <DialogTitle className='flex items-center justify-center gap-2 text-center'>
             <DialogDescription className='text-center text-white/80'>
-              You need to connect your wallet to{' '}
+              You need to connect your smart wallet to{' '}
               <span className='font-bold text-white'>{actionName}</span>. This
-              ensures secure and transparent transactions on the blockchain.
+              ensures secure and transparent transactions on the blockchain
+              using your passkey.
             </DialogDescription>
           </DialogTitle>
           <div className='flex flex-col gap-3'>

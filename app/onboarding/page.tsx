@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuthContext } from '@/components/providers/AuthProvider';
-import { completeOnboarding } from '@/lib/api/onboarding';
+import { useSmartWallet } from '@/components/providers/smart-wallet-provider';
+import { getSmartWallet } from '@/lib/api/wallet';
+import {
+  completeOnboarding,
+  confirmReputationInit,
+} from '@/lib/api/onboarding';
+import { initReputationProfile } from '@/lib/contracts/reputation-registry';
 import Stepper from '@/components/stepper/Stepper';
 import SecureAccountStep from '@/components/onboarding/SecureAccountStep';
 import RoleSelectionStep from '@/components/onboarding/RoleSelectionStep';
@@ -45,6 +51,7 @@ const STEP_META = [
 export default function OnboardingPage() {
   const router = useRouter();
   const { session: authSession } = useAuthContext();
+  const smartWallet = useSmartWallet();
   const userName = authSession.data?.user?.name || '';
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -56,6 +63,38 @@ export default function OnboardingPage() {
   );
   const [roles, setRoles] = useState<string[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
+
+  // On mount only: if user already has a smart wallet (local or backend), skip passkey step.
+  // Captures smartWallet.contractId at mount time — does NOT react to later changes
+  // (e.g. after the user registers a new passkey during this session).
+  const initialContractId = useRef(smartWallet.contractId);
+  useEffect(() => {
+    // Check local state first (same device)
+    if (initialContractId.current) {
+      setSmartWalletAddress(initialContractId.current);
+      setCurrentStep(1);
+      return;
+    }
+
+    // Check backend (different device scenario)
+    let cancelled = false;
+    getSmartWallet()
+      .then(result => {
+        if (cancelled) return;
+        if (result?.contractId) {
+          setSmartWalletAddress(result.contractId);
+          setCurrentStep(1);
+        }
+      })
+      .catch(() => {
+        // If the API fails, let the user proceed with passkey setup normally
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const next = useCallback(() => {
     setCurrentStep(prev => Math.min(prev + 1, STEP_COUNT - 1));
@@ -69,11 +108,6 @@ export default function OnboardingPage() {
     },
     [next]
   );
-
-  const handleSecureSkip = useCallback(() => {
-    setSmartWalletAddress(null);
-    next();
-  }, [next]);
 
   // Step 2: Role selection
   const handleRolesComplete = useCallback(
@@ -98,7 +132,7 @@ export default function OnboardingPage() {
     next();
   }, [next]);
 
-  // Step 4: Finish
+  // Step 4: Finish — save onboarding, then sign reputation init on-chain
   const handleFinish = useCallback(async () => {
     setIsSubmitting(true);
     try {
@@ -107,6 +141,20 @@ export default function OnboardingPage() {
         skills: skills.length > 0 ? skills : undefined,
         smartWalletAddress: smartWalletAddress ?? undefined,
       });
+
+      // Initialize on-chain reputation profile via passkey signing
+      if (smartWalletAddress) {
+        try {
+          await initReputationProfile(smartWalletAddress);
+          await confirmReputationInit();
+        } catch (err) {
+          console.warn(
+            'Reputation init failed — user can retry from settings',
+            err
+          );
+        }
+      }
+
       toast.success('Welcome to Boundless!');
       router.push('/');
     } catch {
@@ -140,7 +188,6 @@ export default function OnboardingPage() {
               <SecureAccountStep
                 userName={userName}
                 onComplete={handleSecureComplete}
-                onSkip={handleSecureSkip}
               />
             )}
             {currentStep === 1 && (

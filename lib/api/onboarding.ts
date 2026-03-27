@@ -27,6 +27,7 @@ export interface OnboardingPayload {
 export interface OnboardingStatus {
   completed: boolean;
   roles: string[];
+  reputationInitialized: boolean;
 }
 
 export async function completeOnboarding(
@@ -49,6 +50,17 @@ export async function getPlatformRoles(): Promise<{ roles: string[] }> {
   const { data } = await api.get<
     { roles: string[] } | BackendWrapped<{ roles: string[] }>
   >('users/profile/roles');
+  return unwrap(data);
+}
+
+export async function confirmReputationInit(): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const { data } = await api.post<
+    | { success: boolean; message: string }
+    | BackendWrapped<{ success: boolean; message: string }>
+  >('users/profile/reputation/confirm');
   return unwrap(data);
 }
 

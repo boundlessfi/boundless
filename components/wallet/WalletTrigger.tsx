@@ -5,7 +5,7 @@ import { useWalletContext } from '@/components/providers/wallet-provider';
 import { Button } from '@/components/ui/button';
 import { WalletSheet } from './WalletSheet';
 import { FamilyWalletDrawer } from './FamilyWalletDrawer';
-import { Wallet, ChevronDown, WalletCards } from 'lucide-react';
+import { Wallet, ChevronDown, WalletCards, Fingerprint } from 'lucide-react';
 import { formatAddress } from '@/lib/wallet-utils';
 import { cn } from '@/lib/utils';
 import { GlowingEffect } from '../ui/glowing-effect';
@@ -21,7 +21,7 @@ export function WalletTrigger({
   className,
   drawerType = 'sheet',
 }: WalletTriggerProps) {
-  const { walletAddress, hasWalletFromSession, isLoading, onOpenWallet } =
+  const { walletAddress, walletType, hasWalletFromSession, isLoading } =
     useWalletContext();
   const [open, setOpen] = useState(false);
 
@@ -46,7 +46,11 @@ export function WalletTrigger({
         disabled={isLoading}
         aria-label='Wallet'
       >
-        <Wallet className='h-5 w-5' />
+        {walletType === 'smart' ? (
+          <Fingerprint className='h-5 w-5' />
+        ) : (
+          <Wallet className='h-5 w-5' />
+        )}
       </Button>
     );
     return (
@@ -94,7 +98,11 @@ export function WalletTrigger({
             proximity={64}
             inactiveZone={0.01}
           />
-          <Wallet className='h-5 w-5' />
+          {walletType === 'smart' ? (
+            <Fingerprint className='h-5 w-5' />
+          ) : (
+            <Wallet className='h-5 w-5' />
+          )}
         </Button>
       )}
 

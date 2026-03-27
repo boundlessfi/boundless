@@ -11,6 +11,7 @@ import Settings from '@/components/profile/update/Settings';
 import TwoFactorTab from '@/components/profile/update/TwoFactorTab';
 import SecurityTab from '@/components/profile/update/SecurityTab';
 import RolesTab from '@/components/profile/update/RolesTab';
+import ReputationInitCard from '@/components/profile/update/ReputationInitCard';
 import { IdentityVerificationSection } from '@/components/didit/IdentityVerificationSection';
 import {
   User as UserIcon,
@@ -136,6 +137,9 @@ const SettingsContent = () => {
                 user={userData.user as User}
                 onStatusChange={fetchUserData}
               />
+            </div>
+            <div className='border-t border-zinc-800/50 pt-8'>
+              <ReputationInitCard />
             </div>
           </div>
         ) : (

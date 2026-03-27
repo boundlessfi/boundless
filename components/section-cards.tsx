@@ -1,9 +1,3 @@
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Package2, Users, Star, Trophy, LucideIcon } from 'lucide-react';
 
 interface StatsData {
@@ -17,12 +11,11 @@ interface CardConfig {
   title: string;
   value?: number;
   icon?: LucideIcon;
-  description?: string;
+  accent: string;
 }
 
 interface SectionCardsProps {
   stats?: StatsData;
-  cards?: CardConfig[];
 }
 
 function formatNumber(num?: number): string {
@@ -32,84 +25,55 @@ function formatNumber(num?: number): string {
   return num.toLocaleString();
 }
 
-export function SectionCards({ stats, cards }: SectionCardsProps = {}) {
-  if (cards && cards.length > 0) {
-    return (
-      <div className='grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4'>
-        {cards.map((card, index) => (
-          <DashCard
-            key={index}
-            value={card.value}
-            title={card.title}
-            icon={card.icon}
-            description={card.description}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  const defaultCards: CardConfig[] = [
+export function SectionCards({ stats }: SectionCardsProps) {
+  const cards: CardConfig[] = [
     {
-      title: 'Projects Created',
+      title: 'Projects',
       value: stats?.projectsCreated,
       icon: Package2,
+      accent: 'text-emerald-400',
     },
     {
       title: 'Followers',
       value: stats?.followers,
       icon: Users,
+      accent: 'text-blue-400',
     },
     {
       title: 'Reputation',
       value: stats?.reputation,
       icon: Star,
+      accent: 'text-amber-400',
     },
     {
-      title: 'Community Score',
+      title: 'Score',
       value: stats?.communityScore,
       icon: Trophy,
+      accent: 'text-purple-400',
     },
   ];
 
   return (
-    <div className='grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4'>
-      {defaultCards.map((card, index) => (
-        <DashCard
-          key={index}
-          value={card.value}
-          title={card.title}
-          icon={card.icon}
-        />
-      ))}
+    <div className='grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4'>
+      {cards.map(card => {
+        const Icon = card.icon!;
+        return (
+          <div
+            key={card.title}
+            className='group relative overflow-hidden rounded-xl border border-white/6 bg-white/2 p-4 transition-colors hover:border-white/10 hover:bg-white/4'
+          >
+            <div className='flex items-center justify-between'>
+              <span className='text-xs font-medium tracking-wide text-white/40 uppercase'>
+                {card.title}
+              </span>
+              <Icon className={`h-4 w-4 ${card.accent} opacity-60`} />
+            </div>
+            <p className='mt-2 text-2xl font-semibold text-white tabular-nums sm:text-3xl'>
+              {formatNumber(card.value)}
+            </p>
+          </div>
+        );
+      })}
     </div>
-  );
-}
-
-interface DashCardProps {
-  value?: number;
-  title: string;
-  icon?: LucideIcon;
-  description?: string;
-}
-
-function DashCard({
-  value,
-  title,
-  icon: Icon = Package2,
-  description,
-}: DashCardProps) {
-  return (
-    <Card className='bg-background border-border/10 hover:border-primary/30 shadow-primary/10 hover:shadow-primary/10 @container/card border transition-all duration-300 hover:shadow-lg'>
-      <CardHeader>
-        <CardDescription className='flex items-center justify-between text-white/80'>
-          {description || title}
-          {Icon && <Icon size={20} />}
-        </CardDescription>
-        <CardTitle className='text-2xl font-semibold text-white tabular-nums @[250px]/card:text-3xl'>
-          {formatNumber(value)}
-        </CardTitle>
-      </CardHeader>
-    </Card>
   );
 }

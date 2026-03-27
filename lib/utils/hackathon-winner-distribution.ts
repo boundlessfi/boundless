@@ -1,5 +1,5 @@
-import { MultiReleaseEscrow } from '@trustless-work/escrow';
 import { createWinnerMilestone } from './hackathon-escrow';
+import type { EscrowPool } from '@/lib/api/escrow';
 
 /**
  * Winner data structure
@@ -71,7 +71,7 @@ export const prepareWinnerMilestones = (
  * @returns Validation result with errors if any
  */
 export const validateEscrowCanBeUpdated = (
-  escrow: MultiReleaseEscrow | null
+  escrow: EscrowPool | null
 ): EscrowValidationResult => {
   const errors: string[] = [];
 
@@ -80,32 +80,16 @@ export const validateEscrowCanBeUpdated = (
     return { isValid: false, errors };
   }
 
-  // Check if escrow is funded
-  if (!escrow.balance || escrow.balance === 0) {
+  // Check if escrow is funded (totalDeposited is a string of stroops)
+  const deposited = escrow.totalDeposited || '0';
+  if (deposited === '0') {
     errors.push('Escrow is not funded. Please fund the escrow first.');
   }
 
-  // Check if any milestones are approved
-  const hasApprovedMilestones =
-    escrow.milestones?.some(milestone => milestone.flags?.approved === true) ||
-    false;
-
-  if (hasApprovedMilestones) {
+  // Check if pool is locked — locked pools cannot be updated
+  if (escrow.locked) {
     errors.push(
-      'Cannot update escrow: Some milestones are already approved. Escrow cannot be updated after milestones are approved.'
-    );
-  }
-
-  // Check if escrow is in dispute (flags may not exist on MultiReleaseEscrow type)
-  interface EscrowWithFlags extends MultiReleaseEscrow {
-    flags?: {
-      disputed?: boolean;
-    };
-  }
-  const escrowWithFlags = escrow as EscrowWithFlags;
-  if (escrowWithFlags.flags?.disputed === true) {
-    errors.push(
-      'Cannot update escrow: Escrow is in dispute. Please resolve the dispute first.'
+      'Cannot update escrow: Pool is locked. Locked pools cannot be modified.'
     );
   }
 

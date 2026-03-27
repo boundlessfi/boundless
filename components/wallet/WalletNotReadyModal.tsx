@@ -25,6 +25,8 @@ interface WalletNotReadyModalProps {
   reasons: WalletNotReadyReason[];
   onOpenWallet: () => void;
   actionName: string;
+  /** When true, hides trustline/activation steps (smart wallets don't need them). */
+  isSmartWallet?: boolean;
 }
 
 const WalletNotReadyModal: React.FC<WalletNotReadyModalProps> = ({
@@ -33,7 +35,17 @@ const WalletNotReadyModal: React.FC<WalletNotReadyModalProps> = ({
   reasons,
   onOpenWallet,
   actionName,
+  isSmartWallet = false,
 }) => {
+  // Smart wallets don't need activation or trustlines — filter those out
+  const filteredReasons = isSmartWallet
+    ? reasons.filter(
+        r =>
+          r !== 'not_activated' &&
+          r !== 'no_usdc_trustline' &&
+          r !== 'insufficient_xlm'
+      )
+    : reasons;
   const handleOpenWallet = () => {
     onOpenChange(false);
     onOpenWallet();
@@ -76,29 +88,29 @@ const WalletNotReadyModal: React.FC<WalletNotReadyModalProps> = ({
 
           {/* Steps Section */}
           <div className='w-full space-y-3 rounded-2xl border border-white/5 bg-white/2 p-2'>
-            {reasons.includes('not_activated') && (
+            {filteredReasons.includes('not_activated') && (
               <StepItem
                 icon={<Activity className='text-primary h-5 w-5' />}
                 title='Activate Stellar Account'
                 description="Your account isn't on-chain. Send at least 2 XLM to this address to activate it."
               />
             )}
-            {reasons.includes('no_usdc_trustline') && (
+            {filteredReasons.includes('no_usdc_trustline') && (
               <StepItem
                 icon={<ShieldCheck className='text-primary h-5 w-5' />}
                 title='Add USDC Trustline'
                 description='Required to hold USDC on Stellar. Open your wallet to add the trustline.'
               />
             )}
-            {reasons.includes('insufficient_xlm') &&
-              !reasons.includes('not_activated') && (
+            {filteredReasons.includes('insufficient_xlm') &&
+              !filteredReasons.includes('not_activated') && (
                 <StepItem
                   icon={<Coins className='text-primary h-5 w-5' />}
                   title='Low XLM Balance'
                   description='Transaction fees and reserve requirements need a small amount of XLM.'
                 />
               )}
-            {reasons.includes('insufficient_usdc') && (
+            {filteredReasons.includes('insufficient_usdc') && (
               <StepItem
                 icon={<AlertCircle className='text-primary h-5 w-5' />}
                 title='Insufficient USDC Balance'

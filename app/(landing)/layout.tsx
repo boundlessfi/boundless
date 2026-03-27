@@ -4,6 +4,7 @@ import { Footer, Navbar } from '@/components/landing-page';
 import { generatePageMetadata } from '@/lib/metadata';
 // import { GoogleOneTap } from '@/components/auth/GoogleOneTap';
 import { LandingWalletWrapper } from '@/components/wallet/LandingWalletWrapper';
+import { ProfileIncompleteBanner } from '@/components/ProfileIncompleteBanner';
 
 export const metadata: Metadata = generatePageMetadata('home');
 
@@ -14,6 +15,7 @@ interface LandingLayoutProps {
 export default function LandingLayout({ children }: LandingLayoutProps) {
   return (
     <div className='bg-background relative flex min-h-screen flex-col'>
+      <ProfileIncompleteBanner />
       <Navbar />
       <main className='flex-1'>{children}</main>
       <Footer />

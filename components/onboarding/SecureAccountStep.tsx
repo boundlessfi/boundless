@@ -8,17 +8,16 @@ import { useSmartWallet } from '@/components/providers/smart-wallet-provider';
 interface SecureAccountStepProps {
   userName: string;
   onComplete: (contractId: string | null) => void;
-  onSkip: () => void;
 }
 
 export default function SecureAccountStep({
   userName,
   onComplete,
-  onSkip,
 }: SecureAccountStepProps) {
   const smartWallet = useSmartWallet();
+  const alreadySetUp = !!smartWallet.contractId;
   const [status, setStatus] = useState<'idle' | 'creating' | 'done' | 'error'>(
-    'idle'
+    alreadySetUp ? 'done' : 'idle'
   );
 
   const handleSetup = async () => {
@@ -82,7 +81,7 @@ export default function SecureAccountStep({
       {status === 'error' && (
         <div className='mb-4 w-full max-w-md rounded-xl border border-red-500/20 bg-red-500/10 p-4'>
           <p className='text-sm text-red-400'>
-            Something went wrong. You can try again or skip for now.
+            Something went wrong. Please try again.
           </p>
         </div>
       )}
@@ -110,22 +109,13 @@ export default function SecureAccountStep({
           </BoundlessButton>
         )}
 
-        {status !== 'done' && (
-          <button
-            onClick={onSkip}
-            className='text-sm text-[#B5B5B5] transition-colors hover:text-white'
-          >
-            Skip for now
-          </button>
-        )}
-
         {!canUsePasskey && status === 'idle' && (
           <>
             <p className='text-xs text-[#B5B5B5]'>
               Passkey setup is not available on this device. A custodial wallet
               has been created for you automatically.
             </p>
-            <BoundlessButton fullWidth onClick={onSkip}>
+            <BoundlessButton fullWidth onClick={() => onComplete(null)}>
               Continue
             </BoundlessButton>
           </>

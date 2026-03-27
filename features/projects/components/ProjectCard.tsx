@@ -75,6 +75,11 @@ function ProjectCard({
     banner || '/images/placeholders/project-banner-placeholder.png';
 
   const handleClick = () => {
+    // Draft projects (IDEA status) should open in the creation/edit flow
+    if (projectStatus === 'IDEA') {
+      router.push(`/projects/${project.id || slug}/edit`);
+      return;
+    }
     const url = isSubmission
       ? `/projects/${slug}?type=submission`
       : `/projects/${slug}`;
@@ -91,7 +96,8 @@ function ProjectCard({
       return 'Submission';
     }
 
-    if (projectStatus === 'IDEA') return 'Validation';
+    if (projectStatus === 'IDEA') return 'Draft';
+    if (projectStatus === 'REVIEWING') return 'In Review';
     if (projectStatus === 'ACTIVE') return 'Funding';
     if (projectStatus === 'LIVE') return 'Funded';
     if (projectStatus === 'COMPLETED') return 'Completed';
@@ -102,14 +108,15 @@ function ProjectCard({
 
   const getStatusStyles = () => {
     switch (status) {
+      case 'Draft':
+        return 'text-amber-400 bg-amber-400/10';
+      case 'In Review':
+        return 'text-yellow-400 bg-yellow-400/10';
       case 'Funding':
         return 'text-blue-400 bg-blue-400/10';
       case 'Funded':
-        return 'text-green-400 bg-green-400/10';
       case 'Completed':
         return 'text-green-400 bg-green-400/10';
-      case 'Validation':
-        return 'text-yellow-400 bg-yellow-400/10';
       default:
         return 'text-gray-400 bg-gray-800/20';
     }
@@ -241,7 +248,7 @@ function ProjectCard({
 
         {/* Stats / Progress Section */}
         <div className='flex flex-col gap-2 border-t border-neutral-800 px-4 pt-3 pb-1 sm:px-5'>
-          {status === 'Validation' && (
+          {(status === 'Draft' || status === 'In Review') && (
             <div className='flex flex-col gap-1'>
               <div className='flex items-baseline justify-between'>
                 <span className='text-sm text-gray-400'>Votes</span>
@@ -304,7 +311,9 @@ function ProjectCard({
 
         {/* Footer info: Deadline/Status Text */}
         <div className='flex items-center justify-between border-t border-neutral-800 px-4 py-3 sm:px-5'>
-          {(status === 'Funding' || status === 'Validation') &&
+          {(status === 'Funding' ||
+            status === 'Draft' ||
+            status === 'In Review') &&
           fundingEndDate ? (
             <div className='flex items-center gap-2'>
               <span className='text-[10px] whitespace-nowrap text-gray-400 uppercase'>

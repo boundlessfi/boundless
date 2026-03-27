@@ -446,7 +446,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             onChange={e => handleInputChange('projectName', e.target.value)}
             onBlur={() => validateField('projectName')}
             className={cn(
-              'focus-visible:border-primary border-[#484848] bg-[#1A1A1A] p-4 text-white placeholder:text-[#919191]',
+              'focus-visible:border-primary border-gray-800 bg-[#1A1A1A] p-4 text-white placeholder:text-gray-600',
               (submitted || touched.projectName) &&
                 errors.projectName &&
                 'border-red-500'
@@ -478,7 +478,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
                 'flex h-32 w-32 cursor-pointer items-center justify-center rounded-[12px] border border-[#2B2B2B] bg-[#101010] transition-colors xl:h-[200px] xl:w-[200px]',
                 formData.logo
                   ? 'border-primary bg-primary/5'
-                  : 'hover:border-primary border-[#484848]',
+                  : 'hover:border-primary border-gray-800',
                 (submitted || touched.logo) && errors.logo && 'border-red-500',
                 isDragOver && 'border-primary bg-primary/10 scale-105'
               )}
@@ -553,7 +553,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
                       strokeLinejoin='round'
                     />
                   </svg>
-                  <span className='text-xs text-[#919191]'>
+                  <span className='text-xs text-gray-600'>
                     Click or drag to upload
                   </span>
                 </div>
@@ -679,7 +679,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
                 'flex h-32 w-full cursor-pointer items-center justify-center rounded-[12px] border border-[#2B2B2B] bg-[#101010] transition-colors',
                 formData.banner
                   ? 'border-primary bg-primary/5'
-                  : 'hover:border-primary border-[#484848]',
+                  : 'hover:border-primary border-gray-800',
                 (submitted || touched.banner) &&
                   errors.banner &&
                   'border-red-500'
@@ -717,7 +717,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
                   <span className='text-primary text-xs font-medium'>
                     Click to upload banner
                   </span>
-                  <span className='text-xs text-[#919191]'>
+                  <span className='text-xs text-gray-600'>
                     1200x400 px recommended
                   </span>
                 </div>
@@ -731,7 +731,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             <Label className='text-white'>
               Vision <span className='text-red-500'>*</span>
             </Label>
-            <span className='text-sm text-[#919191]'>
+            <span className='text-sm text-gray-600'>
               {formData.vision.length}/300
             </span>
           </div>
@@ -741,7 +741,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             onChange={e => handleInputChange('vision', e.target.value)}
             onBlur={() => validateField('vision')}
             className={cn(
-              'focus-visible:border-primary min-h-24 resize-none border-[#484848] bg-[#1A1A1A] text-white placeholder:text-[#919191] xl:min-h-[172px]',
+              'focus-visible:border-primary min-h-24 resize-none border-gray-800 bg-[#1A1A1A] text-white placeholder:text-gray-600 xl:min-h-[172px]',
               (submitted || touched.vision) && errors.vision && 'border-red-500'
             )}
             maxLength={300}
@@ -823,7 +823,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             onChange={e => handleInputChange('githubUrl', e.target.value)}
             onBlur={() => validateField('githubUrl')}
             className={cn(
-              'focus-visible:border-primary border-[#484848] bg-[#1A1A1A] p-4 text-white placeholder:text-[#919191]',
+              'focus-visible:border-primary border-gray-800 bg-[#1A1A1A] p-4 text-white placeholder:text-gray-600',
               (submitted || touched.githubUrl) &&
                 errors.githubUrl &&
                 'border-red-500'
@@ -852,7 +852,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             onChange={e => handleInputChange('websiteUrl', e.target.value)}
             onBlur={() => validateField('websiteUrl')}
             className={cn(
-              'focus-visible:border-primary border-[#484848] bg-[#1A1A1A] p-4 text-white placeholder:text-[#919191]',
+              'focus-visible:border-primary border-gray-800 bg-[#1A1A1A] p-4 text-white placeholder:text-gray-600',
               (submitted || touched.websiteUrl) &&
                 errors.websiteUrl &&
                 'border-red-500'
@@ -868,7 +868,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             <Label className='text-white'>
               Demo Video (optional unless hackathons required)
             </Label>
-            <Info className='h-4 w-4 text-[#919191]' />
+            <Info className='h-4 w-4 text-gray-600' />
           </div>
           <Input
             placeholder='Link to demo video (YouTube video recommended)'
@@ -876,7 +876,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             onChange={e => handleInputChange('demoVideoUrl', e.target.value)}
             onBlur={() => validateField('demoVideoUrl')}
             className={cn(
-              'focus-visible:border-primary border-[#484848] bg-[#1A1A1A] p-4 text-white placeholder:text-[#919191]',
+              'focus-visible:border-primary border-gray-800 bg-[#1A1A1A] p-4 text-white placeholder:text-gray-600',
               (submitted || touched.demoVideoUrl) &&
                 errors.demoVideoUrl &&
                 'border-red-500'
@@ -926,7 +926,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
               value={link}
               onChange={e => handleSocialLinkChange(index, e.target.value)}
               onBlur={() => validateField('socialLinks')}
-              className='focus-visible:border-primary border-[#484848] bg-[#1A1A1A] p-4 text-white placeholder:text-[#919191]'
+              className='focus-visible:border-primary border-gray-800 bg-[#1A1A1A] p-4 text-white placeholder:text-gray-600'
             />
           ))}
           <div className='flex items-start gap-x-1.5'>

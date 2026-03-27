@@ -5,10 +5,13 @@ import { getCurrentNetwork } from '@/lib/wallet-utils';
 export type StellarNetwork = 'testnet' | 'public';
 
 export const useWalletStore = () => {
-  const { walletAddress, walletName, clearWalletInfo } = useWalletContext();
+  const { walletAddress, walletName, walletType, clearWalletInfo } =
+    useWalletContext();
   const smartWallet = useSmartWallet();
 
-  // Prefer smart wallet address if connected, otherwise fall back to custodial
+  // Smart wallet is the primary wallet. WalletProvider already resolves this,
+  // but we also check the local smart wallet state for immediate reactivity
+  // (e.g. right after connect, before backend refresh).
   const effectiveAddress = smartWallet.contractId || walletAddress;
 
   return {
@@ -22,7 +25,11 @@ export const useWalletStore = () => {
     isConnected: !!effectiveAddress,
     isLoading: smartWallet.isLoading,
     error: smartWallet.error,
-    selectedWallet: smartWallet.contractId ? 'Smart Wallet' : walletName,
+    selectedWallet: smartWallet.contractId
+      ? 'Smart Wallet'
+      : walletType === 'smart'
+        ? 'Smart Wallet'
+        : walletName,
     initializeWalletKit: async (_network?: StellarNetwork) => {},
     connectWallet: async (_walletId?: string) => {
       if (smartWallet.isAvailable) {
@@ -38,11 +45,17 @@ export const useWalletStore = () => {
 };
 
 export const useWalletInfo = () => {
-  const { walletAddress, walletName } = useWalletContext();
+  const { walletAddress, walletType, smartWalletAddress } = useWalletContext();
   const smartWallet = useSmartWallet();
+
+  // Prefer local smart wallet state for immediate reactivity
+  const address = smartWallet.contractId || smartWalletAddress || walletAddress;
+  const isSmartWallet = !!(smartWallet.contractId || walletType === 'smart');
+
   return {
-    address: smartWallet.contractId || walletAddress,
-    name: smartWallet.contractId ? 'Smart Wallet' : walletName,
+    address,
+    name: isSmartWallet ? 'Smart Wallet' : 'Boundless Wallet',
+    type: isSmartWallet ? ('smart' as const) : ('custodial' as const),
   };
 };
 
@@ -83,16 +96,18 @@ export const useNetworkSwitcher = () => {
 
 /**
  * Wallet connection and disconnection.
- * Smart wallet: uses passkey-based connect/register.
- * Custodial: backend-managed, disconnect clears local UI state only.
+ * Smart wallet (passkey-based) is the default and preferred method.
+ * Custodial wallet is a backend-managed fallback.
  */
 export const useWallet = () => {
-  const { clearWalletInfo } = useWalletContext();
+  const { clearWalletInfo, refreshWallet } = useWalletContext();
   const smartWallet = useSmartWallet();
 
   const connectWallet = async () => {
     if (smartWallet.isAvailable) {
       await smartWallet.connect();
+      // Refresh the wallet provider to pick up the new smart wallet address
+      await refreshWallet();
     }
   };
 

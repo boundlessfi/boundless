@@ -223,6 +223,7 @@ export const HackathonCard = ({
           src={banner}
           alt={name}
           fill
+          loading='eager'
           className='object-cover transition-transform duration-500 group-hover:scale-105'
           unoptimized
         />

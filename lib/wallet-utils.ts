@@ -60,7 +60,7 @@ export function validateAddress(address: string): boolean {
   }
 
   // Stellar addresses are 56 characters long and start with G, M, S, or T
-  const stellarAddressRegex = /^[GMS][A-Z2-7]{55}$/;
+  const stellarAddressRegex = /^[GMSC][A-Z2-7]{55}$/;
   return stellarAddressRegex.test(address);
 }
 

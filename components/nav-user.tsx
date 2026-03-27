@@ -3,10 +3,9 @@
 import React from 'react';
 import {
   IconBell,
-  IconCreditCard,
-  IconDotsVertical,
   IconLogout,
-  IconUserCircle,
+  IconSettings,
+  IconChevronRight,
 } from '@tabler/icons-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -25,7 +24,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Badge } from './ui/badge';
 import Link from 'next/link';
 import { useAuthActions } from '@/hooks/use-auth';
 import { useNotificationStore } from '@/lib/stores/notification-store';
@@ -36,6 +34,15 @@ export interface NavUserProps {
     email: string;
     image: string | null;
   };
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
@@ -49,6 +56,8 @@ export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
     clearUnreadCount();
   };
 
+  const initials = getInitials(user.name);
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -56,98 +65,85 @@ export const NavUser = ({ user }: NavUserProps): React.ReactElement => {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size='lg'
-              className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/50 transition-colors'
+              className='h-12 transition-colors hover:bg-white/4 data-[state=open]:bg-white/6'
             >
-              <Avatar className='border-sidebar-border h-9 w-9 rounded-lg border-2'>
+              <Avatar className='h-8 w-8 rounded-lg'>
                 <AvatarImage src={user.image || undefined} alt={user.name} />
-                <AvatarFallback className='from-primary/20 to-primary/10 text-primary rounded-lg bg-linear-to-br font-semibold'>
-                  {user.name
-                    .split(' ')
-                    .map(n => n[0])
-                    .join('')}
+                <AvatarFallback className='bg-primary/10 text-primary rounded-lg text-xs font-semibold'>
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <div className='grid flex-1 text-left leading-tight'>
-                <span className='truncate text-sm font-semibold'>
+                <span className='truncate text-sm font-medium text-white'>
                   {user.name}
                 </span>
-                <span className='text-muted-foreground truncate text-xs'>
+                <span className='truncate text-[11px] text-white/30'>
                   {user.email}
                 </span>
               </div>
-              <IconDotsVertical className='ml-auto size-4 opacity-50' />
+              <IconChevronRight className='ml-auto h-4 w-4 text-white/20' />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className='bg-background-main-bg/98 w-56 rounded-lg border-white/10 text-white backdrop-blur-xl'
+            className='w-56 rounded-xl border-white/8 bg-zinc-900/95 text-white shadow-2xl backdrop-blur-xl'
             side={isMobile ? 'bottom' : 'right'}
             align='end'
-            sideOffset={4}
+            sideOffset={8}
           >
             <DropdownMenuLabel className='p-0 font-normal'>
-              <div className='flex items-center gap-3 px-2 py-2 text-left'>
-                <Avatar className='border-border h-10 w-10 rounded-lg border-2'>
+              <div className='flex items-center gap-3 px-3 py-3'>
+                <Avatar className='h-9 w-9 rounded-lg'>
                   <AvatarImage src={user.image || undefined} alt={user.name} />
-                  <AvatarFallback className='from-primary/20 to-primary/10 text-primary rounded-lg bg-linear-to-br font-semibold'>
-                    {user.name
-                      .split(' ')
-                      .map(n => n[0])
-                      .join('')}
+                  <AvatarFallback className='bg-primary/10 text-primary rounded-lg text-xs font-semibold'>
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className='grid flex-1 text-left leading-tight'>
-                  <span className='truncate text-sm font-semibold text-white'>
+                  <span className='truncate text-sm font-medium text-white'>
                     {user.name}
                   </span>
-                  <span className='truncate text-xs text-white/60'>
+                  <span className='truncate text-xs text-white/35'>
                     {user.email}
                   </span>
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
+            <DropdownMenuSeparator className='bg-white/6' />
+            <DropdownMenuGroup className='p-1'>
               <DropdownMenuItem asChild>
                 <Link
                   href='/me/settings'
-                  className='flex cursor-pointer items-center gap-2 text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
+                  className='flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
                 >
-                  <IconUserCircle className='h-4 w-4' />
-                  <span>Account Settings</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  href='/coming-soon'
-                  className='flex cursor-pointer items-center gap-2 text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
-                >
-                  <IconCreditCard className='h-4 w-4' />
-                  <span>Billing</span>
+                  <IconSettings size={16} stroke={1.5} />
+                  Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
                   href='/me/notifications'
-                  className='flex cursor-pointer items-center gap-2 text-white/80 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
+                  className='flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white focus:bg-white/5 focus:text-white'
                 >
-                  <IconBell className='h-4 w-4' />
-                  <span>Notifications</span>
+                  <IconBell size={16} stroke={1.5} />
+                  Notifications
                   {unreadNotifications > 0 && (
-                    <Badge className='bg-primary ml-auto flex h-5 min-w-5 items-center justify-center rounded-full text-xs font-bold text-black'>
+                    <span className='bg-primary/15 text-primary ml-auto flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] leading-none font-semibold'>
                       {unreadNotifications}
-                    </Badge>
+                    </span>
                   )}
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator className='bg-white/10' />
-            <DropdownMenuItem
-              className='text-destructive focus:text-destructive cursor-pointer gap-2 hover:bg-red-500/10'
-              onClick={handleLogout}
-            >
-              <IconLogout className='h-4 w-4' />
-              <span>Log out</span>
-            </DropdownMenuItem>
+            <DropdownMenuSeparator className='bg-white/6' />
+            <div className='p-1'>
+              <DropdownMenuItem
+                className='flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-red-400/80 hover:bg-red-500/8 hover:text-red-400 focus:bg-red-500/8 focus:text-red-400'
+                onClick={handleLogout}
+              >
+                <IconLogout size={16} stroke={1.5} />
+                Log out
+              </DropdownMenuItem>
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

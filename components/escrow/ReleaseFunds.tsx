@@ -1,7 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { useEscrowContext } from '@/lib/providers/EscrowProvider';
+import {
+  releaseSlot,
+  getSlot,
+  getPool,
+  type EscrowSlot,
+} from '@/lib/api/escrow';
+import { toast } from 'sonner';
+import { reportError } from '@/lib/error-reporting';
+import { Loader2, CheckCircle2, Banknote } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -10,337 +20,131 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useWalletContext } from '@/components/providers/wallet-provider';
-import { useEscrowContext } from '@/lib/providers/EscrowProvider';
-import { useReleaseFunds, useSendTransaction } from '@trustless-work/escrow';
-import { signTransaction } from '@/lib/config/wallet-kit';
-import {
-  MultiReleaseReleaseFundsPayload,
-  EscrowType,
-  EscrowRequestResponse,
-  Status,
-  MultiReleaseEscrow,
-  MultiReleaseMilestone,
-} from '@trustless-work/escrow';
-import { toast } from 'sonner';
-import { Loader2, CheckCircle2, DollarSign, XCircle } from 'lucide-react';
 
 /**
- * Component to release funds for approved milestones in a multi-release escrow
+ * Component to release funds for escrow slots via the backend CoreEscrow contract.
  */
 export const ReleaseFunds = () => {
-  const { walletAddress } = useWalletContext();
-  const { contractId, escrow, updateEscrow } = useEscrowContext();
-  const { releaseFunds } = useReleaseFunds();
-  const { sendTransaction } = useSendTransaction();
-  const [isLoading, setIsLoading] = useState<number | null>(null);
-  const [releasedMilestones, setReleasedMilestones] = useState<Set<number>>(
-    new Set()
-  );
+  const { poolId, pool, updatePool } = useEscrowContext();
+  const [isLoading, setIsLoading] = useState(false);
+  const [slots, setSlots] = useState<(EscrowSlot & { index: number })[]>([]);
+  const [releasedIndex, setReleasedIndex] = useState<number | null>(null);
 
-  if (!contractId || !escrow) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Release Funds</CardTitle>
-          <CardDescription>
-            Please initialize an escrow first before releasing funds.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
+  useEffect(() => {
+    if (!poolId) return;
+    const fetchSlots = async () => {
+      const fetched: (EscrowSlot & { index: number })[] = [];
+      for (let i = 0; i < 10; i++) {
+        try {
+          const slot = await getSlot(poolId, i);
+          fetched.push({ ...slot, index: i });
+        } catch {
+          break;
+        }
+      }
+      setSlots(fetched);
+    };
+    fetchSlots();
+  }, [poolId]);
 
-  if (!escrow.milestones || escrow.milestones.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Release Funds</CardTitle>
-          <CardDescription>
-            This escrow does not have milestones.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
+  const handleRelease = async (slotIndex: number) => {
+    if (!poolId) return;
 
-  if (!escrow.roles.releaseSigner) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Release Funds</CardTitle>
-          <CardDescription>
-            Release signer address not found in escrow.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  const handleReleaseFunds = async (milestoneIndex: number) => {
-    if (!walletAddress) {
-      toast.error('Please connect your wallet first');
-      return;
-    }
-
-    const milestone = escrow.milestones[milestoneIndex];
-    if (!milestone) {
-      toast.error('Milestone not found');
-      return;
-    }
-
-    // Check if milestone is approved
-    if (!milestone.flags?.approved) {
-      toast.error('Milestone must be approved before funds can be released');
-      return;
-    }
-
-    setIsLoading(milestoneIndex);
+    setIsLoading(true);
+    setReleasedIndex(null);
 
     try {
-      // Step 1: Prepare the payload according to MultiReleaseReleaseFundsPayload type
-      const payload: MultiReleaseReleaseFundsPayload = {
-        contractId: contractId,
-        milestoneIndex: milestoneIndex.toString(),
-        releaseSigner: escrow.roles.releaseSigner,
-      };
+      await releaseSlot({ poolId, slotIndex });
 
-      // Step 2: Execute function from Trustless Work
-      const releaseResponse: EscrowRequestResponse = await releaseFunds(
-        payload,
-        'multi-release' as EscrowType
-      );
+      // Refresh data
+      const updatedPool = await getPool(poolId);
+      updatePool(updatedPool);
 
-      // Type guard: Check if response is successful
-      if (
-        releaseResponse.status !== ('SUCCESS' as Status) ||
-        !releaseResponse.unsignedTransaction
-      ) {
-        const errorMessage =
-          'message' in releaseResponse &&
-          typeof releaseResponse.message === 'string'
-            ? releaseResponse.message
-            : 'Failed to release funds';
-        throw new Error(errorMessage);
+      try {
+        const updatedSlot = await getSlot(poolId, slotIndex);
+        setSlots(prev =>
+          prev.map(s =>
+            s.index === slotIndex ? { ...updatedSlot, index: slotIndex } : s
+          )
+        );
+      } catch {
+        // Slot might not exist anymore
       }
 
-      const { unsignedTransaction } = releaseResponse;
-
-      // Step 3: Sign transaction with wallet
-      const signedXdr = await signTransaction({
-        unsignedTransaction,
-        address: walletAddress,
-      });
-
-      // Step 4: Send transaction
-      const sendResponse = await sendTransaction(signedXdr);
-
-      // Type guard: Check if response is successful
-      if (
-        'status' in sendResponse &&
-        sendResponse.status !== ('SUCCESS' as Status)
-      ) {
-        const errorMessage =
-          'message' in sendResponse && typeof sendResponse.message === 'string'
-            ? sendResponse.message
-            : 'Failed to send transaction';
-        throw new Error(errorMessage);
-      }
-
-      // Update escrow data in context
-      if (escrow) {
-        const updatedMilestones = [...escrow.milestones];
-        if (updatedMilestones[milestoneIndex]) {
-          updatedMilestones[milestoneIndex] = {
-            ...updatedMilestones[milestoneIndex],
-            flags: {
-              ...updatedMilestones[milestoneIndex].flags,
-              released: true,
-            },
-          };
-        }
-
-        const updatedEscrow: MultiReleaseEscrow = {
-          ...escrow,
-          milestones: updatedMilestones,
-        };
-
-        updateEscrow(updatedEscrow);
-      }
-
-      // Add to released milestones set
-      setReleasedMilestones(prev => new Set(prev).add(milestoneIndex));
-
-      // Display success message
-      toast.success(
-        `Funds for Milestone ${milestoneIndex + 1} have been released successfully!`,
-        {
-          duration: 5000,
-        }
-      );
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to release funds';
-      toast.error(errorMessage);
+      setReleasedIndex(slotIndex);
+      toast.success(`Slot ${slotIndex + 1} funds released!`);
+    } catch (err) {
+      reportError(err, { context: 'escrow-release' });
+      toast.error('Failed to release funds');
     } finally {
-      setIsLoading(null);
+      setIsLoading(false);
     }
   };
 
-  const formatAmount = (amount: number): string => {
-    return amount.toString();
-  };
-
-  const isMilestoneReleased = (
-    milestone: MultiReleaseMilestone,
-    index: number
-  ): boolean => {
-    return milestone.flags?.released === true || releasedMilestones.has(index);
-  };
-
-  const canReleaseMilestone = (milestone: MultiReleaseMilestone): boolean => {
+  if (!poolId || !pool) {
     return (
-      milestone.flags?.approved === true && milestone.flags?.released !== true
+      <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
+        <p className='text-sm text-gray-600'>
+          No escrow pool found. Please initialize an escrow first.
+        </p>
+      </div>
     );
-  };
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Release Funds</CardTitle>
-        <CardDescription>
-          Release funds for approved milestones in your multi-release escrow
-        </CardDescription>
+        <CardTitle className='flex items-center gap-2'>
+          <Banknote className='h-5 w-5' />
+          Release Funds
+        </CardTitle>
+        <CardDescription>Release funds from milestone slots</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className='space-y-6'>
-          {escrow.milestones.map(
-            (milestone: MultiReleaseMilestone, index: number) => {
-              const isReleased = isMilestoneReleased(milestone, index);
-              const canRelease = canReleaseMilestone(milestone);
-              const isMilestoneLoading = isLoading === index;
-
-              return (
-                <div
-                  key={index}
-                  className='rounded-lg border border-gray-200 bg-gray-50 p-4'
-                >
-                  <div className='mb-4 flex items-start justify-between'>
-                    <div className='flex-1'>
-                      <div className='mb-2 flex items-center gap-2'>
-                        <Badge variant='outline' className='font-mono'>
-                          Milestone {index + 1}
-                        </Badge>
-                        {milestone.flags?.approved ? (
-                          <Badge
-                            variant='default'
-                            className='flex items-center gap-1 bg-green-600'
-                          >
-                            <CheckCircle2 className='h-3 w-3' />
-                            Approved
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant='outline'
-                            className='flex items-center gap-1 border-gray-300 bg-gray-100 text-gray-800'
-                          >
-                            <XCircle className='h-3 w-3' />
-                            Not Approved
-                          </Badge>
-                        )}
-                        {isReleased && (
-                          <Badge
-                            variant='default'
-                            className='flex items-center gap-1 bg-blue-600'
-                          >
-                            <DollarSign className='h-3 w-3' />
-                            Funds Released
-                          </Badge>
-                        )}
-                      </div>
-                      <p className='mb-2 text-sm text-gray-700'>
-                        {milestone.description}
-                      </p>
-                      <div className='flex items-center gap-4 text-xs text-gray-500'>
-                        <span>
-                          Amount:{' '}
-                          <span className='font-mono'>
-                            {formatAmount(milestone.amount)}
-                          </span>
-                        </span>
-                        <span>
-                          Receiver:{' '}
-                          <span className='font-mono'>
-                            {milestone.receiver.slice(0, 8)}...
-                          </span>
-                        </span>
-                      </div>
-                      {milestone.evidence && (
-                        <div className='mt-2 rounded bg-white p-2 text-xs text-gray-600'>
-                          <span className='font-medium'>Evidence:</span>{' '}
-                          {milestone.evidence}
-                        </div>
-                      )}
-                      {milestone.status && (
-                        <div className='mt-2 text-xs text-gray-500'>
-                          <span className='font-medium'>Status:</span>{' '}
-                          {milestone.status}
-                        </div>
-                      )}
-                    </div>
+        {slots.length === 0 ? (
+          <p className='text-sm text-gray-500'>No release slots found.</p>
+        ) : (
+          <div className='space-y-3'>
+            {slots.map(slot => (
+              <div
+                key={slot.index}
+                className='flex items-center justify-between rounded-lg border p-3'
+              >
+                <div>
+                  <div className='flex items-center gap-2'>
+                    <span className='text-sm font-medium'>
+                      Slot {slot.index + 1}
+                    </span>
+                    {slot.released ? (
+                      <Badge variant='default' className='bg-blue-600'>
+                        Released
+                      </Badge>
+                    ) : (
+                      <Badge variant='outline'>Pending</Badge>
+                    )}
+                    {releasedIndex === slot.index && (
+                      <CheckCircle2 className='h-4 w-4 text-green-600' />
+                    )}
                   </div>
-
-                  {isReleased && (
-                    <div className='mt-4 rounded border border-blue-200 bg-blue-50 p-3'>
-                      <div className='flex items-center gap-2 text-sm text-blue-800'>
-                        <CheckCircle2 className='h-4 w-4' />
-                        <span className='font-medium'>
-                          Funds for this milestone have been released
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {!isReleased && canRelease && (
-                    <div className='mt-4'>
-                      <Button
-                        variant='default'
-                        size='sm'
-                        onClick={() => handleReleaseFunds(index)}
-                        disabled={isMilestoneLoading || !walletAddress}
-                        className='bg-blue-600 text-white hover:bg-blue-700'
-                      >
-                        {isMilestoneLoading ? (
-                          <>
-                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                            Releasing Funds...
-                          </>
-                        ) : (
-                          <>
-                            <DollarSign className='mr-2 h-4 w-4' />
-                            Release Funds
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-
-                  {!isReleased && !canRelease && (
-                    <div className='mt-4 rounded border border-yellow-200 bg-yellow-50 p-3'>
-                      <div className='flex items-center gap-2 text-sm text-yellow-800'>
-                        <XCircle className='h-4 w-4' />
-                        <span className='font-medium'>
-                          This milestone must be approved before funds can be
-                          released
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  <p className='mt-1 font-mono text-xs text-gray-500'>
+                    Amount: {slot.amount}
+                  </p>
                 </div>
-              );
-            }
-          )}
-        </div>
+                <Button
+                  size='sm'
+                  onClick={() => handleRelease(slot.index)}
+                  disabled={isLoading || slot.released}
+                >
+                  {isLoading ? (
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                  ) : (
+                    'Release'
+                  )}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

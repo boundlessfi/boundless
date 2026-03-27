@@ -13,7 +13,7 @@ interface UseWalletProtectionOptions {
 
 export function useWalletProtection(options: UseWalletProtectionOptions = {}) {
   const { actionName = 'perform this action', showModal = true } = options;
-  const { walletAddress } = useWalletContext();
+  const { walletAddress, walletType } = useWalletContext();
   const { checkReadiness } = useWalletReadiness();
 
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -77,6 +77,7 @@ export function useWalletProtection(options: UseWalletProtectionOptions = {}) {
     requireWallet,
     isConnected,
     publicKey: walletAddress,
+    walletType,
     showWalletModal,
     showNotReadyModal,
     notReadyReasons,

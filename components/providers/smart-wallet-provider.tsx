@@ -6,9 +6,11 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
   ReactNode,
 } from 'react';
 import { walletApi } from '@/lib/api/wallet';
+import { useAuthContext } from '@/components/providers/AuthProvider';
 
 interface SmartWalletState {
   /** The on-chain smart wallet contract address (C...) */
@@ -36,16 +38,19 @@ const SmartWalletContext = createContext<SmartWalletContextType | undefined>(
   undefined
 );
 
-const STORAGE_KEY = 'boundless:smart-wallet';
+const STORAGE_PREFIX = 'boundless:smart-wallet';
 
-function loadPersistedState(): Pick<
-  SmartWalletState,
-  'contractId' | 'credentialId'
-> {
-  if (typeof window === 'undefined')
+function storageKey(userId: string | null): string {
+  return userId ? `${STORAGE_PREFIX}:${userId}` : STORAGE_PREFIX;
+}
+
+function loadPersistedState(
+  userId: string | null
+): Pick<SmartWalletState, 'contractId' | 'credentialId'> {
+  if (typeof window === 'undefined' || !userId)
     return { contractId: null, credentialId: null };
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(userId));
     if (raw) return JSON.parse(raw);
   } catch {
     // ignore
@@ -53,28 +58,51 @@ function loadPersistedState(): Pick<
   return { contractId: null, credentialId: null };
 }
 
-function persistState(contractId: string | null, credentialId: string | null) {
-  if (typeof window === 'undefined') return;
+function persistState(
+  userId: string | null,
+  contractId: string | null,
+  credentialId: string | null
+) {
+  if (typeof window === 'undefined' || !userId) return;
   if (contractId && credentialId) {
     localStorage.setItem(
-      STORAGE_KEY,
+      storageKey(userId),
       JSON.stringify({ contractId, credentialId })
     );
   } else {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(storageKey(userId));
   }
 }
 
 export function SmartWalletProvider({ children }: { children: ReactNode }) {
-  const persisted = loadPersistedState();
-  const [contractId, setContractId] = useState<string | null>(
-    persisted.contractId
-  );
-  const [credentialId, setCredentialId] = useState<string | null>(
-    persisted.credentialId
-  );
+  const { session } = useAuthContext();
+  const userId = session.data?.user?.id ?? null;
+  const prevUserIdRef = useRef<string | null>(userId);
+
+  const [contractId, setContractId] = useState<string | null>(null);
+  const [credentialId, setCredentialId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load persisted state when userId becomes available or changes
+  useEffect(() => {
+    const prevUserId = prevUserIdRef.current;
+    prevUserIdRef.current = userId;
+
+    if (!userId) {
+      // Logged out — clear state
+      setContractId(null);
+      setCredentialId(null);
+      return;
+    }
+
+    // User changed or first load — load this user's persisted wallet
+    if (userId !== prevUserId) {
+      const persisted = loadPersistedState(userId);
+      setContractId(persisted.contractId);
+      setCredentialId(persisted.credentialId);
+    }
+  }, [userId]);
 
   // Available when config has the required values (either from env or testnet defaults)
   const [isAvailable, setIsAvailable] = useState(false);
@@ -84,37 +112,40 @@ export function SmartWalletProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const register = useCallback(async (userName: string): Promise<string> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const { createSmartWallet } = await import('@/lib/smart-wallet/client');
-      const result = await createSmartWallet('Boundless', userName);
-
-      setContractId(result.contractId);
-      setCredentialId(result.credentialId);
-      persistState(result.contractId, result.credentialId);
-
-      // Register the smart wallet address with the backend
+  const register = useCallback(
+    async (userName: string): Promise<string> => {
+      setIsLoading(true);
+      setError(null);
       try {
-        await walletApi.registerSmartWallet(
-          result.contractId,
-          result.credentialId
-        );
-      } catch {
-        // Non-critical: backend registration can be retried later
-      }
+        const { createSmartWallet } = await import('@/lib/smart-wallet/client');
+        const result = await createSmartWallet('Boundless', userName);
 
-      return result.contractId;
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to create smart wallet';
-      setError(message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+        setContractId(result.contractId);
+        setCredentialId(result.credentialId);
+        persistState(userId, result.contractId, result.credentialId);
+
+        // Register the smart wallet address with the backend
+        try {
+          await walletApi.registerSmartWallet(
+            result.contractId,
+            result.credentialId
+          );
+        } catch {
+          // Non-critical: backend registration can be retried later
+        }
+
+        return result.contractId;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to create smart wallet';
+        setError(message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [userId]
+  );
 
   const connect = useCallback(async (): Promise<string | null> => {
     setIsLoading(true);
@@ -129,7 +160,7 @@ export function SmartWalletProvider({ children }: { children: ReactNode }) {
 
       setContractId(result.contractId);
       setCredentialId(result.credentialId);
-      persistState(result.contractId, result.credentialId);
+      persistState(userId, result.contractId, result.credentialId);
 
       // Sync with backend
       try {
@@ -150,18 +181,18 @@ export function SmartWalletProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   const disconnect = useCallback(() => {
     setContractId(null);
     setCredentialId(null);
     setError(null);
-    persistState(null, null);
+    persistState(userId, null, null);
     // Also disconnect the kit session
     import('@/lib/smart-wallet/client').then(({ disconnectSmartWallet }) =>
       disconnectSmartWallet().catch(() => {})
     );
-  }, []);
+  }, [userId]);
 
   return (
     <SmartWalletContext.Provider

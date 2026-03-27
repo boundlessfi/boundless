@@ -26,6 +26,7 @@ import {
   X,
   QrCode,
   AlertCircle,
+  Fingerprint,
 } from 'lucide-react';
 import { AssetIcon } from './AssetIcon';
 import { useWallet } from '@/hooks/use-wallet';
@@ -33,8 +34,10 @@ import { useWalletContext } from '@/components/providers/wallet-provider';
 import {
   validateSendDestination,
   sendFunds,
+  confirmSend,
   type SupportedTrustlineAsset,
 } from '@/lib/api/wallet';
+import { signTransaction } from '@/lib/config/wallet-kit';
 import { formatAddress, getExplorerUrl } from '@/lib/wallet-utils';
 import { validateStellarAddress } from '@/lib/utils/stellar-address-validation';
 import { useState, useEffect, useCallback } from 'react';
@@ -83,6 +86,7 @@ export function WalletSheet({
   const {
     walletAddress,
     walletName,
+    walletType,
     balances,
     transactions,
     totalPortfolioValue,
@@ -213,7 +217,7 @@ export function WalletSheet({
     if (!validateStellarAddress(dest)) {
       setValidateResult('invalid');
       setValidateError(
-        'Invalid Stellar address format (must start with G, 56 characters)'
+        'Invalid Stellar address format (G... or C... address, 56 characters)'
       );
       return;
     }
@@ -304,12 +308,28 @@ export function WalletSheet({
     setSendLoading(true);
     setSendError('');
     try {
-      await sendFunds({
+      const result = await sendFunds({
         destinationPublicKey: dest,
         amount,
         currency,
         idempotencyKey: crypto.randomUUID(),
       });
+
+      // Smart wallet: two-step flow — sign unsigned XDR, then confirm
+      if (
+        result &&
+        'step' in result &&
+        result.step === 'sign_transfer' &&
+        typeof result.unsignedXdr === 'string'
+      ) {
+        toast.info('Please approve with your passkey…');
+        const signedXdr = await signTransaction({
+          unsignedTransaction: result.unsignedXdr,
+          address: walletAddress!,
+        });
+        await confirmSend(signedXdr);
+      }
+
       toast.success('Send submitted successfully');
       refreshWallet();
       resetSendForm();
@@ -327,6 +347,7 @@ export function WalletSheet({
     sendAmount,
     validateResult,
     balances,
+    walletAddress,
     refreshWallet,
     resetSendForm,
     getErrorDisplay,
@@ -411,7 +432,11 @@ export function WalletSheet({
                 <SheetHeader className='border-border/50 border-b p-6 pb-2'>
                   <div className='flex items-center justify-between'>
                     <SheetTitle className='flex items-center gap-2 text-lg font-semibold'>
-                      <Wallet className='text-primary h-5 w-5' />
+                      {walletType === 'smart' ? (
+                        <Fingerprint className='text-primary h-5 w-5' />
+                      ) : (
+                        <Wallet className='text-primary h-5 w-5' />
+                      )}
                       {walletName || 'My Wallet'}
                     </SheetTitle>
                     <Button
@@ -527,9 +552,11 @@ export function WalletSheet({
                             balances.map((asset, index) => {
                               const isNative = asset.asset_type === 'native';
                               const code = isNative ? 'XLM' : asset.asset_code;
-                              const name = isNative
-                                ? 'Stellar Lumens'
-                                : asset.asset_code;
+                              const name =
+                                asset.asset_name ??
+                                (isNative
+                                  ? 'Stellar Lumens'
+                                  : asset.asset_code);
 
                               return (
                                 <div
@@ -562,54 +589,55 @@ export function WalletSheet({
                             })
                           )}
 
-                          {supportedTrustlines.length > 0 && (
-                            <div className='mt-4 space-y-2'>
-                              <span className='text-muted-foreground text-xs font-medium'>
-                                Add trustline
-                              </span>
-                              <div className='space-y-1'>
-                                {supportedTrustlines.map(asset => {
-                                  const hasTrustline = balances.some(
-                                    b =>
-                                      (b.asset_type === 'native' &&
-                                        asset.assetCode === 'XLM') ||
-                                      (b.asset_type !== 'native' &&
-                                        b.asset_code === asset.assetCode)
-                                  );
-                                  return (
-                                    <Button
-                                      key={asset.assetCode}
-                                      variant='outline'
-                                      size='sm'
-                                      className='w-full justify-start gap-2 border-dashed'
-                                      onClick={() =>
-                                        handleAddTrustline(asset.assetCode)
-                                      }
-                                      disabled={
-                                        hasTrustline ||
-                                        addingAsset === asset.assetCode
-                                      }
-                                    >
-                                      {addingAsset === asset.assetCode ? (
-                                        <Loader2 className='h-3.5 w-3.5 shrink-0 animate-spin' />
-                                      ) : hasTrustline ? (
-                                        <CheckCircle2 className='text-muted-foreground h-3.5 w-3.5 shrink-0' />
-                                      ) : (
-                                        <AssetIcon
-                                          assetCode={asset.assetCode}
-                                          size={20}
-                                          className='shrink-0'
-                                        />
-                                      )}
-                                      {hasTrustline
-                                        ? `${asset.assetCode} trustline added`
-                                        : `Enable ${asset.assetCode}${asset.name ? ` (${asset.name})` : ''}`}
-                                    </Button>
-                                  );
-                                })}
+                          {walletType !== 'smart' &&
+                            supportedTrustlines.length > 0 && (
+                              <div className='mt-4 space-y-2'>
+                                <span className='text-muted-foreground text-xs font-medium'>
+                                  Add trustline
+                                </span>
+                                <div className='space-y-1'>
+                                  {supportedTrustlines.map(asset => {
+                                    const hasTrustline = balances.some(
+                                      b =>
+                                        (b.asset_type === 'native' &&
+                                          asset.assetCode === 'XLM') ||
+                                        (b.asset_type !== 'native' &&
+                                          b.asset_code === asset.assetCode)
+                                    );
+                                    return (
+                                      <Button
+                                        key={asset.assetCode}
+                                        variant='outline'
+                                        size='sm'
+                                        className='w-full justify-start gap-2 border-dashed'
+                                        onClick={() =>
+                                          handleAddTrustline(asset.assetCode)
+                                        }
+                                        disabled={
+                                          hasTrustline ||
+                                          addingAsset === asset.assetCode
+                                        }
+                                      >
+                                        {addingAsset === asset.assetCode ? (
+                                          <Loader2 className='h-3.5 w-3.5 shrink-0 animate-spin' />
+                                        ) : hasTrustline ? (
+                                          <CheckCircle2 className='text-muted-foreground h-3.5 w-3.5 shrink-0' />
+                                        ) : (
+                                          <AssetIcon
+                                            assetCode={asset.assetCode}
+                                            size={20}
+                                            className='shrink-0'
+                                          />
+                                        )}
+                                        {hasTrustline
+                                          ? `${asset.assetCode} trustline added`
+                                          : `Enable ${asset.assetCode}${asset.name ? ` (${asset.name})` : ''}`}
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
                         </div>
                       </ScrollArea>
                     </TabsContent>
@@ -810,12 +838,14 @@ export function WalletSheet({
 
                   <div className='space-y-2'>
                     <Label htmlFor='send-destination'>
-                      Destination (Stellar G...)
+                      Destination Address
                     </Label>
                     <div className='relative'>
                       <Input
                         id='send-destination'
-                        placeholder='GABCD...'
+                        placeholder={
+                          walletType === 'smart' ? 'G... or C...' : 'GABCD...'
+                        }
                         value={sendDestination}
                         onChange={e => {
                           setSendDestination(e.target.value);

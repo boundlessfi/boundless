@@ -270,14 +270,14 @@ export default function Explore() {
         alt='Glow Effect'
         width={300}
         height={200}
-        className='absolute top-[75px] right-16 -z-5 max-sm:hidden'
+        className='absolute top-[75px] right-16 -z-5 h-auto max-sm:hidden'
       />
       <Image
         src='/landing/explore/explore-glow-bottom.svg'
         alt='Glow Effect'
         width={300}
         height={200}
-        className='absolute bottom-12 left-10 -z-5 max-sm:hidden'
+        className='absolute bottom-12 left-10 -z-5 h-auto max-sm:hidden'
       />
     </section>
   );

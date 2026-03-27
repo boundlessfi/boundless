@@ -187,6 +187,9 @@ export interface ProjectListData {
 
 /** Publish/submit request payload. */
 export interface PublishProjectRequest {
+  projectId: string;
+  onChainId?: string;
+  transactionHash?: string;
   isCampaign: boolean;
 }
 

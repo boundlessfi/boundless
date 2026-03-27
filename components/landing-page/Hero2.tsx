@@ -67,13 +67,13 @@ export default function Hero2() {
               <br />
               <span className='relative inline-block text-white'>
                 Manage Hackathons.
-                <div className='mt-2'>
+                <div className='mx-auto mt-2 w-fit'>
                   <Image
                     src='/lines.svg'
                     alt=''
                     width={100}
                     height={12}
-                    className='h-[12px] w-full'
+                    className='h-[12px] w-auto'
                   />
                 </div>
               </span>

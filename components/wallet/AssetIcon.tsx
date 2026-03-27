@@ -4,11 +4,12 @@ import Image from 'next/image';
 import { Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-/** Real token images: XLM (Stellar), USDC, EURC */
+/** Real token images: XLM (Stellar), USDC, EURC, USDGLO */
 const ASSET_ICON_SRC: Record<string, string> = {
   XLM: '/assets/xlm.svg',
   USDC: '/assets/usdc.svg',
   EURC: '/assets/eurc.png',
+  USDGLO: '/assets/usdglo.svg',
 };
 
 const getAssetIconSrc = (assetCode: string): string | null => {

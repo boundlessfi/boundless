@@ -1,8 +1,30 @@
-export { smartWalletConfig } from './config';
+export { smartWalletConfig, nativeTokenContract } from './config';
 export {
   getSmartAccountKit,
   createSmartWallet,
   connectSmartWallet,
   getConnectedKit,
   disconnectSmartWallet,
+  fetchSacTokenBalance,
+  fetchNativeBalance,
+  getAvailableSigners,
+  addPasskeySigner,
+  addDelegatedSigner,
+  removeSigner,
+  connectExternalWallet,
+  disconnectExternalWallet,
+  disconnectAllExternalWallets,
+  getConnectedExternalWallets,
+  getContextRules,
+  getStoredCredentials,
+  multiSignerTransfer,
+  transfer,
+  getCredentialIdFromSigner,
+} from './client';
+export type {
+  StoredCredential,
+  ConnectedWallet,
+  SelectedSigner,
+  ContractSigner,
+  ContextRule,
 } from './client';

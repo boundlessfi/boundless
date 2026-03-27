@@ -22,6 +22,7 @@ import {
   getMyProjects,
   getPublicProjectBySlug,
   getMyProjectById,
+  deleteProject,
 } from '@/features/projects/api';
 import type {
   Project,
@@ -210,6 +211,22 @@ export function usePublishProject(id: string) {
           queryKey: projectKeys.detail(publishedProject.slug),
         });
       }
+    },
+  });
+}
+
+/**
+ * DELETE /api/projects/{id}
+ * Delete a project draft.
+ * Invalidates the user's project list on success.
+ */
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: (id: string) => deleteProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.mine() });
     },
   });
 }

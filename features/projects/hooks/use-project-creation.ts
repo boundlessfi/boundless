@@ -6,10 +6,14 @@ import {
   useCreateProjectDraft,
   useUpdateProjectDraft,
   usePublishProject,
+  useDeleteProject,
   useMyProjects,
   useMyProject,
 } from './use-project-queries';
 import { Project } from '@/features/projects/types';
+import crowdfundRegistry from '@/lib/stellar/clients/crowdfundRegistry';
+import { getConnectedKit } from '@/lib/smart-wallet/client';
+import { useWalletInfo } from '@/hooks/use-wallet';
 
 export type CreationStep =
   | 'basic'
@@ -95,6 +99,32 @@ export interface ProjectDraft {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Detect a social platform name from a URL, falling back to the hostname. */
+function detectPlatformFromUrl(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase().replace('www.', '');
+    const platforms: Record<string, string> = {
+      'x.com': 'twitter',
+      'twitter.com': 'twitter',
+      'discord.gg': 'discord',
+      'discord.com': 'discord',
+      'telegram.me': 'telegram',
+      't.me': 'telegram',
+      'linkedin.com': 'linkedin',
+      'facebook.com': 'facebook',
+      'instagram.com': 'instagram',
+      'youtube.com': 'youtube',
+      'youtu.be': 'youtube',
+      'reddit.com': 'reddit',
+      'medium.com': 'medium',
+      'tiktok.com': 'tiktok',
+    };
+    return platforms[hostname] || hostname.split('.')[0];
+  } catch {
+    return 'link';
+  }
+}
+
 /**
  * Maps the local `ProjectDraft` shape to the API's `ProjectDraftPayload`.
  * Only non-empty values are included — safe for both create and autosave PATCH.
@@ -105,8 +135,10 @@ function toApiPayload(
 ): Record<string, unknown> {
   const socialLinksMap: Record<string, string> = {};
   if (Array.isArray(data.socialLinks)) {
-    data.socialLinks.forEach((url, i) => {
-      if (url) socialLinksMap[`link${i + 1}`] = url;
+    data.socialLinks.forEach(url => {
+      if (!url?.trim()) return;
+      const key = detectPlatformFromUrl(url);
+      socialLinksMap[key] = url;
     });
   }
 
@@ -131,10 +163,13 @@ function toApiPayload(
       ? socialLinksMap
       : undefined,
     contact:
-      data.contact?.primary || data.contact?.backup
+      data.contact?.telegram ||
+      data.contact?.primary ||
+      data.contact?.discord ||
+      data.contact?.backup
         ? {
-            primary: data.contact.primary || data.contact.telegram || undefined,
-            backup: data.contact.backup || data.contact.discord || undefined,
+            primary: data.contact.telegram || data.contact.primary || undefined,
+            backup: data.contact.discord || data.contact.backup || undefined,
           }
         : undefined,
     tags: Array.isArray(data.tags) && data.tags.length ? data.tags : undefined,
@@ -178,9 +213,10 @@ function toApiPayload(
           twitter: t.twitter,
         })),
         contact: {
-          primary: data.contact?.primary || data.contact?.telegram || '',
-          backup: data.contact?.backup || data.contact?.discord || '',
+          primary: data.contact?.telegram || data.contact?.primary || '',
+          backup: data.contact?.discord || data.contact?.backup || '',
         },
+        email: data.contact?.email || '',
         socialLinks: Object.entries(socialLinksMap).map(([platform, url]) => ({
           platform,
           url,
@@ -231,10 +267,12 @@ export const useProjectCreation = () => {
   const router = useRouter();
   const initialMode = searchParams.get('mode') === 'campaign';
   const editingId = searchParams.get('id');
+  const { address } = useWalletInfo();
 
   const [currentStep, setCurrentStep] = useState<CreationStep>('basic');
   const [isCampaign, setIsCampaignState] = useState(initialMode);
   const [lastSaved, setLastSaved] = useState<number | null>(null);
+  const [isPublishInProgress, setIsPublishInProgress] = useState(false);
 
   /** ID assigned after the first successful draft creation. */
   const [draftId, setDraftId] = useState<string | null>(editingId);
@@ -244,12 +282,16 @@ export const useProjectCreation = () => {
     isCampaign: initialMode,
   });
 
+  /** Track if we've already synced a loaded project's data into formData */
+  const hasLoadedInitial = useRef<string | null>(null);
+
   // Sync draftId with URL (handles "New Project" click)
   useEffect(() => {
     setDraftId(editingId);
     if (!editingId) {
       setFormData({ ...INITIAL_FORM_DATA, isCampaign: initialMode });
       setIsCampaignState(initialMode);
+      hasLoadedInitial.current = null;
     }
   }, [editingId, initialMode]);
 
@@ -257,7 +299,6 @@ export const useProjectCreation = () => {
 
   // Fetch recent drafts for the sidebar
   const { data: myDrafts } = useMyProjects({ status: 'IDEA' });
-  console.log('myDrafts', myDrafts);
 
   // Load an existing draft if ID is in the URL
   const { data: loadedProject, isLoading: isLoadingDraft } = useMyProject(
@@ -267,14 +308,18 @@ export const useProjectCreation = () => {
 
   // Sync loaded project into formData
   useEffect(() => {
-    if (loadedProject) {
+    if (loadedProject && hasLoadedInitial.current !== loadedProject.id) {
       const draft = loadedProject.draftData?.campaign;
 
-      // Extract social links from top-level object
+      // Extract social links from the platform-keyed map back to array slots
       const socialValues = loadedProject.socialLinks
         ? Object.values(loadedProject.socialLinks)
         : [];
-      const socialLinks = [...socialValues, '', '', ''].slice(0, 3);
+      const socialLinks = [
+        socialValues[0] ?? '',
+        socialValues[1] ?? '',
+        socialValues[2] ?? '',
+      ];
 
       setFormData(prev => ({
         ...prev,
@@ -294,7 +339,7 @@ export const useProjectCreation = () => {
         demoVideoUrl: loadedProject.demoVideo ?? '',
         socialLinks,
         contact: {
-          email: loadedProject.contact?.primary ?? '',
+          email: (draft as any)?.email || '',
           telegram: loadedProject.contact?.primary ?? '',
           discord: loadedProject.contact?.backup ?? '',
           primary: loadedProject.contact?.primary ?? '',
@@ -322,6 +367,7 @@ export const useProjectCreation = () => {
         })),
       }));
       setIsCampaignState(loadedProject.draftData?.isCampaign ?? false);
+      hasLoadedInitial.current = loadedProject.id;
     }
   }, [loadedProject]);
 
@@ -330,6 +376,7 @@ export const useProjectCreation = () => {
   const createDraftMutation = useCreateProjectDraft();
   const updateDraftMutation = useUpdateProjectDraft(draftId ?? '');
   const publishMutation = usePublishProject(draftId ?? '');
+  const deleteMutation = useDeleteProject();
 
   /** Helper to extract and format error messages from the API. */
   const formatError = useCallback((error: any): string | null => {
@@ -368,6 +415,11 @@ export const useProjectCreation = () => {
   useEffect(() => {
     const timer = setTimeout(async () => {
       const { formData: fd, isCampaign: ic, draftId: id } = autosaveRef.current;
+
+      // Backend requires title with 3–200 chars — skip autosave until we have one
+      const title = (fd.title || fd.projectName || '').trim();
+      if (title.length < 3) return;
+
       const payload = toApiPayload(fd, ic);
 
       try {
@@ -378,12 +430,17 @@ export const useProjectCreation = () => {
           // First save — create the draft and store the returned ID
           const created = await createDraftMutation.mutateAsync(payload);
           setDraftId(created.id);
+          // Update URL so refreshing the page reloads this draft
+          router.replace(
+            `/projects/create?id=${created.id}${ic ? '&mode=campaign' : ''}`,
+            { scroll: false }
+          );
         }
         setLastSaved(Date.now());
       } catch {
         // Errors surface through persistError
       }
-    }, 2000); // 2-second debounce
+    }, 5000); // 5-second debounce
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -431,22 +488,118 @@ export const useProjectCreation = () => {
 
   // ── Publish ────────────────────────────────────────────────────────────────
 
+  const [publishValidationError, setPublishValidationError] = useState<
+    string | null
+  >(null);
+
   const handlePublish = useCallback(async () => {
     if (!draftId) return;
+
+    // Pre-flight validation — check fields the backend requires for publishing
+    const fd = autosaveRef.current.formData;
+    const missing: string[] = [];
+    if (!fd.title && !fd.projectName) missing.push('Project Name');
+    if (!fd.description || fd.description.trim().length < 10)
+      missing.push('Description (min 10 characters)');
+    if (!fd.category) missing.push('Category');
+    if (!fd.contact?.telegram && !fd.contact?.primary)
+      missing.push('Telegram (contact)');
+    if (!fd.contact?.email) missing.push('Email (contact)');
+
+    if (autosaveRef.current.isCampaign) {
+      if (!fd.fundingAmount || fd.fundingAmount <= 0)
+        missing.push('Funding Amount');
+      if (!fd.milestones || fd.milestones.length === 0)
+        missing.push('At least one milestone');
+    }
+
+    if (missing.length > 0) {
+      setPublishValidationError(
+        `Missing required fields: ${missing.join(', ')}`
+      );
+      return;
+    }
+    setPublishValidationError(null);
+
+    setIsPublishInProgress(true);
     try {
       // Flush latest data before publishing
-      const payload = toApiPayload(
-        autosaveRef.current.formData,
-        autosaveRef.current.isCampaign
-      );
+      const isCampaignToPublish = autosaveRef.current.isCampaign;
+      const payload = toApiPayload(fd, isCampaignToPublish);
       await updateDraftMutation.mutateAsync(payload);
-      await publishMutation.mutateAsync({ isCampaign });
-      // On success, redirect to the project page or me dashboard
+
+      let onChainId: string | undefined;
+      let transactionHash: string | undefined;
+
+      if (isCampaignToPublish) {
+        if (!address) {
+          throw new Error(
+            'Wallet not connected. Please connect your wallet to publish a campaign.'
+          );
+        }
+
+        const kit = await getConnectedKit();
+
+        // 1. Prepare contract arguments
+        // Scaling to 7 decimals for Soroban assets (e.g. USDC)
+        const funding_goal = BigInt(
+          Math.floor((fd.fundingAmount || 0) * 10_000_000)
+        );
+        const asset =
+          'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'; // USDC Testnet
+        const deadline = BigInt(
+          Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60
+        ); // 90 days
+        const min_pledge = BigInt(10_000_000); // 1 USDC min pledge
+
+        const milestones = fd.milestones || [];
+        const milestone_descs = milestones.map(m => {
+          return [
+            m.title || m.description || 'Milestone',
+            Math.floor((m.fundingPercentage || 0) * 100),
+          ] as [string, number];
+        });
+
+        // 2. Build the "create_campaign" transaction
+        const tx = await crowdfundRegistry.create_campaign({
+          owner: address,
+          metadata_cid: draftId,
+          funding_goal,
+          asset,
+          deadline,
+          milestone_descs,
+          min_pledge,
+        });
+
+        // 3. Sign and Submit via Wallet Kit
+        const result = (await kit.signAndSubmit(tx)) as any;
+
+        // 4. Extract results
+        // AssembledTransaction.signAndSubmit returns a result that contains the unmarshaled contract return value
+        if (result && result.result) {
+          onChainId = result.result.unwrap().toString();
+        }
+        transactionHash = result.hash;
+      }
+
+      // 5. Publish to backend
+      await publishMutation.mutateAsync({
+        projectId: draftId,
+        isCampaign: isCampaignToPublish,
+        onChainId,
+        transactionHash,
+      });
+
+      setIsPublishInProgress(false);
       router.push('/me/projects');
-    } catch {
-      // Surfaces through publishError
+    } catch (err: any) {
+      console.error('Publishing failed:', err);
+      setIsPublishInProgress(false);
+      setPublishValidationError(
+        err.message || 'An error occurred during publishing'
+      );
     }
-  }, [draftId, isCampaign, publishMutation, updateDraftMutation, router]);
+  }, [draftId, address, publishMutation, updateDraftMutation, router]);
 
   const recentDrafts = (myDrafts ?? []).map((p: Project) => ({
     id: p.id,
@@ -457,12 +610,24 @@ export const useProjectCreation = () => {
     updatedAt: new Date(p.updatedAt).getTime(),
   }));
 
-  const onDeleteDraft = (id: string) => {
-    // We haven't built a delete mutation yet, but we can add one or invalidate.
-    // Since we're lists drafts, ideally we have a DELETE hook.
-    // For now, let's assume Sidebar handles it or we'll add it to queries later.
-    console.log('Delete draft', id);
-  };
+  const onDeleteDraft = useCallback(
+    async (id: string) => {
+      try {
+        await deleteMutation.mutateAsync(id);
+        // If we just deleted the currently-open draft, reset the form
+        if (id === draftId) {
+          setDraftId(null);
+          setFormData({ ...INITIAL_FORM_DATA, isCampaign });
+          setCurrentStep('basic');
+          setLastSaved(null);
+          router.replace('/projects/create', { scroll: false });
+        }
+      } catch {
+        // Mutation error surfaces via deleteMutation.error if needed
+      }
+    },
+    [draftId, isCampaign, deleteMutation, router]
+  );
 
   return {
     currentStep,
@@ -480,8 +645,9 @@ export const useProjectCreation = () => {
     draftId,
     isPersisting,
     persistError,
-    isPublishing,
+    isPublishing: isPublishInProgress || publishMutation.isPending,
     publishError,
+    publishValidationError,
     handlePublish,
     isLoadingDraft,
     onDeleteDraft,

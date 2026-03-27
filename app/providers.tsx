@@ -9,7 +9,6 @@ import { WalletProvider } from '@/components/providers/wallet-provider';
 import { SmartWalletProvider } from '@/components/providers/smart-wallet-provider';
 import { OnboardingGuardProvider } from '@/components/providers/onboarding-guard-provider';
 import { MessagesProvider } from '@/components/messages/MessagesProvider';
-import { TrustlessWorkProvider } from '@/lib/providers/TrustlessWorkProvider';
 import { EscrowProvider } from '@/lib/providers/EscrowProvider';
 import { AuthModalProvider } from '@/components/auth/AuthModalProvider';
 
@@ -42,9 +41,7 @@ export function Providers({ children }: ProvidersProps) {
                 <SmartWalletProvider>
                   <OnboardingGuardProvider>
                     <MessagesProvider>
-                      <TrustlessWorkProvider>
-                        <EscrowProvider>{children}</EscrowProvider>
-                      </TrustlessWorkProvider>
+                      <EscrowProvider>{children}</EscrowProvider>
                     </MessagesProvider>
                   </OnboardingGuardProvider>
                 </SmartWalletProvider>

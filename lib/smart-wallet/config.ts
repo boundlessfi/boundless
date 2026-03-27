@@ -61,3 +61,77 @@ export const smartWalletConfig: SmartAccountConfig = {
 /** Native XLM token SAC address for testnet funding */
 export const nativeTokenContract =
   process.env.NEXT_PUBLIC_NATIVE_TOKEN_CONTRACT || defaults.nativeTokenContract;
+
+// ---------------------------------------------------------------------------
+// Network currency definitions (SAC token contracts)
+// ---------------------------------------------------------------------------
+
+export interface CurrencyInfo {
+  code: string;
+  name: string;
+  tokenAddress: string;
+  issuer: string;
+  decimals: number;
+}
+
+type NetworkCurrencies = Record<string, CurrencyInfo>;
+
+const TESTNET_CURRENCIES: NetworkCurrencies = {
+  USDC: {
+    code: 'USDC',
+    name: 'USD Coin',
+    tokenAddress: 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA',
+    issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
+    decimals: 7,
+  },
+  XLM: {
+    code: 'XLM',
+    name: 'Stellar Lumens',
+    tokenAddress: 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC',
+    issuer: 'native',
+    decimals: 7,
+  },
+  EURC: {
+    code: 'EURC',
+    name: 'Euro Coin',
+    tokenAddress: 'CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ',
+    issuer: 'GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO',
+    decimals: 7,
+  },
+};
+
+const MAINNET_CURRENCIES: NetworkCurrencies = {
+  USDC: {
+    code: 'USDC',
+    name: 'USD Coin',
+    tokenAddress: 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75',
+    issuer: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN',
+    decimals: 7,
+  },
+  USDGLO: {
+    code: 'USDGLO',
+    name: 'Global Dollar',
+    tokenAddress: 'CB226ZOEYXTBPD3QEGABTJYSKZVBP2PASEISLG3SBMTN5CE4QZUVZ3CE',
+    issuer: 'GBBS25EGYQPGEZCGCFBKG4OAGFXU6DSOQBGTHELLJT3HZXZJ34HWS6XV',
+    decimals: 7,
+  },
+  XLM: {
+    code: 'XLM',
+    name: 'Stellar Lumens',
+    tokenAddress: 'CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA',
+    issuer: 'native',
+    decimals: 7,
+  },
+  EURC: {
+    code: 'EURC',
+    name: 'Euro Coin',
+    tokenAddress: 'CDTKPWPLOURQA2SGTKTUQOWRCBZEORB4BWBOMJ3D3ZTQQSGE5F6JBQLV',
+    issuer: 'GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y2IEMFDVXBSDP6SJY4ITNPP2',
+    decimals: 7,
+  },
+};
+
+/** Token currencies for the active network */
+export const networkCurrencies: NetworkCurrencies = isMainnet
+  ? MAINNET_CURRENCIES
+  : TESTNET_CURRENCIES;

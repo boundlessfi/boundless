@@ -13,6 +13,9 @@ export interface WalletApiResponse {
 
 export interface WalletDetailsResponse extends WalletData {
   address: string;
+  type?: 'smart' | 'custodial';
+  smartWallet?: string | null;
+  custodialWallet?: string;
   balances: WalletBalance[];
   transactions: WalletTransaction[];
 }
@@ -124,6 +127,20 @@ export const sendFunds = async (
 };
 
 /**
+ * Submit a signed transfer transaction for smart wallet users.
+ * Called after the frontend signs the unsigned XDR returned by `sendFunds`.
+ */
+export const confirmSend = async (
+  signedXdr: string
+): Promise<{ transactionId: string; externalTxId: string }> => {
+  const { data } = await api.post<
+    | { transactionId: string; externalTxId: string }
+    | BackendWrapped<{ transactionId: string; externalTxId: string }>
+  >('wallet/send/confirm', { signedXdr });
+  return unwrap(data);
+};
+
+/**
  * Register a passkey-based smart wallet address with the backend.
  * Called after the user creates or connects a smart wallet on-chain.
  */
@@ -155,6 +172,24 @@ export const getSmartWallet = async (): Promise<{
   }
 };
 
+export interface ActiveAddressResponse {
+  address: string;
+  type: 'smart' | 'custodial';
+  smartWallet: string | null;
+  custodialWallet: string;
+}
+
+/**
+ * Get the user's active wallet address.
+ * Prefers smart wallet if available, falls back to custodial.
+ */
+export const getActiveAddress = async (): Promise<ActiveAddressResponse> => {
+  const { data } = await api.get<
+    ActiveAddressResponse | BackendWrapped<ActiveAddressResponse>
+  >('wallet/active-address');
+  return unwrap(data);
+};
+
 export const walletApi = {
   getWallet,
   getWalletDetails,
@@ -163,6 +198,8 @@ export const walletApi = {
   addTrustline,
   validateSendDestination,
   sendFunds,
+  confirmSend,
   registerSmartWallet,
   getSmartWallet,
+  getActiveAddress,
 };

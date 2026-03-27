@@ -18,7 +18,7 @@ export const signTransaction = async (
 ): Promise<string> => {
   try {
     const { getConnectedKit } = await import('@/lib/smart-wallet/client');
-    const kit = getConnectedKit();
+    const kit = await getConnectedKit();
 
     // Parse the XDR into a transaction, sign auth entries, and return
     const { TransactionBuilder } = await import('@stellar/stellar-sdk');
