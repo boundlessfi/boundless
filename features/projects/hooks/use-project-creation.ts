@@ -569,6 +569,7 @@ export const useProjectCreation = () => {
           deadline,
           milestone_descs,
           min_pledge,
+          submit: true,
         });
 
         // 3. Sign and Submit via Wallet Kit

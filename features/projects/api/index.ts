@@ -520,11 +520,16 @@ export const contributeToProject = async (
 
 import type {
   Project,
+  ProjectDetail,
   ProjectApiResponse,
   ProjectDraftPayload,
   ProjectListData,
   PublishProjectRequest,
   GetMyProjectsParams,
+  SubmitProjectEditRequest,
+  ProjectEdit,
+  PublicProjectsQuery,
+  PaginatedProjectsResponse,
 } from '@/features/projects/types';
 
 /**
@@ -565,6 +570,32 @@ export const updateProjectDraft = async (
 export const listPublicProjects = async (): Promise<Project[]> => {
   const res = await api.get<ProjectApiResponse<ProjectListData>>('/projects');
   return res.data.data?.projects ?? [];
+};
+
+/**
+ * GET /api/projects (paginated)
+ * List public projects with pagination, filtering, sorting, and search.
+ */
+export const listPublicProjectsPaginated = async (
+  query: PublicProjectsQuery = {}
+): Promise<PaginatedProjectsResponse> => {
+  const params = new URLSearchParams();
+
+  if (query.page) params.append('page', query.page.toString());
+  if (query.limit) params.append('limit', query.limit.toString());
+  if (query.category) params.append('category', query.category);
+  if (query.publicStatus) params.append('publicStatus', query.publicStatus);
+  if (query.originType) params.append('originType', query.originType);
+  if (query.featured) params.append('featured', 'true');
+  if (query.search) params.append('search', query.search);
+  if (query.sortBy) params.append('sortBy', query.sortBy);
+  if (query.sortOrder) params.append('sortOrder', query.sortOrder);
+
+  const qs = params.toString();
+  const url = qs ? `/projects?${qs}` : '/projects';
+
+  const res = await api.get<ProjectApiResponse<PaginatedProjectsResponse>>(url);
+  return res.data.data;
 };
 
 /**
@@ -645,10 +676,51 @@ export const getPublicProjectBySlug = async (
 };
 
 /**
+ * GET /api/projects/{slug}
+ * Get a single public project by slug with full relations
+ * (crowdfundingCampaigns, journeyTimeline, etc.).
+ */
+export const getProjectDetailBySlug = async (
+  slug: string
+): Promise<ProjectDetail> => {
+  const res = await api.get<ProjectApiResponse<ProjectDetail>>(
+    `/projects/${slug}`
+  );
+  return res.data.data;
+};
+
+/**
  * GET /api/projects/me/{id}
  * Get the authenticated user's own project by ID.
  */
 export const getMyProjectById = async (id: string): Promise<Project> => {
   const res = await api.get<ProjectApiResponse<Project>>(`/projects/me/${id}`);
+  return res.data.data;
+};
+
+/**
+ * POST /api/projects/{id}/edits
+ * Submit an edit for a published project.
+ * MINOR edits are auto-approved; MAJOR edits put project into REVIEWING.
+ */
+export const submitProjectEdit = async (
+  id: string,
+  data: SubmitProjectEditRequest
+): Promise<ProjectEdit> => {
+  const res = await api.post<ProjectApiResponse<ProjectEdit>>(
+    `/projects/${id}/edits`,
+    data
+  );
+  return res.data.data;
+};
+
+/**
+ * GET /api/projects/{id}/edits
+ * List edit history for a project.
+ */
+export const getProjectEdits = async (id: string): Promise<ProjectEdit[]> => {
+  const res = await api.get<ProjectApiResponse<ProjectEdit[]>>(
+    `/projects/${id}/edits`
+  );
   return res.data.data;
 };

@@ -1,27 +1,16 @@
 import { Github, Globe, Youtube, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CrowdfundingProject } from '@/features/projects/types';
+import type { ProjectViewModel } from '@/features/projects/types/view-model';
 
 interface ProjectAboutProps {
-  project: CrowdfundingProject & {
-    additionalCreator?: {
-      name: string;
-      role: string;
-      avatar: string;
-    };
-    links?: Array<{
-      type: string;
-      url: string;
-      icon: string;
-    }>;
-  };
+  vm: ProjectViewModel;
 }
 
 /**
  * Project About component for mobile view
  * Contains creator info and project links
  */
-export function ProjectAbout({ project }: ProjectAboutProps) {
+export function ProjectAbout({ vm }: ProjectAboutProps) {
   const getIcon = (iconType: string) => {
     switch (iconType) {
       case 'github':
@@ -37,24 +26,35 @@ export function ProjectAbout({ project }: ProjectAboutProps) {
     }
   };
 
+  const allLinks = [
+    ...(vm.githubUrl ? [{ platform: 'github', url: vm.githubUrl }] : []),
+    ...(vm.projectWebsite
+      ? [{ platform: 'globe', url: vm.projectWebsite }]
+      : []),
+    ...(vm.demoVideo ? [{ platform: 'youtube', url: vm.demoVideo }] : []),
+    ...vm.socialLinks,
+  ];
+
   return (
-    <div className='space-y-8 text-white'>
+    <div className='space-y-6 text-white sm:space-y-8'>
       {/* Creator Info */}
-      <div className='rounded-xl border border-gray-800/50 bg-gradient-to-br from-gray-900/50 to-gray-950/50 p-6 backdrop-blur-sm'>
-        <div className='mb-4 flex items-center gap-2'>
+      <div className='rounded-xl border border-gray-800/50 bg-linear-to-br from-gray-900/50 to-gray-950/50 p-4 backdrop-blur-sm sm:p-6'>
+        <div className='mb-3 flex items-center gap-2 sm:mb-4'>
           <div className='bg-primary h-1 w-1 rounded-full' />
-          <h2 className='text-lg font-semibold text-white'>Creator</h2>
+          <h2 className='text-base font-semibold text-white sm:text-lg'>
+            Creator
+          </h2>
         </div>
-        <div className='flex items-center gap-4'>
+        <div className='flex items-center gap-3 sm:gap-4'>
           <div className='relative'>
-            <div className='from-primary/30 absolute -inset-0.5 rounded-full bg-gradient-to-br to-transparent opacity-50 blur-sm' />
-            <Avatar className='relative h-14 w-14 ring-2 ring-gray-800/50'>
+            <div className='from-primary/30 absolute -inset-0.5 rounded-full bg-linear-to-br to-transparent opacity-50 blur-sm' />
+            <Avatar className='relative h-11 w-11 ring-2 ring-gray-800/50 sm:h-14 sm:w-14'>
               <AvatarImage
-                src={project.additionalCreator?.avatar || '/placeholder.svg'}
-                alt={project.additionalCreator?.name}
+                src={vm.creator.image || '/placeholder.svg'}
+                alt={vm.creator.name}
               />
-              <AvatarFallback className='from-primary bg-gradient-to-br to-[#8fd93f] text-sm font-semibold text-black'>
-                {(project.additionalCreator?.name || project.creator.name)
+              <AvatarFallback className='from-primary bg-linear-to-br to-[#8fd93f] text-sm font-semibold text-black'>
+                {vm.creator.name
                   .split(' ')
                   .map(n => n[0])
                   .join('')
@@ -64,24 +64,26 @@ export function ProjectAbout({ project }: ProjectAboutProps) {
           </div>
           <div className='min-w-0 flex-1'>
             <p className='text-lg leading-tight font-semibold text-white'>
-              {project.additionalCreator?.name || project.creator.name}
+              {vm.creator.name}
             </p>
             <p className='border-primary/30 bg-primary/10 text-primary mt-1.5 inline-block rounded-lg border px-2.5 py-1 text-xs font-semibold tracking-wide uppercase'>
-              {project.additionalCreator?.role || 'CREATOR'}
+              CREATOR
             </p>
           </div>
         </div>
       </div>
 
       {/* Project Links */}
-      {project.links && project.links.length > 0 && (
-        <div className='rounded-xl border border-gray-800/50 bg-gradient-to-br from-gray-900/50 to-gray-950/50 p-6 backdrop-blur-sm'>
-          <div className='mb-4 flex items-center gap-2'>
+      {allLinks.length > 0 && (
+        <div className='rounded-xl border border-gray-800/50 bg-gradient-to-br from-gray-900/50 to-gray-950/50 p-4 backdrop-blur-sm sm:p-6'>
+          <div className='mb-3 flex items-center gap-2 sm:mb-4'>
             <div className='bg-primary h-1 w-1 rounded-full' />
-            <h2 className='text-lg font-semibold text-white'>Project Links</h2>
+            <h2 className='text-base font-semibold text-white sm:text-lg'>
+              Project Links
+            </h2>
           </div>
           <div className='space-y-2'>
-            {project.links.map((link, index) => (
+            {allLinks.map((link, index) => (
               <a
                 key={index}
                 href={
@@ -92,7 +94,7 @@ export function ProjectAbout({ project }: ProjectAboutProps) {
                 className='group hover:border-primary/30 hover:bg-primary/5 flex items-center gap-3 rounded-lg border border-gray-800/50 bg-gray-900/30 p-3 text-sm text-white transition-all'
               >
                 <span className='group-hover:bg-primary/10 group-hover:text-primary flex h-8 w-8 items-center justify-center rounded-lg bg-gray-800/50 text-gray-400 transition-colors'>
-                  {getIcon(link.icon)}
+                  {getIcon(link.platform.toLowerCase())}
                 </span>
                 <span className='flex-1 truncate font-medium'>{link.url}</span>
               </a>

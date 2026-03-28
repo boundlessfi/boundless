@@ -27,6 +27,9 @@ import {
   QrCode,
   AlertCircle,
   Fingerprint,
+  Flame,
+  Undo2,
+  type LucideIcon,
 } from 'lucide-react';
 import { AssetIcon } from './AssetIcon';
 import { useWallet } from '@/hooks/use-wallet';
@@ -38,7 +41,11 @@ import {
   type SupportedTrustlineAsset,
 } from '@/lib/api/wallet';
 import { signTransaction } from '@/lib/config/wallet-kit';
-import { formatAddress, getExplorerUrl } from '@/lib/wallet-utils';
+import {
+  formatAddress,
+  getExplorerUrl,
+  getTransactionExplorerUrl,
+} from '@/lib/wallet-utils';
 import { validateStellarAddress } from '@/lib/utils/stellar-address-validation';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -67,6 +74,62 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { ApiError } from '@/lib/api/api';
 import { QRCodeSVG } from 'qrcode.react';
+
+/**
+ * Map transaction type to display properties: label, icon, colors.
+ */
+function getTxDisplay(type: string, note?: string | null) {
+  switch (type) {
+    case 'DEPOSIT':
+      return {
+        label: 'Received',
+        icon: <ArrowDownLeft className='h-5 w-5' />,
+        bgColor: 'bg-green-500/10 text-green-500',
+        amountColor: 'text-green-600',
+        sign: '+',
+      };
+    case 'WITHDRAWAL':
+      return {
+        label: note?.startsWith('approved') ? 'Approval' : 'Sent',
+        icon: <ArrowUpRight className='h-5 w-5' />,
+        bgColor: 'bg-orange-500/10 text-orange-500',
+        amountColor: 'text-foreground',
+        sign: '-',
+      };
+    case 'FEE':
+      return {
+        label: 'Network Fee',
+        icon: <Flame className='h-5 w-5' />,
+        bgColor: 'bg-red-500/10 text-red-400',
+        amountColor: 'text-red-400',
+        sign: '-',
+      };
+    case 'PAYOUT':
+      return {
+        label: 'Payout',
+        icon: <Coins className='h-5 w-5' />,
+        bgColor: 'bg-blue-500/10 text-blue-500',
+        amountColor: 'text-blue-500',
+        sign: '+',
+      };
+    case 'REFUND':
+      return {
+        label: 'Refund',
+        icon: <Undo2 className='h-5 w-5' />,
+        bgColor: 'bg-purple-500/10 text-purple-500',
+        amountColor: 'text-purple-500',
+        sign: '+',
+      };
+    default:
+      return {
+        label: type.charAt(0) + type.slice(1).toLowerCase(),
+        icon: <History className='h-5 w-5' />,
+        bgColor: 'bg-muted text-muted-foreground',
+        amountColor: 'text-foreground',
+        sign: '',
+      };
+  }
+}
 
 export type DrawerView = 'main' | 'receive' | 'send';
 
@@ -580,7 +643,7 @@ export function WalletSheet({
                                     </div>
                                   </div>
                                   <div className='font-medium'>
-                                    {asset.usdValue !== undefined
+                                    {asset.usdValue != null
                                       ? formatUSD(asset.usdValue)
                                       : formatBalance(asset.balance)}
                                   </div>
@@ -654,32 +717,54 @@ export function WalletSheet({
                             </div>
                           ) : (
                             transactions.map((tx, index) => {
-                              const isReceive =
-                                tx.type === 'DEPOSIT' || tx.type === 'receive';
+                              const txMeta = getTxDisplay(tx.type, tx.note);
+                              const txHash =
+                                tx.metadata?.txHash ||
+                                tx.metadata?.hash ||
+                                tx.externalTxId;
+                              const hasTxHash =
+                                txHash &&
+                                typeof txHash === 'string' &&
+                                /^[a-f0-9]{64}$/i.test(txHash);
+                              const explorerUrl = hasTxHash
+                                ? getTransactionExplorerUrl(txHash)
+                                : walletAddress
+                                  ? getExplorerUrl(walletAddress)
+                                  : null;
+
+                              const Wrapper = explorerUrl ? 'a' : 'div';
+                              const wrapperProps = explorerUrl
+                                ? {
+                                    href: explorerUrl,
+                                    target: '_blank' as const,
+                                    rel: 'noopener noreferrer',
+                                  }
+                                : {};
 
                               return (
-                                <div
+                                <Wrapper
                                   key={index}
-                                  className='hover:bg-muted/50 flex items-center justify-between rounded-xl p-3 transition-colors'
+                                  {...wrapperProps}
+                                  className='hover:bg-muted/50 group flex cursor-pointer items-center justify-between rounded-xl p-3 transition-colors'
                                 >
                                   <div className='flex items-center gap-3'>
                                     <div
-                                      className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                                        isReceive
-                                          ? 'bg-green-500/10 text-green-500'
-                                          : 'bg-orange-500/10 text-orange-500'
-                                      }`}
+                                      className={`flex h-10 w-10 items-center justify-center rounded-full ${txMeta.bgColor}`}
                                     >
-                                      {isReceive ? (
-                                        <ArrowDownLeft className='h-5 w-5' />
-                                      ) : (
-                                        <ArrowUpRight className='h-5 w-5' />
-                                      )}
+                                      {txMeta.icon}
                                     </div>
                                     <div>
-                                      <div className='text-sm font-medium'>
-                                        {isReceive ? 'Received' : 'Sent'}
+                                      <div className='flex items-center gap-1 text-sm font-medium'>
+                                        {txMeta.label}
+                                        {explorerUrl && (
+                                          <ExternalLink className='h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60' />
+                                        )}
                                       </div>
+                                      {tx.note && (
+                                        <div className='text-muted-foreground max-w-[180px] truncate text-[11px]'>
+                                          {tx.note}
+                                        </div>
+                                      )}
                                       <div className='text-muted-foreground text-xs'>
                                         {new Date(
                                           tx.createdAt
@@ -689,20 +774,16 @@ export function WalletSheet({
                                   </div>
                                   <div className='text-right'>
                                     <div
-                                      className={`text-sm font-medium ${
-                                        isReceive
-                                          ? 'text-green-600'
-                                          : 'text-foreground'
-                                      }`}
+                                      className={`text-sm font-medium ${txMeta.amountColor}`}
                                     >
-                                      {isReceive ? '+' : '-'} {tx.amount}{' '}
-                                      {tx.currency}
+                                      {txMeta.sign}
+                                      {tx.amount} {tx.currency}
                                     </div>
                                     <div className='text-muted-foreground text-xs'>
                                       {tx.state}
                                     </div>
                                   </div>
-                                </div>
+                                </Wrapper>
                               );
                             })
                           )}

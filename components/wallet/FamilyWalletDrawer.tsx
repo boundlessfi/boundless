@@ -10,7 +10,11 @@ import {
   type SupportedTrustlineAsset,
 } from '@/lib/api/wallet';
 import { signTransaction } from '@/lib/config/wallet-kit';
-import { formatAddress, getExplorerUrl } from '@/lib/wallet-utils';
+import {
+  formatAddress,
+  getExplorerUrl,
+  getTransactionExplorerUrl,
+} from '@/lib/wallet-utils';
 import { validateStellarAddress } from '@/lib/utils/stellar-address-validation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -650,10 +654,33 @@ export function FamilyWalletDrawer({
                             transactions.slice(0, 3).map((tx, index) => {
                               const isReceive =
                                 tx.type === 'DEPOSIT' || tx.type === 'receive';
+                              const txHash =
+                                tx.metadata?.txHash ||
+                                tx.metadata?.hash ||
+                                tx.externalTxId;
+                              const hasTxHash =
+                                txHash &&
+                                typeof txHash === 'string' &&
+                                /^[a-f0-9]{64}$/i.test(txHash);
+                              const explorerUrl = hasTxHash
+                                ? getTransactionExplorerUrl(txHash)
+                                : address
+                                  ? getExplorerUrl(address)
+                                  : null;
+                              const Wrapper = explorerUrl ? 'a' : 'div';
+                              const wrapperProps = explorerUrl
+                                ? {
+                                    href: explorerUrl,
+                                    target: '_blank' as const,
+                                    rel: 'noopener noreferrer',
+                                  }
+                                : {};
+
                               return (
-                                <div
+                                <Wrapper
                                   key={index}
-                                  className='hover:bg-muted/50 flex items-center justify-between rounded-xl p-3'
+                                  {...wrapperProps}
+                                  className='hover:bg-muted/50 group flex cursor-pointer items-center justify-between rounded-xl p-3'
                                 >
                                   <div className='flex items-center gap-3'>
                                     <div
@@ -670,8 +697,11 @@ export function FamilyWalletDrawer({
                                       )}
                                     </div>
                                     <div>
-                                      <div className='text-sm font-medium'>
+                                      <div className='flex items-center gap-1 text-sm font-medium'>
                                         {isReceive ? 'Received' : 'Sent'}
+                                        {explorerUrl && (
+                                          <ExternalLink className='h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60' />
+                                        )}
                                       </div>
                                       <div className='text-muted-foreground text-xs'>
                                         {new Date(
@@ -690,7 +720,7 @@ export function FamilyWalletDrawer({
                                     {isReceive ? '+' : '-'} {tx.amount}{' '}
                                     {tx.currency}
                                   </div>
-                                </div>
+                                </Wrapper>
                               );
                             })
                           )}
@@ -800,10 +830,30 @@ export function FamilyWalletDrawer({
                           transactions.map((tx, index) => {
                             const isReceive =
                               tx.type === 'DEPOSIT' || tx.type === 'receive';
+                            const txHash =
+                              tx.metadata?.txHash ||
+                              tx.metadata?.hash ||
+                              tx.externalTxId;
+                            const explorerUrl =
+                              txHash &&
+                              typeof txHash === 'string' &&
+                              /^[a-f0-9]{64}$/i.test(txHash)
+                                ? getTransactionExplorerUrl(txHash)
+                                : null;
+                            const Wrapper = explorerUrl ? 'a' : 'div';
+                            const wrapperProps = explorerUrl
+                              ? {
+                                  href: explorerUrl,
+                                  target: '_blank' as const,
+                                  rel: 'noopener noreferrer',
+                                }
+                              : {};
+
                             return (
-                              <div
+                              <Wrapper
                                 key={index}
-                                className='bg-muted/30 flex items-center justify-between rounded-xl p-3'
+                                {...wrapperProps}
+                                className='bg-muted/30 hover:bg-muted/50 group flex cursor-pointer items-center justify-between rounded-xl p-3 transition-colors'
                               >
                                 <div className='flex items-center gap-3'>
                                   <div
@@ -820,8 +870,11 @@ export function FamilyWalletDrawer({
                                     )}
                                   </div>
                                   <div>
-                                    <div className='text-sm font-medium'>
+                                    <div className='flex items-center gap-1 text-sm font-medium'>
                                       {isReceive ? 'Received' : 'Sent'}
+                                      {explorerUrl && (
+                                        <ExternalLink className='h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60' />
+                                      )}
                                     </div>
                                     <div className='text-muted-foreground text-xs'>
                                       {new Date(
@@ -845,7 +898,7 @@ export function FamilyWalletDrawer({
                                     {tx.state}
                                   </div>
                                 </div>
-                              </div>
+                              </Wrapper>
                             );
                           })
                         )}

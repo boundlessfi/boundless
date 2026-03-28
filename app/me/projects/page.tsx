@@ -6,12 +6,10 @@ import { getMe } from '@/lib/api/auth';
 import { GetMeResponse } from '@/lib/api/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, ArrowLeft } from 'lucide-react';
+import { Package, ArrowLeft, Pencil } from 'lucide-react';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { reportError } from '@/lib/error-reporting';
 import ProjectCard from '@/features/projects/components/ProjectCard';
-
-// ... (existing imports)
 
 export default function MyProjectsPage() {
   const { user: authUser, isLoading } = useAuthStatus();
@@ -112,24 +110,45 @@ export default function MyProjectsPage() {
             // If it's a submission, use the submission ID for the slug to ensure correct redirection from ProjectCard
             const displayId = submission?.id || project.id;
 
+            // Projects that can be edited (non-draft, non-terminal)
+            const isEditable =
+              !submission &&
+              ['IDEA', 'LIVE', 'CAMPAIGNING', 'VALIDATED'].includes(
+                project.status
+              );
+
             return (
-              <ProjectCard
-                isFullWidth
-                key={project.id}
-                data={{
-                  id: displayId,
-                  slug: displayId,
-                  project: {
-                    ...project,
-                    creator: {
-                      name: authUser?.name || 'You',
-                      image: authUser?.image || '/user.png',
+              <div key={project.id} className='relative'>
+                <ProjectCard
+                  isFullWidth
+                  data={{
+                    id: displayId,
+                    slug: displayId,
+                    project: {
+                      ...project,
+                      creator: {
+                        name: authUser?.name || 'You',
+                        image: authUser?.image || '/user.png',
+                      },
                     },
-                  },
-                  isSubmission: !!submission,
-                  submissionStatus: submission?.status,
-                }}
-              />
+                    isSubmission: !!submission,
+                    submissionStatus: submission?.status,
+                  }}
+                />
+                {isEditable && project.status !== 'IDEA' && (
+                  <Button
+                    asChild
+                    size='sm'
+                    variant='secondary'
+                    className='absolute right-3 bottom-3 z-10 gap-1.5 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20'
+                  >
+                    <Link href={`/me/projects/${project.id}/edit`}>
+                      <Pencil className='h-3.5 w-3.5' />
+                      Edit
+                    </Link>
+                  </Button>
+                )}
+              </div>
             );
           })}
         </div>

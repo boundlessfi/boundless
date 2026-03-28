@@ -99,17 +99,19 @@ export default function SignersTab() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
         <div>
-          <h3 className='text-lg font-semibold text-white'>On-chain Signers</h3>
-          <p className='text-sm text-white/50'>
+          <h3 className='text-base font-semibold text-white sm:text-lg'>
+            On-chain Signers
+          </h3>
+          <p className='text-xs text-white/50 sm:text-sm'>
             Signers authorized to act on your smart wallet via context rules.
           </p>
         </div>
         <Button
           size='sm'
           onClick={() => setShowAddForm(!showAddForm)}
-          className='bg-primary hover:bg-primary/90 gap-2 text-black'
+          className='bg-primary hover:bg-primary/90 w-full gap-2 text-black sm:w-auto'
         >
           {showAddForm ? (
             <>
@@ -125,7 +127,7 @@ export default function SignersTab() {
 
       {/* Add delegated signer form */}
       {showAddForm && (
-        <div className='border-primary/20 bg-primary/5 rounded-2xl border p-5'>
+        <div className='border-primary/20 bg-primary/5 rounded-2xl border p-4 sm:p-5'>
           <h4 className='mb-3 text-sm font-semibold text-white'>
             Add Delegated Signer (G-address)
           </h4>
@@ -146,7 +148,7 @@ export default function SignersTab() {
             <Button
               onClick={handleAddDelegated}
               disabled={adding}
-              className='bg-primary hover:bg-primary/90 text-black'
+              className='bg-primary hover:bg-primary/90 w-full text-black sm:w-auto'
             >
               {adding ? (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
@@ -167,31 +169,29 @@ export default function SignersTab() {
           </p>
         </div>
       ) : (
-        <div className='space-y-3'>
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'>
           {signers.map((signer, index) => {
             const { label, icon: Icon } = getSignerType(signer);
             return (
               <div
                 key={index}
-                className='flex items-center justify-between rounded-2xl border border-white/5 bg-white/2 p-5'
+                className='flex items-center gap-3 rounded-2xl border border-white/5 bg-white/2 p-4 sm:p-5'
               >
-                <div className='flex items-center gap-4'>
-                  <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5'>
-                    <Icon className='text-primary h-5 w-5' />
+                <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5'>
+                  <Icon className='text-primary h-5 w-5' />
+                </div>
+                <div className='min-w-0'>
+                  <div className='flex items-center gap-2'>
+                    <span className='text-sm font-semibold text-white'>
+                      {label}
+                    </span>
+                    <span className='rounded-full bg-white/5 px-2 py-0.5 text-xs text-white/40'>
+                      #{index + 1}
+                    </span>
                   </div>
-                  <div>
-                    <div className='flex items-center gap-2'>
-                      <span className='text-sm font-semibold text-white'>
-                        {label}
-                      </span>
-                      <span className='rounded-full bg-white/5 px-2 py-0.5 text-xs text-white/40'>
-                        Signer #{index + 1}
-                      </span>
-                    </div>
-                    <p className='mt-0.5 font-mono text-xs text-white/40'>
-                      {getSignerDisplay(signer)}
-                    </p>
-                  </div>
+                  <p className='mt-0.5 truncate font-mono text-xs text-white/40'>
+                    {getSignerDisplay(signer)}
+                  </p>
                 </div>
               </div>
             );

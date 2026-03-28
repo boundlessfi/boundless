@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import Empty from './Empty';
 import Image from 'next/image';
-import { Contributor, Crowdfunding } from '@/features/projects/types';
+import { Contributor } from '@/features/projects/types';
+import type { ProjectViewModel } from '@/features/projects/types/view-model';
 
-const ProjectBackers = ({ crowdfund }: { crowdfund: Crowdfunding }) => {
-  const [backers] = useState<Contributor[]>(
-    crowdfund.contributors as Contributor[]
-  );
+const ProjectBackers = ({ vm }: { vm: ProjectViewModel }) => {
+  const [backers] = useState<Contributor[]>(vm.campaign?.contributors ?? []);
   const handleBackerClick = (backer: Contributor) => {
     window.open(`/profile/${backer.userId}`, '_blank');
   };
@@ -14,11 +13,11 @@ const ProjectBackers = ({ crowdfund }: { crowdfund: Crowdfunding }) => {
   if (backers.length === 0) {
     return (
       <Empty
-        campaignId={crowdfund.id}
-        escrowAddress={crowdfund.escrowAddress}
-        fundingGoal={crowdfund.fundingGoal}
-        fundingRaised={crowdfund.fundingRaised}
-        projectTitle={crowdfund.project.title}
+        campaignId={vm.campaign?.campaignId}
+        escrowAddress={vm.campaign?.escrowAddress}
+        fundingGoal={vm.campaign?.fundingGoal ?? 0}
+        fundingRaised={vm.campaign?.fundingRaised ?? 0}
+        projectTitle={vm.title}
       />
     );
   }

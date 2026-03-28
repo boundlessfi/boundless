@@ -267,6 +267,7 @@ export interface Client {
       deadline,
       milestone_descs,
       min_pledge,
+      submit,
     }: {
       owner: string;
       metadata_cid: string;
@@ -275,6 +276,7 @@ export interface Client {
       deadline: u64;
       milestone_descs: Array<readonly [string, u32]>;
       min_pledge: i128;
+      submit: boolean;
     },
     options?: MethodOptions
   ) => Promise<AssembledTransaction<Result<u64>>>;
@@ -283,7 +285,31 @@ export interface Client {
    * Construct and simulate a reject_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
   reject_campaign: (
-    { campaign_id }: { campaign_id: u64 },
+    { campaign_id, reason }: { campaign_id: u64; reason: string },
+    options?: MethodOptions
+  ) => Promise<AssembledTransaction<Result<void>>>;
+
+  /**
+   * Construct and simulate a update_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   */
+  update_campaign: (
+    {
+      campaign_id,
+      metadata_cid,
+      funding_goal,
+      asset,
+      deadline,
+      milestone_descs,
+      min_pledge,
+    }: {
+      campaign_id: u64;
+      metadata_cid: string;
+      funding_goal: i128;
+      asset: string;
+      deadline: u64;
+      milestone_descs: Array<readonly [string, u32]>;
+      min_pledge: i128;
+    },
     options?: MethodOptions
   ) => Promise<AssembledTransaction<Result<void>>>;
 
@@ -436,8 +462,9 @@ export class Client extends ContractClient {
         'AAAABQAAAAAAAAAAAAAADkNhbXBhaWduRnVuZGVkAAAAAAABAAAAD2NhbXBhaWduX2Z1bmRlZAAAAAABAAAAAAAAAAJpZAAAAAAABgAAAAEAAAAC',
         'AAAABQAAAAAAAAAAAAAADlBsZWRnZVJlY29yZGVkAAAAAAABAAAAD3BsZWRnZV9yZWNvcmRlZAAAAAADAAAAAAAAAAtjYW1wYWlnbl9pZAAAAAAGAAAAAQAAAAAAAAAFZG9ub3IAAAAAAAATAAAAAQAAAAAAAAAGYW1vdW50AAAAAAALAAAAAAAAAAI=',
         'AAAABQAAAAAAAAAAAAAAD0NhbXBhaWduQ3JlYXRlZAAAAAABAAAAEGNhbXBhaWduX2NyZWF0ZWQAAAADAAAAAAAAAAJpZAAAAAAABgAAAAEAAAAAAAAABW93bmVyAAAAAAAAEwAAAAAAAAAAAAAADGZ1bmRpbmdfZ29hbAAAAAsAAAAAAAAAAg==',
+        'AAAABQAAAAAAAAAAAAAAD0NhbXBhaWduVXBkYXRlZAAAAAABAAAAEGNhbXBhaWduX3VwZGF0ZWQAAAACAAAAAAAAAAJpZAAAAAAABgAAAAEAAAAAAAAADGZ1bmRpbmdfZ29hbAAAAAsAAAAAAAAAAg==',
         'AAAABQAAAAAAAAAAAAAAEENhbXBhaWduQXBwcm92ZWQAAAABAAAAEWNhbXBhaWduX2FwcHJvdmVkAAAAAAAAAgAAAAAAAAACaWQAAAAAAAYAAAABAAAAAAAAAA92b3RlX3Nlc3Npb25faWQAAAAD7gAAACAAAAAAAAAAAg==',
-        'AAAABQAAAAAAAAAAAAAAEENhbXBhaWduUmVqZWN0ZWQAAAABAAAAEWNhbXBhaWduX3JlamVjdGVkAAAAAAAAAQAAAAAAAAACaWQAAAAAAAYAAAABAAAAAg==',
+        'AAAABQAAAAAAAAAAAAAAEENhbXBhaWduUmVqZWN0ZWQAAAABAAAAEWNhbXBhaWduX3JlamVjdGVkAAAAAAAAAgAAAAAAAAACaWQAAAAAAAYAAAABAAAAAAAAAAZyZWFzb24AAAAAABAAAAAAAAAAAg==',
         'AAAABQAAAAAAAAAAAAAAEE1pbGVzdG9uZU92ZXJkdWUAAAABAAAAEW1pbGVzdG9uZV9vdmVyZHVlAAAAAAAAAgAAAAAAAAALY2FtcGFpZ25faWQAAAAABgAAAAEAAAAAAAAADG1pbGVzdG9uZV9pZAAAAAQAAAAAAAAAAg==',
         'AAAABQAAAAAAAAAAAAAAEUNhbXBhaWduQ2FuY2VsbGVkAAAAAAAAAQAAABJjYW1wYWlnbl9jYW5jZWxsZWQAAAAAAAEAAAAAAAAAAmlkAAAAAAAGAAAAAQAAAAI=',
         'AAAABQAAAAAAAAAAAAAAEUNhbXBhaWduVmFsaWRhdGVkAAAAAAAAAQAAABJjYW1wYWlnbl92YWxpZGF0ZWQAAAAAAAEAAAAAAAAAAmlkAAAAAAAGAAAAAQAAAAI=',
@@ -463,8 +490,9 @@ export class Client extends ContractClient {
         'AAAAAAAAAAAAAAANdm90ZV9jYW1wYWlnbgAAAAAAAAMAAAAAAAAABXZvdGVyAAAAAAAAEwAAAAAAAAALY2FtcGFpZ25faWQAAAAABgAAAAAAAAAJb3B0aW9uX2lkAAAAAAAABAAAAAEAAAPpAAAAAgAAB9AAAAAOQ3Jvd2RmdW5kRXJyb3IAAA==',
         'AAAAAAAAAAAAAAAOY2hlY2tfZGVhZGxpbmUAAAAAAAEAAAAAAAAAC2NhbXBhaWduX2lkAAAAAAYAAAABAAAD6QAAAAIAAAfQAAAADkNyb3dkZnVuZEVycm9yAAA=',
         'AAAAAAAAAAAAAAAPY2FuY2VsX2NhbXBhaWduAAAAAAEAAAAAAAAAC2NhbXBhaWduX2lkAAAAAAYAAAABAAAD6QAAAAIAAAfQAAAADkNyb3dkZnVuZEVycm9yAAA=',
-        'AAAAAAAAAAAAAAAPY3JlYXRlX2NhbXBhaWduAAAAAAcAAAAAAAAABW93bmVyAAAAAAAAEwAAAAAAAAAMbWV0YWRhdGFfY2lkAAAAEAAAAAAAAAAMZnVuZGluZ19nb2FsAAAACwAAAAAAAAAFYXNzZXQAAAAAAAATAAAAAAAAAAhkZWFkbGluZQAAAAYAAAAAAAAAD21pbGVzdG9uZV9kZXNjcwAAAAPqAAAD7QAAAAIAAAAQAAAABAAAAAAAAAAKbWluX3BsZWRnZQAAAAAACwAAAAEAAAPpAAAABgAAB9AAAAAOQ3Jvd2RmdW5kRXJyb3IAAA==',
-        'AAAAAAAAAAAAAAAPcmVqZWN0X2NhbXBhaWduAAAAAAEAAAAAAAAAC2NhbXBhaWduX2lkAAAAAAYAAAABAAAD6QAAAAIAAAfQAAAADkNyb3dkZnVuZEVycm9yAAA=',
+        'AAAAAAAAAAAAAAAPY3JlYXRlX2NhbXBhaWduAAAAAAgAAAAAAAAABW93bmVyAAAAAAAAEwAAAAAAAAAMbWV0YWRhdGFfY2lkAAAAEAAAAAAAAAAMZnVuZGluZ19nb2FsAAAACwAAAAAAAAAFYXNzZXQAAAAAAAATAAAAAAAAAAhkZWFkbGluZQAAAAYAAAAAAAAAD21pbGVzdG9uZV9kZXNjcwAAAAPqAAAD7QAAAAIAAAAQAAAABAAAAAAAAAAKbWluX3BsZWRnZQAAAAAACwAAAAAAAAAGc3VibWl0AAAAAAABAAAAAQAAA+kAAAAGAAAH0AAAAA5Dcm93ZGZ1bmRFcnJvcgAA',
+        'AAAAAAAAAAAAAAAPcmVqZWN0X2NhbXBhaWduAAAAAAIAAAAAAAAAC2NhbXBhaWduX2lkAAAAAAYAAAAAAAAABnJlYXNvbgAAAAAAEAAAAAEAAAPpAAAAAgAAB9AAAAAOQ3Jvd2RmdW5kRXJyb3IAAA==',
+        'AAAAAAAAAAAAAAAPdXBkYXRlX2NhbXBhaWduAAAAAAcAAAAAAAAAC2NhbXBhaWduX2lkAAAAAAYAAAAAAAAADG1ldGFkYXRhX2NpZAAAABAAAAAAAAAADGZ1bmRpbmdfZ29hbAAAAAsAAAAAAAAABWFzc2V0AAAAAAAAEwAAAAAAAAAIZGVhZGxpbmUAAAAGAAAAAAAAAA9taWxlc3RvbmVfZGVzY3MAAAAD6gAAA+0AAAACAAAAEAAAAAQAAAAAAAAACm1pbl9wbGVkZ2UAAAAAAAsAAAABAAAD6QAAAAIAAAfQAAAADkNyb3dkZnVuZEVycm9yAAA=',
         'AAAAAAAAAAAAAAAQYXBwcm92ZV9jYW1wYWlnbgAAAAMAAAAAAAAAC2NhbXBhaWduX2lkAAAAAAYAAAAAAAAAD3ZvdGluZ19kdXJhdGlvbgAAAAAGAAAAAAAAAA52b3RlX3RocmVzaG9sZAAAAAAABAAAAAEAAAPpAAAD7gAAACAAAAfQAAAADkNyb3dkZnVuZEVycm9yAAA=',
         'AAAAAAAAAAAAAAAQZ2V0X3ZvdGVfc2Vzc2lvbgAAAAEAAAAAAAAAC2NhbXBhaWduX2lkAAAAAAYAAAABAAAD6QAAA+4AAAAgAAAH0AAAAA5Dcm93ZGZ1bmRFcnJvcgAA',
         'AAAAAAAAAAAAAAAQcmVqZWN0X21pbGVzdG9uZQAAAAIAAAAAAAAAC2NhbXBhaWduX2lkAAAAAAYAAAAAAAAAD21pbGVzdG9uZV9pbmRleAAAAAAEAAAAAQAAA+kAAAACAAAH0AAAAA5Dcm93ZGZ1bmRFcnJvcgAA',
@@ -497,6 +525,7 @@ export class Client extends ContractClient {
     cancel_campaign: this.txFromJSON<Result<void>>,
     create_campaign: this.txFromJSON<Result<u64>>,
     reject_campaign: this.txFromJSON<Result<void>>,
+    update_campaign: this.txFromJSON<Result<void>>,
     approve_campaign: this.txFromJSON<Result<Buffer>>,
     get_vote_session: this.txFromJSON<Result<Buffer>>,
     reject_milestone: this.txFromJSON<Result<void>>,

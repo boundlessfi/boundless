@@ -206,19 +206,38 @@ export const HackathonCard = ({
     }
   };
 
+  const OrgLogo = ({ size = 8 }: { size?: number }) =>
+    organization.logo ? (
+      <div
+        style={{ backgroundImage: `url(${organization.logo})` }}
+        className={cn(
+          'border-border bg-muted rounded-full border bg-cover bg-center shadow-md',
+          `size-${size}`
+        )}
+      />
+    ) : (
+      <div
+        className={cn(
+          'bg-muted border-border rounded-full border',
+          `size-${size}`
+        )}
+      />
+    );
+
   return (
     <Link
       href={href}
       target={target === '_blank' ? '_blank' : undefined}
       rel={target === '_blank' ? 'noopener noreferrer' : undefined}
       className={cn(
-        'group border-border bg-card flex flex-col overflow-hidden rounded-md border transition-all duration-300 hover:-translate-y-1 hover:border-gray-700 hover:shadow-xl hover:shadow-black/50',
+        'group border-border bg-card flex flex-col overflow-hidden rounded-xl border transition-all duration-300 hover:-translate-y-1 hover:border-gray-700 hover:shadow-xl hover:shadow-black/50',
         isFullWidth ? 'w-full' : 'max-w-[400px]',
         className
       )}
       aria-label={`View hackathon: ${name}`}
     >
-      <div className='bg-muted relative h-44 w-full overflow-hidden sm:h-48'>
+      {/* Banner */}
+      <div className='bg-muted relative h-40 w-full overflow-hidden sm:h-44'>
         <Image
           src={banner}
           alt={name}
@@ -229,7 +248,7 @@ export const HackathonCard = ({
         />
         <div className='to-background absolute inset-0 bg-linear-to-t from-black/0 via-black/10' />
 
-        <div className='absolute top-4 right-4 left-4 flex items-start justify-between gap-2'>
+        <div className='absolute top-3 right-3 left-3 flex items-start justify-between gap-2'>
           <CategoriesDisplay categoriesList={categories} />
 
           <div className='z-10 flex items-center gap-2'>
@@ -250,94 +269,74 @@ export const HackathonCard = ({
         </div>
       </div>
 
-      <div className='flex flex-1 flex-col p-5 pt-2'>
+      {/* Content */}
+      <div className='flex flex-1 flex-col p-4 sm:p-5'>
+        {/* Organizer */}
         {organization &&
           (organization.slug ? (
             <button
               onClick={handleOrganizerClick}
-              className='group/org bg-card border-border hover:bg-muted relative z-20 -mt-8 flex w-fit items-center gap-2 rounded-full border p-1 pr-3 transition-colors hover:border-gray-600'
+              className='group/org text-muted-foreground hover:text-foreground mb-3 flex w-fit items-center gap-2 text-sm transition-colors'
             >
-              {organization.logo ? (
-                <div
-                  style={{ backgroundImage: `url(${organization.logo})` }}
-                  className='border-border bg-muted size-8 rounded-full border bg-cover bg-center shadow-md'
-                />
-              ) : (
-                <div className='bg-muted border-border size-8 rounded-full border' />
-              )}
-              <span className='text-muted-foreground group-hover/org:text-foreground flex items-center gap-1 text-sm font-medium transition-colors'>
-                {organization.name}
-                <ArrowUpRight className='text-muted-foreground group-hover/org:text-foreground size-3 transition-colors' />
-              </span>
+              <OrgLogo size={6} />
+              <span className='font-medium'>{organization.name}</span>
+              <ArrowUpRight className='size-3 opacity-0 transition-opacity group-hover/org:opacity-100' />
             </button>
           ) : (
-            <div className='bg-card border-border relative z-20 -mt-8 flex w-fit items-center gap-2 rounded-full border p-1 pr-3'>
-              {organization.logo ? (
-                <div
-                  style={{ backgroundImage: `url(${organization.logo})` }}
-                  className='border-border bg-muted size-8 rounded-full border bg-cover bg-center shadow-md'
-                />
-              ) : (
-                <div className='bg-muted border-border size-8 rounded-full border' />
-              )}
-              <span className='text-muted-foreground flex items-center gap-1 text-sm font-medium'>
-                {organization.name}
-              </span>
+            <div className='text-muted-foreground mb-3 flex items-center gap-2 text-sm'>
+              <OrgLogo size={6} />
+              <span className='font-medium'>{organization.name}</span>
             </div>
           ))}
 
-        <div className='mt-3'>
-          <h2 className='text-foreground group-hover:text-primary line-clamp-2 text-xl leading-tight font-semibold text-balance transition-colors'>
-            {name}
-          </h2>
-          <p className='text-muted-foreground mt-1.5 line-clamp-2 text-sm leading-relaxed'>
-            {tagline}
-          </p>
+        {/* Title */}
+        <h2 className='text-foreground group-hover:text-primary line-clamp-2 text-lg leading-tight font-semibold transition-colors'>
+          {name}
+        </h2>
+        <p className='text-muted-foreground mt-1.5 line-clamp-2 text-sm leading-relaxed'>
+          {tagline}
+        </p>
+
+        {/* Prize + Participants */}
+        <div className='mt-4 flex items-center justify-between'>
+          {totalPrize > 0 && (
+            <div className='flex items-center gap-2'>
+              <Trophy className='text-primary size-4' />
+              <span className='text-primary text-lg font-bold tracking-tight tabular-nums'>
+                ${formatFullNumber(totalPrize)}
+              </span>
+            </div>
+          )}
+
+          <div className='ml-auto flex items-center gap-2'>
+            <GroupAvatar members={participantAvatars} />
+            <span className='text-muted-foreground text-xs tabular-nums'>
+              {formatFullNumber(participantsCount)}
+            </span>
+            <Users className='text-muted-foreground size-3.5' />
+          </div>
         </div>
 
-        {totalPrize > 0 && (
-          <div className='mt-4 flex items-center justify-between'>
-            <span className='text-muted-foreground flex items-center gap-2 text-sm font-medium'>
-              <Trophy className='text-primary size-4' />
-              Prize Pool
-            </span>
-            <span className='text-primary text-xl font-bold tracking-tight'>
-              ${formatFullNumber(totalPrize)}
+        {/* Venue */}
+        {venueName && venueName !== 'TBD' && (
+          <div className='text-muted-foreground mt-3 flex items-center gap-1.5 text-xs'>
+            <MapPin className='size-3.5 shrink-0' />
+            <span className='truncate' title={venueName}>
+              {venueName}
             </span>
           </div>
         )}
 
-        <div className='mt-4 flex flex-col gap-4'>
-          <div className='flex flex-col gap-2'>
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center gap-2'>
-                <GroupAvatar members={participantAvatars} />
-                <span className='text-muted-foreground text-xs font-medium'>
-                  {formatFullNumber(participantsCount)} Participants
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {venueName && venueName !== 'TBD' && (
-            <div className='border-border/50 flex flex-col gap-1 border-t pt-2'>
-              <span className='text-muted-foreground flex items-center gap-1.5 text-xs font-medium'>
-                <MapPin className='size-3.5' />
-                <span
-                  className='text-foreground truncate text-sm font-medium'
-                  title={venueName}
-                >
-                  {venueName}
-                </span>
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className='mt-auto flex items-center justify-between pt-5'>
-          <div className='flex items-center gap-2'>
-            <Clock className='text-muted-foreground size-4' />
-            <span className='text-foreground text-sm font-medium'>
+        {/* Footer: Time + Extended badge */}
+        <div
+          className='border-border mt-auto flex items-center justify-between border-t pt-3'
+          style={{
+            marginTop: venueName && venueName !== 'TBD' ? '12px' : '16px',
+          }}
+        >
+          <div className='flex items-center gap-1.5'>
+            <Clock className='text-muted-foreground size-3.5' />
+            <span className='text-foreground text-sm tabular-nums'>
               {timeRemaining.days > 0
                 ? `${topBadgeStatus === 'Upcoming' ? 'Starts' : 'Ends'} in ${timeRemaining.days}d ${timeRemaining.hours}h`
                 : topBadgeStatus}
@@ -345,7 +344,7 @@ export const HackathonCard = ({
           </div>
 
           {isExtended && (
-            <span className='bg-warning-500/10 text-warning-500 flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold'>
+            <span className='bg-warning-500/10 text-warning-500 flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold'>
               <AlertCircle className='size-3' />
               Extended
             </span>

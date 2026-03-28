@@ -11,7 +11,8 @@ import { ListFilter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Status } from './milestone-card';
 import EmptyState from '@/components/EmptyState';
-import { Crowdfunding, Milestone } from '@/features/projects/types';
+import { Milestone } from '@/features/projects/types';
+import type { ProjectViewModel } from '@/features/projects/types/view-model';
 import Link from 'next/link';
 import { getCrowdfundingMilestones } from '@/features/projects/api';
 
@@ -27,31 +28,38 @@ const filterOptions = [
 ];
 
 interface ProjectMilestoneProps {
-  crowdfund: Crowdfunding;
+  vm: ProjectViewModel;
 }
 
-const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
+const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
   const [selectedFilter, setSelectedFilter] = useState<Status | 'all'>('all');
   const [fetchedMilestones, setFetchedMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const campaignSlug = vm.campaign?.campaignSlug;
+  const inlineMilestones =
+    vm.campaign?.milestones ?? vm.submission?.milestones ?? [];
 
   useEffect(() => {
     const fetchMilestones = async () => {
       try {
         setLoading(true);
-        const data = await getCrowdfundingMilestones(crowdfund.slug);
+        const data = await getCrowdfundingMilestones(campaignSlug!);
         setFetchedMilestones(data || []);
       } catch {
-        // Failed to fetch milestones
+        setFetchedMilestones(inlineMilestones);
       } finally {
         setLoading(false);
       }
     };
 
-    if (crowdfund.slug) {
+    if (campaignSlug) {
       fetchMilestones();
+    } else {
+      setFetchedMilestones(inlineMilestones);
+      setLoading(false);
     }
-  }, [crowdfund.slug]);
+  }, [campaignSlug, inlineMilestones]);
   const milestones: TimelineItemType[] = useMemo(() => {
     if (!fetchedMilestones || fetchedMilestones.length === 0) {
       return [];
@@ -150,7 +158,7 @@ const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
 
   return (
     <div className='w-full'>
-      <div className='my-6 flex items-center justify-between'>
+      <div className='my-4 flex flex-col gap-3 sm:my-6 sm:flex-row sm:items-center sm:justify-between'>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -188,11 +196,13 @@ const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Link href={`/projects/${crowdfund.slug}/milestones`}>
-          <Button variant='ghost' className='text-white underline'>
-            View All Milestones
-          </Button>
-        </Link>
+        {campaignSlug && (
+          <Link href={`/projects/${campaignSlug}/milestones`}>
+            <Button variant='ghost' className='text-white underline'>
+              View All Milestones
+            </Button>
+          </Link>
+        )}
       </div>
 
       <Timeline
@@ -200,7 +210,7 @@ const ProjectMilestone = ({ crowdfund }: ProjectMilestoneProps) => {
         showConnector={true}
         variant='default'
         className='w-full'
-        projectSlug={crowdfund.slug}
+        projectSlug={campaignSlug ?? ''}
       />
 
       {filteredMilestones.length === 0 && (

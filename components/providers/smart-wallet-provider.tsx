@@ -28,8 +28,8 @@ interface SmartWalletContextType extends SmartWalletState {
   register: (userName: string) => Promise<string>;
   /** Connect to an existing smart wallet via passkey */
   connect: () => Promise<string | null>;
-  /** Disconnect (clear local state only) */
-  disconnect: () => void;
+  /** Disconnect and clear stored session */
+  disconnect: () => Promise<void>;
   /** Whether smart wallet feature is available */
   isAvailable: boolean;
 }
@@ -183,15 +183,19 @@ export function SmartWalletProvider({ children }: { children: ReactNode }) {
     }
   }, [userId]);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
     setContractId(null);
     setCredentialId(null);
     setError(null);
     persistState(userId, null, null);
-    // Also disconnect the kit session
-    import('@/lib/smart-wallet/client').then(({ disconnectSmartWallet }) =>
-      disconnectSmartWallet().catch(() => {})
-    );
+    // Disconnect the kit session and clear stored credentials
+    try {
+      const { disconnectSmartWallet } =
+        await import('@/lib/smart-wallet/client');
+      await disconnectSmartWallet();
+    } catch {
+      // Best-effort cleanup
+    }
   }, [userId]);
 
   return (

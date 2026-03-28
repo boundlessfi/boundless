@@ -11,6 +11,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getAccountExplorerUrl } from '@/lib/wallet-utils';
 import {
   connectExternalWallet,
   disconnectExternalWallet,
@@ -78,10 +79,12 @@ export default function ExternalWalletsTab() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
         <div>
-          <h3 className='text-lg font-semibold text-white'>External Wallets</h3>
-          <p className='text-sm text-white/50'>
+          <h3 className='text-base font-semibold text-white sm:text-lg'>
+            External Wallets
+          </h3>
+          <p className='text-xs text-white/50 sm:text-sm'>
             Connect Stellar wallets (Freighter, Lobstr, etc.) as delegated
             signers for multi-signature operations.
           </p>
@@ -90,7 +93,7 @@ export default function ExternalWalletsTab() {
           size='sm'
           onClick={handleConnect}
           disabled={connecting}
-          className='bg-primary hover:bg-primary/90 gap-2 text-black'
+          className='bg-primary hover:bg-primary/90 w-full gap-2 text-black sm:w-auto'
         >
           {connecting ? (
             <Loader2 className='h-4 w-4 animate-spin' />
@@ -119,34 +122,36 @@ export default function ExternalWalletsTab() {
           </Button>
         </div>
       ) : (
-        <div className='space-y-3'>
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'>
           {wallets.map(wallet => (
             <div
               key={wallet.address}
-              className='flex items-center justify-between rounded-2xl border border-white/5 bg-white/2 p-5'
+              className='rounded-2xl border border-white/5 bg-white/2 p-4 sm:p-5'
             >
-              <div className='flex items-center gap-4'>
-                <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5'>
-                  <Wallet className='text-primary h-5 w-5' />
-                </div>
-                <div>
-                  <div className='flex items-center gap-2'>
-                    <span className='text-sm font-semibold text-white'>
-                      {wallet.walletName}
-                    </span>
-                    <span className='rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-400'>
-                      Connected
-                    </span>
+              <div className='flex items-start justify-between'>
+                <div className='flex items-center gap-3'>
+                  <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5'>
+                    <Wallet className='text-primary h-5 w-5' />
                   </div>
-                  <p className='mt-0.5 font-mono text-xs text-white/40'>
-                    {wallet.address.slice(0, 8)}...
-                    {wallet.address.slice(-8)}
-                  </p>
+                  <div className='min-w-0'>
+                    <div className='flex items-center gap-2'>
+                      <span className='text-sm font-semibold text-white'>
+                        {wallet.walletName}
+                      </span>
+                      <span className='rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-400'>
+                        Connected
+                      </span>
+                    </div>
+                    <p className='mt-0.5 truncate font-mono text-xs text-white/40'>
+                      {wallet.address.slice(0, 8)}...
+                      {wallet.address.slice(-8)}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className='flex items-center gap-2'>
+              <div className='mt-3 flex items-center gap-1 border-t border-white/5 pt-3'>
                 <a
-                  href={`https://stellar.expert/explorer/testnet/account/${wallet.address}`}
+                  href={getAccountExplorerUrl(wallet.address)}
                   target='_blank'
                   rel='noopener noreferrer'
                   className='rounded-lg p-2 text-white/40 transition-colors hover:bg-white/5 hover:text-white'

@@ -163,6 +163,44 @@ export interface Project {
   votes?: number;
 }
 
+/** Crowdfunding campaign embedded in a project detail response. */
+export interface EmbeddedCrowdfundingCampaign {
+  id: string;
+  projectId: string;
+  slug: string;
+  fundingGoal: number;
+  voteGoal: number;
+  fundingRaised: number;
+  fundingCurrency: string;
+  fundingEndDate: string | null;
+  contributors: Contributor[];
+  team: TeamMember[];
+  contact: Contact;
+  socialLinks: SocialLink[];
+  stakeholders: unknown | null;
+  trustlessWorkStatus: string;
+  escrowAddress: string;
+  escrowType: string;
+  escrowDetails: unknown | null;
+  creationTxHash: string | null;
+  transactionHash: string;
+  onChainId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  milestones: Milestone[];
+}
+
+/** Full project detail returned by GET /api/projects/{slug}. */
+export interface ProjectDetail extends Project {
+  crowdfundingCampaigns: EmbeddedCrowdfundingCampaign[];
+  journeyTimeline?: Array<{
+    occurredAt: string;
+    kind: string;
+    title?: string;
+    status?: string;
+  }>;
+}
+
 /** Standard API envelope wrapper. */
 export interface ProjectApiResponse<T> {
   success: boolean;
@@ -185,6 +223,32 @@ export interface ProjectListData {
   };
 }
 
+/** Query params for GET /api/projects (public listing). */
+export interface PublicProjectsQuery {
+  page?: number;
+  limit?: number;
+  category?: string;
+  publicStatus?: string;
+  originType?: string;
+  featured?: boolean;
+  search?: string;
+  sortBy?: 'createdAt' | 'title' | 'updatedAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+/** Paginated response from GET /api/projects. */
+export interface PaginatedProjectsResponse {
+  data: Project[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
 /** Publish/submit request payload. */
 export interface PublishProjectRequest {
   projectId: string;
@@ -198,6 +262,41 @@ export interface GetMyProjectsParams {
   limit?: number;
   offset?: number;
   status?: string;
+}
+
+// ─── Project Edit types ──────────────────────────────────────────────────────
+
+export type ProjectEditType = 'MAJOR' | 'MINOR';
+
+export interface ProjectEditChanges {
+  title?: string;
+  tagline?: string;
+  description?: string;
+  summary?: string;
+  category?: string;
+  tags?: string[];
+  socialLinks?: Record<string, string>;
+  contact?: { primary: string; backup?: string };
+}
+
+export interface SubmitProjectEditRequest {
+  editType: ProjectEditType;
+  message?: string;
+  changes: ProjectEditChanges;
+}
+
+export interface ProjectEdit {
+  id: string;
+  projectId: string;
+  submittedById: string;
+  editType: ProjectEditType;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  payload: ProjectEditChanges;
+  message?: string;
+  reviewedById?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Crowdfunding types ───────────────────────────────────────────────────────

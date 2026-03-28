@@ -3,7 +3,7 @@
 import { Github, Globe, Youtube, X } from 'lucide-react';
 import { ProjectSidebarLinksProps } from './types';
 
-export function ProjectSidebarLinks({ project }: ProjectSidebarLinksProps) {
+export function ProjectSidebarLinks({ vm }: ProjectSidebarLinksProps) {
   const getIcon = (iconType: string) => {
     switch (iconType) {
       case 'github':
@@ -25,10 +25,9 @@ export function ProjectSidebarLinks({ project }: ProjectSidebarLinksProps) {
         PROJECT LINKS
       </h3>
       <div className='space-y-3'>
-        {/* GitHub Link */}
-        {project.githubUrl && (
+        {vm.githubUrl && (
           <a
-            href={project.githubUrl}
+            href={vm.githubUrl}
             target='_blank'
             rel='noopener noreferrer'
             className='group flex items-center gap-3 text-sm text-white transition-colors hover:text-white'
@@ -36,14 +35,13 @@ export function ProjectSidebarLinks({ project }: ProjectSidebarLinksProps) {
             <span className='text-gray-400 transition-colors group-hover:text-white'>
               <Github className='h-4 w-4' />
             </span>
-            <span className='truncate'>{project.githubUrl}</span>
+            <span className='truncate'>{vm.githubUrl}</span>
           </a>
         )}
 
-        {/* Project Website */}
-        {project.projectWebsite && (
+        {vm.projectWebsite && (
           <a
-            href={project.projectWebsite}
+            href={vm.projectWebsite}
             target='_blank'
             rel='noopener noreferrer'
             className='group flex items-center gap-3 text-sm text-white transition-colors hover:text-white'
@@ -51,14 +49,13 @@ export function ProjectSidebarLinks({ project }: ProjectSidebarLinksProps) {
             <span className='text-gray-400 transition-colors group-hover:text-white'>
               <Globe className='h-4 w-4' />
             </span>
-            <span className='truncate'>{project.projectWebsite}</span>
+            <span className='truncate'>{vm.projectWebsite}</span>
           </a>
         )}
 
-        {/* Demo Video */}
-        {project.demoVideo && (
+        {vm.demoVideo && (
           <a
-            href={project.demoVideo}
+            href={vm.demoVideo}
             target='_blank'
             rel='noopener noreferrer'
             className='group flex items-center gap-3 text-sm text-white transition-colors hover:text-white'
@@ -66,23 +63,22 @@ export function ProjectSidebarLinks({ project }: ProjectSidebarLinksProps) {
             <span className='text-gray-400 transition-colors group-hover:text-white'>
               <Youtube className='h-4 w-4' />
             </span>
-            <span className='truncate'>{project.demoVideo}</span>
+            <span className='truncate'>{vm.demoVideo}</span>
           </a>
         )}
 
-        {/* Social Links */}
-        {Object.entries(project.socialLinks).map(([platform, url], index) => (
+        {vm.socialLinks.map((link, index) => (
           <a
             key={index}
-            href={url.url}
+            href={link.url}
             target='_blank'
             rel='noopener noreferrer'
             className='group flex items-center gap-3 text-sm text-white transition-colors hover:text-white'
           >
             <span className='text-gray-400 transition-colors group-hover:text-white'>
-              {getIcon(platform.toLowerCase())}
+              {getIcon(link.platform.toLowerCase())}
             </span>
-            <span className='truncate'>{url.url}</span>
+            <span className='truncate'>{link.url}</span>
           </a>
         ))}
       </div>

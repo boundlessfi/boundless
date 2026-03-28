@@ -3,6 +3,7 @@
  * Comprehensive helper functions for Stellar wallet operations
  */
 
+import { StrKey } from '@stellar/stellar-sdk';
 import { StellarNetwork } from '@/hooks/use-wallet';
 
 // Environment variables
@@ -12,6 +13,11 @@ const STELLAR_NETWORK =
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const WALLET_CONNECT_PROJECT_ID =
   process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
+
+/**
+ * Address type on the Stellar network
+ */
+export type StellarAddressType = 'account' | 'contract' | 'unknown';
 
 // Network configurations
 export const NETWORKS = {
@@ -50,36 +56,89 @@ export function formatAddress(address: string, length: number = 4): string {
 }
 
 /**
- * Validate a Stellar address format
- * @param address - The address to validate
- * @returns True if valid Stellar address format
+ * Check if an address is a valid Stellar account (G-address)
+ * Uses the Stellar SDK's StrKey checksum validation
  */
-export function validateAddress(address: string): boolean {
-  if (!address || typeof address !== 'string') {
-    return false;
-  }
-
-  // Stellar addresses are 56 characters long and start with G, M, S, or T
-  const stellarAddressRegex = /^[GMSC][A-Z2-7]{55}$/;
-  return stellarAddressRegex.test(address);
+export function isAccountAddress(address: string): boolean {
+  if (!address || typeof address !== 'string') return false;
+  return StrKey.isValidEd25519PublicKey(address.trim());
 }
 
 /**
- * Get explorer URL for an address
- * @param address - The Stellar address
- * @param network - The network (testnet or public)
- * @returns Full explorer URL
+ * Check if an address is a valid Stellar/Soroban contract (C-address)
+ * Uses the Stellar SDK's StrKey checksum validation
+ */
+export function isContractAddress(address: string): boolean {
+  if (!address || typeof address !== 'string') return false;
+  return StrKey.isValidContract(address.trim());
+}
+
+/**
+ * Determine the type of a Stellar address
+ */
+export function getAddressType(address: string): StellarAddressType {
+  if (isAccountAddress(address)) return 'account';
+  if (isContractAddress(address)) return 'contract';
+  return 'unknown';
+}
+
+/**
+ * Validate a Stellar address format (account G-address or contract C-address)
+ * Uses the Stellar SDK for proper checksum validation
+ */
+export function validateAddress(address: string): boolean {
+  if (!address || typeof address !== 'string') return false;
+  const trimmed = address.trim();
+  return (
+    StrKey.isValidEd25519PublicKey(trimmed) || StrKey.isValidContract(trimmed)
+  );
+}
+
+/**
+ * Get explorer URL for an address (account or contract)
+ * Automatically detects whether the address is a G-address (account) or C-address (contract)
+ * and returns the correct stellar.expert path
  */
 export function getExplorerUrl(
   address: string,
   network: NetworkType = getCurrentNetwork()
 ): string {
-  if (!validateAddress(address)) {
+  const trimmed = address?.trim();
+  if (!trimmed || !validateAddress(trimmed)) {
     throw new Error('Invalid Stellar address');
   }
 
   const networkConfig = NETWORKS[network];
-  return `${networkConfig.explorer}/account/${address}`;
+  const pathSegment = isContractAddress(trimmed) ? 'contract' : 'account';
+  return `${networkConfig.explorer}/${pathSegment}/${trimmed}`;
+}
+
+/**
+ * Get explorer URL for an account (G-address) explicitly
+ */
+export function getAccountExplorerUrl(
+  address: string,
+  network: NetworkType = getCurrentNetwork()
+): string {
+  const trimmed = address?.trim();
+  if (!trimmed || !isAccountAddress(trimmed)) {
+    throw new Error('Invalid Stellar account address (expected G-address)');
+  }
+  return `${NETWORKS[network].explorer}/account/${trimmed}`;
+}
+
+/**
+ * Get explorer URL for a contract (C-address) explicitly
+ */
+export function getContractExplorerUrl(
+  address: string,
+  network: NetworkType = getCurrentNetwork()
+): string {
+  const trimmed = address?.trim();
+  if (!trimmed || !isContractAddress(trimmed)) {
+    throw new Error('Invalid Stellar contract address (expected C-address)');
+  }
+  return `${NETWORKS[network].explorer}/contract/${trimmed}`;
 }
 
 /**
@@ -174,16 +233,18 @@ export function getNetworkDisplayName(network: NetworkType): string {
 /**
  * Check if address is valid and format it
  * @param address - The address to validate and format
- * @returns Object with validation result and formatted address
+ * @returns Object with validation result, formatted address, and address type
  */
 export function validateAndFormatAddress(address: string) {
   const isValid = validateAddress(address);
   const formatted = isValid ? formatAddress(address) : address;
+  const type = getAddressType(address);
 
   return {
     isValid,
     formatted,
     full: address,
+    type,
   };
 }
 

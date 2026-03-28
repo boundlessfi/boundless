@@ -11,11 +11,17 @@
  * Import what you need — everything is tree-shakeable.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import {
   createProjectDraft,
   updateProjectDraft,
   listPublicProjects,
+  listPublicProjectsPaginated,
   searchProjects,
   listFeaturedProjects,
   publishProject,
@@ -23,6 +29,7 @@ import {
   getPublicProjectBySlug,
   getMyProjectById,
   deleteProject,
+  submitProjectEdit,
 } from '@/features/projects/api';
 import type {
   Project,
@@ -30,6 +37,10 @@ import type {
   PublishProjectRequest,
   GetMyProjectsParams,
   ProjectApiResponse,
+  SubmitProjectEditRequest,
+  ProjectEdit,
+  PublicProjectsQuery,
+  PaginatedProjectsResponse,
 } from '@/features/projects/types';
 
 // ─── Query Key Factory ────────────────────────────────────────────────────────
@@ -41,6 +52,10 @@ export const projectKeys = {
 
   /** Public project list. */
   list: () => ['projects', 'list'] as const,
+
+  /** Public project list (paginated + filtered). */
+  publicList: (filters?: Omit<PublicProjectsQuery, 'page'>) =>
+    ['projects', 'public-list', filters] as const,
 
   /** Full-text search results. */
   search: (query: string) => ['projects', 'search', query] as const,
@@ -69,6 +84,30 @@ export function usePublicProjects() {
     queryKey: projectKeys.list(),
     queryFn: listPublicProjects,
     staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+/**
+ * GET /api/projects (infinite scroll)
+ * Paginated public projects with filtering, sorting, and search.
+ * Uses React Query's useInfiniteQuery for seamless load-more.
+ */
+export function useInfinitePublicProjects(
+  filters: Omit<PublicProjectsQuery, 'page'> = {},
+  pageSize = 12
+) {
+  return useInfiniteQuery<PaginatedProjectsResponse, Error>({
+    queryKey: projectKeys.publicList(filters),
+    queryFn: ({ pageParam }) =>
+      listPublicProjectsPaginated({
+        ...filters,
+        page: pageParam as number,
+        limit: pageSize,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: lastPage =>
+      lastPage.pagination.hasNext ? lastPage.pagination.page + 1 : undefined,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -227,6 +266,24 @@ export function useDeleteProject() {
     mutationFn: (id: string) => deleteProject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.mine() });
+    },
+  });
+}
+
+/**
+ * POST /api/projects/{id}/edits
+ * Submit an edit for a published (LIVE) project.
+ * MINOR edits are auto-approved; MAJOR edits put the project into REVIEWING.
+ */
+export function useSubmitProjectEdit(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation<ProjectEdit, Error, SubmitProjectEditRequest>({
+    mutationFn: data => submitProjectEdit(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.myProject(id) });
+      queryClient.invalidateQueries({ queryKey: projectKeys.mine() });
+      queryClient.invalidateQueries({ queryKey: projectKeys.list() });
     },
   });
 }

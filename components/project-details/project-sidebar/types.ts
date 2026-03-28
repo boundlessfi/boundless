@@ -1,41 +1,24 @@
-import { Crowdfunding, CrowdfundingProject } from '@/features/projects/types';
+import type { ProjectViewModel } from '@/features/projects/types/view-model';
 import { VoteCountResponse } from '@/types/votes';
 
-export interface CrowdfundData {
-  _id: string;
-  projectId: string;
-  thresholdVotes: number;
-  voteDeadline: string;
-  totalVotes: number;
-  status: string;
-  isVotingActive: boolean;
-  voteProgress: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface ProjectSidebarProps {
-  project: CrowdfundingProject;
-  crowdfund?: Crowdfunding;
+  vm: ProjectViewModel;
   isMobile?: boolean;
-  hideProgress?: boolean;
 }
 
 export interface ProjectSidebarHeaderProps {
-  project: CrowdfundingProject;
+  vm: ProjectViewModel;
   projectStatus: ProjectStatus;
 }
 
 export interface ProjectSidebarProgressProps {
-  project: CrowdfundingProject;
-  crowdfund?: Crowdfunding;
+  vm: ProjectViewModel;
   projectStatus: string;
   voteCounts: VoteCountResponse | null;
 }
 
 export interface ProjectSidebarActionsProps {
-  project: CrowdfundingProject;
-  crowdfund?: Crowdfunding;
+  vm: ProjectViewModel;
   projectStatus: ProjectStatus;
   isVoting: boolean;
   userVote: 1 | -1 | null;
@@ -43,11 +26,11 @@ export interface ProjectSidebarActionsProps {
 }
 
 export interface ProjectSidebarCreatorProps {
-  project: CrowdfundingProject;
+  vm: ProjectViewModel;
 }
 
 export interface ProjectSidebarLinksProps {
-  project: CrowdfundingProject;
+  vm: ProjectViewModel;
 }
 
 export type ProjectStatus =
@@ -58,4 +41,5 @@ export type ProjectStatus =
   | 'Funding'
   | 'idea'
   | 'pending'
-  | 'SUBMITTED';
+  | 'SUBMITTED'
+  | 'Live';

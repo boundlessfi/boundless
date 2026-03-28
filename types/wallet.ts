@@ -11,7 +11,14 @@ export interface WalletBalance {
 
 export interface WalletTransaction {
   id: string;
-  type: 'DEPOSIT' | 'WITHDRAWAL' | 'PAYMENT' | string;
+  type:
+    | 'DEPOSIT'
+    | 'WITHDRAWAL'
+    | 'PAYMENT'
+    | 'FEE'
+    | 'PAYOUT'
+    | 'REFUND'
+    | string;
   amount: string;
   currency: string;
   state: 'COMPLETED' | 'PENDING' | 'FAILED' | string;

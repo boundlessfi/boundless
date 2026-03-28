@@ -156,34 +156,44 @@ export const getNotificationIcon = (type: NotificationType): LucideIcon => {
   }
 };
 
+export type NotificationColorScheme = {
+  bg: string;
+  text: string;
+};
+
 /**
- * Gets notification color class based on type
+ * Gets a semantic color scheme for notification icons (dark theme)
  */
-export const getNotificationColor = (type: NotificationType): string => {
-  // Security alerts - red
+export const getNotificationColorScheme = (
+  type: NotificationType
+): NotificationColorScheme => {
+  // Security alerts — red
   if (type === NotificationType.SECURITY_ALERT) {
-    return 'border-red-200 bg-red-50 text-red-900';
+    return {
+      bg: 'bg-red-500/15',
+      text: 'text-red-400',
+    };
   }
 
-  // Success states - green
+  // Error/rejection/cancellation — red
   if (
-    type === NotificationType.PROJECT_FUNDED ||
-    type === NotificationType.PROJECT_COMPLETED ||
-    type === NotificationType.FUNDING_GOAL_MET ||
-    type === NotificationType.MILESTONE_COMPLETED ||
-    type === NotificationType.ACCOUNT_VERIFIED ||
-    type === NotificationType.ORGANIZATION_INVITE_ACCEPTED ||
-    type === NotificationType.ORGANIZATION_MEMBER_ADDED ||
-    type === NotificationType.ORGANIZATION_UNARCHIVED ||
-    type === NotificationType.HACKATHON_COMPLETED ||
-    type === NotificationType.HACKATHON_SUBMISSION_SHORTLISTED ||
-    type === NotificationType.HACKATHON_WINNERS_ANNOUNCED ||
-    type === NotificationType.TEAM_INVITATION_ACCEPTED
+    type === NotificationType.PROJECT_REJECTED ||
+    type === NotificationType.PROJECT_CANCELLED ||
+    type === NotificationType.ORGANIZATION_DELETED ||
+    type === NotificationType.HACKATHON_CANCELLED ||
+    type === NotificationType.HACKATHON_SUBMISSION_DISQUALIFIED ||
+    type === NotificationType.TEAM_INVITATION_DECLINED ||
+    type === NotificationType.TEAM_INVITATION_CANCELLED ||
+    type === NotificationType.FUNDING_FAILED ||
+    type === NotificationType.ORGANIZATION_MEMBER_REMOVED
   ) {
-    return 'border-green-200 bg-green-50 text-green-900';
+    return {
+      bg: 'bg-red-500/15',
+      text: 'text-red-400',
+    };
   }
 
-  // Warning/alert states - yellow/orange
+  // Warning/deadlines — amber
   if (
     type === NotificationType.FUNDING_DEADLINE_APPROACHING ||
     type === NotificationType.MILESTONE_DEADLINE_APPROACHING ||
@@ -191,21 +201,88 @@ export const getNotificationColor = (type: NotificationType): string => {
     type === NotificationType.TEAM_INVITATION_EXPIRED ||
     type === NotificationType.ORGANIZATION_ARCHIVED
   ) {
-    return 'border-yellow-200 bg-yellow-50 text-yellow-900';
+    return {
+      bg: 'bg-amber-500/15',
+      text: 'text-amber-400',
+    };
   }
 
-  // Error/rejection states - red
+  // Success/completion — emerald
   if (
-    type === NotificationType.PROJECT_REJECTED ||
-    type === NotificationType.ORGANIZATION_DELETED ||
-    type === NotificationType.HACKATHON_CANCELLED ||
-    type === NotificationType.HACKATHON_SUBMISSION_DISQUALIFIED ||
-    type === NotificationType.TEAM_INVITATION_DECLINED ||
-    type === NotificationType.TEAM_INVITATION_CANCELLED
+    type === NotificationType.PROJECT_FUNDED ||
+    type === NotificationType.PROJECT_COMPLETED ||
+    type === NotificationType.PROJECT_APPROVED ||
+    type === NotificationType.PROJECT_VERIFIED ||
+    type === NotificationType.FUNDING_GOAL_MET ||
+    type === NotificationType.FUNDING_RECEIVED ||
+    type === NotificationType.REFUND_PROCESSED ||
+    type === NotificationType.MILESTONE_COMPLETED ||
+    type === NotificationType.MILESTONE_FUNDS_RELEASED ||
+    type === NotificationType.ACCOUNT_VERIFIED ||
+    type === NotificationType.ORGANIZATION_INVITE_ACCEPTED ||
+    type === NotificationType.ORGANIZATION_MEMBER_ADDED ||
+    type === NotificationType.ORGANIZATION_UNARCHIVED ||
+    type === NotificationType.HACKATHON_COMPLETED ||
+    type === NotificationType.TEAM_INVITATION_ACCEPTED
   ) {
-    return 'border-red-200 bg-red-50 text-red-900';
+    return {
+      bg: 'bg-emerald-500/15',
+      text: 'text-emerald-400',
+    };
   }
 
-  // Default - blue for unread, gray for read
-  return 'border-blue-200 bg-blue-50 text-blue-900';
+  // Trophy/winners — gold
+  if (
+    type === NotificationType.HACKATHON_WINNERS_ANNOUNCED ||
+    type === NotificationType.HACKATHON_SUBMISSION_SHORTLISTED
+  ) {
+    return {
+      bg: 'bg-yellow-500/15',
+      text: 'text-yellow-400',
+    };
+  }
+
+  // Voting — violet
+  if (
+    type === NotificationType.VOTING_STARTED ||
+    type === NotificationType.VOTING_ENDED ||
+    type === NotificationType.VOTE_RECEIVED ||
+    type === NotificationType.VOTING_THRESHOLD_MET
+  ) {
+    return {
+      bg: 'bg-violet-500/15',
+      text: 'text-violet-400',
+    };
+  }
+
+  // Interactions — sky
+  if (
+    type === NotificationType.COMMENT_RECEIVED ||
+    type === NotificationType.COMMENT_REPLY ||
+    type === NotificationType.COMMENT_MENTION ||
+    type === NotificationType.REACTION_RECEIVED ||
+    type === NotificationType.DIRECT_MESSAGE
+  ) {
+    return {
+      bg: 'bg-sky-500/15',
+      text: 'text-sky-400',
+    };
+  }
+
+  // Invitations — indigo
+  if (
+    type === NotificationType.ORGANIZATION_INVITE_SENT ||
+    type === NotificationType.TEAM_INVITATION_SENT
+  ) {
+    return {
+      bg: 'bg-indigo-500/15',
+      text: 'text-indigo-400',
+    };
+  }
+
+  // Default — neutral
+  return {
+    bg: 'bg-gray-800',
+    text: 'text-gray-400',
+  };
 };

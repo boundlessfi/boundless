@@ -7,6 +7,15 @@ import {
   IndexedDBStorage,
   getCredentialIdFromSigner,
   STROOPS_PER_XLM,
+  LEDGERS_PER_DAY,
+  createDelegatedSigner,
+  createWebAuthnSigner,
+  createDefaultContext,
+  createCallContractContext,
+  createCreateContractContext,
+  createThresholdParams,
+  createSpendingLimitParams,
+  createWeightedThresholdParams,
 } from 'smart-account-kit';
 import type {
   SmartAccountKit as SmartAccountKitType,
@@ -20,6 +29,7 @@ import type {
 } from 'smart-account-kit';
 import { rpc, xdr, Address, scValToNative } from '@stellar/stellar-sdk';
 import { smartWalletConfig, nativeTokenContract } from './config';
+import type { PolicyInfo } from './config';
 
 export type {
   StoredCredential,
@@ -27,8 +37,15 @@ export type {
   SelectedSigner,
   ContractSigner,
   ContextRule,
+  PolicyInfo,
 };
-export { getCredentialIdFromSigner };
+export {
+  getCredentialIdFromSigner,
+  STROOPS_PER_XLM,
+  LEDGERS_PER_DAY,
+  createDelegatedSigner,
+  createWebAuthnSigner,
+};
 
 let _kit: SmartAccountKitType | null = null;
 let _walletAdapter: ExternalWalletAdapter | null = null;
@@ -80,6 +97,13 @@ export async function getSmartAccountKit(): Promise<SmartAccountKitType> {
       ...(_walletAdapter ? { externalWallet: _walletAdapter } : {}),
     });
 
+    // Sync credentials — clean up deployed ones, keep pending for retry
+    try {
+      await _kit.credentials.syncAll();
+    } catch {
+      // Non-critical — sync can be retried later
+    }
+
     // Attempt silent session restore from IndexedDB (no prompt)
     try {
       await _kit.connectWallet();
@@ -93,6 +117,7 @@ export async function getSmartAccountKit(): Promise<SmartAccountKitType> {
 /**
  * Register a new passkey and deploy a smart wallet contract.
  * Returns the on-chain contract address (C...) and credential ID.
+ * Throws if deployment fails so the caller can handle it.
  */
 export async function createSmartWallet(
   appName: string,
@@ -104,6 +129,15 @@ export async function createSmartWallet(
     autoFund: true,
     nativeTokenContract,
   });
+
+  // Check deployment result — if it failed, throw so caller can handle it
+  if (result.submitResult && !result.submitResult.success) {
+    throw new Error(
+      `Smart wallet deployment failed: ${result.submitResult.error || 'Unknown error'}. ` +
+        'The passkey was created but the contract was not deployed. You can retry from wallet settings.'
+    );
+  }
+
   return {
     contractId: result.contractId,
     credentialId: result.credentialId,
@@ -112,14 +146,39 @@ export async function createSmartWallet(
 
 /**
  * Connect to an existing smart wallet via passkey authentication.
- * Prompts the browser's passkey UI and returns the contract address.
+ * Prompts the browser's passkey UI, discovers contracts via indexer,
+ * and returns the contract address.
+ *
+ * If multiple contracts are found for the same passkey, the first one
+ * is used (a future UX improvement could let the user pick).
  */
 export async function connectSmartWallet(): Promise<{
   contractId: string;
   credentialId: string;
 } | null> {
   const kit = await getSmartAccountKit();
-  const result = await kit.connectWallet({ prompt: true });
+
+  // Step 1: Authenticate with passkey to get credential ID
+  const { credentialId } = await kit.authenticatePasskey();
+
+  // Step 2: Try to discover contracts via indexer
+  const contracts = await kit.discoverContractsByCredential(credentialId);
+
+  if (contracts && contracts.length > 0) {
+    // Use the first (or only) contract found via indexer
+    const result = await kit.connectWallet({
+      contractId: contracts[0].contract_id,
+      credentialId,
+    });
+    if (!result) return null;
+    return {
+      contractId: result.contractId,
+      credentialId: result.credentialId,
+    };
+  }
+
+  // Step 3: No indexed contracts — fall back to derived contract ID
+  const result = await kit.connectWallet({ credentialId });
   if (!result) return null;
   return {
     contractId: result.contractId,
@@ -165,7 +224,6 @@ export async function fetchSacTokenBalance(
   walletContractId: string
 ): Promise<string> {
   const server = new rpc.Server(smartWalletConfig.rpcUrl);
-  console.log(smartWalletConfig.rpcUrl);
   const key = xdr.ScVal.scvVec([
     xdr.ScVal.scvSymbol('Balance'),
     new Address(walletContractId).toScVal(),
@@ -189,7 +247,6 @@ export async function fetchSacTokenBalance(
     ) {
       amount = nativeVal.amount;
     }
-    console.log(`3333311`);
     return (Number(amount) / STROOPS_PER_XLM).toFixed(2);
   } catch {
     // Key not found means 0 balance
@@ -331,6 +388,46 @@ export async function getStoredCredentials(): Promise<StoredCredential[]> {
   return kit.credentials.getAll();
 }
 
+/**
+ * Get pending (not yet deployed) credentials.
+ */
+export async function getPendingCredentials(): Promise<StoredCredential[]> {
+  const kit = await getSmartAccountKit();
+  return kit.credentials.getPending();
+}
+
+/**
+ * Deploy a pending credential (retry failed deployment).
+ */
+export async function deployPendingCredential(
+  credentialId: string
+): Promise<{ contractId: string; success: boolean; error?: string }> {
+  const kit = await getSmartAccountKit();
+  const result = await kit.credentials.deploy(credentialId, {
+    autoSubmit: true,
+  });
+
+  if (result.submitResult?.success) {
+    return { contractId: result.contractId, success: true };
+  }
+
+  return {
+    contractId: result.contractId,
+    success: false,
+    error: result.submitResult?.error || 'Deployment failed',
+  };
+}
+
+/**
+ * Delete a pending credential from IndexedDB.
+ */
+export async function deletePendingCredential(
+  credentialId: string
+): Promise<void> {
+  const kit = await getSmartAccountKit();
+  await kit.credentials.delete(credentialId);
+}
+
 // ---------------------------------------------------------------------------
 // Multi-signer transfer
 // ---------------------------------------------------------------------------
@@ -366,4 +463,233 @@ export async function transfer(
 ) {
   const kit = await getSmartAccountKit();
   return kit.transfer(tokenContract, recipient, amount, { credentialId });
+}
+
+// ---------------------------------------------------------------------------
+// Context rule creation & management
+// ---------------------------------------------------------------------------
+
+export type ContextTypeOption = 'default' | 'call_contract' | 'create_contract';
+
+/**
+ * Build a ContextRuleType from user selection.
+ */
+function buildContextType(
+  contextType: ContextTypeOption,
+  contractAddress?: string,
+  wasmHash?: string
+): ContextRuleType {
+  if (contextType === 'call_contract' && contractAddress) {
+    return createCallContractContext(contractAddress);
+  }
+  if (contextType === 'create_contract' && wasmHash) {
+    return createCreateContractContext(wasmHash);
+  }
+  return createDefaultContext();
+}
+
+export interface PolicyParams {
+  policy: PolicyInfo;
+  /** Threshold (M-of-N) */
+  threshold?: number;
+  /** Spending limit in XLM */
+  spendingLimit?: string;
+  /** Spending limit period in days */
+  spendingPeriodDays?: number;
+  /** Weighted threshold minimum weight */
+  weightedThreshold?: number;
+  /** Signer weights for weighted threshold: Map<signer index, weight> */
+  signerWeights?: Map<number, number>;
+}
+
+export interface CreateRuleOptions {
+  name: string;
+  contextType: ContextTypeOption;
+  contractAddress?: string;
+  wasmHash?: string;
+  signers: ContractSigner[];
+  policies: PolicyParams[];
+  validUntilLedgers?: number;
+}
+
+/**
+ * Create a new context rule on-chain.
+ */
+export async function addContextRule(
+  options: CreateRuleOptions
+): Promise<{ success: boolean; error?: string }> {
+  const kit = await getSmartAccountKit();
+  if (!kit.isConnected) throw new Error('Smart wallet not connected');
+
+  const ctxType = buildContextType(
+    options.contextType,
+    options.contractAddress,
+    options.wasmHash
+  );
+
+  // Build policies map
+  const policiesMap = new Map<string, unknown>();
+  for (const pp of options.policies) {
+    let nativeParams: unknown;
+    if (pp.policy.type === 'threshold') {
+      nativeParams = createThresholdParams(pp.threshold || 1);
+    } else if (pp.policy.type === 'spending_limit') {
+      const limitStroops = BigInt(
+        Math.floor(parseFloat(pp.spendingLimit || '1000') * STROOPS_PER_XLM)
+      );
+      const periodLedgers = (pp.spendingPeriodDays || 1) * LEDGERS_PER_DAY;
+      nativeParams = createSpendingLimitParams(limitStroops, periodLedgers);
+    } else if (pp.policy.type === 'weighted_threshold') {
+      nativeParams = createWeightedThresholdParams(
+        pp.weightedThreshold || 1,
+        new Map()
+      );
+    } else {
+      nativeParams = {};
+    }
+
+    if (
+      pp.policy.type === 'threshold' ||
+      pp.policy.type === 'spending_limit' ||
+      pp.policy.type === 'weighted_threshold'
+    ) {
+      const scValParams = kit.convertPolicyParams(pp.policy.type, nativeParams);
+      policiesMap.set(pp.policy.address, scValParams);
+    } else {
+      policiesMap.set(pp.policy.address, nativeParams);
+    }
+  }
+
+  // Sort policies by address (Soroban requires sorted ScMap keys)
+  const sortedPolicies = new Map(
+    [...policiesMap.entries()].sort(([a], [b]) => a.localeCompare(b))
+  );
+
+  const tx = await kit.rules.add(
+    ctxType,
+    options.name.trim(),
+    options.signers,
+    sortedPolicies,
+    options.validUntilLedgers
+  );
+
+  return kit.signAndSubmit(tx);
+}
+
+/**
+ * Remove a context rule by ID.
+ */
+export async function removeContextRule(
+  ruleId: number
+): Promise<{ success: boolean; error?: string }> {
+  const kit = await getSmartAccountKit();
+  if (!kit.isConnected) throw new Error('Smart wallet not connected');
+
+  const tx = await kit.rules.remove(ruleId);
+  return kit.signAndSubmit(tx);
+}
+
+/**
+ * Add a passkey signer to a context rule, creating a new WebAuthn credential.
+ */
+export async function createPasskeyForRule(
+  contextRuleId: number,
+  userName: string,
+  nickname?: string
+) {
+  const kit = await getSmartAccountKit();
+  if (!kit.isConnected) throw new Error('Smart wallet not connected');
+
+  return kit.signers.addPasskey(contextRuleId, 'Boundless', userName, {
+    nickname,
+  });
+}
+
+/**
+ * Create a new passkey credential (without adding to a rule yet).
+ * Useful for the rule builder UI.
+ */
+export async function createCredential(
+  nickname: string
+): Promise<StoredCredential> {
+  const kit = await getSmartAccountKit();
+  return kit.credentials.create({ nickname, appName: 'Boundless' });
+}
+
+/**
+ * Add a policy to an existing context rule.
+ */
+type KnownPolicyType = 'threshold' | 'spending_limit' | 'weighted_threshold';
+
+export async function addPolicyToRule(
+  ruleId: number,
+  policyAddress: string,
+  policyType: PolicyInfo['type'],
+  params: PolicyParams
+): Promise<{ success: boolean; error?: string }> {
+  const kit = await getSmartAccountKit();
+  if (!kit.isConnected) throw new Error('Smart wallet not connected');
+
+  let nativeParams: unknown;
+  if (policyType === 'threshold') {
+    nativeParams = createThresholdParams(params.threshold || 1);
+  } else if (policyType === 'spending_limit') {
+    const limitStroops = BigInt(
+      Math.floor(parseFloat(params.spendingLimit || '1000') * STROOPS_PER_XLM)
+    );
+    const periodLedgers = (params.spendingPeriodDays || 1) * LEDGERS_PER_DAY;
+    nativeParams = createSpendingLimitParams(limitStroops, periodLedgers);
+  } else if (policyType === 'weighted_threshold') {
+    nativeParams = createWeightedThresholdParams(
+      params.weightedThreshold || 1,
+      new Map()
+    );
+  } else {
+    nativeParams = {};
+  }
+
+  let scValParams: unknown;
+  if (
+    policyType === 'threshold' ||
+    policyType === 'spending_limit' ||
+    policyType === 'weighted_threshold'
+  ) {
+    scValParams = kit.convertPolicyParams(
+      policyType as KnownPolicyType,
+      nativeParams
+    );
+  } else {
+    scValParams = nativeParams;
+  }
+
+  const tx = await kit.policies.add(ruleId, policyAddress, scValParams);
+  return kit.signAndSubmit(tx);
+}
+
+/**
+ * Remove a policy from a context rule.
+ */
+export async function removePolicyFromRule(
+  ruleId: number,
+  policyAddress: string
+): Promise<{ success: boolean; error?: string }> {
+  const kit = await getSmartAccountKit();
+  if (!kit.isConnected) throw new Error('Smart wallet not connected');
+
+  const tx = await kit.policies.remove(ruleId, policyAddress);
+  return kit.signAndSubmit(tx);
+}
+
+/**
+ * Remove a signer from a context rule.
+ */
+export async function removeSignerFromRule(
+  contextRuleId: number,
+  signer: ContractSigner
+): Promise<{ success: boolean; error?: string }> {
+  const kit = await getSmartAccountKit();
+  if (!kit.isConnected) throw new Error('Smart wallet not connected');
+
+  const tx = await kit.signers.remove(contextRuleId, signer);
+  return kit.signAndSubmit(tx);
 }

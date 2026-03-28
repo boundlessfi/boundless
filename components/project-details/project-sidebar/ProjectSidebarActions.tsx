@@ -16,12 +16,11 @@ import { FollowButton } from '@/components/follow';
 import { FundingModal } from '@/components/project-details/funding-modal';
 
 export function ProjectSidebarActions({
-  project,
+  vm,
   projectStatus,
   isVoting,
   userVote,
   onVote,
-  crowdfund,
 }: ProjectSidebarActionsProps) {
   const [isSharePopupOpen, setIsSharePopupOpen] = useState(false);
 
@@ -34,7 +33,7 @@ export function ProjectSidebarActions({
   };
 
   return (
-    <div className='flex flex-row gap-3'>
+    <div className='flex flex-wrap gap-2 sm:gap-3'>
       {projectStatus === 'Validation' && (
         <div className='group relative inline-block'>
           <BoundlessButton
@@ -49,7 +48,7 @@ export function ProjectSidebarActions({
                 <ArrowUp className='h-5 w-5' />
               )
             }
-            className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-lg text-base font-semibold shadow-lg transition-all duration-200 hover:shadow-xl ${
+            className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-semibold shadow-lg transition-all duration-200 hover:shadow-xl sm:h-12 sm:text-base ${
               userVote === 1
                 ? 'bg-primary/10 border-primary/24 text-primary border'
                 : 'bg-primary hover:bg-primary text-black'
@@ -60,29 +59,29 @@ export function ProjectSidebarActions({
             </span>
           </BoundlessButton>
 
-          {/* Dropdown text */}
           <div className='absolute top-full left-1/2 z-10 mt-2 hidden w-64 -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-3 text-sm text-gray-700 shadow-lg group-hover:block'>
-            Voting is straightforward and individualistic — it's for everyone.
-            Voting power, weight, and eligibility for who can vote are currently
-            under implementation.
+            Voting is straightforward and individualistic — it&apos;s for
+            everyone. Voting power, weight, and eligibility for who can vote are
+            currently under implementation.
           </div>
         </div>
       )}
 
-      {projectStatus === 'CAMPAIGNING' && (
+      {/* Back Project — only for campaigns in funding phase */}
+      {vm.campaign && projectStatus === 'CAMPAIGNING' && (
         <FundingModal
-          campaignId={crowdfund?.id || ''}
-          projectTitle={project.title}
-          currentRaised={crowdfund?.fundingRaised || 0}
-          fundingGoal={crowdfund?.fundingGoal || 0}
-          escrowAddress={crowdfund?.escrowAddress || ''}
+          campaignId={vm.campaign.campaignId}
+          projectTitle={vm.title}
+          currentRaised={vm.campaign.fundingRaised}
+          fundingGoal={vm.campaign.fundingGoal}
+          escrowAddress={vm.campaign.escrowAddress}
         >
           <BoundlessButton
-            className='bg-primary hover:bg-primary flex h-12 flex-1 items-center justify-center gap-2 rounded-lg text-base font-semibold text-black shadow-lg transition-all duration-200 hover:shadow-xl'
+            className='bg-primary hover:bg-primary flex h-10 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-semibold text-black shadow-lg transition-all duration-200 hover:shadow-xl sm:h-12 sm:text-base'
             icon={<HandCoins className='h-5 w-5' />}
             iconPosition='left'
           >
-            <span className=''>Back Project</span>
+            <span>Back Project</span>
           </BoundlessButton>
         </FundingModal>
       )}
@@ -90,37 +89,37 @@ export function ProjectSidebarActions({
       {projectStatus === 'Completed' && (
         <BoundlessButton
           disabled
-          className='bg-success-75 border-success-600 text-success-600 flex h-12 flex-1 items-center justify-center gap-2 rounded-lg border text-base font-semibold shadow-lg transition-all duration-200'
+          className='bg-success-75 border-success-600 text-success-600 flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border text-sm font-semibold shadow-lg transition-all duration-200 sm:h-12 sm:text-base'
           icon={<CheckCircle className='h-5 w-5' />}
           iconPosition='left'
         >
-          <span className=''>Completed</span>
+          <span>Completed</span>
         </BoundlessButton>
       )}
 
       {projectStatus === 'Funded' && (
         <BoundlessButton
           disabled
-          className='bg-secondary-75 border-secondary-600 text-secondary-600 flex h-12 flex-1 items-center justify-center gap-2 rounded-lg border text-base font-semibold shadow-lg transition-all duration-200'
+          className='bg-secondary-75 border-secondary-600 text-secondary-600 flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border text-sm font-semibold shadow-lg transition-all duration-200 sm:h-12 sm:text-base'
           icon={<DollarSign className='h-5 w-5' />}
           iconPosition='left'
         >
-          <span className=''>Funded</span>
+          <span>Funded</span>
         </BoundlessButton>
       )}
 
       <div className='flex-1'>
         <FollowButton
           entityType='PROJECT'
-          entityId={project.id}
-          className='h-12 w-full'
+          entityId={vm.id}
+          className='h-10 w-full sm:h-12'
         />
       </div>
 
       <div className='relative'>
         <BoundlessButton
           onClick={handleShareClick}
-          className='flex h-12 min-w-12 items-center justify-center gap-2 rounded-lg border border-white/24 bg-transparent text-sm font-medium text-gray-300 transition-all duration-200 hover:border-gray-600 hover:bg-transparent hover:text-white sm:flex-1'
+          className='flex h-10 min-w-10 items-center justify-center gap-2 rounded-lg border border-white/24 bg-transparent text-sm font-medium text-gray-300 transition-all duration-200 hover:border-gray-600 hover:bg-transparent hover:text-white sm:h-12 sm:min-w-12 sm:flex-1'
           icon={<Share2 className='h-5 w-5' />}
           iconPosition='left'
         >
@@ -130,7 +129,7 @@ export function ProjectSidebarActions({
         <SharePopup
           isOpen={isSharePopupOpen}
           onClose={handleCloseSharePopup}
-          projectTitle={project.title}
+          projectTitle={vm.title}
           projectUrl={typeof window !== 'undefined' ? window.location.href : ''}
         />
       </div>

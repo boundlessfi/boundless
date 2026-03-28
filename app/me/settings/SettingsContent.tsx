@@ -27,13 +27,48 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const TABS = [
-  { id: 'profile', label: 'Profile', icon: UserIcon },
-  { id: 'roles', label: 'Roles', icon: Briefcase },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'privacy', label: 'Privacy', icon: Shield },
-  { id: 'appearance', label: 'Appearance', icon: Paintbrush },
-  { id: 'security', label: 'Security', icon: Lock },
-  { id: 'identity', label: 'Identity', icon: Fingerprint },
+  {
+    id: 'profile',
+    label: 'Profile',
+    icon: UserIcon,
+    description: 'Name, bio & avatar',
+  },
+  {
+    id: 'roles',
+    label: 'Roles',
+    icon: Briefcase,
+    description: 'Platform roles',
+  },
+  {
+    id: 'notifications',
+    label: 'Notifications',
+    icon: Bell,
+    description: 'Email & push alerts',
+  },
+  {
+    id: 'privacy',
+    label: 'Privacy',
+    icon: Shield,
+    description: 'Visibility controls',
+  },
+  {
+    id: 'appearance',
+    label: 'Appearance',
+    icon: Paintbrush,
+    description: 'Theme & preferences',
+  },
+  {
+    id: 'security',
+    label: 'Security',
+    icon: Lock,
+    description: '2FA & passwords',
+  },
+  {
+    id: 'identity',
+    label: 'Identity',
+    icon: Fingerprint,
+    description: 'KYC verification',
+  },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -97,9 +132,9 @@ const SettingsContent = () => {
 
   if (isLoading && !hasLoadedOnce.current) {
     return (
-      <div className='p-4 sm:p-6 md:p-8'>
+      <div className='w-full px-4 py-6 sm:px-6 lg:px-8'>
         <Skeleton className='mb-6 h-8 w-48' />
-        <Skeleton className='mb-6 h-10 w-full max-w-2xl' />
+        <Skeleton className='mb-6 h-10 w-full' />
         <Skeleton className='h-80 w-full rounded-xl' />
       </div>
     );
@@ -153,27 +188,68 @@ const SettingsContent = () => {
   };
 
   return (
-    <div className='p-4 sm:p-6 md:p-8'>
+    <div className='w-full px-4 py-6 sm:px-6 lg:px-8'>
       <VerificationSubmittedModal
         open={showVerificationModal}
         onClose={() => setShowVerificationModal(false)}
       />
 
-      <div className='mx-auto max-w-3xl'>
-        {/* Header */}
-        <div className='mb-6'>
-          <h1 className='text-xl font-semibold text-white sm:text-2xl'>
-            Settings
-          </h1>
-          <p className='mt-1 text-sm text-zinc-500'>
-            Manage your account, preferences, and security
-          </p>
-        </div>
+      {/* Header */}
+      <div className='mb-6 lg:mb-8'>
+        <h1 className='text-2xl font-semibold text-white sm:text-3xl'>
+          Settings
+        </h1>
+        <p className='mt-1 text-sm text-zinc-500 sm:text-base'>
+          Manage your account, preferences, and security
+        </p>
+      </div>
 
-        {/* Tab bar */}
+      {/* Desktop: side-by-side / Mobile: stacked */}
+      <div className='flex flex-col gap-6 lg:flex-row lg:gap-8'>
+        {/* Sidebar nav — desktop */}
+        <nav className='hidden w-56 shrink-0 lg:block xl:w-64'>
+          <div className='sticky top-20 space-y-1'>
+            {TABS.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabClick(tab.id)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all',
+                    isActive
+                      ? 'bg-zinc-800 text-white'
+                      : 'text-zinc-500 hover:bg-zinc-800/40 hover:text-zinc-300'
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      'h-5 w-5 shrink-0',
+                      isActive && 'text-primary'
+                    )}
+                  />
+                  <div className='min-w-0'>
+                    <div className='text-sm font-medium'>{tab.label}</div>
+                    <div
+                      className={cn(
+                        'truncate text-xs',
+                        isActive ? 'text-zinc-400' : 'text-zinc-600'
+                      )}
+                    >
+                      {tab.description}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Mobile tab bar */}
         <div
           ref={tabsRef}
-          className='scrollbar-none -mx-4 mb-6 flex gap-1 overflow-x-auto px-4 pb-px sm:mx-0 sm:px-0'
+          className='scrollbar-none -mx-4 flex gap-1 overflow-x-auto px-4 pb-px sm:mx-0 sm:px-0 lg:hidden'
         >
           {TABS.map(tab => {
             const Icon = tab.icon;
@@ -191,14 +267,16 @@ const SettingsContent = () => {
                 )}
               >
                 <Icon className={cn('h-4 w-4', isActive && 'text-primary')} />
-                <span className='whitespace-nowrap'>{tab.label}</span>
+                <span className='hidden whitespace-nowrap sm:inline'>
+                  {tab.label}
+                </span>
               </button>
             );
           })}
         </div>
 
-        {/* Content */}
-        <div className='min-h-[24rem]'>{renderContent()}</div>
+        {/* Content — fills remaining space */}
+        <div className='min-h-[24rem] min-w-0 flex-1'>{renderContent()}</div>
       </div>
     </div>
   );

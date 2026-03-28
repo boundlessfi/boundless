@@ -135,3 +135,53 @@ const MAINNET_CURRENCIES: NetworkCurrencies = {
 export const networkCurrencies: NetworkCurrencies = isMainnet
   ? MAINNET_CURRENCIES
   : TESTNET_CURRENCIES;
+
+// ---------------------------------------------------------------------------
+// Known policy contracts
+// ---------------------------------------------------------------------------
+
+export interface PolicyInfo {
+  type: 'threshold' | 'spending_limit' | 'weighted_threshold' | 'custom';
+  name: string;
+  description: string;
+  address: string;
+}
+
+const TESTNET_POLICIES: PolicyInfo[] = [
+  {
+    type: 'threshold',
+    name: 'Threshold (M-of-N)',
+    description: 'Requires M signatures out of N total signers',
+    address:
+      process.env.NEXT_PUBLIC_THRESHOLD_POLICY_ADDRESS ||
+      'CCT4MMN5MJ6O2OU6LXPYTCVORQ2QVTBMDJ7MYBZQ2ULSYQVUIYP4IFYD',
+  },
+  {
+    type: 'spending_limit',
+    name: 'Spending Limit',
+    description: 'Limits spending to a maximum amount per time period',
+    address:
+      process.env.NEXT_PUBLIC_SPENDING_LIMIT_POLICY_ADDRESS ||
+      'CBMMWY54XOV6JJHSWCMKWWPXVRXASR5U26UJMLZDN4SP6CFFTVZARPTY',
+  },
+  {
+    type: 'weighted_threshold',
+    name: 'Weighted Threshold',
+    description:
+      'Requires minimum total weight from signers with different voting weights',
+    address:
+      process.env.NEXT_PUBLIC_WEIGHTED_THRESHOLD_POLICY_ADDRESS ||
+      'CBYDQ5XUBP7G24FI3LLGLW56QZCIEUSVRPX7FVOUCKHJQQ6DTF6BQGBZ',
+  },
+];
+
+const MAINNET_POLICIES: PolicyInfo[] = [];
+
+/** Known policy contracts for the active network */
+export const knownPolicies: PolicyInfo[] = isMainnet
+  ? MAINNET_POLICIES
+  : TESTNET_POLICIES;
+
+/** WebAuthn verifier address (needed for building passkey signers) */
+export const webauthnVerifierAddress: string =
+  smartWalletConfig.webauthnVerifierAddress;

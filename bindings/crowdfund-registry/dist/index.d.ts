@@ -339,7 +339,7 @@ export interface Client {
     /**
      * Construct and simulate a create_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
-    create_campaign: ({ owner, metadata_cid, funding_goal, asset, deadline, milestone_descs, min_pledge }: {
+    create_campaign: ({ owner, metadata_cid, funding_goal, asset, deadline, milestone_descs, min_pledge, submit }: {
         owner: string;
         metadata_cid: string;
         funding_goal: i128;
@@ -347,12 +347,26 @@ export interface Client {
         deadline: u64;
         milestone_descs: Array<readonly [string, u32]>;
         min_pledge: i128;
+        submit: boolean;
     }, options?: MethodOptions) => Promise<AssembledTransaction<Result<u64>>>;
     /**
      * Construct and simulate a reject_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
-    reject_campaign: ({ campaign_id }: {
+    reject_campaign: ({ campaign_id, reason }: {
         campaign_id: u64;
+        reason: string;
+    }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
+    /**
+     * Construct and simulate a update_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     */
+    update_campaign: ({ campaign_id, metadata_cid, funding_goal, asset, deadline, milestone_descs, min_pledge }: {
+        campaign_id: u64;
+        metadata_cid: string;
+        funding_goal: i128;
+        asset: string;
+        deadline: u64;
+        milestone_descs: Array<readonly [string, u32]>;
+        min_pledge: i128;
     }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
     /**
      * Construct and simulate a approve_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
@@ -465,6 +479,7 @@ export declare class Client extends ContractClient {
         cancel_campaign: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         create_campaign: (json: string) => AssembledTransaction<Result<bigint, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         reject_campaign: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
+        update_campaign: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         approve_campaign: (json: string) => AssembledTransaction<Result<Buffer<ArrayBufferLike>, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         get_vote_session: (json: string) => AssembledTransaction<Result<Buffer<ArrayBufferLike>, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         reject_milestone: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;

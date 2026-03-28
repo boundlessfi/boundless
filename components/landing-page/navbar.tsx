@@ -139,11 +139,11 @@ export function Logo() {
         className='md:hidden'
       />
       <Image
-        src='/logos/SVG_Inverse/BNDLSS__Inverse.svg'
+        src='/logos/SVG_Inverse/logo.svg'
         alt='Logo'
-        width={32}
+        width={140}
         height={28}
-        className='hidden h-auto w-24 md:block'
+        className='hidden md:block'
       />
     </Link>
   );
