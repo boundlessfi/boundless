@@ -1,29 +1,97 @@
 'use client';
-import Profile from '@/components/profile/update/Profile';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useEffect, useState, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { VerificationSubmittedModal } from '@/components/didit/VerificationSubmittedModal';
 import { User } from '@/types/user';
 import { getMe } from '@/lib/api/auth';
 import { GetMeResponse } from '@/lib/api/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import Profile from '@/components/profile/update/Profile';
 import Settings from '@/components/profile/update/Settings';
 import TwoFactorTab from '@/components/profile/update/TwoFactorTab';
 import SecurityTab from '@/components/profile/update/SecurityTab';
+import RolesTab from '@/components/profile/update/RolesTab';
+import ReputationInitCard from '@/components/profile/update/ReputationInitCard';
 import { IdentityVerificationSection } from '@/components/didit/IdentityVerificationSection';
-import { useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import {
+  User as UserIcon,
+  Briefcase,
+  Bell,
+  Shield,
+  Lock,
+  Paintbrush,
+  Fingerprint,
+  Loader2,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const TABS = [
+  {
+    id: 'profile',
+    label: 'Profile',
+    icon: UserIcon,
+    description: 'Name, bio & avatar',
+  },
+  {
+    id: 'roles',
+    label: 'Roles',
+    icon: Briefcase,
+    description: 'Platform roles',
+  },
+  {
+    id: 'notifications',
+    label: 'Notifications',
+    icon: Bell,
+    description: 'Email & push alerts',
+  },
+  {
+    id: 'privacy',
+    label: 'Privacy',
+    icon: Shield,
+    description: 'Visibility controls',
+  },
+  {
+    id: 'appearance',
+    label: 'Appearance',
+    icon: Paintbrush,
+    description: 'Theme & preferences',
+  },
+  {
+    id: 'security',
+    label: 'Security',
+    icon: Lock,
+    description: '2FA & passwords',
+  },
+  {
+    id: 'identity',
+    label: 'Identity',
+    icon: Fingerprint,
+    description: 'KYC verification',
+  },
+] as const;
+
+type TabId = (typeof TABS)[number]['id'];
 
 const SettingsContent = () => {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const fromVerification = searchParams.get('verification') === 'complete';
+  const tabParam = searchParams.get('tab') as TabId | null;
+
+  const [activeTab, setActiveTab] = useState<TabId>(
+    tabParam && TABS.some(t => t.id === tabParam)
+      ? tabParam
+      : fromVerification
+        ? 'identity'
+        : 'profile'
+  );
   const [userData, setUserData] = useState<GetMeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showVerificationModal, setShowVerificationModal] =
     useState(fromVerification);
-  // Prevent unmounting tabs on background refetches (e.g. after 2FA enable)
   const hasLoadedOnce = useRef(false);
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -38,144 +106,177 @@ const SettingsContent = () => {
   }, []);
 
   useEffect(() => {
-    // Only set isLoading true on the very first fetch
-    if (!hasLoadedOnce.current) {
-      setIsLoading(true);
-    }
+    if (!hasLoadedOnce.current) setIsLoading(true);
     fetchUserData();
   }, [fetchUserData]);
 
-  // Only show skeleton on first load — not on background refetches
+  // Scroll active tab into view on mobile
+  useEffect(() => {
+    if (!tabsRef.current) return;
+    const activeEl = tabsRef.current.querySelector('[data-active="true"]');
+    if (activeEl) {
+      activeEl.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  }, [activeTab]);
+
+  const handleTabClick = (id: TabId) => {
+    setActiveTab(id);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', id);
+    router.replace(url.pathname + url.search, { scroll: false });
+  };
+
   if (isLoading && !hasLoadedOnce.current) {
     return (
-      <div>
-        <Skeleton className='h-full w-full' />
+      <div className='w-full px-4 py-6 sm:px-6 lg:px-8'>
+        <Skeleton className='mb-6 h-8 w-48' />
+        <Skeleton className='mb-6 h-10 w-full' />
+        <Skeleton className='h-80 w-full rounded-xl' />
       </div>
     );
   }
-  return (
-    <div className='p-4 sm:p-6 md:p-10'>
-      <VerificationSubmittedModal
-        open={showVerificationModal}
-        onClose={() => setShowVerificationModal(false)}
-      />
-      <div className=''>
-        {/* Header */}
-        <div className='mb-6 sm:mb-8'>
-          <h1 className='mb-2 text-xl font-medium text-white sm:text-2xl'>
-            Profile Settings
-          </h1>
-          <p className='text-sm text-zinc-500'>
-            Manage your personal information and public profile
-          </p>
-        </div>
-        <Tabs
-          defaultValue={fromVerification ? 'identity' : 'profile'}
-          className='w-full'
-        >
-          <div className='-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0'>
-            <TabsList className='inline-flex h-auto gap-4 bg-transparent p-0 sm:gap-6'>
-              <TabsTrigger
-                value='profile'
-                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-              >
-                Profile
-              </TabsTrigger>
-              <TabsTrigger
-                value='settings'
-                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-              >
-                Settings
-              </TabsTrigger>
-              <TabsTrigger
-                value='notifications'
-                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-              >
-                Notifications
-              </TabsTrigger>
-              <TabsTrigger
-                value='privacy'
-                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-              >
-                Privacy
-              </TabsTrigger>
-              <TabsTrigger
-                value='preferences'
-                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-              >
-                Preferences
-              </TabsTrigger>
-              <TabsTrigger
-                value='security'
-                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-              >
-                Security
-              </TabsTrigger>
-              <TabsTrigger
-                value='2fa'
-                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-              >
-                2FA
-              </TabsTrigger>
-              <TabsTrigger
-                value='identity'
-                className='text-sm font-medium whitespace-nowrap text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
-              >
-                Identity
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value='profile'>
-            {userData?.user ? (
-              <Profile user={userData.user as User} />
-            ) : (
-              <div className='flex items-center justify-center p-12'>
-                <Loader2 className='text-primary mr-2 h-8 w-8 animate-spin' />
-                <span className='text-zinc-500'>Loading profile...</span>
-              </div>
-            )}
-          </TabsContent>
-          <TabsContent value='settings'>
-            <Settings />
-          </TabsContent>
-          <TabsContent value='notifications' className='space-y-6'>
-            <Settings visibleSections={['notifications']} />
-          </TabsContent>
-          <TabsContent value='privacy' className='space-y-6'>
-            <Settings visibleSections={['privacy']} />
-          </TabsContent>
-          <TabsContent value='preferences' className='space-y-6'>
-            <Settings visibleSections={['appearance', 'preferences']} />
-          </TabsContent>
-          <TabsContent value='security'>
-            {userData?.user ? (
-              <SecurityTab user={userData.user as User} />
-            ) : (
-              <div className='flex items-center justify-center p-12'>
-                <Loader2 className='text-primary mr-2 h-8 w-8 animate-spin' />
-                <span className='text-zinc-500'>
-                  Loading security settings...
-                </span>
-              </div>
-            )}
-          </TabsContent>
-          <TabsContent value='2fa'>
-            {userData?.user ? (
+
+  const renderLoading = (label: string) => (
+    <div className='flex items-center justify-center py-16'>
+      <Loader2 className='text-primary mr-2 h-6 w-6 animate-spin' />
+      <span className='text-zinc-500'>Loading {label}...</span>
+    </div>
+  );
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'profile':
+        return userData?.user ? (
+          <Profile user={userData.user as User} />
+        ) : (
+          renderLoading('profile')
+        );
+      case 'roles':
+        return <RolesTab />;
+      case 'notifications':
+        return <Settings visibleSections={['notifications']} />;
+      case 'privacy':
+        return <Settings visibleSections={['privacy']} />;
+      case 'appearance':
+        return <Settings visibleSections={['appearance', 'preferences']} />;
+      case 'security':
+        return userData?.user ? (
+          <div className='space-y-8'>
+            <SecurityTab user={userData.user as User} />
+            <div className='border-t border-zinc-800/50 pt-8'>
               <TwoFactorTab
                 user={userData.user as User}
                 onStatusChange={fetchUserData}
               />
-            ) : (
-              <div className='flex items-center justify-center p-12'>
-                <Loader2 className='text-primary mr-2 h-8 w-8 animate-spin' />
-                <span className='text-zinc-500'>Loading 2FA settings...</span>
-              </div>
-            )}
-          </TabsContent>
-          <TabsContent value='identity' className='space-y-6'>
-            <IdentityVerificationSection user={userData} />
-          </TabsContent>
-        </Tabs>
+            </div>
+            <div className='border-t border-zinc-800/50 pt-8'>
+              <ReputationInitCard />
+            </div>
+          </div>
+        ) : (
+          renderLoading('security')
+        );
+      case 'identity':
+        return <IdentityVerificationSection user={userData} />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className='w-full px-4 py-6 sm:px-6 lg:px-8'>
+      <VerificationSubmittedModal
+        open={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+      />
+
+      {/* Header */}
+      <div className='mb-6 lg:mb-8'>
+        <h1 className='text-2xl font-semibold text-white sm:text-3xl'>
+          Settings
+        </h1>
+        <p className='mt-1 text-sm text-zinc-500 sm:text-base'>
+          Manage your account, preferences, and security
+        </p>
+      </div>
+
+      {/* Desktop: side-by-side / Mobile: stacked */}
+      <div className='flex flex-col gap-6 lg:flex-row lg:gap-8'>
+        {/* Sidebar nav — desktop */}
+        <nav className='hidden w-56 shrink-0 lg:block xl:w-64'>
+          <div className='sticky top-20 space-y-1'>
+            {TABS.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabClick(tab.id)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all',
+                    isActive
+                      ? 'bg-zinc-800 text-white'
+                      : 'text-zinc-500 hover:bg-zinc-800/40 hover:text-zinc-300'
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      'h-5 w-5 shrink-0',
+                      isActive && 'text-primary'
+                    )}
+                  />
+                  <div className='min-w-0'>
+                    <div className='text-sm font-medium'>{tab.label}</div>
+                    <div
+                      className={cn(
+                        'truncate text-xs',
+                        isActive ? 'text-zinc-400' : 'text-zinc-600'
+                      )}
+                    >
+                      {tab.description}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Mobile tab bar */}
+        <div
+          ref={tabsRef}
+          className='scrollbar-none -mx-4 flex gap-1 overflow-x-auto px-4 pb-px sm:mx-0 sm:px-0 lg:hidden'
+        >
+          {TABS.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                data-active={isActive}
+                onClick={() => handleTabClick(tab.id)}
+                className={cn(
+                  'relative flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-zinc-800 text-white'
+                    : 'text-zinc-500 hover:bg-zinc-800/40 hover:text-zinc-300'
+                )}
+              >
+                <Icon className={cn('h-4 w-4', isActive && 'text-primary')} />
+                <span className='hidden whitespace-nowrap sm:inline'>
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Content — fills remaining space */}
+        <div className='min-h-[24rem] min-w-0 flex-1'>{renderContent()}</div>
       </div>
     </div>
   );

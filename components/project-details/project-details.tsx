@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMarkdown } from '@/hooks/use-markdown';
-import { CrowdfundingProject } from '@/features/projects/types';
+import type { ProjectViewModel } from '@/features/projects/types/view-model';
 import {
   MediaPlayer,
   MediaPlayerVideo,
@@ -20,24 +20,11 @@ import {
 } from '@/components/ui/media-player';
 
 interface ProjectDetailsProps {
-  project: CrowdfundingProject & {
-    // Additional fields that might be added during transformation
-    daysToDeadline?: number;
-    additionalCreator?: {
-      name: string;
-      role: string;
-      avatar: string;
-    };
-    links?: Array<{
-      type: string;
-      url: string;
-      icon: string;
-    }>;
-  };
+  vm: ProjectViewModel;
 }
 
-export function ProjectDetails({ project }: ProjectDetailsProps) {
-  const { loading, error, styledContent } = useMarkdown(project.description, {
+export function ProjectDetails({ vm }: ProjectDetailsProps) {
+  const { loading, error, styledContent } = useMarkdown(vm.description, {
     breaks: true,
     gfm: true,
     pedantic: true,
@@ -45,9 +32,9 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
   });
 
   return (
-    <div className='space-y-10 text-white'>
+    <div className='space-y-6 text-white sm:space-y-8 lg:space-y-10'>
       {/* Markdown Content */}
-      <div className='prose prose-invert prose-lg prose-headings:text-white prose-p:text-gray-300 prose-p:leading-relaxed prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-white prose-code:text-primary prose-code:bg-gray-900/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900/50 prose-pre:border prose-pre:border-gray-800 max-w-none'>
+      <div className='prose prose-invert prose-sm sm:prose-base lg:prose-lg prose-headings:text-white prose-p:text-gray-300 prose-p:leading-relaxed prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-white prose-code:text-primary prose-code:bg-gray-900/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900/50 prose-pre:border prose-pre:border-gray-800 prose-pre:overflow-x-auto max-w-none'>
         {loading ? (
           <div className='flex items-center justify-center rounded-xl border border-gray-800/50 bg-gray-900/30 py-16 backdrop-blur-sm'>
             <div className='flex items-center gap-3 text-gray-400'>
@@ -61,18 +48,20 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
             <p className='mt-2 text-sm'>{error}</p>
           </div>
         ) : (
-          <div className='rounded-xl border border-gray-800/50 bg-gray-900/20 p-8 backdrop-blur-sm'>
+          <div className='rounded-xl border border-gray-800/50 bg-gray-900/20 p-4 backdrop-blur-sm sm:p-6 lg:p-8'>
             {styledContent}
           </div>
         )}
       </div>
 
       {/* Video Media Showcase */}
-      {project.demoVideo && (
+      {vm.demoVideo && (
         <section className='space-y-4'>
           <div className='flex items-center gap-3'>
             <div className='bg-primary h-1 w-1 rounded-full' />
-            <h2 className='text-2xl font-bold text-white'>Media Showcase</h2>
+            <h2 className='text-xl font-bold text-white sm:text-2xl'>
+              Media Showcase
+            </h2>
           </div>
           <Card className='overflow-hidden border border-gray-800/50 bg-linear-to-br from-gray-900/50 to-gray-950/50 shadow-xl backdrop-blur-sm'>
             <CardContent className='p-0'>
@@ -103,7 +92,7 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                     }
                   };
 
-                  const youtubeEmbedUrl = getYouTubeEmbedUrl(project.demoVideo);
+                  const youtubeEmbedUrl = getYouTubeEmbedUrl(vm.demoVideo);
 
                   if (youtubeEmbedUrl) {
                     return (
@@ -121,7 +110,7 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                     <MediaPlayer className='h-full w-full'>
                       <MediaPlayerVideo
                         className='h-full w-full object-cover'
-                        src={project.demoVideo}
+                        src={vm.demoVideo}
                       />
                       <MediaPlayerLoading />
                       <MediaPlayerControlsOverlay />
@@ -155,17 +144,19 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
       )}
 
       {/* Support Message Section */}
-      <section className='border-primary/20 from-primary/10 rounded-xl border bg-linear-to-br to-transparent p-8 backdrop-blur-sm'>
-        <h2 className='mb-4 text-2xl font-bold text-white'>
-          Support {project.title} Today
-        </h2>
-        <p className='leading-relaxed text-gray-300'>
-          By backing {project.title}, you&apos;re contributing to innovative
-          solutions in the{' '}
-          <span className='text-primary font-semibold'>{project.category}</span>{' '}
-          space and helping bring this vision to life.
-        </p>
-      </section>
+      {vm.projectType === 'campaign' && (
+        <section className='border-primary/20 from-primary/10 rounded-xl border bg-linear-to-br to-transparent p-4 backdrop-blur-sm sm:p-6 lg:p-8'>
+          <h2 className='mb-3 text-xl font-bold text-white sm:mb-4 sm:text-2xl'>
+            Support {vm.title} Today
+          </h2>
+          <p className='leading-relaxed text-gray-300'>
+            By backing {vm.title}, you&apos;re contributing to innovative
+            solutions in the{' '}
+            <span className='text-primary font-semibold'>{vm.category}</span>{' '}
+            space and helping bring this vision to life.
+          </p>
+        </section>
+      )}
     </div>
   );
 }

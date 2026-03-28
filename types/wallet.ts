@@ -3,13 +3,22 @@ export interface WalletBalance {
   balance: string;
   asset_code?: string;
   asset_issuer?: string;
+  /** Human-readable asset name (e.g. "USD Coin", "Stellar Lumens") */
+  asset_name?: string;
   usdPrice?: number;
   usdValue?: number;
 }
 
 export interface WalletTransaction {
   id: string;
-  type: 'DEPOSIT' | 'WITHDRAWAL' | 'PAYMENT' | string;
+  type:
+    | 'DEPOSIT'
+    | 'WITHDRAWAL'
+    | 'PAYMENT'
+    | 'FEE'
+    | 'PAYOUT'
+    | 'REFUND'
+    | string;
   amount: string;
   currency: string;
   state: 'COMPLETED' | 'PENDING' | 'FAILED' | string;

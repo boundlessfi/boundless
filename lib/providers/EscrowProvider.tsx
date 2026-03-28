@@ -1,14 +1,16 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { MultiReleaseEscrow } from '@trustless-work/escrow';
+import { createContext, useContext, useState, type ReactNode } from 'react';
+import type { EscrowPool } from '@/lib/api/escrow';
 
 interface EscrowContextValue {
+  poolId: string | null;
+  pool: EscrowPool | null;
+  setPoolData: (poolId: string, pool: EscrowPool) => void;
+  updatePool: (pool: EscrowPool) => void;
+  clearPoolData: () => void;
+  /** @deprecated Use poolId/pool instead. Kept for transitional compat. */
   contractId: string | null;
-  escrow: MultiReleaseEscrow | null;
-  setEscrowData: (contractId: string, escrow: MultiReleaseEscrow) => void;
-  updateEscrow: (updatedEscrow: MultiReleaseEscrow) => void;
-  clearEscrowData: () => void;
 }
 
 const EscrowContext = createContext<EscrowContextValue | undefined>(undefined);
@@ -20,38 +22,36 @@ interface EscrowProviderProps {
 /**
  * Escrow Provider
  *
- * Manages escrow data and contractId from Trustless Work transactions.
- * Stores the escrow object returned directly from sendTransaction.
+ * Manages escrow pool data from the Boundless backend (CoreEscrow contract).
+ * Replaces the previous Trustless Work-based EscrowProvider.
  */
 export function EscrowProvider({ children }: EscrowProviderProps) {
-  const [contractId, setContractId] = useState<string | null>(null);
-  const [escrow, setEscrow] = useState<MultiReleaseEscrow | null>(null);
+  const [poolId, setPoolId] = useState<string | null>(null);
+  const [pool, setPool] = useState<EscrowPool | null>(null);
 
-  const setEscrowData = (
-    newContractId: string,
-    newEscrow: MultiReleaseEscrow
-  ) => {
-    setContractId(newContractId);
-    setEscrow(newEscrow);
+  const setPoolData = (newPoolId: string, newPool: EscrowPool) => {
+    setPoolId(newPoolId);
+    setPool(newPool);
   };
 
-  const updateEscrow = (updatedEscrow: MultiReleaseEscrow) => {
-    setEscrow(updatedEscrow);
+  const updatePool = (updatedPool: EscrowPool) => {
+    setPool(updatedPool);
   };
 
-  const clearEscrowData = () => {
-    setContractId(null);
-    setEscrow(null);
+  const clearPoolData = () => {
+    setPoolId(null);
+    setPool(null);
   };
 
   return (
     <EscrowContext.Provider
       value={{
-        contractId,
-        escrow,
-        setEscrowData,
-        updateEscrow,
-        clearEscrowData,
+        poolId,
+        pool,
+        setPoolData,
+        updatePool,
+        clearPoolData,
+        contractId: poolId,
       }}
     >
       {children}
@@ -61,9 +61,6 @@ export function EscrowProvider({ children }: EscrowProviderProps) {
 
 /**
  * Hook to access escrow context
- *
- * @returns EscrowContextValue - The escrow context value
- * @throws Error if used outside of EscrowProvider
  */
 export function useEscrowContext(): EscrowContextValue {
   const context = useContext(EscrowContext);

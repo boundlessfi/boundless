@@ -1,10 +1,19 @@
 import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useSmartWallet } from '@/components/providers/smart-wallet-provider';
 import { getCurrentNetwork } from '@/lib/wallet-utils';
 
 export type StellarNetwork = 'testnet' | 'public';
 
 export const useWalletStore = () => {
-  const { walletAddress, walletName, clearWalletInfo } = useWalletContext();
+  const { walletAddress, walletName, walletType, clearWalletInfo } =
+    useWalletContext();
+  const smartWallet = useSmartWallet();
+
+  // Smart wallet is the primary wallet. WalletProvider already resolves this,
+  // but we also check the local smart wallet state for immediate reactivity
+  // (e.g. right after connect, before backend refresh).
+  const effectiveAddress = smartWallet.contractId || walletAddress;
+
   return {
     network: getCurrentNetwork() as StellarNetwork,
     availableWallets: [] as Array<{
@@ -13,13 +22,22 @@ export const useWalletStore = () => {
       icon: string;
       isAvailable: boolean;
     }>,
-    isConnected: !!walletAddress,
-    isLoading: false,
-    error: null as string | null,
-    selectedWallet: walletName,
+    isConnected: !!effectiveAddress,
+    isLoading: smartWallet.isLoading,
+    error: smartWallet.error,
+    selectedWallet: smartWallet.contractId
+      ? 'Smart Wallet'
+      : walletType === 'smart'
+        ? 'Smart Wallet'
+        : walletName,
     initializeWalletKit: async (_network?: StellarNetwork) => {},
-    connectWallet: async (_walletId?: string) => {},
+    connectWallet: async (_walletId?: string) => {
+      if (smartWallet.isAvailable) {
+        await smartWallet.connect();
+      }
+    },
     disconnectWallet: async () => {
+      smartWallet.disconnect();
       clearWalletInfo();
     },
     clearError: () => {},
@@ -27,17 +45,39 @@ export const useWalletStore = () => {
 };
 
 export const useWalletInfo = () => {
-  const { walletAddress, walletName } = useWalletContext();
-  return { address: walletAddress, name: walletName };
+  const { walletAddress, walletType, smartWalletAddress } = useWalletContext();
+  const smartWallet = useSmartWallet();
+
+  // Prefer local smart wallet state for immediate reactivity
+  const address = smartWallet.contractId || smartWalletAddress || walletAddress;
+  const isSmartWallet = !!(smartWallet.contractId || walletType === 'smart');
+
+  return {
+    address,
+    name: isSmartWallet ? 'Smart Wallet' : 'Boundless Wallet',
+    type: isSmartWallet ? ('smart' as const) : ('custodial' as const),
+  };
 };
 
 export const useWalletSigning = () => {
+  const smartWallet = useSmartWallet();
   return {
-    signTransaction: async (_xdr: string) => {
-      throw new Error('useWalletSigning is not implemented.');
+    signTransaction: async (xdr: string) => {
+      if (!smartWallet.contractId) {
+        throw new Error(
+          'No smart wallet connected. Register or connect a passkey wallet first.'
+        );
+      }
+      const { signTransaction } = await import('@/lib/config/wallet-kit');
+      return signTransaction({
+        unsignedTransaction: xdr,
+        address: smartWallet.contractId,
+      });
     },
     signMessage: async (_message: string) => {
-      throw new Error('useWalletSigning is not implemented.');
+      throw new Error(
+        'Message signing is not supported for smart wallets. Use signTransaction instead.'
+      );
     },
   };
 };
@@ -55,19 +95,25 @@ export const useNetworkSwitcher = () => {
 };
 
 /**
- * Wallet connection and disconnection. Wallet is managed by the backend;
- * there is no external "connect wallet" flow. Disconnect only clears local UI state.
+ * Wallet connection and disconnection.
+ * Smart wallet (passkey-based) is the default and preferred method.
+ * Custodial wallet is a backend-managed fallback.
  */
 export const useWallet = () => {
-  const { clearWalletInfo } = useWalletContext();
+  const { clearWalletInfo, refreshWallet } = useWalletContext();
+  const smartWallet = useSmartWallet();
 
   const connectWallet = async () => {
-    // No-op: no external wallet connection; wallet comes from backend.
+    if (smartWallet.isAvailable) {
+      await smartWallet.connect();
+      // Refresh the wallet provider to pick up the new smart wallet address
+      await refreshWallet();
+    }
   };
 
   const disconnectWallet = async () => {
+    smartWallet.disconnect();
     clearWalletInfo();
-    // Disconnect only clears local UI state; backend still has the user's wallet.
   };
 
   const handleConnect = async () => {

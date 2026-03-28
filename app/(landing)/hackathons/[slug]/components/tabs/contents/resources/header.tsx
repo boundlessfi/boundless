@@ -31,7 +31,7 @@ export const ResourceHeader = ({
             className={cn(
               'rounded-lg px-4 py-2 text-sm font-bold transition-all duration-200 sm:px-6',
               activeTab === tab
-                ? 'bg-primary text-black shadow-[0_0_20px_rgba(167,249,80,0.2)]'
+                ? 'bg-primary text-black shadow-[0_0_20px_rgba(46,237,170,0.2)]'
                 : 'text-gray-500 hover:bg-white/5 hover:text-white'
             )}
           >

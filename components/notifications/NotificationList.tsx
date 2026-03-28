@@ -4,6 +4,7 @@ import { format, isToday, isYesterday, isThisWeek } from 'date-fns';
 import { NotificationItem } from './NotificationItem';
 import { Notification } from '@/types/notifications';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Bell } from 'lucide-react';
 
 interface NotificationListProps {
   notifications: Notification[];
@@ -14,8 +15,10 @@ interface NotificationListProps {
 
 const groupNotificationsByDate = (
   notifications: Notification[]
-): Record<string, Notification[]> => {
-  const groups: Record<string, Notification[]> = {};
+): { key: string; label: string; items: Notification[] }[] => {
+  const orderedGroups: { key: string; label: string; items: Notification[] }[] =
+    [];
+  const seen = new Set<string>();
 
   notifications.forEach(notification => {
     const date = new Date(notification.createdAt);
@@ -26,18 +29,21 @@ const groupNotificationsByDate = (
     } else if (isYesterday(date)) {
       groupKey = 'Yesterday';
     } else if (isThisWeek(date)) {
-      groupKey = format(date, 'EEEE'); // Day name
+      groupKey = format(date, 'EEEE');
     } else {
-      groupKey = format(date, 'MMMM d, yyyy'); // Full date
+      groupKey = format(date, 'MMMM d, yyyy');
     }
 
-    if (!groups[groupKey]) {
-      groups[groupKey] = [];
+    if (!seen.has(groupKey)) {
+      seen.add(groupKey);
+      orderedGroups.push({ key: groupKey, label: groupKey, items: [] });
     }
-    groups[groupKey].push(notification);
+
+    const group = orderedGroups.find(g => g.key === groupKey);
+    group?.items.push(notification);
   });
 
-  return groups;
+  return orderedGroups;
 };
 
 export const NotificationList = ({
@@ -48,9 +54,15 @@ export const NotificationList = ({
 }: NotificationListProps) => {
   if (loading) {
     return (
-      <div className='space-y-4'>
+      <div className='space-y-3'>
         {[1, 2, 3, 4, 5].map(i => (
-          <Skeleton key={i} className='h-24 w-full rounded-lg' />
+          <div key={i} className='flex gap-3 p-4'>
+            <Skeleton className='h-9 w-9 shrink-0 rounded-lg' />
+            <div className='flex-1 space-y-2'>
+              <Skeleton className='h-4 w-2/3' />
+              <Skeleton className='h-3 w-full' />
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -58,40 +70,39 @@ export const NotificationList = ({
 
   if (notifications.length === 0) {
     return (
-      <div className='rounded-lg border border-zinc-800/50 bg-zinc-900/30 p-12 text-center'>
-        <p className='text-lg font-medium text-zinc-300'>No notifications</p>
-        <p className='mt-2 text-sm text-zinc-500'>
-          You're all caught up! New notifications will appear here.
+      <div className='rounded-xl border border-[#2B2B2B] bg-[#0c0c0c] px-6 py-16 text-center'>
+        <Bell className='mx-auto h-10 w-10 text-gray-700' />
+        <p className='mt-4 text-base font-medium text-white'>
+          No notifications
+        </p>
+        <p className='mt-1 text-sm text-gray-500'>
+          You&apos;re all caught up! New notifications will appear here.
         </p>
       </div>
     );
   }
 
-  const groupedNotifications = groupNotificationsByDate(notifications);
+  const grouped = groupNotificationsByDate(notifications);
 
   return (
     <div className='space-y-6'>
-      {Object.entries(groupedNotifications).map(([date, dateNotifications]) => (
-        <div key={date}>
-          <div className='mb-3'>
-            <h3 className='text-sm font-semibold tracking-wider text-zinc-500 uppercase'>
-              {date}
+      {grouped.map(group => (
+        <div key={group.key}>
+          <div className='mb-2 px-1'>
+            <h3 className='text-xs font-medium tracking-wider text-gray-600 uppercase'>
+              {group.label}
             </h3>
           </div>
-          <div className='space-y-2'>
-            {dateNotifications.map(notification => (
+          <div className='space-y-1'>
+            {group.items.map(notification => (
               <NotificationItem
                 key={notification.id}
                 notification={notification}
                 onMarkAsRead={() => {
-                  if (onMarkAsRead) {
-                    onMarkAsRead(notification.id);
-                  }
-                  if (onNotificationClick) {
-                    onNotificationClick(notification);
-                  }
+                  if (onMarkAsRead) onMarkAsRead(notification.id);
+                  if (onNotificationClick) onNotificationClick(notification);
                 }}
-                showUnreadIndicator={true}
+                showUnreadIndicator
               />
             ))}
           </div>

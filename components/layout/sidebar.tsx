@@ -123,7 +123,7 @@ const SidebarLayout: React.FC = () => {
               transition={{ delay: 0.2 }}
             >
               <Image
-                src='/logo.svg'
+                src='/logos/SVG_Inverse/logo.svg'
                 alt='logo'
                 width={100}
                 height={100}

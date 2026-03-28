@@ -17,12 +17,6 @@ import { SubmitEvidenceModal } from '@/components/crowdfunding/submit-evidence-m
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 import { useProtectedAction } from '@/hooks/use-protected-action';
 import { toast } from 'sonner';
-import {
-  useChangeMilestoneStatus,
-  useSendTransaction,
-} from '@trustless-work/escrow';
-import { useWalletContext } from '@/components/providers/wallet-provider';
-import { signTransaction } from '@/lib/config/wallet-kit';
 
 interface PageProps {
   params: Promise<{
@@ -56,10 +50,6 @@ export default function MilestoneDetailPage({ params }: PageProps) {
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const milestoneIndex = use(params).milestoneIndex;
-  const { changeMilestoneStatus } = useChangeMilestoneStatus();
-  const { sendTransaction } = useSendTransaction();
-
-  const { walletAddress } = useWalletContext();
 
   const {
     executeProtectedAction,

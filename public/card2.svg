@@ -119,8 +119,8 @@
 <stop offset="1" stop-color="#0A1C0D"/>
 </linearGradient>
 <linearGradient id="paint1_linear_2214_9847" x1="226.318" y1="6.98242" x2="226.318" y2="159.173" gradientUnits="userSpaceOnUse">
-<stop stop-color="#A7F950"/>
-<stop offset="1" stop-color="#A7F950" stopOpacity="0"/>
+<stop stop-color="2eedaa"/>
+<stop offset="1" stop-color="2eedaa" stopOpacity="0"/>
 </linearGradient>
 <linearGradient id="paint3_linear_2214_9847" x1="234.239" y1="87.3578" x2="212.644" y2="119.956" gradientUnits="userSpaceOnUse">
 <stop stop-color="white"/>

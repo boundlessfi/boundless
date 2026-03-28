@@ -1,6 +1,6 @@
 <svg width="587" height="727" viewBox="0 0 587 727" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g filter="url(#filter0_f_2182_13844)">
-<rect x="400" y="400" width="652" height="430" rx="215" fill="#3AE6B2" fillOpacity="0.44"/>
+<rect x="400" y="400" width="652" height="430" rx="215" fill="#2EEDAA" fillOpacity="0.44"/>
 <rect x="400" y="400" width="652" height="430" rx="215" fill="url(#paint0_linear_2182_13844)" fillOpacity="0.24" style="mix-blend-mode:soft-light"/>
 </g>
 <defs>
@@ -10,9 +10,9 @@
 <feGaussianBlur stdDeviation="200" result="effect1_foregroundBlur_2182_13844"/>
 </filter>
 <linearGradient id="paint0_linear_2182_13844" x1="1060.39" y1="787" x2="651.411" y2="194.594" gradientUnits="userSpaceOnUse">
-<stop stop-color="#A7F950"/>
-<stop offset="0.18" stop-color="#A7F950" stopOpacity="0"/>
-<stop offset="0.835" stop-color="#A7F950"/>
+<stop stop-color="#2EEDAA"/>
+<stop offset="0.18" stop-color="#2EEDAA" stopOpacity="0"/>
+<stop offset="0.835" stop-color="#2EEDAA"/>
 </linearGradient>
 </defs>
 </svg>

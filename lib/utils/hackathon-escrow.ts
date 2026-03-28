@@ -1,5 +1,25 @@
-import { InitializeMultiReleaseEscrowPayload } from '@trustless-work/escrow';
 import { RewardsFormData } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
+
+/**
+ * Escrow initialization payload for hackathons.
+ * Replaces the Trustless Work SDK type.
+ */
+export interface InitializeMultiReleaseEscrowPayload {
+  signer: string;
+  engagementId: string;
+  title: string;
+  description: string;
+  platformFee: number;
+  trustline: { address: string; symbol: string };
+  roles: {
+    serviceProvider: string;
+    approver: string;
+    releaseSigner: string;
+    platformAddress: string;
+    disputeResolver: string;
+  };
+  milestones: Array<{ description: string; amount: number; receiver: string }>;
+}
 
 /**
  * USDC trustline address for Stellar network

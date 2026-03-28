@@ -1,398 +1,164 @@
 'use client';
-import { ProjectLayout } from '@/components/project-details/project-layout';
-import { reportError } from '@/lib/error-reporting';
-import { ProjectLoading } from '@/components/project-details/project-loading';
-import { getCrowdfundingProject } from '@/features/projects/api';
-import type { Crowdfunding } from '@/features/projects/types';
-import { use, useEffect, useState } from 'react';
+
+import { useEffect, useState } from 'react';
 import { useSearchParams, notFound } from 'next/navigation';
+import { ProjectLayout } from '@/components/project-details/project-layout';
+import { ProjectLoading } from '@/components/project-details/project-loading';
+import { reportError } from '@/lib/error-reporting';
+import {
+  getProjectDetailBySlug,
+  getCrowdfundingProject,
+} from '@/features/projects/api';
 import {
   getSubmissionDetails,
   getHackathon,
   type ParticipantSubmission,
 } from '@/lib/api/hackathons';
 import type { Hackathon } from '@/lib/api/hackathons';
-import type {
-  Milestone,
-  TeamMember,
-  SocialLink,
-} from '@/features/projects/types';
+import type { ProjectViewModel } from '@/features/projects/types/view-model';
+import {
+  buildFromProjectDetail,
+  buildFromCrowdfunding,
+  buildFromSubmission,
+} from '@/features/projects/lib/build-view-model';
 
 interface ProjectPageProps {
-  params: Promise<{
-    slug: string;
-  }>;
+  params: Promise<{ slug: string }>;
 }
 
+// ─── Content component ───────────────────────────────────────────────────────
+
 function ProjectContent({
-  id,
-  isSubmission = false,
+  slug,
+  isSubmission,
 }: {
-  id: string;
-  isSubmission?: boolean;
+  slug: string;
+  isSubmission: boolean;
 }) {
-  const [project, setProject] = useState<Crowdfunding | null>(null);
+  const [vm, setVm] = useState<ProjectViewModel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSubmission = async (submissionId: string) => {
-      try {
-        const submissionRes = await getSubmissionDetails(submissionId);
+    let cancelled = false;
 
-        if (submissionRes && submissionRes.data) {
-          const submission = submissionRes.data;
-          const subData = submission as any;
-
-          // Try to fetch hackathon details using getHackathon (by ID)
-          let hackathon: Hackathon | null = null;
-          try {
-            if (subData.hackathonId) {
-              const hackathonRes = await getHackathon(subData.hackathonId);
-              hackathon = hackathonRes.data;
-            }
-          } catch (err) {
-            reportError(err, {
-              context: 'project-fetchHackathonDetails',
-              submissionId: id,
-            });
-          }
-
-          if (hackathon) {
-            const mappedProject = mapSubmissionToCrowdfunding(
-              submission,
-              hackathon
-            );
-            setProject(mappedProject);
-            return;
-          } else {
-            // If hackathon details are missing, we might want to handle it gracefully
-            // or throw. For now, let's strictly require hackathon details for the map
-            throw new Error('Hackathon details not found');
-          }
-        }
-        throw new Error('Submission not found');
-      } catch (e) {
-        reportError(e, { context: 'project-fetchSubmission', id });
-        throw e;
-      }
-    };
-
-    const fetchProjectData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
+        // ── Hackathon submission path ──
         if (isSubmission) {
-          await fetchSubmission(id);
+          const result = await fetchAsSubmission(slug);
+          if (!cancelled) setVm(result);
           return;
         }
 
+        // ── Primary path: fetch from /api/projects/{slug} ──
         try {
-          const projectData = await getCrowdfundingProject(id);
-          if (projectData) {
-            setProject(projectData);
+          const projectDetail = await getProjectDetailBySlug(slug);
+          if (!cancelled) setVm(buildFromProjectDetail(projectDetail));
+          return;
+        } catch {
+          // Project slug not found — try crowdfunding
+        }
+
+        // ── Fallback: try /api/crowdfunding/{slug} directly ──
+        try {
+          const crowdfundData = await getCrowdfundingProject(slug);
+          if (!cancelled && crowdfundData) {
+            setVm(buildFromCrowdfunding(crowdfundData));
             return;
           }
-        } catch (e) {
-          await fetchSubmission(id);
+        } catch {
+          // Not a crowdfunding campaign either
         }
+
+        // ── Last resort: try as hackathon submission ──
+        try {
+          const result = await fetchAsSubmission(slug);
+          if (!cancelled) setVm(result);
+          return;
+        } catch {
+          // Nothing found at all
+        }
+
+        if (!cancelled) setError('Project not found');
       } catch (err) {
-        reportError(err, { context: 'project-fetch', id });
-        setError('Failed to fetch project data');
+        reportError(err, { context: 'project-fetch', slug });
+        if (!cancelled) setError('Failed to fetch project data');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    fetchProjectData();
-  }, [id, isSubmission]);
+    fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, isSubmission]);
 
   if (loading) {
     return <ProjectLoading />;
   }
 
-  if (error || !project) {
-    notFound();
-  }
-
-  if (error || !project) {
+  if (error || !vm) {
     notFound();
   }
 
   return (
-    <div className='mx-auto flex min-h-screen max-w-[1440px] flex-col space-y-[60px] px-5 py-5 md:space-y-20 md:px-[50px] lg:px-[100px]'>
+    <div className='mx-auto flex min-h-screen max-w-[1440px] flex-col space-y-10 px-4 py-4 sm:space-y-[60px] sm:px-6 sm:py-5 md:space-y-20 md:px-[50px] lg:px-[80px] xl:px-[100px] 2xl:max-w-[1800px] 2xl:px-[120px]'>
       <div className='flex-1'>
-        <ProjectLayout
-          project={project.project}
-          crowdfund={project}
-          hiddenTabs={[]}
-          hideProgress={isSubmission}
-        />
+        <ProjectLayout vm={vm} />
       </div>
     </div>
   );
 }
 
-// Helper function to map Submission to Crowdfunding type
-function mapSubmissionToCrowdfunding(
-  submission: ParticipantSubmission & { members?: any[] },
-  hackathon: Hackathon
-): Crowdfunding {
-  const subData = submission as any;
-  const hackData = hackathon as any;
+// ─── Hackathon submission helper ─────────────────────────────────────────────
 
-  const now = new Date();
+async function fetchAsSubmission(id: string): Promise<ProjectViewModel> {
+  const submissionRes = await getSubmissionDetails(id);
+  if (!submissionRes?.data) throw new Error('Submission not found');
 
-  // Helper to determine status
-  const getStatus = (
-    start?: string,
-    end?: string
-  ): 'completed' | 'pending' | 'active' => {
-    if (!start || !end) return 'pending';
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    if (now > endDate) return 'completed';
-    if (now >= startDate && now <= endDate) return 'active';
-    return 'pending';
-  };
+  const submission = submissionRes.data;
+  const subData = submission as unknown as Record<string, unknown>;
 
-  // Map Hackathon Timeline to Milestones
-  const milestones: any[] = [
-    {
-      id: 'registration',
-      name: 'Registration',
-      title: 'Registration',
-      description: 'Registration period for the hackathon',
-      amount: 0,
-      fundingPercentage: 0,
-      status: getStatus(
-        hackData.timeline?.registrationStart,
-        hackData.timeline?.registrationEnd
-      ),
-      reviewStatus: getStatus(
-        hackData.timeline?.registrationStart,
-        hackData.timeline?.registrationEnd
-      ),
-      startDate:
-        hackData.timeline?.registrationStart || new Date().toISOString(),
-      endDate: hackData.timeline?.registrationEnd || new Date().toISOString(),
-    },
-    {
-      id: 'submission',
-      name: 'Submission',
-      title: 'Submission',
-      description: 'Project submission period',
-      amount: 0,
-      fundingPercentage: 0,
-      status: getStatus(
-        hackData.timeline?.submissionStart,
-        hackData.timeline?.submissionEnd
-      ),
-      reviewStatus: getStatus(
-        hackData.timeline?.submissionStart,
-        hackData.timeline?.submissionEnd
-      ),
-      startDate: hackData.timeline?.submissionStart || new Date().toISOString(),
-      endDate: hackData.timeline?.submissionEnd || new Date().toISOString(),
-    },
-    {
-      id: 'judging',
-      name: 'Judging',
-      title: 'Judging',
-      description: 'Judging period',
-      amount: 0,
-      fundingPercentage: 0,
-      status: getStatus(
-        hackData.timeline?.judgingStart,
-        hackData.timeline?.judgingEnd
-      ),
-      reviewStatus: getStatus(
-        hackData.timeline?.judgingStart,
-        hackData.timeline?.judgingEnd
-      ),
-      startDate: hackData.timeline?.judgingStart || new Date().toISOString(),
-      endDate: hackData.timeline?.judgingEnd || new Date().toISOString(),
-    },
-    {
-      id: 'winners',
-      name: 'Winners Announced',
-      title: 'Winners Announced',
-      description: 'Announcement of hackathon winners',
-      amount: 0,
-      fundingPercentage: 0,
-      status: getStatus(
-        hackData.timeline?.winnersAnnounced,
-        hackData.timeline?.winnersAnnounced
-      ),
-      reviewStatus: getStatus(
-        hackData.timeline?.winnersAnnounced,
-        hackData.timeline?.winnersAnnounced
-      ),
-      startDate:
-        hackData.timeline?.winnersAnnounced || new Date().toISOString(),
-      endDate: hackData.timeline?.winnersAnnounced || new Date().toISOString(),
-    },
-  ];
-
-  // Map Social Links
-  const socialLinks: SocialLink[] = (subData.links || []).map((link: any) => ({
-    platform: link.type || 'website',
-    url: link.url,
-  }));
-
-  // Map Team Members
-  const teamMembers: TeamMember[] = (
-    subData.teamMembers ||
-    subData.members ||
-    []
-  ).map((m: any) => ({
-    name: m.user?.name || m.name || 'Team Member',
-    role: m.role || 'Member',
-    email: '',
-    image: m.user?.image || m.image,
-    username: m.user?.username || m.username,
-  }));
-
-  // Also add the submitter if not in team
-  if (teamMembers.length === 0 && (subData.participantId || subData.userId)) {
-    // We might lack detailed user info here, so we use placeholders or available data
-    teamMembers.push({
-      name: subData.participant?.name || subData.user?.name || 'Submitter',
-      role: 'Leader',
-      email: subData.participant?.email || subData.user?.email || '',
-      image:
-        subData.participant?.image ||
-        subData.user?.image ||
-        subData.logo ||
-        undefined,
-      username:
-        subData.participant?.username || subData.user?.username || 'submitter',
-    });
-  }
-
-  const projectId = subData.id || subData._id || '';
-
-  // Find demo video in links if not provided directly
-  let demoVideoUrl = subData.videoUrl || '';
-  if (!demoVideoUrl && socialLinks.length > 0) {
-    const vidLink = socialLinks.find(
-      l =>
-        l.url.includes('youtube.com') ||
-        l.url.includes('youtu.be') ||
-        l.url.includes('vimeo')
-    );
-    if (vidLink) {
-      demoVideoUrl = vidLink.url;
+  let hackathon: Hackathon | null = null;
+  if (subData.hackathonId) {
+    try {
+      const hackathonRes = await getHackathon(subData.hackathonId as string);
+      hackathon = hackathonRes.data;
+    } catch (err) {
+      reportError(err, {
+        context: 'project-fetchHackathonDetails',
+        submissionId: id,
+      });
     }
   }
 
-  return {
-    id: projectId,
-    projectId: projectId,
-    slug: subData.slug || projectId,
-    voteGoal: 0,
-    fundingGoal: 0,
-    fundingRaised: 0,
-    fundingCurrency: 'USD',
-    fundingEndDate:
-      hackData.timeline?.submissionEnd || new Date().toISOString(),
-    contributors: [],
-    team: teamMembers,
-    contact: { primary: '', backup: '' },
-    socialLinks: socialLinks,
-    milestones: milestones,
-    stakeholders: null,
-    trustlessWorkStatus: 'active',
-    escrowAddress: '',
-    escrowType: 'none',
-    escrowDetails: null,
-    creationTxHash: null,
-    transactionHash: '',
-    createdAt: subData.createdAt || new Date().toISOString(),
-    updatedAt: subData.updatedAt || new Date().toISOString(),
-    project: {
-      id: projectId,
-      title: subData.projectName || 'Untitled Project',
-      tagline: subData.category || 'Hackathon Project',
-      description: subData.description || '',
-      summary: subData.introduction || subData.description || '',
-      vision: null,
-      details: null,
-      category: subData.category || 'General',
-      status: subData.status || 'pending',
-      creatorId: subData.participantId || subData.userId || '',
-      organizationId: subData.organizationId || null,
-      teamMembers: teamMembers,
-      banner: null,
-      logo: subData.logo || '',
-      thumbnail: null,
-      githubUrl:
-        socialLinks.find((l: SocialLink) =>
-          l.platform.toLowerCase().includes('github')
-        )?.url || '',
-      gitlabUrl: null,
-      bitbucketUrl: null,
-      projectWebsite:
-        socialLinks.find(
-          (l: SocialLink) => l.platform === 'website' || l.platform === 'demo'
-        )?.url || '',
-      demoVideo: demoVideoUrl,
-      whitepaperUrl: null,
-      pitchVideoUrl: null,
-      socialLinks: socialLinks,
-      contact: { primary: '', backup: '' },
-      whitepaper: null,
-      pitchDeck: null,
-      votes: typeof subData.votes === 'number' ? subData.votes : 0,
-      voting: null,
-      tags: [],
-      approvedById: null,
-      approvedAt: null,
-      createdAt: subData.createdAt || new Date().toISOString(),
-      updatedAt: subData.updatedAt || new Date().toISOString(),
-      creator: {
-        id: subData.userId || '',
-        name: subData.participant?.name || subData.user?.name || 'Creator',
-        email: subData.participant?.email || subData.user?.email || '',
-        emailVerified: false,
-        image: subData.participant?.image || subData.user?.image || '',
-        createdAt: '',
-        updatedAt: '',
-        lastLoginMethod: '',
-        role: '',
-        banned: false,
-        banReason: null,
-        banExpires: null,
-        username:
-          subData.participant?.username || subData.user?.username || 'creator',
-        displayUsername:
-          subData.participant?.username || subData.user?.username || 'creator',
-        metadata: null,
-        twoFactorEnabled: false,
-      },
-      organization: null,
-      milestones: milestones,
-    },
-  };
+  if (!hackathon) throw new Error('Hackathon details not found');
+
+  return buildFromSubmission(
+    submission as ParticipantSubmission & { members?: unknown[] },
+    hackathon
+  );
 }
 
+// ─── Page component ──────────────────────────────────────────────────────────
+
 export default function ProjectPage({ params }: ProjectPageProps) {
-  const [id, setId] = useState<string | null>(null);
+  const [slug, setSlug] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const isSubmission = searchParams.get('type') === 'submission';
 
   useEffect(() => {
-    const getParams = async () => {
-      const resolvedParams = await params;
-      setId(resolvedParams.slug);
-    };
-    getParams();
+    params.then(resolved => setSlug(resolved.slug));
   }, [params]);
 
-  if (!id) {
+  if (!slug) {
     return <ProjectLoading />;
   }
 
-  return <ProjectContent id={id} isSubmission={isSubmission} />;
+  return <ProjectContent slug={slug} isSubmission={isSubmission} />;
 }

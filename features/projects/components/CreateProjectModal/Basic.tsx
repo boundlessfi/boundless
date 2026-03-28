@@ -446,7 +446,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             onChange={e => handleInputChange('projectName', e.target.value)}
             onBlur={() => validateField('projectName')}
             className={cn(
-              'focus-visible:border-primary border-[#484848] bg-[#1A1A1A] p-4 text-white placeholder:text-[#919191]',
+              'focus-visible:border-primary border-gray-800 bg-[#1A1A1A] p-4 text-white placeholder:text-gray-600',
               (submitted || touched.projectName) &&
                 errors.projectName &&
                 'border-red-500'
@@ -478,7 +478,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
                 'flex h-32 w-32 cursor-pointer items-center justify-center rounded-[12px] border border-[#2B2B2B] bg-[#101010] transition-colors xl:h-[200px] xl:w-[200px]',
                 formData.logo
                   ? 'border-primary bg-primary/5'
-                  : 'hover:border-primary border-[#484848]',
+                  : 'hover:border-primary border-gray-800',
                 (submitted || touched.logo) && errors.logo && 'border-red-500',
                 isDragOver && 'border-primary bg-primary/10 scale-105'
               )}
@@ -526,7 +526,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
                   >
                     <path
                       d='M17.875 2.75012H9.65C6.70972 2.75012 5.23959 2.75012 4.11655 3.32234C3.1287 3.82567 2.32555 4.62882 1.82222 5.61667C1.25 6.73971 1.25 8.20985 1.25 11.1501V25.8501C1.25 28.7904 1.25 30.2605 1.82222 31.3836C2.32555 32.3714 3.1287 33.1746 4.11655 33.6779C5.23959 34.2501 6.70972 34.2501 9.65 34.2501H25.75C27.3775 34.2501 28.1912 34.2501 28.8588 34.0712C30.6705 33.5858 32.0857 32.1707 32.5711 30.3589C32.75 29.6913 32.75 28.8776 32.75 27.2501M29.25 11.5001V1.00012M24 6.25012H34.5M14.375 12.3751C14.375 14.3081 12.808 15.8751 10.875 15.8751C8.942 15.8751 7.375 14.3081 7.375 12.3751C7.375 10.4421 8.942 8.87512 10.875 8.87512C12.808 8.87512 14.375 10.4421 14.375 12.3751ZM22.2326 18.3569L7.42951 31.8142C6.59688 32.5711 6.18057 32.9496 6.14375 33.2775C6.11183 33.5616 6.22079 33.8435 6.43557 34.0323C6.68336 34.2501 7.24599 34.2501 8.37125 34.2501H24.798C27.3165 34.2501 28.5758 34.2501 29.5649 33.827C30.8065 33.2959 31.7957 32.3066 32.3269 31.065C32.75 30.0759 32.75 28.8166 32.75 26.2981C32.75 25.4507 32.75 25.027 32.6574 24.6324C32.5409 24.1365 32.3177 23.672 32.0032 23.2713C31.7529 22.9525 31.4221 22.6878 30.7604 22.1584L25.8652 18.2423C25.2029 17.7125 24.8718 17.4476 24.5071 17.3541C24.1857 17.2717 23.8475 17.2823 23.5319 17.3848C23.1739 17.5011 22.8601 17.7864 22.2326 18.3569Z'
-                      stroke='#A7F950'
+                      stroke='#2EEDAA'
                       strokeWidth='2'
                       strokeLinecap='round'
                       strokeLinejoin='round'
@@ -553,7 +553,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
                       strokeLinejoin='round'
                     />
                   </svg>
-                  <span className='text-xs text-[#919191]'>
+                  <span className='text-xs text-gray-600'>
                     Click or drag to upload
                   </span>
                 </div>
@@ -679,7 +679,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
                 'flex h-32 w-full cursor-pointer items-center justify-center rounded-[12px] border border-[#2B2B2B] bg-[#101010] transition-colors',
                 formData.banner
                   ? 'border-primary bg-primary/5'
-                  : 'hover:border-primary border-[#484848]',
+                  : 'hover:border-primary border-gray-800',
                 (submitted || touched.banner) &&
                   errors.banner &&
                   'border-red-500'
@@ -717,7 +717,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
                   <span className='text-primary text-xs font-medium'>
                     Click to upload banner
                   </span>
-                  <span className='text-xs text-[#919191]'>
+                  <span className='text-xs text-gray-600'>
                     1200x400 px recommended
                   </span>
                 </div>
@@ -731,7 +731,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             <Label className='text-white'>
               Vision <span className='text-red-500'>*</span>
             </Label>
-            <span className='text-sm text-[#919191]'>
+            <span className='text-sm text-gray-600'>
               {formData.vision.length}/300
             </span>
           </div>
@@ -741,7 +741,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             onChange={e => handleInputChange('vision', e.target.value)}
             onBlur={() => validateField('vision')}
             className={cn(
-              'focus-visible:border-primary min-h-24 resize-none border-[#484848] bg-[#1A1A1A] text-white placeholder:text-[#919191] xl:min-h-[172px]',
+              'focus-visible:border-primary min-h-24 resize-none border-gray-800 bg-[#1A1A1A] text-white placeholder:text-gray-600 xl:min-h-[172px]',
               (submitted || touched.vision) && errors.vision && 'border-red-500'
             )}
             maxLength={300}
@@ -780,7 +780,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
                 key={category}
                 className={cn(
                   'flex w-fit items-center space-x-3 rounded-[6px] border border-[#2B2B2B] bg-[#2B2B2B3D] p-3',
-                  formData.category === category && 'bg-[#A7F9501F]'
+                  formData.category === category && 'bg-[#2EEDAA1F]'
                 )}
               >
                 <RadioGroupItem
@@ -823,7 +823,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             onChange={e => handleInputChange('githubUrl', e.target.value)}
             onBlur={() => validateField('githubUrl')}
             className={cn(
-              'focus-visible:border-primary border-[#484848] bg-[#1A1A1A] p-4 text-white placeholder:text-[#919191]',
+              'focus-visible:border-primary border-gray-800 bg-[#1A1A1A] p-4 text-white placeholder:text-gray-600',
               (submitted || touched.githubUrl) &&
                 errors.githubUrl &&
                 'border-red-500'
@@ -852,7 +852,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             onChange={e => handleInputChange('websiteUrl', e.target.value)}
             onBlur={() => validateField('websiteUrl')}
             className={cn(
-              'focus-visible:border-primary border-[#484848] bg-[#1A1A1A] p-4 text-white placeholder:text-[#919191]',
+              'focus-visible:border-primary border-gray-800 bg-[#1A1A1A] p-4 text-white placeholder:text-gray-600',
               (submitted || touched.websiteUrl) &&
                 errors.websiteUrl &&
                 'border-red-500'
@@ -868,7 +868,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             <Label className='text-white'>
               Demo Video (optional unless hackathons required)
             </Label>
-            <Info className='h-4 w-4 text-[#919191]' />
+            <Info className='h-4 w-4 text-gray-600' />
           </div>
           <Input
             placeholder='Link to demo video (YouTube video recommended)'
@@ -876,7 +876,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
             onChange={e => handleInputChange('demoVideoUrl', e.target.value)}
             onBlur={() => validateField('demoVideoUrl')}
             className={cn(
-              'focus-visible:border-primary border-[#484848] bg-[#1A1A1A] p-4 text-white placeholder:text-[#919191]',
+              'focus-visible:border-primary border-gray-800 bg-[#1A1A1A] p-4 text-white placeholder:text-gray-600',
               (submitted || touched.demoVideoUrl) &&
                 errors.demoVideoUrl &&
                 'border-red-500'
@@ -926,7 +926,7 @@ const Basic = React.forwardRef<{ validate: () => boolean }, BasicProps>(
               value={link}
               onChange={e => handleSocialLinkChange(index, e.target.value)}
               onBlur={() => validateField('socialLinks')}
-              className='focus-visible:border-primary border-[#484848] bg-[#1A1A1A] p-4 text-white placeholder:text-[#919191]'
+              className='focus-visible:border-primary border-gray-800 bg-[#1A1A1A] p-4 text-white placeholder:text-gray-600'
             />
           ))}
           <div className='flex items-start gap-x-1.5'>

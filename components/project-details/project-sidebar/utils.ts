@@ -1,29 +1,29 @@
-import { Crowdfunding, CrowdfundingProject } from '@/features/projects/types';
+import type { ProjectViewModel } from '@/features/projects/types/view-model';
 import { ProjectStatus } from './types';
 
 /**
- * Determines the project status based on project data and crowdfund information
+ * Determines the display status based on project view model
  */
-export function getProjectStatus(
-  project: CrowdfundingProject,
-  crowdfund?: Crowdfunding
-): ProjectStatus {
-  if (project.status === 'IDEA' || project.status === 'idea') {
+export function getProjectStatus(vm: ProjectViewModel): ProjectStatus {
+  if (vm.status === 'IDEA' || vm.status === 'idea') {
     return 'Validation';
   }
+  if (vm.status === 'LIVE' || vm.status === 'live') {
+    return 'Live';
+  }
   if (
-    project.status === 'funded' ||
-    (crowdfund?.fundingRaised &&
-      crowdfund?.fundingGoal &&
-      crowdfund?.fundingRaised >= crowdfund?.fundingGoal)
+    vm.status === 'funded' ||
+    (vm.campaign &&
+      vm.campaign.fundingRaised >= vm.campaign.fundingGoal &&
+      vm.campaign.fundingGoal > 0)
   ) {
     return 'Funded';
   }
-  if (project.status === 'campaigning' || project.status === 'active') {
+  if (vm.status === 'campaigning' || vm.status === 'active') {
     return 'Funding';
   }
-  if (project.status === 'completed') {
+  if (vm.status === 'completed') {
     return 'Completed';
   }
-  return project.status as ProjectStatus;
+  return vm.status as ProjectStatus;
 }

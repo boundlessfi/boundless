@@ -6,9 +6,15 @@ import { useWalletContext } from '@/components/providers/wallet-provider';
 import {
   validateSendDestination,
   sendFunds,
+  confirmSend,
   type SupportedTrustlineAsset,
 } from '@/lib/api/wallet';
-import { formatAddress, getExplorerUrl } from '@/lib/wallet-utils';
+import { signTransaction } from '@/lib/config/wallet-kit';
+import {
+  formatAddress,
+  getExplorerUrl,
+  getTransactionExplorerUrl,
+} from '@/lib/wallet-utils';
 import { validateStellarAddress } from '@/lib/utils/stellar-address-validation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,6 +38,7 @@ import {
   Plus,
   CheckCircle2,
   AlertCircle,
+  Fingerprint,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,6 +85,7 @@ export function FamilyWalletDrawer({
   const {
     walletAddress,
     walletName,
+    walletType,
     balances,
     transactions,
     totalPortfolioValue,
@@ -210,7 +218,7 @@ export function FamilyWalletDrawer({
     if (!validateStellarAddress(dest)) {
       setValidateResult('invalid');
       setValidateError(
-        'Invalid Stellar address format (must start with G, 56 characters)'
+        'Invalid Stellar address format (G... or C... address, 56 characters)'
       );
       return;
     }
@@ -307,12 +315,28 @@ export function FamilyWalletDrawer({
     setSendLoading(true);
     setSendError('');
     try {
-      await sendFunds({
+      const result = await sendFunds({
         destinationPublicKey: dest,
         amount,
         currency,
         idempotencyKey: crypto.randomUUID(),
       });
+
+      // Smart wallet: two-step flow — sign unsigned XDR, then confirm
+      if (
+        result &&
+        'step' in result &&
+        result.step === 'sign_transfer' &&
+        typeof result.unsignedXdr === 'string'
+      ) {
+        toast.info('Please approve with your passkey…');
+        const signedXdr = await signTransaction({
+          unsignedTransaction: result.unsignedXdr,
+          address: walletAddress!,
+        });
+        await confirmSend(signedXdr);
+      }
+
       toast.success('Send submitted successfully');
       refreshWallet();
       resetSendForm();
@@ -330,6 +354,7 @@ export function FamilyWalletDrawer({
     sendAmount,
     validateResult,
     balances,
+    walletAddress,
     refreshWallet,
     resetSendForm,
     getErrorDisplay,
@@ -438,7 +463,11 @@ export function FamilyWalletDrawer({
                     <div className='flex items-center justify-between pb-4'>
                       <div className='flex items-center gap-2'>
                         <div className='bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full'>
-                          <Wallet className='h-4 w-4' />
+                          {walletType === 'smart' ? (
+                            <Fingerprint className='h-4 w-4' />
+                          ) : (
+                            <Wallet className='h-4 w-4' />
+                          )}
                         </div>
                         <span className='font-semibold'>
                           {walletName || 'My Wallet'}
@@ -514,9 +543,11 @@ export function FamilyWalletDrawer({
                             balances.map((asset, index) => {
                               const isNative = asset.asset_type === 'native';
                               const code = isNative ? 'XLM' : asset.asset_code;
-                              const name = isNative
-                                ? 'Stellar Lumens'
-                                : asset.asset_code;
+                              const name =
+                                asset.asset_name ??
+                                (isNative
+                                  ? 'Stellar Lumens'
+                                  : asset.asset_code);
 
                               return (
                                 <div
@@ -549,54 +580,55 @@ export function FamilyWalletDrawer({
                             })
                           )}
                         </div>
-                        {supportedTrustlines.length > 0 && (
-                          <div className='mt-3 space-y-2'>
-                            <span className='text-muted-foreground text-xs font-medium'>
-                              Add trustline
-                            </span>
-                            <div className='space-y-1'>
-                              {supportedTrustlines.map(asset => {
-                                const hasTrustline = balances.some(
-                                  b =>
-                                    (b.asset_type === 'native' &&
-                                      asset.assetCode === 'XLM') ||
-                                    (b.asset_type !== 'native' &&
-                                      b.asset_code === asset.assetCode)
-                                );
-                                return (
-                                  <Button
-                                    key={asset.assetCode}
-                                    variant='outline'
-                                    size='sm'
-                                    className='w-full justify-start gap-2 border-dashed'
-                                    onClick={() =>
-                                      handleAddTrustline(asset.assetCode)
-                                    }
-                                    disabled={
-                                      hasTrustline ||
-                                      addingAsset === asset.assetCode
-                                    }
-                                  >
-                                    {addingAsset === asset.assetCode ? (
-                                      <Loader2 className='h-3.5 w-3.5 shrink-0 animate-spin' />
-                                    ) : hasTrustline ? (
-                                      <CheckCircle2 className='text-muted-foreground h-3.5 w-3.5 shrink-0' />
-                                    ) : (
-                                      <AssetIcon
-                                        assetCode={asset.assetCode}
-                                        size={20}
-                                        className='shrink-0'
-                                      />
-                                    )}
-                                    {hasTrustline
-                                      ? `${asset.assetCode} trustline added`
-                                      : `Enable ${asset.assetCode}${asset.name ? ` (${asset.name})` : ''}`}
-                                  </Button>
-                                );
-                              })}
+                        {walletType !== 'smart' &&
+                          supportedTrustlines.length > 0 && (
+                            <div className='mt-3 space-y-2'>
+                              <span className='text-muted-foreground text-xs font-medium'>
+                                Add trustline
+                              </span>
+                              <div className='space-y-1'>
+                                {supportedTrustlines.map(asset => {
+                                  const hasTrustline = balances.some(
+                                    b =>
+                                      (b.asset_type === 'native' &&
+                                        asset.assetCode === 'XLM') ||
+                                      (b.asset_type !== 'native' &&
+                                        b.asset_code === asset.assetCode)
+                                  );
+                                  return (
+                                    <Button
+                                      key={asset.assetCode}
+                                      variant='outline'
+                                      size='sm'
+                                      className='w-full justify-start gap-2 border-dashed'
+                                      onClick={() =>
+                                        handleAddTrustline(asset.assetCode)
+                                      }
+                                      disabled={
+                                        hasTrustline ||
+                                        addingAsset === asset.assetCode
+                                      }
+                                    >
+                                      {addingAsset === asset.assetCode ? (
+                                        <Loader2 className='h-3.5 w-3.5 shrink-0 animate-spin' />
+                                      ) : hasTrustline ? (
+                                        <CheckCircle2 className='text-muted-foreground h-3.5 w-3.5 shrink-0' />
+                                      ) : (
+                                        <AssetIcon
+                                          assetCode={asset.assetCode}
+                                          size={20}
+                                          className='shrink-0'
+                                        />
+                                      )}
+                                      {hasTrustline
+                                        ? `${asset.assetCode} trustline added`
+                                        : `Enable ${asset.assetCode}${asset.name ? ` (${asset.name})` : ''}`}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </div>
 
                       <div className='space-y-2'>
@@ -622,10 +654,33 @@ export function FamilyWalletDrawer({
                             transactions.slice(0, 3).map((tx, index) => {
                               const isReceive =
                                 tx.type === 'DEPOSIT' || tx.type === 'receive';
+                              const txHash =
+                                tx.metadata?.txHash ||
+                                tx.metadata?.hash ||
+                                tx.externalTxId;
+                              const hasTxHash =
+                                txHash &&
+                                typeof txHash === 'string' &&
+                                /^[a-f0-9]{64}$/i.test(txHash);
+                              const explorerUrl = hasTxHash
+                                ? getTransactionExplorerUrl(txHash)
+                                : address
+                                  ? getExplorerUrl(address)
+                                  : null;
+                              const Wrapper = explorerUrl ? 'a' : 'div';
+                              const wrapperProps = explorerUrl
+                                ? {
+                                    href: explorerUrl,
+                                    target: '_blank' as const,
+                                    rel: 'noopener noreferrer',
+                                  }
+                                : {};
+
                               return (
-                                <div
+                                <Wrapper
                                   key={index}
-                                  className='hover:bg-muted/50 flex items-center justify-between rounded-xl p-3'
+                                  {...wrapperProps}
+                                  className='hover:bg-muted/50 group flex cursor-pointer items-center justify-between rounded-xl p-3'
                                 >
                                   <div className='flex items-center gap-3'>
                                     <div
@@ -642,8 +697,11 @@ export function FamilyWalletDrawer({
                                       )}
                                     </div>
                                     <div>
-                                      <div className='text-sm font-medium'>
+                                      <div className='flex items-center gap-1 text-sm font-medium'>
                                         {isReceive ? 'Received' : 'Sent'}
+                                        {explorerUrl && (
+                                          <ExternalLink className='h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60' />
+                                        )}
                                       </div>
                                       <div className='text-muted-foreground text-xs'>
                                         {new Date(
@@ -662,7 +720,7 @@ export function FamilyWalletDrawer({
                                     {isReceive ? '+' : '-'} {tx.amount}{' '}
                                     {tx.currency}
                                   </div>
-                                </div>
+                                </Wrapper>
                               );
                             })
                           )}
@@ -772,10 +830,30 @@ export function FamilyWalletDrawer({
                           transactions.map((tx, index) => {
                             const isReceive =
                               tx.type === 'DEPOSIT' || tx.type === 'receive';
+                            const txHash =
+                              tx.metadata?.txHash ||
+                              tx.metadata?.hash ||
+                              tx.externalTxId;
+                            const explorerUrl =
+                              txHash &&
+                              typeof txHash === 'string' &&
+                              /^[a-f0-9]{64}$/i.test(txHash)
+                                ? getTransactionExplorerUrl(txHash)
+                                : null;
+                            const Wrapper = explorerUrl ? 'a' : 'div';
+                            const wrapperProps = explorerUrl
+                              ? {
+                                  href: explorerUrl,
+                                  target: '_blank' as const,
+                                  rel: 'noopener noreferrer',
+                                }
+                              : {};
+
                             return (
-                              <div
+                              <Wrapper
                                 key={index}
-                                className='bg-muted/30 flex items-center justify-between rounded-xl p-3'
+                                {...wrapperProps}
+                                className='bg-muted/30 hover:bg-muted/50 group flex cursor-pointer items-center justify-between rounded-xl p-3 transition-colors'
                               >
                                 <div className='flex items-center gap-3'>
                                   <div
@@ -792,8 +870,11 @@ export function FamilyWalletDrawer({
                                     )}
                                   </div>
                                   <div>
-                                    <div className='text-sm font-medium'>
+                                    <div className='flex items-center gap-1 text-sm font-medium'>
                                       {isReceive ? 'Received' : 'Sent'}
+                                      {explorerUrl && (
+                                        <ExternalLink className='h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60' />
+                                      )}
                                     </div>
                                     <div className='text-muted-foreground text-xs'>
                                       {new Date(
@@ -817,7 +898,7 @@ export function FamilyWalletDrawer({
                                     {tx.state}
                                   </div>
                                 </div>
-                              </div>
+                              </Wrapper>
                             );
                           })
                         )}
@@ -883,12 +964,16 @@ export function FamilyWalletDrawer({
 
                       <div className='space-y-2'>
                         <Label htmlFor='send-destination'>
-                          Destination (Stellar G...)
+                          Destination Address
                         </Label>
                         <div className='relative'>
                           <Input
                             id='send-destination'
-                            placeholder='GABCD...'
+                            placeholder={
+                              walletType === 'smart'
+                                ? 'G... or C...'
+                                : 'GABCD...'
+                            }
                             value={sendDestination}
                             onChange={e => {
                               setSendDestination(e.target.value);

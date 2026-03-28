@@ -188,7 +188,7 @@ const Contact = React.forwardRef<{ validate: () => boolean }, ContactProps>(
                 <div
                   className={cn(
                     'flex items-center space-x-2 border-r border-[#2B2B2B] bg-[#2B2B2B] px-4 py-3',
-                    formData.backupType === 'discord' && 'bg-[#A7F95014]'
+                    formData.backupType === 'discord' && 'bg-[#2EEDAA14]'
                   )}
                 >
                   <RadioGroupItem
@@ -242,7 +242,7 @@ const Contact = React.forwardRef<{ validate: () => boolean }, ContactProps>(
                 <div
                   className={cn(
                     'flex items-center space-x-2 border-r border-[#2B2B2B] bg-[#2B2B2B] px-4 py-3',
-                    formData.backupType === 'whatsapp' && 'bg-[#A7F95014]'
+                    formData.backupType === 'whatsapp' && 'bg-[#2EEDAA14]'
                   )}
                 >
                   <RadioGroupItem

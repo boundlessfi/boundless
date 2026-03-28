@@ -12,12 +12,10 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { Badge } from './ui/badge';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-/** Route that matches only exactly (no prefix match for sub-routes). */
-const PROFILE_ROUTE = '/me';
+const EXACT_MATCH_ROUTE = '/me';
 
 export interface NavMainItem {
   title: string;
@@ -36,14 +34,14 @@ export const NavMain = ({ items, label }: NavMainProps): React.ReactElement => {
   const pathname = usePathname();
 
   return (
-    <SidebarGroup>
+    <SidebarGroup className='py-1'>
       {label && (
-        <SidebarGroupLabel className='text-sidebar-foreground/70 px-2 text-xs font-semibold tracking-wider uppercase'>
+        <SidebarGroupLabel className='mb-0.5 px-3 text-[11px] font-medium tracking-wider text-white/25 uppercase'>
           {label}
         </SidebarGroupLabel>
       )}
       <SidebarGroupContent>
-        <SidebarMenu>
+        <SidebarMenu className='gap-0.5'>
           {items.map(item => {
             const normalizedUrl =
               item.url !== '/' && item.url.endsWith('/')
@@ -51,7 +49,7 @@ export const NavMain = ({ items, label }: NavMainProps): React.ReactElement => {
                 : item.url;
             const isActive =
               pathname === normalizedUrl ||
-              (normalizedUrl !== PROFILE_ROUTE &&
+              (normalizedUrl !== EXACT_MATCH_ROUTE &&
                 pathname?.startsWith(`${normalizedUrl}/`));
 
             return (
@@ -61,28 +59,28 @@ export const NavMain = ({ items, label }: NavMainProps): React.ReactElement => {
                   tooltip={item.title}
                   isActive={isActive}
                   className={cn(
-                    'group transition-all duration-200',
-                    isActive &&
-                      'bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm'
+                    'h-8 transition-colors duration-150',
+                    isActive
+                      ? 'bg-white/8 font-medium text-white'
+                      : 'text-white/45 hover:bg-white/4 hover:text-white/70'
                   )}
                 >
-                  <Link href={item.url} className='flex items-center gap-3'>
+                  <Link href={item.url} className='flex items-center gap-2.5'>
                     {item.icon && (
-                      <item.icon
-                        className={cn(
-                          'transition-transform duration-200',
-                          isActive && 'scale-110'
-                        )}
-                      />
+                      <item.icon className='shrink-0' size={18} stroke={1.5} />
                     )}
-                    <span className='flex-1'>{item.title}</span>
+                    <span className='flex-1 text-sm'>{item.title}</span>
                     {item.badge && (
-                      <Badge
-                        variant={item.badgeVariant || 'default'}
-                        className='ml-auto h-5 min-w-5 rounded-full px-1.5 text-xs'
+                      <span
+                        className={cn(
+                          'ml-auto flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] leading-none font-semibold',
+                          item.badgeVariant === 'destructive'
+                            ? 'bg-red-500/20 text-red-400'
+                            : 'bg-primary/15 text-primary'
+                        )}
                       >
                         {item.badge}
-                      </Badge>
+                      </span>
                     )}
                   </Link>
                 </SidebarMenuButton>

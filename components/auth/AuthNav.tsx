@@ -13,11 +13,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { User, LogOut, Settings, Shield } from 'lucide-react';
 import Link from 'next/link';
-import { authClient } from '@/lib/auth-client';
+import { useAuthContext } from '@/components/providers/AuthProvider';
 import { useAuthActions } from '@/hooks/use-auth';
 
 export function AuthNav() {
-  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const { session: authSession } = useAuthContext();
+  const { data: session, isPending: sessionPending } = authSession;
   const router = useRouter();
   const { logout } = useAuthActions();
 

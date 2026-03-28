@@ -10,28 +10,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useWalletContext } from '@/components/providers/wallet-provider';
-import { useEscrowContext } from '@/lib/providers/EscrowProvider';
-import {
-  useFundEscrow,
-  useSendTransaction,
-  useGetEscrowFromIndexerByContractIds,
-} from '@trustless-work/escrow';
-import { signTransaction } from '@/lib/config/wallet-kit';
-import {
-  FundEscrowPayload,
-  EscrowType,
-  EscrowRequestResponse,
-  Status,
-  MultiReleaseEscrow,
-  GetEscrowFromIndexerByContractIdsParams,
-} from '@trustless-work/escrow';
+import { fundPool, getPool, type EscrowPool } from '@/lib/api/escrow';
 import { toast } from 'sonner';
-
-// Extended type to include balance property that may exist at runtime
-// Using intersection type to avoid type conflicts with required balance property
-type MultiReleaseEscrowWithBalance = MultiReleaseEscrow & {
-  balance?: number;
-};
 import { Loader2, CheckCircle2, DollarSign, AlertCircle } from 'lucide-react';
 import { fundCrowdfundingProject } from '@/features/projects/api';
 
@@ -42,8 +22,8 @@ interface ProjectFundEscrowProps {
 }
 
 /**
- * Component to fund escrow for a specific project
- * Fetches escrow data and allows funding
+ * Component to fund escrow for a specific project.
+ * Uses the backend CoreEscrow contract instead of Trustless Work SDK.
  */
 export const ProjectFundEscrow = ({
   projectId,
@@ -51,84 +31,24 @@ export const ProjectFundEscrow = ({
   onSuccess,
 }: ProjectFundEscrowProps) => {
   const { walletAddress } = useWalletContext();
-  const {
-    escrow: contextEscrow,
-    setEscrowData,
-    updateEscrow,
-  } = useEscrowContext();
-  const { fundEscrow } = useFundEscrow();
-  const { sendTransaction } = useSendTransaction();
-  const { getEscrowByContractIds } = useGetEscrowFromIndexerByContractIds();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingEscrow, setIsFetchingEscrow] = useState(false);
-  const [escrow, setEscrow] = useState<MultiReleaseEscrow | null>(null);
+  const [pool, setPool] = useState<EscrowPool | null>(null);
   const [fundingStatus, setFundingStatus] = useState<{
     success: boolean;
     message: string;
   } | null>(null);
 
-  // Fetch escrow data if not in context
+  // Fetch pool data
   useEffect(() => {
-    const fetchEscrowData = async () => {
-      // Check if escrow is already in context with matching contractId
-      if (contextEscrow && contractId) {
-        setEscrow(contextEscrow);
-        return;
-      }
+    if (!contractId) return;
 
-      if (!contractId) {
-        return;
-      }
-
-      setIsFetchingEscrow(true);
-      try {
-        const params: GetEscrowFromIndexerByContractIdsParams = {
-          contractIds: [contractId],
-        };
-
-        const response = await getEscrowByContractIds(params);
-
-        // Handle both array response and object with escrows property
-        let escrows: MultiReleaseEscrow[] = [];
-
-        if (Array.isArray(response)) {
-          escrows = response as MultiReleaseEscrow[];
-        } else if (
-          response &&
-          typeof response === 'object' &&
-          'escrows' in response
-        ) {
-          escrows =
-            (response as { escrows: MultiReleaseEscrow[] }).escrows || [];
-        }
-
-        if (escrows.length > 0) {
-          const escrowData = escrows[0] as MultiReleaseEscrow;
-          setEscrow(escrowData);
-          // Also set in context for future use
-          if (escrowData) {
-            setEscrowData(contractId, escrowData);
-          }
-        }
-      } catch {
-        toast.error('Failed to fetch escrow data');
-      } finally {
-        setIsFetchingEscrow(false);
-      }
-    };
-
-    fetchEscrowData();
-  }, [contractId, contextEscrow, getEscrowByContractIds, setEscrowData]);
-
-  // Calculate total amount from all milestones
-  const calculateTotalAmount = (): number => {
-    if (!escrow || !escrow.milestones) {
-      return 0;
-    }
-    return escrow.milestones.reduce((total, milestone) => {
-      return total + (milestone.amount || 0);
-    }, 0);
-  };
+    setIsFetchingEscrow(true);
+    getPool(contractId)
+      .then(data => setPool(data))
+      .catch(() => toast.error('Failed to fetch escrow data'))
+      .finally(() => setIsFetchingEscrow(false));
+  }, [contractId]);
 
   const handleFundEscrow = async () => {
     if (!walletAddress) {
@@ -136,19 +56,8 @@ export const ProjectFundEscrow = ({
       return;
     }
 
-    if (!contractId) {
-      toast.error('No escrow contract found for this project.');
-      return;
-    }
-
-    if (!escrow) {
+    if (!contractId || !pool) {
       toast.error('No escrow data found. Please try again.');
-      return;
-    }
-
-    // Validate that escrow has milestones
-    if (!escrow.milestones || escrow.milestones.length === 0) {
-      toast.error('Escrow does not have milestones.');
       return;
     }
 
@@ -156,120 +65,51 @@ export const ProjectFundEscrow = ({
     setFundingStatus(null);
 
     try {
-      // Calculate total amount from milestones
-      const totalAmount = calculateTotalAmount();
+      const amount = pool.totalDeposited || '0';
 
-      if (totalAmount === 0) {
-        throw new Error(
-          'Total amount is zero. Please check milestone amounts.'
-        );
+      if (amount === '0') {
+        throw new Error('Total amount is zero.');
       }
 
-      // Step 1: Prepare the payload according to FundEscrowPayload type
-      const payload: FundEscrowPayload = {
-        contractId: contractId,
-        signer: walletAddress,
-        amount: totalAmount,
-      };
-
-      // Step 2: Execute function from Trustless Work
-      const fundResponse: EscrowRequestResponse = await fundEscrow(
-        payload,
-        'multi-release' as EscrowType
-      );
-
-      // Type guard: Check if response is successful
-      if (
-        fundResponse.status !== ('SUCCESS' as Status) ||
-        !fundResponse.unsignedTransaction
-      ) {
-        const errorMessage =
-          'message' in fundResponse && typeof fundResponse.message === 'string'
-            ? fundResponse.message
-            : 'Failed to fund escrow';
-        throw new Error(errorMessage);
-      }
-
-      const { unsignedTransaction } = fundResponse;
-
-      // Step 3: Sign transaction with wallet
-      const signedXdr = await signTransaction({
-        unsignedTransaction,
-        address: walletAddress,
+      // Fund via backend
+      await fundPool({
+        poolId: contractId,
+        amount,
       });
 
-      // Step 4: Send transaction
-      const sendResponse = await sendTransaction(signedXdr);
-
-      // Type guard: Check if response is successful
-      if (
-        'status' in sendResponse &&
-        sendResponse.status !== ('SUCCESS' as Status)
-      ) {
-        const errorMessage =
-          'message' in sendResponse && typeof sendResponse.message === 'string'
-            ? sendResponse.message
-            : 'Failed to send transaction';
-        throw new Error(errorMessage);
-      }
-
-      // Extract transaction hash
-      const transactionHash = contractId; // Using contractId as identifier
-
-      // Update escrow balance in context
-      if (escrow) {
-        const escrowWithBalance = escrow as MultiReleaseEscrowWithBalance;
-        const currentBalance = escrowWithBalance.balance || 0;
-        const updatedEscrow: MultiReleaseEscrowWithBalance = {
-          ...escrow,
-          balance: currentBalance + totalAmount,
-        };
-        updateEscrow(updatedEscrow as MultiReleaseEscrow);
-        setEscrow(updatedEscrow);
-      }
+      // Refresh pool data
+      const updatedPool = await getPool(contractId);
+      setPool(updatedPool);
 
       // Notify backend about the funding
       try {
         await fundCrowdfundingProject(projectId, {
-          amount: totalAmount,
-          transactionHash,
+          amount: Number(amount),
+          transactionHash: contractId,
         });
       } catch {
-        // Don't fail the whole operation if backend notification fails
         toast.warning(
           'Escrow funded, but failed to update project. Please refresh the page.'
         );
       }
 
-      // Display success status
-      const successMessage = 'Escrow funded successfully!';
       setFundingStatus({
         success: true,
-        message: successMessage,
+        message: 'Escrow funded successfully!',
       });
 
       toast.success('Project funded successfully!');
-
-      if (onSuccess) {
-        onSuccess();
-      }
+      onSuccess?.();
     } catch {
       setFundingStatus({
         success: false,
         message: 'Failed to fund escrow',
       });
-
       toast.error('Failed to fund escrow');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const formatAmount = (amount: number): string => {
-    return amount.toString();
-  };
-
-  const totalAmount = calculateTotalAmount();
 
   if (isFetchingEscrow) {
     return (
@@ -324,26 +164,13 @@ export const ProjectFundEscrow = ({
     );
   }
 
-  if (!escrow) {
+  if (!pool) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Fund Project</CardTitle>
           <CardDescription>
             Escrow data not found for this project.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  if (!escrow.milestones || escrow.milestones.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Fund Project</CardTitle>
-          <CardDescription>
-            This project's escrow does not have milestones configured.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -364,21 +191,25 @@ export const ProjectFundEscrow = ({
             <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
               <div className='mb-2 flex items-center justify-between'>
                 <span className='text-sm font-medium text-gray-700'>
-                  Total Funding Amount:
+                  Pool Status:
                 </span>
-                <span className='font-mono text-lg font-semibold'>
-                  {formatAmount(totalAmount)}
+                <span className='text-sm'>
+                  {pool.locked ? 'Locked' : 'Open'}
                 </span>
               </div>
-              <p className='text-xs text-gray-500'>
-                This amount is the sum of all milestone amounts (
-                {escrow.milestones.length} milestones)
-              </p>
+              <div className='flex items-center justify-between'>
+                <span className='text-sm font-medium text-gray-700'>
+                  Total Deposited:
+                </span>
+                <span className='font-mono text-lg font-semibold'>
+                  {pool.totalDeposited}
+                </span>
+              </div>
             </div>
 
             <Button
               onClick={handleFundEscrow}
-              disabled={isLoading || !walletAddress || totalAmount === 0}
+              disabled={isLoading || !walletAddress}
               className='w-full'
               size='lg'
             >

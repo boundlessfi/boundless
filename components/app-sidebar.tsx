@@ -11,8 +11,10 @@ import {
   IconMessageCircle,
   IconSettings,
   IconShieldCheck,
+  IconTrophy,
   IconUserCircle,
   IconUsers,
+  IconWallet,
 } from '@tabler/icons-react';
 
 import { NavMain } from '@/components/nav-main';
@@ -26,11 +28,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import Image from 'next/image';
 import { useNotificationStore } from '@/lib/stores/notification-store';
 import { Logo } from './landing-page/navbar';
 import { useNotifications } from '@/hooks/useNotifications';
-import { authClient } from '@/lib/auth-client';
+import { useAuthContext } from '@/components/providers/AuthProvider';
 
 const getNavigationData = (counts?: {
   participating?: number;
@@ -72,7 +73,7 @@ const getNavigationData = (counts?: {
     {
       title: 'Participating',
       url: '/me/participating',
-      icon: IconShieldCheck,
+      icon: IconTrophy,
       badge:
         (counts?.participating ?? 0) > 0
           ? String(counts?.participating)
@@ -107,6 +108,11 @@ const getNavigationData = (counts?: {
       icon: IconMessageCircle,
     },
     {
+      title: 'Wallet',
+      url: '/me/wallet',
+      icon: IconWallet,
+    },
+    {
       title: 'Settings',
       url: '/me/settings',
       icon: IconSettings,
@@ -137,10 +143,9 @@ export function AppSidebar({
   user: UserData;
   counts?: { participating?: number; submissions?: number; projects?: number };
 } & React.ComponentProps<typeof Sidebar>) {
-  const { data: session } = authClient.useSession();
-  const userId = session?.user?.id;
+  const { session: authSession } = useAuthContext();
+  const userId = authSession.data?.user?.id;
 
-  // Initialize notifications hook to ensure it fetches globally and syncs with store
   useNotifications({ enabled: !!userId });
 
   const unreadNotifications = useNotificationStore(state => state.unreadCount);
@@ -152,26 +157,14 @@ export function AppSidebar({
 
   return (
     <Sidebar collapsible='icon' {...props}>
-      <div className='pointer-events-none absolute inset-0 overflow-hidden'>
-        <div className='absolute right-0 bottom-0 left-0 h-[300px] opacity-50'>
-          <Image
-            src='/wave.svg'
-            alt='Background Pattern'
-            width={300}
-            height={300}
-            className='h-full w-full object-cover'
-          />
-        </div>
-      </div>
-
-      {/* Header with Logo */}
-      <SidebarHeader className='border-sidebar-border/50 border-b'>
+      {/* Header */}
+      <SidebarHeader className='border-b border-white/6 px-3 py-3'>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               size='lg'
-              className='group hover:bg-sidebar-accent/0 transition-all duration-200'
+              className='hover:bg-transparent'
             >
               <Logo />
             </SidebarMenuButton>
@@ -179,16 +172,17 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
 
-      {/* Main Content */}
-      <SidebarContent className='gap-4 px-2 py-4'>
+      {/* Navigation */}
+      <SidebarContent className='gap-0 px-2 py-3'>
         <NavMain items={navigationData.main} />
         <NavMain items={navigationData.projects} label='Projects' />
         <NavMain items={navigationData.crowdfunding} label='Crowdfunding' />
         <NavMain items={navigationData.hackathons} label='Hackathons' />
         <NavMain items={navigationData.account} label='Account' />
       </SidebarContent>
-      {/* Footer with User */}
-      <SidebarFooter className='border-sidebar-border/50 border-t p-2 backdrop-blur-sm'>
+
+      {/* User */}
+      <SidebarFooter className='border-t border-white/6 p-2'>
         <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>

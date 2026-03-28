@@ -21,8 +21,8 @@ const Empty = ({
   const isSubmission = searchParams.get('type') === 'submission';
 
   return (
-    <div className='mx-auto w-full max-w-[400px] space-y-5 py-5 text-center'>
-      <LottieAnimation width='400px' />
+    <div className='mx-auto w-full max-w-[300px] space-y-4 py-4 text-center sm:max-w-[400px] sm:space-y-5 sm:py-5'>
+      <LottieAnimation width='100%' />
 
       <div className='space-y-1'>
         <h3 className='text-center text-base font-medium text-white md:text-lg'>

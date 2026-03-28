@@ -184,7 +184,7 @@ export default function WaitlistForm() {
 
         split.words.forEach((word: Element) => {
           (word as HTMLElement).style.background =
-            'linear-gradient(273deg, rgba(167, 249, 80, 0.50) 13.84%, #3AE6B2 73.28%)';
+            'linear-gradient(273deg, rgba(46, 237, 170, 0.50) 13.84%, #3AE6B2 73.28%)';
           (word as HTMLElement).style.webkitBackgroundClip = 'text';
           (word as HTMLElement).style.backgroundClip = 'text';
           (word as HTMLElement).style.webkitTextFillColor = 'transparent';
@@ -226,7 +226,7 @@ export default function WaitlistForm() {
             split.chars,
             {
               filter:
-                'brightness(1.1) drop-shadow(0 0 10px rgba(167, 249, 80, 0.3))',
+                'brightness(1.1) drop-shadow(0 0 10px rgba(46, 237, 170, 0.3))',
               duration: 1,
               ease: 'power2.inOut',
               stagger: 0.02,
@@ -295,7 +295,7 @@ export default function WaitlistForm() {
       gsap.to(fieldRef.current, {
         duration: 0.3,
         scale: 1.02,
-        boxShadow: '0 0 0 1px rgb(167,249,80)',
+        boxShadow: '0 0 0 1px rgb(46,237,170)',
         ease: 'power2.out',
       });
     }
@@ -490,7 +490,7 @@ export default function WaitlistForm() {
           className='cursor-pointer text-[40px] leading-[140%] transition-opacity hover:opacity-80 md:text-[48px]'
           style={{
             background:
-              'linear-gradient(273deg, rgba(167, 249, 80, 0.50) 13.84%, #3AE6B2 73.28%)',
+              'linear-gradient(273deg, rgba(46, 237, 170, 0.50) 13.84%, #3AE6B2 73.28%)',
             WebkitBackgroundClip: 'text',
             backgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -521,7 +521,7 @@ export default function WaitlistForm() {
                         <Input
                           {...field}
                           placeholder='Enter your name'
-                          className='focus-visible:ring-none absolute top-0 left-0 h-full border-none bg-transparent pl-10 text-white caret-[rgb(167,249,80)] placeholder:text-[#B5B5B5] focus-visible:ring-[0px]'
+                          className='focus-visible:ring-none absolute top-0 left-0 h-full border-none bg-transparent pl-10 text-white caret-[rgb(46,237,170)] placeholder:text-[#B5B5B5] focus-visible:ring-[0px]'
                         />
                       </div>
                     </FormControl>

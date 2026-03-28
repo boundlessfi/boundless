@@ -637,7 +637,7 @@ export default function LooperSVG() {
           y2='478.09'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -648,7 +648,7 @@ export default function LooperSVG() {
           y2='474.269'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -659,7 +659,7 @@ export default function LooperSVG() {
           y2='470.448'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -670,7 +670,7 @@ export default function LooperSVG() {
           y2='466.628'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -681,7 +681,7 @@ export default function LooperSVG() {
           y2='462.807'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -692,7 +692,7 @@ export default function LooperSVG() {
           y2='458.986'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -703,7 +703,7 @@ export default function LooperSVG() {
           y2='455.165'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -714,7 +714,7 @@ export default function LooperSVG() {
           y2='451.344'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -725,7 +725,7 @@ export default function LooperSVG() {
           y2='447.524'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -736,7 +736,7 @@ export default function LooperSVG() {
           y2='443.703'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -747,7 +747,7 @@ export default function LooperSVG() {
           y2='439.882'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -758,7 +758,7 @@ export default function LooperSVG() {
           y2='436.061'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -769,7 +769,7 @@ export default function LooperSVG() {
           y2='432.241'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -780,7 +780,7 @@ export default function LooperSVG() {
           y2='428.42'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -791,7 +791,7 @@ export default function LooperSVG() {
           y2='424.599'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -802,7 +802,7 @@ export default function LooperSVG() {
           y2='420.778'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -813,7 +813,7 @@ export default function LooperSVG() {
           y2='416.957'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -824,7 +824,7 @@ export default function LooperSVG() {
           y2='413.136'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -835,7 +835,7 @@ export default function LooperSVG() {
           y2='409.316'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -846,7 +846,7 @@ export default function LooperSVG() {
           y2='405.495'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -857,7 +857,7 @@ export default function LooperSVG() {
           y2='401.674'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -868,7 +868,7 @@ export default function LooperSVG() {
           y2='397.854'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -879,7 +879,7 @@ export default function LooperSVG() {
           y2='394.033'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -890,7 +890,7 @@ export default function LooperSVG() {
           y2='390.212'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -901,7 +901,7 @@ export default function LooperSVG() {
           y2='386.391'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -912,7 +912,7 @@ export default function LooperSVG() {
           y2='382.571'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -923,7 +923,7 @@ export default function LooperSVG() {
           y2='378.75'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -934,7 +934,7 @@ export default function LooperSVG() {
           y2='374.929'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -945,7 +945,7 @@ export default function LooperSVG() {
           y2='371.108'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -956,7 +956,7 @@ export default function LooperSVG() {
           y2='367.288'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -967,7 +967,7 @@ export default function LooperSVG() {
           y2='363.467'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -978,7 +978,7 @@ export default function LooperSVG() {
           y2='359.646'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -989,7 +989,7 @@ export default function LooperSVG() {
           y2='355.825'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1000,7 +1000,7 @@ export default function LooperSVG() {
           y2='352.005'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1011,7 +1011,7 @@ export default function LooperSVG() {
           y2='348.183'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1022,7 +1022,7 @@ export default function LooperSVG() {
           y2='344.363'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1033,7 +1033,7 @@ export default function LooperSVG() {
           y2='340.542'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1044,7 +1044,7 @@ export default function LooperSVG() {
           y2='336.721'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1055,7 +1055,7 @@ export default function LooperSVG() {
           y2='332.9'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1066,7 +1066,7 @@ export default function LooperSVG() {
           y2='329.08'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1077,7 +1077,7 @@ export default function LooperSVG() {
           y2='325.259'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1088,7 +1088,7 @@ export default function LooperSVG() {
           y2='321.438'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1099,7 +1099,7 @@ export default function LooperSVG() {
           y2='317.617'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1110,7 +1110,7 @@ export default function LooperSVG() {
           y2='313.797'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1121,7 +1121,7 @@ export default function LooperSVG() {
           y2='309.975'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1132,7 +1132,7 @@ export default function LooperSVG() {
           y2='306.155'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1143,7 +1143,7 @@ export default function LooperSVG() {
           y2='302.334'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1154,7 +1154,7 @@ export default function LooperSVG() {
           y2='298.513'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1165,7 +1165,7 @@ export default function LooperSVG() {
           y2='294.693'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1176,7 +1176,7 @@ export default function LooperSVG() {
           y2='290.872'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1187,7 +1187,7 @@ export default function LooperSVG() {
           y2='287.051'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1198,7 +1198,7 @@ export default function LooperSVG() {
           y2='283.23'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1209,7 +1209,7 @@ export default function LooperSVG() {
           y2='279.409'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1220,7 +1220,7 @@ export default function LooperSVG() {
           y2='275.589'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1231,7 +1231,7 @@ export default function LooperSVG() {
           y2='271.768'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1242,7 +1242,7 @@ export default function LooperSVG() {
           y2='267.947'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1253,7 +1253,7 @@ export default function LooperSVG() {
           y2='264.126'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1264,7 +1264,7 @@ export default function LooperSVG() {
           y2='260.305'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
         <linearGradient
@@ -1275,7 +1275,7 @@ export default function LooperSVG() {
           y2='256.485'
           gradientUnits='userSpaceOnUse'
         >
-          <stop stopColor='#A7F950' />
+          <stop stopColor='#2EEDAA' />
           <stop offset='1' stopColor='#00F0FF' />
         </linearGradient>
       </defs>

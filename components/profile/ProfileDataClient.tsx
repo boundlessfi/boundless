@@ -16,7 +16,7 @@ import {
 import { Button } from '../ui/button';
 import ActivityHeatmap from './ActivityHeatMap';
 import { FutureFeature } from '../FeatureFuture';
-import { authClient } from '@/lib/auth-client';
+import { useAuthContext } from '@/components/providers/AuthProvider';
 import { GetMeResponse } from '@/lib/api/types';
 
 interface ProfileDataClientProps {
@@ -36,8 +36,8 @@ const FILTER_OPTIONS = [
 const ProfileDataClient: React.FC<ProfileDataClientProps> = ({ user }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
   // Get current session user to determine if it's the user's own profile
-  const { data: session } = authClient.useSession();
-  const currentUser = session?.user;
+  const { session } = useAuthContext();
+  const currentUser = session.data?.user;
 
   // Extract the user data from the response
   const userData = user.user;

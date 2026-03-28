@@ -13,7 +13,7 @@ import { useProjects } from '@/features/projects/hooks/use-project';
 import ProjectCard from '@/features/projects/components/ProjectCard';
 
 const ProjectCardSkeleton = () => (
-  <div className='font-inter flex w-full max-w-full flex-col gap-4 rounded-[8px] border border-gray-900 bg-[#030303] p-4 sm:p-5'>
+  <div className='font-inter bg-background-main-bg flex w-full max-w-full flex-col gap-4 rounded-[8px] border border-gray-900 p-4 sm:p-5'>
     <div className='flex items-center justify-between'>
       <div className='flex items-center gap-2'>
         <Skeleton className='size-6 rounded-full' />
@@ -25,7 +25,7 @@ const ProjectCardSkeleton = () => (
       </div>
     </div>
     <div className='flex items-start gap-3 sm:gap-5'>
-      <Skeleton className='h-[70px] w-[60px] flex-shrink-0 rounded-[8px] sm:h-[90px] sm:w-[79.41px]' />
+      <Skeleton className='h-[70px] w-[60px] shrink-0 rounded-[8px] sm:h-[90px] sm:w-[79.41px]' />
       <div className='flex min-w-0 flex-1 flex-col gap-2'>
         <Skeleton className='h-5 w-3/4' />
         <Skeleton className='h-4 w-full' />
@@ -155,7 +155,7 @@ export default function Explore() {
   return (
     <section className='relative flex flex-col items-center justify-center text-white'>
       <div className='flex flex-col items-center gap-6 text-center'>
-        <p className='to-primary bg-gradient-to-r from-[#3AE6B2] bg-clip-text text-transparent'>
+        <p className='to-primary bg-gradient-to-r from-[#2EEDAA] bg-clip-text text-transparent'>
           Active Opportunities
         </p>
         <h2 className='text-5xl max-sm:text-3xl'>Explore What's Happening</h2>
@@ -270,14 +270,14 @@ export default function Explore() {
         alt='Glow Effect'
         width={300}
         height={200}
-        className='absolute top-[75px] right-16 -z-[5] max-sm:hidden'
+        className='absolute top-[75px] right-16 -z-5 h-auto max-sm:hidden'
       />
       <Image
         src='/landing/explore/explore-glow-bottom.svg'
         alt='Glow Effect'
         width={300}
         height={200}
-        className='absolute bottom-12 left-10 -z-[5] max-sm:hidden'
+        className='absolute bottom-12 left-10 -z-5 h-auto max-sm:hidden'
       />
     </section>
   );

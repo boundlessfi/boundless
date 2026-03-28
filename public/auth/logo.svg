@@ -12,11 +12,11 @@
 <path d="M123.615 14.2447C123.615 16.2685 121.986 17.5958 119.31 17.5958C116.495 17.5958 114.609 15.7342 114.541 13.407H117.332C117.448 14.337 118.262 14.8727 119.356 14.8727C120.218 14.8727 120.822 14.593 120.822 14.0811C120.822 12.8251 114.703 13.7552 114.703 9.45032C114.703 7.49647 116.448 5.89088 119.124 5.89088C121.8 5.89088 123.429 7.59018 123.499 10.1021H120.683C120.521 9.12444 119.939 8.61256 119.032 8.61256C118.124 8.61256 117.472 8.93843 117.472 9.52025C117.472 11.1958 123.615 10.172 123.615 14.2433V14.2447Z" fill="#FEFEFE"/>
 <defs>
 <linearGradient id="paint0_linear_929_33284" x1="7.80838" y1="0" x2="7.80838" y2="18.7398" gradientUnits="userSpaceOnUse">
-<stop stop-color="#A7F950" stopOpacity="0.44"/>
+<stop stop-color="#2EEDAA" stopOpacity="0.44"/>
 <stop offset="1" stop-color="white"/>
 </linearGradient>
 <linearGradient id="paint1_linear_929_33284" x1="19.1355" y1="1.26013" x2="19.1355" y2="20" gradientUnits="userSpaceOnUse">
-<stop stop-color="#A7F950" stopOpacity="0.44"/>
+<stop stop-color="#2EEDAA" stopOpacity="0.44"/>
 <stop offset="1" stop-color="white"/>
 </linearGradient>
 </defs>

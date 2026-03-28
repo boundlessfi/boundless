@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-const BRAND_COLOR = '#a7f950';
+const BRAND_COLOR = '#2EEDAA';
 const DEV_MODAL_KEY = 'dev-status-modal-dismissed';
 
 const DevelopmentStatusModal = () => {
