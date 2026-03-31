@@ -1,83 +1,41 @@
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useCallback, useState } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { authClient } from '@/lib/auth-client';
-import { getMe } from '@/lib/api/auth';
-import { GetMeResponse } from '@/lib/api/types';
-
-const authProfileInvalidationListeners = new Set<() => void>();
-
-export function invalidateAuthProfileCache() {
-  authProfileInvalidationListeners.forEach(listener => {
-    listener();
-  });
-}
-
-function useAuthProfileInvalidationSignal() {
-  const [refreshSignal, setRefreshSignal] = useState(0);
-
-  useEffect(() => {
-    const listener = () => {
-      setRefreshSignal(current => current + 1);
-    };
-
-    authProfileInvalidationListeners.add(listener);
-    return () => {
-      authProfileInvalidationListeners.delete(listener);
-    };
-  }, []);
-
-  return refreshSignal;
-}
+import { useAuthContext } from '@/components/providers/AuthProvider';
 
 export function useAuth(requireAuth = true) {
+  const { session, userProfile, profileLoading, refreshProfile } =
+    useAuthContext();
   const {
-    data: session,
+    data: sessionData,
     isPending: sessionPending,
     error: sessionError,
-  } = authClient.useSession();
+  } = session;
 
   const router = useRouter();
-  const [userProfile, setUserProfile] = useState<GetMeResponse | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const profileRefreshSignal = useAuthProfileInvalidationSignal();
 
   const user = useMemo(() => {
-    if (session && 'user' in session && session.user) {
+    if (sessionData && 'user' in sessionData && sessionData.user) {
       return {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name || null,
-        image: session.user.image || null,
+        id: sessionData.user.id,
+        email: sessionData.user.email,
+        name: sessionData.user.name || null,
+        image: sessionData.user.image || null,
         role: 'USER' as 'USER' | 'ADMIN',
         username: null,
         profile: userProfile,
       };
     }
     return null;
-  }, [session, userProfile]);
+  }, [sessionData, userProfile]);
 
-  const isAuthenticated = !!(session && 'user' in session && session.user);
+  const isAuthenticated = !!(
+    sessionData &&
+    'user' in sessionData &&
+    sessionData.user
+  );
   const isLoading = sessionPending || profileLoading;
   const error = sessionError?.message || null;
-
-  // Fetch profile
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (session && 'user' in session && session.user) {
-        try {
-          setProfileLoading(true);
-          const profile = await getMe();
-          setUserProfile(profile);
-        } catch {
-          // ignore error
-        } finally {
-          setProfileLoading(false);
-        }
-      }
-    };
-
-    fetchProfile();
-  }, [session, profileRefreshSignal]);
 
   // Redirect if required and unauthenticated
   useEffect(() => {
@@ -86,15 +44,11 @@ export function useAuth(requireAuth = true) {
     }
   }, [requireAuth, isAuthenticated, isLoading, router]);
 
-  // refreshUser does not need useless try/catch
   const refreshUser = useCallback(async () => {
-    const profile = await getMe();
-    setUserProfile(profile);
-  }, []);
+    await refreshProfile();
+  }, [refreshProfile]);
 
-  // clearAuth — same fix
   const clearAuth = useCallback(async () => {
-    setUserProfile(null);
     await authClient.signOut();
   }, []);
 
@@ -117,46 +71,30 @@ export function useOptionalAuth() {
 }
 
 export function useAuthStatus() {
-  const { data: session, isPending: sessionPending } = authClient.useSession();
-  const [userProfile, setUserProfile] = useState<GetMeResponse | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const profileRefreshSignal = useAuthProfileInvalidationSignal();
+  const { session, userProfile, profileLoading } = useAuthContext();
+  const { data: sessionData, isPending: sessionPending } = session;
 
   const user = useMemo(() => {
-    if (session && 'user' in session && session.user) {
+    if (sessionData && 'user' in sessionData && sessionData.user) {
       return {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name || null,
-        image: session.user.image || null,
+        id: sessionData.user.id,
+        email: sessionData.user.email,
+        name: sessionData.user.name || null,
+        image: sessionData.user.image || null,
         role: 'USER' as 'USER' | 'ADMIN',
         username: null,
         profile: userProfile,
       };
     }
     return null;
-  }, [session, userProfile]);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (session && 'user' in session && session.user) {
-        try {
-          setProfileLoading(true);
-          const profile = await getMe();
-          setUserProfile(profile);
-        } catch {
-          // ignore
-        } finally {
-          setProfileLoading(false);
-        }
-      }
-    };
-
-    fetchProfile();
-  }, [session, profileRefreshSignal]);
+  }, [sessionData, userProfile]);
 
   return {
-    isAuthenticated: !!(session && 'user' in session && session.user),
+    isAuthenticated: !!(
+      sessionData &&
+      'user' in sessionData &&
+      sessionData.user
+    ),
     isLoading: sessionPending || profileLoading,
     user,
   };
@@ -165,11 +103,10 @@ export function useAuthStatus() {
 export function useAuthActions() {
   const router = useRouter();
 
-  // remove useless catch
   const logout = useCallback(async () => {
     await authClient.signOut();
     router.push('/');
-  }, []);
+  }, [router]);
 
   return {
     logout,
@@ -178,19 +115,22 @@ export function useAuthActions() {
 
 export function useRequireAuthEnhanced(redirectTo = '/auth?mode=signin') {
   const router = useRouter();
-  const { data: session, isPending, error, refetch } = authClient.useSession();
+  const { session } = useAuthContext();
+  const { data: sessionData, isPending, error } = session;
 
   useEffect(() => {
-    if (!isPending && !session) {
+    if (!isPending && !sessionData) {
       router.push(redirectTo);
     }
-  }, [session, isPending, router, redirectTo]);
+  }, [sessionData, isPending, router, redirectTo]);
 
   return {
-    session,
+    session: sessionData,
     isPending,
     error,
-    refetch,
-    isAuthenticated: !!session,
+    isAuthenticated: !!sessionData,
   };
 }
+
+// Keep invalidation API for backward compat — now triggers context refresh
+export { useAuthContext } from '@/components/providers/AuthProvider';

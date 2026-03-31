@@ -12,8 +12,11 @@ interface UseSubmissionScoresProps {
   open: boolean;
   organizationId: string;
   hackathonId: string;
+  submissionId: string;
   participantId: string;
   criteria: JudgingCriterion[];
+  targetJudgeId?: string;
+  initialScore?: IndividualJudgeScore;
 }
 
 interface ExistingScore {
@@ -25,8 +28,11 @@ export const useSubmissionScores = ({
   open,
   organizationId,
   hackathonId,
+  submissionId,
   participantId,
   criteria,
+  targetJudgeId,
+  initialScore,
 }: UseSubmissionScoresProps) => {
   const [scores, setScores] = useState<Record<string, number | string>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
@@ -37,7 +43,8 @@ export const useSubmissionScores = ({
   );
 
   // Track which submission we've successfully loaded to avoid resets
-  const loadedParticipantIdRef = useRef<string | null>(null);
+  const loadedSubmissionIdRef = useRef<string | null>(null);
+  const loadedTargetJudgeIdRef = useRef<string | null>(null);
 
   const getCriterionKey = (criterion: JudgingCriterion) => {
     return criterion.id || criterion.name || (criterion as any).title;
@@ -71,14 +78,62 @@ export const useSubmissionScores = ({
         setComments({});
         setOverallComment('');
         setExistingScore(null);
-        loadedParticipantIdRef.current = null;
+        loadedSubmissionIdRef.current = null;
+        loadedTargetJudgeIdRef.current = null;
       }
       return;
     }
 
-    // If we already loaded data for this participant, don't refetch/reset
-    // This prevents the "clearing" bug when criteria or other deps change slightly
-    if (loadedParticipantIdRef.current === participantId) {
+    if (
+      loadedSubmissionIdRef.current === submissionId &&
+      loadedTargetJudgeIdRef.current === (targetJudgeId || 'session')
+    ) {
+      return;
+    }
+
+    // Optimization: If initialScore is provided and matches the target, use it
+    // but only if we haven't already loaded something for this modal session
+    if (initialScore && !loadedSubmissionIdRef.current) {
+      const initialScores: Record<string, number> = {};
+      const initialComments: Record<string, string> = {};
+
+      // Initialize with 0
+      criteria.forEach(c => {
+        const key = getCriterionKey(c);
+        initialScores[key] = 0;
+        initialComments[key] = '';
+      });
+
+      // Map existing scores
+      initialScore.criteriaScores.forEach(cs => {
+        const matchingCriterion = criteria.find(
+          c =>
+            c.id === cs.criterionId ||
+            c.name === cs.criterionId ||
+            c.id === cs.criterionName ||
+            c.name === cs.criterionName ||
+            (c as any).title === cs.criterionName
+        );
+
+        const key = matchingCriterion
+          ? getCriterionKey(matchingCriterion)
+          : cs.criterionId;
+
+        if (key) {
+          initialScores[key] = cs.score;
+          initialComments[key] = cs.comment || '';
+        }
+      });
+
+      setExistingScore({
+        scores: initialScore.criteriaScores,
+        notes: initialScore.comment || '',
+      });
+      setScores(initialScores);
+      setComments(initialComments);
+      setOverallComment(initialScore.comment || '');
+      loadedSubmissionIdRef.current = submissionId;
+      loadedTargetJudgeIdRef.current = targetJudgeId || 'session';
       return;
     }
 
@@ -87,7 +142,7 @@ export const useSubmissionScores = ({
       try {
         const [{ data: sessionData }, response] = await Promise.all([
           authClient.getSession(),
-          getSubmissionScores(organizationId, hackathonId, participantId),
+          getSubmissionScores(organizationId, hackathonId, submissionId),
         ]);
 
         if (cancelled) return;
@@ -99,17 +154,18 @@ export const useSubmissionScores = ({
         }
 
         if (response.success && Array.isArray(response.data)) {
-          // Safer judge identifier matching - prioritize ID and email
-          const currentUserScore = (
-            response.data as IndividualJudgeScore[]
-          ).find(
-            s =>
-              s.judgeId === user.id ||
-              s.judgeEmail === user.email ||
-              (s.judgeName === user.name &&
-                user.name !== undefined &&
-                user.name.trim() !== '')
-          );
+          // Identify the correct score based on targetJudgeId or current user
+          const scoreData = response.data as IndividualJudgeScore[];
+          const currentUserScore = targetJudgeId
+            ? scoreData.find(s => s.judgeId === targetJudgeId)
+            : scoreData.find(
+                s =>
+                  s.judgeId === user.id ||
+                  s.judgeEmail === user.email ||
+                  (s.judgeName === user.name &&
+                    user.name !== undefined &&
+                    user.name.trim() !== '')
+              );
 
           if (currentUserScore) {
             setExistingScore({
@@ -157,10 +213,15 @@ export const useSubmissionScores = ({
               setScores(initialScores);
               setComments(initialComments);
               setOverallComment(currentUserScore.comment || '');
-              loadedParticipantIdRef.current = participantId;
+              loadedSubmissionIdRef.current = submissionId;
+              loadedTargetJudgeIdRef.current = targetJudgeId || 'session';
             }
           } else {
-            if (!cancelled) initializeForm(criteria);
+            if (!cancelled) {
+              initializeForm(criteria);
+              loadedSubmissionIdRef.current = submissionId;
+              loadedTargetJudgeIdRef.current = targetJudgeId || 'session';
+            }
           }
         } else {
           if (!cancelled) initializeForm(criteria);
@@ -168,7 +229,7 @@ export const useSubmissionScores = ({
       } catch (err) {
         reportError(err, {
           context: 'useSubmissionScores-fetch',
-          participantId,
+          submissionId,
         });
         if (!cancelled) initializeForm(criteria);
       } finally {
@@ -181,7 +242,14 @@ export const useSubmissionScores = ({
     return () => {
       cancelled = true;
     };
-  }, [open, organizationId, hackathonId, participantId, criteria]);
+  }, [
+    open,
+    organizationId,
+    hackathonId,
+    submissionId,
+    criteria,
+    targetJudgeId,
+  ]);
 
   return {
     scores,

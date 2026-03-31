@@ -292,7 +292,7 @@ function Profile({ user }: ProfileDataProps) {
     <div className='flex flex-col gap-4'>
       {/* Avatar Upload */}
       <Card className='space-y-8 rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 md:p-8'>
-        <div className='flex items-center gap-4'>
+        <div className='flex flex-col items-start gap-4 sm:flex-row sm:items-center'>
           <div className='relative'>
             <input
               ref={avatarRef}
@@ -334,7 +334,7 @@ function Profile({ user }: ProfileDataProps) {
               </div>
             </div>
           </div>
-          <div className='text-center'>
+          <div>
             <BoundlessButton
               icon={<Upload className='h-4 w-4' />}
               variant='outline'

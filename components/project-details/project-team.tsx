@@ -2,40 +2,42 @@
 
 import React from 'react';
 import { TeamList, TeamMember } from '@/components/ui/TeamList';
-import { Crowdfunding } from '@/features/projects/types';
+import type { ProjectViewModel } from '@/features/projects/types/view-model';
 
 interface ProjectTeamProps {
-  crowdfund: Crowdfunding;
+  vm: ProjectViewModel;
 }
 
-export function ProjectTeam({ crowdfund }: ProjectTeamProps) {
+export function ProjectTeam({ vm }: ProjectTeamProps) {
   const teamMembers: TeamMember[] = React.useMemo(() => {
     const members: TeamMember[] = [];
 
-    if (crowdfund.project.creator) {
+    if (vm.creator) {
       members.push({
-        id: crowdfund.project.creator.id,
-        name: crowdfund.project.creator.name,
+        id: vm.creator.id,
+        name: vm.creator.name,
         role: 'OWNER',
-        avatar: crowdfund.project.creator.image,
-        username: crowdfund.project.creator.username,
+        avatar: vm.creator.image,
+        username: vm.creator.username,
       });
     }
 
-    if (crowdfund.team && crowdfund.team.length > 0) {
-      crowdfund.team.forEach(member => {
-        // Only filter out if email matches and is present, OR if id matches
+    if (vm.team.length > 0) {
+      vm.team.forEach(member => {
         const isCreator =
-          (member.email && member.email === crowdfund.project.creator.email) ||
+          (member.email &&
+            vm.creator &&
+            member.email === vm.creator.username) ||
           (member.username &&
-            member.username === crowdfund.project.creator.username);
+            vm.creator &&
+            member.username === vm.creator.username);
 
         if (!isCreator) {
           members.push({
             id: member.email || member.username || Math.random().toString(),
             name: member.name,
             role: member.role === 'OWNER' ? 'OWNER' : 'MEMBER',
-            avatar: member?.image,
+            avatar: member.image,
             username: member.username,
           });
         }
@@ -43,7 +45,7 @@ export function ProjectTeam({ crowdfund }: ProjectTeamProps) {
     }
 
     return members;
-  }, [crowdfund.project.creator, crowdfund.team]);
+  }, [vm.creator, vm.team]);
 
   const handleMemberClick = (member: TeamMember) => {
     window.open(`/profile/${member.username}`, '_blank');

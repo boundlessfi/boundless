@@ -6,9 +6,15 @@ import { useWalletContext } from '@/components/providers/wallet-provider';
 import {
   validateSendDestination,
   sendFunds,
+  confirmSend,
   type SupportedTrustlineAsset,
 } from '@/lib/api/wallet';
-import { formatAddress, getExplorerUrl } from '@/lib/wallet-utils';
+import { signTransaction } from '@/lib/config/wallet-kit';
+import {
+  formatAddress,
+  getExplorerUrl,
+  getTransactionExplorerUrl,
+} from '@/lib/wallet-utils';
 import { validateStellarAddress } from '@/lib/utils/stellar-address-validation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,6 +38,7 @@ import {
   Plus,
   CheckCircle2,
   AlertCircle,
+  Fingerprint,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,6 +51,17 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import type { ApiError } from '@/lib/api/api';
 import { AssetIcon } from './AssetIcon';
 import { cn } from '@/lib/utils';
@@ -67,6 +85,7 @@ export function FamilyWalletDrawer({
   const {
     walletAddress,
     walletName,
+    walletType,
     balances,
     transactions,
     totalPortfolioValue,
@@ -88,8 +107,6 @@ export function FamilyWalletDrawer({
   const [sendDestination, setSendDestination] = useState('');
   const [sendCurrency, setSendCurrency] = useState('');
   const [sendAmount, setSendAmount] = useState('');
-  const [sendMemo, setSendMemo] = useState('');
-  const [sendMemoRequired, setSendMemoRequired] = useState(false);
   const [validateLoading, setValidateLoading] = useState(false);
   const [validateResult, setValidateResult] = useState<
     'idle' | 'valid' | 'invalid'
@@ -127,8 +144,6 @@ export function FamilyWalletDrawer({
   const resetSendForm = useCallback(() => {
     setSendDestination('');
     setSendAmount('');
-    setSendMemo('');
-    setSendMemoRequired(false);
     setValidateResult('idle');
     setValidateError('');
     setValidateErrorDetails([]);
@@ -203,7 +218,7 @@ export function FamilyWalletDrawer({
     if (!validateStellarAddress(dest)) {
       setValidateResult('invalid');
       setValidateError(
-        'Invalid Stellar address format (must start with G, 56 characters)'
+        'Invalid Stellar address format (G... or C... address, 56 characters)'
       );
       return;
     }
@@ -297,26 +312,31 @@ export function FamilyWalletDrawer({
       );
       return;
     }
-    if (sendMemoRequired && !sendMemo.trim()) {
-      setSendError('Memo is required by the recipient');
-      return;
-    }
-    const memoBytes = new TextEncoder().encode(sendMemo).length;
-    if (sendMemo && memoBytes > 28) {
-      setSendError('Memo must be 28 bytes or less (UTF-8)');
-      return;
-    }
     setSendLoading(true);
     setSendError('');
     try {
-      await sendFunds({
+      const result = await sendFunds({
         destinationPublicKey: dest,
         amount,
         currency,
-        memo: sendMemo.trim() || undefined,
-        memoRequired: sendMemoRequired || undefined,
         idempotencyKey: crypto.randomUUID(),
       });
+
+      // Smart wallet: two-step flow — sign unsigned XDR, then confirm
+      if (
+        result &&
+        'step' in result &&
+        result.step === 'sign_transfer' &&
+        typeof result.unsignedXdr === 'string'
+      ) {
+        toast.info('Please approve with your passkey…');
+        const signedXdr = await signTransaction({
+          unsignedTransaction: result.unsignedXdr,
+          address: walletAddress!,
+        });
+        await confirmSend(signedXdr);
+      }
+
       toast.success('Send submitted successfully');
       refreshWallet();
       resetSendForm();
@@ -332,10 +352,9 @@ export function FamilyWalletDrawer({
     sendDestination,
     sendCurrency,
     sendAmount,
-    sendMemo,
-    sendMemoRequired,
     validateResult,
     balances,
+    walletAddress,
     refreshWallet,
     resetSendForm,
     getErrorDisplay,
@@ -444,7 +463,11 @@ export function FamilyWalletDrawer({
                     <div className='flex items-center justify-between pb-4'>
                       <div className='flex items-center gap-2'>
                         <div className='bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full'>
-                          <Wallet className='h-4 w-4' />
+                          {walletType === 'smart' ? (
+                            <Fingerprint className='h-4 w-4' />
+                          ) : (
+                            <Wallet className='h-4 w-4' />
+                          )}
                         </div>
                         <span className='font-semibold'>
                           {walletName || 'My Wallet'}
@@ -520,9 +543,11 @@ export function FamilyWalletDrawer({
                             balances.map((asset, index) => {
                               const isNative = asset.asset_type === 'native';
                               const code = isNative ? 'XLM' : asset.asset_code;
-                              const name = isNative
-                                ? 'Stellar Lumens'
-                                : asset.asset_code;
+                              const name =
+                                asset.asset_name ??
+                                (isNative
+                                  ? 'Stellar Lumens'
+                                  : asset.asset_code);
 
                               return (
                                 <div
@@ -555,54 +580,55 @@ export function FamilyWalletDrawer({
                             })
                           )}
                         </div>
-                        {supportedTrustlines.length > 0 && (
-                          <div className='mt-3 space-y-2'>
-                            <span className='text-muted-foreground text-xs font-medium'>
-                              Add trustline
-                            </span>
-                            <div className='space-y-1'>
-                              {supportedTrustlines.map(asset => {
-                                const hasTrustline = balances.some(
-                                  b =>
-                                    (b.asset_type === 'native' &&
-                                      asset.assetCode === 'XLM') ||
-                                    (b.asset_type !== 'native' &&
-                                      b.asset_code === asset.assetCode)
-                                );
-                                return (
-                                  <Button
-                                    key={asset.assetCode}
-                                    variant='outline'
-                                    size='sm'
-                                    className='w-full justify-start gap-2 border-dashed'
-                                    onClick={() =>
-                                      handleAddTrustline(asset.assetCode)
-                                    }
-                                    disabled={
-                                      hasTrustline ||
-                                      addingAsset === asset.assetCode
-                                    }
-                                  >
-                                    {addingAsset === asset.assetCode ? (
-                                      <Loader2 className='h-3.5 w-3.5 shrink-0 animate-spin' />
-                                    ) : hasTrustline ? (
-                                      <CheckCircle2 className='text-muted-foreground h-3.5 w-3.5 shrink-0' />
-                                    ) : (
-                                      <AssetIcon
-                                        assetCode={asset.assetCode}
-                                        size={20}
-                                        className='shrink-0'
-                                      />
-                                    )}
-                                    {hasTrustline
-                                      ? `${asset.assetCode} trustline added`
-                                      : `Enable ${asset.assetCode}${asset.name ? ` (${asset.name})` : ''}`}
-                                  </Button>
-                                );
-                              })}
+                        {walletType !== 'smart' &&
+                          supportedTrustlines.length > 0 && (
+                            <div className='mt-3 space-y-2'>
+                              <span className='text-muted-foreground text-xs font-medium'>
+                                Add trustline
+                              </span>
+                              <div className='space-y-1'>
+                                {supportedTrustlines.map(asset => {
+                                  const hasTrustline = balances.some(
+                                    b =>
+                                      (b.asset_type === 'native' &&
+                                        asset.assetCode === 'XLM') ||
+                                      (b.asset_type !== 'native' &&
+                                        b.asset_code === asset.assetCode)
+                                  );
+                                  return (
+                                    <Button
+                                      key={asset.assetCode}
+                                      variant='outline'
+                                      size='sm'
+                                      className='w-full justify-start gap-2 border-dashed'
+                                      onClick={() =>
+                                        handleAddTrustline(asset.assetCode)
+                                      }
+                                      disabled={
+                                        hasTrustline ||
+                                        addingAsset === asset.assetCode
+                                      }
+                                    >
+                                      {addingAsset === asset.assetCode ? (
+                                        <Loader2 className='h-3.5 w-3.5 shrink-0 animate-spin' />
+                                      ) : hasTrustline ? (
+                                        <CheckCircle2 className='text-muted-foreground h-3.5 w-3.5 shrink-0' />
+                                      ) : (
+                                        <AssetIcon
+                                          assetCode={asset.assetCode}
+                                          size={20}
+                                          className='shrink-0'
+                                        />
+                                      )}
+                                      {hasTrustline
+                                        ? `${asset.assetCode} trustline added`
+                                        : `Enable ${asset.assetCode}${asset.name ? ` (${asset.name})` : ''}`}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </div>
 
                       <div className='space-y-2'>
@@ -628,10 +654,33 @@ export function FamilyWalletDrawer({
                             transactions.slice(0, 3).map((tx, index) => {
                               const isReceive =
                                 tx.type === 'DEPOSIT' || tx.type === 'receive';
+                              const txHash =
+                                tx.metadata?.txHash ||
+                                tx.metadata?.hash ||
+                                tx.externalTxId;
+                              const hasTxHash =
+                                txHash &&
+                                typeof txHash === 'string' &&
+                                /^[a-f0-9]{64}$/i.test(txHash);
+                              const explorerUrl = hasTxHash
+                                ? getTransactionExplorerUrl(txHash)
+                                : address
+                                  ? getExplorerUrl(address)
+                                  : null;
+                              const Wrapper = explorerUrl ? 'a' : 'div';
+                              const wrapperProps = explorerUrl
+                                ? {
+                                    href: explorerUrl,
+                                    target: '_blank' as const,
+                                    rel: 'noopener noreferrer',
+                                  }
+                                : {};
+
                               return (
-                                <div
+                                <Wrapper
                                   key={index}
-                                  className='hover:bg-muted/50 flex items-center justify-between rounded-xl p-3'
+                                  {...wrapperProps}
+                                  className='hover:bg-muted/50 group flex cursor-pointer items-center justify-between rounded-xl p-3'
                                 >
                                   <div className='flex items-center gap-3'>
                                     <div
@@ -648,8 +697,11 @@ export function FamilyWalletDrawer({
                                       )}
                                     </div>
                                     <div>
-                                      <div className='text-sm font-medium'>
+                                      <div className='flex items-center gap-1 text-sm font-medium'>
                                         {isReceive ? 'Received' : 'Sent'}
+                                        {explorerUrl && (
+                                          <ExternalLink className='h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60' />
+                                        )}
                                       </div>
                                       <div className='text-muted-foreground text-xs'>
                                         {new Date(
@@ -668,7 +720,7 @@ export function FamilyWalletDrawer({
                                     {isReceive ? '+' : '-'} {tx.amount}{' '}
                                     {tx.currency}
                                   </div>
-                                </div>
+                                </Wrapper>
                               );
                             })
                           )}
@@ -778,10 +830,30 @@ export function FamilyWalletDrawer({
                           transactions.map((tx, index) => {
                             const isReceive =
                               tx.type === 'DEPOSIT' || tx.type === 'receive';
+                            const txHash =
+                              tx.metadata?.txHash ||
+                              tx.metadata?.hash ||
+                              tx.externalTxId;
+                            const explorerUrl =
+                              txHash &&
+                              typeof txHash === 'string' &&
+                              /^[a-f0-9]{64}$/i.test(txHash)
+                                ? getTransactionExplorerUrl(txHash)
+                                : null;
+                            const Wrapper = explorerUrl ? 'a' : 'div';
+                            const wrapperProps = explorerUrl
+                              ? {
+                                  href: explorerUrl,
+                                  target: '_blank' as const,
+                                  rel: 'noopener noreferrer',
+                                }
+                              : {};
+
                             return (
-                              <div
+                              <Wrapper
                                 key={index}
-                                className='bg-muted/30 flex items-center justify-between rounded-xl p-3'
+                                {...wrapperProps}
+                                className='bg-muted/30 hover:bg-muted/50 group flex cursor-pointer items-center justify-between rounded-xl p-3 transition-colors'
                               >
                                 <div className='flex items-center gap-3'>
                                   <div
@@ -798,8 +870,11 @@ export function FamilyWalletDrawer({
                                     )}
                                   </div>
                                   <div>
-                                    <div className='text-sm font-medium'>
+                                    <div className='flex items-center gap-1 text-sm font-medium'>
                                       {isReceive ? 'Received' : 'Sent'}
+                                      {explorerUrl && (
+                                        <ExternalLink className='h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60' />
+                                      )}
                                     </div>
                                     <div className='text-muted-foreground text-xs'>
                                       {new Date(
@@ -823,7 +898,7 @@ export function FamilyWalletDrawer({
                                     {tx.state}
                                   </div>
                                 </div>
-                              </div>
+                              </Wrapper>
                             );
                           })
                         )}
@@ -863,14 +938,42 @@ export function FamilyWalletDrawer({
                     </div>
 
                     <div className='space-y-4'>
+                      <Alert className='mx-1 border-orange-500/20 bg-orange-500/10 text-orange-600'>
+                        <AlertCircle className='h-4 w-4 text-orange-600' />
+                        <AlertTitle>Important Withdrawal Notice</AlertTitle>
+                        <AlertDescription className='text-xs leading-relaxed'>
+                          <p className='mt-1 text-orange-700 dark:text-orange-400'>
+                            Do not withdraw directly to a Centralized Exchange
+                            (e.g., Binance, Coinbase) wallet. This wallet does
+                            not support memos, and your funds will be lost if
+                            you use one. You must use a self-custodial wallet
+                            that does not require a memo.
+                          </p>
+                          <p className='mt-2'>
+                            <a
+                              href='https://docs.boundlessfi.xyz/how-to-guides/withdraw-funds'
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='font-semibold underline underline-offset-2 hover:text-orange-800 dark:hover:text-orange-300'
+                            >
+                              Read our withdrawal guide here.
+                            </a>
+                          </p>
+                        </AlertDescription>
+                      </Alert>
+
                       <div className='space-y-2'>
                         <Label htmlFor='send-destination'>
-                          Destination (Stellar G...)
+                          Destination Address
                         </Label>
                         <div className='relative'>
                           <Input
                             id='send-destination'
-                            placeholder='GABCD...'
+                            placeholder={
+                              walletType === 'smart'
+                                ? 'G... or C...'
+                                : 'GABCD...'
+                            }
                             value={sendDestination}
                             onChange={e => {
                               setSendDestination(e.target.value);
@@ -983,33 +1086,6 @@ export function FamilyWalletDrawer({
                           })()}
                       </div>
 
-                      <div className='space-y-2'>
-                        <Label htmlFor='send-memo'>
-                          Memo (optional, max 28 bytes)
-                        </Label>
-                        <Input
-                          id='send-memo'
-                          placeholder='Memo for exchange/deposit'
-                          value={sendMemo}
-                          onChange={e => setSendMemo(e.target.value)}
-                        />
-                        <div className='flex items-center gap-2'>
-                          <Checkbox
-                            id='send-memo-required'
-                            checked={sendMemoRequired}
-                            onCheckedChange={c =>
-                              setSendMemoRequired(c === true)
-                            }
-                          />
-                          <Label
-                            htmlFor='send-memo-required'
-                            className='text-muted-foreground cursor-pointer text-sm font-normal'
-                          >
-                            Memo required by recipient (e.g. exchange)
-                          </Label>
-                        </div>
-                      </div>
-
                       {sendError && (
                         <Alert variant='destructive' className='mt-2'>
                           <AlertCircle className='h-4 w-4' />
@@ -1029,28 +1105,69 @@ export function FamilyWalletDrawer({
                         </Alert>
                       )}
 
-                      <Button
-                        className='w-full'
-                        onClick={handleSendSubmit}
-                        disabled={
-                          sendLoading ||
-                          validateResult !== 'valid' ||
-                          !sendAmount ||
-                          parseFloat(sendAmount) <= 0
-                        }
-                      >
-                        {sendLoading ? (
-                          <>
-                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                            Sending…
-                          </>
-                        ) : (
-                          <>
-                            <ArrowUpRight className='mr-2 h-4 w-4' />
-                            Send
-                          </>
-                        )}
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            className='w-full'
+                            disabled={
+                              sendLoading ||
+                              validateResult !== 'valid' ||
+                              !sendAmount ||
+                              parseFloat(sendAmount) <= 0
+                            }
+                          >
+                            {sendLoading ? (
+                              <>
+                                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                Sending…
+                              </>
+                            ) : (
+                              <>
+                                <ArrowUpRight className='mr-2 h-4 w-4' />
+                                Send
+                              </>
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className='z-100 max-w-[90vw] sm:max-w-md'>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Confirm Withdrawal
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className='space-y-3 text-left'>
+                              <span className='block text-sm'>
+                                You are about to send{' '}
+                                <strong className='text-foreground'>
+                                  {sendAmount} {sendCurrency}
+                                </strong>{' '}
+                                to{' '}
+                                <strong className='text-foreground font-mono break-all'>
+                                  {sendDestination}
+                                </strong>
+                                .
+                              </span>
+                              <span className='text-destructive mt-4 block text-sm font-semibold'>
+                                ⚠️ WARNING: Do not withdraw to Centralized
+                                Exchanges (e.g. Binance, Coinbase).
+                              </span>
+                              <span className='block text-sm'>
+                                Exchanges require a memo, which this wallet does
+                                NOT support. Doing so will result in permanent
+                                loss of your funds.
+                              </span>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className='mt-4 gap-2 sm:gap-0'>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleSendSubmit}
+                              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                            >
+                              Yes, I confirm this is a self-custodial wallet
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </motion.div>
                 )}

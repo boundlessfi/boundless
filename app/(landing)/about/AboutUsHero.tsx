@@ -88,7 +88,7 @@ export default function AboutUsHero() {
       />
       <div className='border-20px] absolute inset-0 top-1/2 left-1/2 h-[383px] w-[383px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[#DBFFB7] opacity-[0.3] mix-blend-overlay blur-[25px]' />
       <div className='absolute inset-0 top-1/2 left-1/2 h-[397px] w-[397px] -translate-x-1/2 -translate-y-1/2 rounded-full border-100 border-[#6DC01A] opacity-[0.2] mix-blend-hard-light blur-[100px]' />
-      <div className='absolute inset-0 top-1/2 left-1/2 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#A7F9503D] blur-[400px]' />
+      <div className='absolute inset-0 top-1/2 left-1/2 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2EEDAA3D] blur-[400px]' />
 
       <div
         ref={contentRef}

@@ -19,6 +19,7 @@ interface UseScoreFormProps {
   criteria: JudgingCriterion[];
   organizationId: string;
   hackathonId: string;
+  submissionId: string;
   participantId: string;
   existingScore: { scores: CriterionScore[]; notes?: string } | null;
   mode?: 'judge' | 'organizer-override';
@@ -37,6 +38,7 @@ export const useScoreForm = ({
   criteria,
   organizationId,
   hackathonId,
+  submissionId,
   participantId,
   existingScore,
   mode = 'judge',
@@ -141,7 +143,7 @@ export const useScoreForm = ({
     setIsLoading(true);
 
     try {
-      const includeComments = mode !== 'organizer-override';
+      const includeComments = true;
       const scoreData = criteria.map(criterion => {
         const key = getCriterionKey(criterion);
         const payload: {
@@ -163,14 +165,15 @@ export const useScoreForm = ({
           ? await overrideSubmissionScore(
               organizationId,
               hackathonId,
-              participantId,
+              submissionId,
               {
                 criteriaScores: scoreData,
                 judgeId: overrideJudgeId,
+                notes: overallComment,
               }
             )
           : await submitJudgingScore({
-              submissionId: participantId,
+              submissionId,
               criteriaScores: scoreData,
               comment: overallComment,
             });
@@ -207,11 +210,21 @@ export const useScoreForm = ({
       }
     } catch (error: any) {
       // Handle network or unexpected errors
-      const errorMessage =
+      const status = error?.response?.status;
+      let errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         'Failed to submit grade. Please try again.';
-      toast.error(errorMessage);
+
+      // Explicitly handle Conflict of Interest
+      if (status === 403) {
+        errorMessage =
+          'Conflict of Interest: You are not permitted to score this submission (e.g., self-submission or team member).';
+      }
+
+      toast.error(errorMessage, {
+        description: status === 403 ? 'Rules of Competition' : undefined,
+      });
     } finally {
       setIsLoading(false);
     }

@@ -14,51 +14,54 @@ import ProjectVoters from './project-voters';
 import ProjectBackers from './project-backers';
 import { ProjectSidebar } from './project-sidebar';
 import { cn } from '@/lib/utils';
-import { Crowdfunding, CrowdfundingProject } from '@/features/projects/types';
-import { getProjectStatus } from './project-sidebar/utils';
+import type { ProjectViewModel } from '@/features/projects/types/view-model';
+
+export type { ProjectType } from '@/features/projects/types/view-model';
 
 export function ProjectLayout({
-  project,
-  crowdfund,
+  vm,
   hiddenTabs = [],
-  hideProgress = false,
 }: {
-  project: CrowdfundingProject;
-  crowdfund: Crowdfunding;
+  vm: ProjectViewModel;
   hiddenTabs?: string[];
-  hideProgress?: boolean;
 }) {
   const isMobile = useIsMobile();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'details';
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [isLeftScrollable, setIsLeftScrollable] = useState(true);
-  const [isRightScrollable, setIsRightScrollable] = useState(true);
+  const [isLeftScrollable, setIsLeftScrollable] = useState(false);
+  const [isRightScrollable, setIsRightScrollable] = useState(false);
   const tabsListRef = useRef<HTMLDivElement>(null);
-  const projectStatus = getProjectStatus(project, crowdfund);
 
   const getVisibleTabs = () => {
     const baseTabs = [
       { value: 'details', label: 'Details' },
       { value: 'team', label: 'Team' },
-      { value: 'milestones', label: 'Milestones' },
       { value: 'comments', label: 'Comments' },
     ];
 
+    // "About" tab only on small screens (< 768px) where sidebar hides creator/links
     if (isMobile) {
       baseTabs.unshift({ value: 'about', label: 'About' });
     }
 
-    if (projectStatus === 'Validation') {
-      baseTabs.splice(4, 0, { value: 'voters', label: 'Voters' });
-    } else if (projectStatus === 'Funding') {
-      baseTabs.splice(4, 0, { value: 'voters', label: 'Voters' });
-      baseTabs.splice(5, 0, { value: 'backers', label: 'Backers' });
+    if (vm.projectType === 'campaign') {
+      const insertIdx = baseTabs.findIndex(t => t.value === 'comments');
+      baseTabs.splice(insertIdx, 0, {
+        value: 'milestones',
+        label: 'Milestones',
+      });
+      baseTabs.splice(insertIdx + 1, 0, { value: 'voters', label: 'Voters' });
+      baseTabs.splice(insertIdx + 2, 0, { value: 'backers', label: 'Backers' });
+    } else if (vm.projectType === 'submission') {
+      const insertIdx = baseTabs.findIndex(t => t.value === 'comments');
+      baseTabs.splice(insertIdx, 0, { value: 'milestones', label: 'Timeline' });
+      baseTabs.splice(insertIdx + 1, 0, { value: 'voters', label: 'Voters' });
     } else {
-      // Funded, Completed, etc.
-      baseTabs.splice(4, 0, { value: 'voters', label: 'Voters' });
-      baseTabs.splice(5, 0, { value: 'backers', label: 'Backers' });
+      const insertIdx = baseTabs.findIndex(t => t.value === 'comments');
+      baseTabs.splice(insertIdx, 0, { value: 'voters', label: 'Voters' });
     }
+
     return baseTabs;
   };
 
@@ -69,42 +72,33 @@ export function ProjectLayout({
   const handleScroll = () => {
     if (tabsListRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = tabsListRef.current;
-      const canScrollLeft = scrollLeft > 0;
-      const canScrollRight = scrollLeft < scrollWidth - clientWidth - 1;
-
-      setIsLeftScrollable(canScrollLeft);
-      setIsRightScrollable(canScrollRight);
+      setIsLeftScrollable(scrollLeft > 0);
+      setIsRightScrollable(scrollLeft < scrollWidth - clientWidth - 1);
     }
   };
 
   useEffect(() => {
     const tabsList = tabsListRef.current;
     if (tabsList) {
-      const checkScroll = () => {
-        handleScroll();
-      };
+      const checkScroll = () => handleScroll();
 
       checkScroll();
-      const timeoutId1 = setTimeout(checkScroll, 50);
-      const timeoutId2 = setTimeout(checkScroll, 200);
-      const timeoutId3 = setTimeout(checkScroll, 500);
+      const t1 = setTimeout(checkScroll, 50);
+      const t2 = setTimeout(checkScroll, 200);
+      const t3 = setTimeout(checkScroll, 500);
 
       tabsList.addEventListener('scroll', handleScroll);
 
-      const resizeObserver = new ResizeObserver(() => {
-        handleScroll();
-      });
+      const resizeObserver = new ResizeObserver(() => handleScroll());
       resizeObserver.observe(tabsList);
 
-      const handleResize = () => {
-        setTimeout(handleScroll, 100);
-      };
+      const handleResize = () => setTimeout(handleScroll, 100);
       window.addEventListener('resize', handleResize);
 
       return () => {
-        clearTimeout(timeoutId1);
-        clearTimeout(timeoutId2);
-        clearTimeout(timeoutId3);
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
         tabsList.removeEventListener('scroll', handleScroll);
         window.removeEventListener('resize', handleResize);
         resizeObserver.disconnect();
@@ -126,35 +120,65 @@ export function ProjectLayout({
     }
   };
 
-  if (isMobile) {
-    return (
-      <div className='from-background-main-bg to-background-main-bg min-h-screen overflow-x-hidden bg-linear-to-b via-[#0a0a0a]'>
-        <div className='w-full'>
-          {/* Mobile Header with Sidebar */}
-          <div className='from-background-main-bg border-b border-gray-800/50 bg-linear-to-b to-[#0a0a0a] px-4 py-6 backdrop-blur-sm'>
-            <ProjectSidebar
-              project={project}
-              crowdfund={crowdfund}
-              isMobile={true}
-              hideProgress={hideProgress}
-            />
+  const tabContent = (
+    <>
+      <TabsContent value='about' className='mt-0'>
+        <ProjectAbout vm={vm} />
+      </TabsContent>
+      <TabsContent value='details' className='mt-0'>
+        <ProjectDetails vm={vm} />
+      </TabsContent>
+      <TabsContent value='team' className='mt-0'>
+        <ProjectTeam vm={vm} />
+      </TabsContent>
+      <TabsContent value='milestones' className='mt-0'>
+        <ProjectMilestone vm={vm} />
+      </TabsContent>
+      <TabsContent value='voters' className='mt-0'>
+        <ProjectVoters vm={vm} />
+      </TabsContent>
+      <TabsContent value='backers' className='mt-0'>
+        <ProjectBackers vm={vm} />
+      </TabsContent>
+      <TabsContent value='comments' className='mt-0'>
+        <ProjectComments projectId={vm.id} />
+      </TabsContent>
+    </>
+  );
+
+  return (
+    <div className='from-background-main-bg to-background-main-bg min-h-screen bg-linear-to-b via-[#0a0a0a]'>
+      <div className='mx-auto max-w-7xl 2xl:max-w-[1800px]'>
+        <div className='flex flex-col gap-6 sm:gap-8 lg:flex-row lg:gap-8 xl:gap-12'>
+          {/* Sidebar — full-width stacked on mobile/tablet, sticky side column on lg+ */}
+          <div
+            className={cn(
+              'w-full',
+              'lg:sticky lg:top-8 lg:h-fit lg:max-w-[360px] lg:shrink-0 xl:max-w-[400px] 2xl:max-w-[440px]'
+            )}
+          >
+            <div
+              className={cn(
+                'rounded-2xl border border-gray-800/50 bg-linear-to-b from-gray-900/50 to-gray-950/50 shadow-xl backdrop-blur-sm',
+                'p-4 sm:p-5 lg:p-6'
+              )}
+            >
+              <ProjectSidebar vm={vm} isMobile={isMobile} />
+            </div>
           </div>
 
-          {/* Enhanced Tab Navigation */}
-          <div className='bg-background-main-bg/80 sticky top-0 z-40 w-full border-b border-gray-800/50 backdrop-blur-md'>
+          {/* Main Content Area */}
+          <div className='min-h-0 min-w-0 flex-1'>
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
               className='w-full'
             >
-              <TabsList className='relative h-auto w-full justify-start rounded-none bg-transparent p-0'>
-                <div
-                  className='scrollbar-hide flex w-full gap-2 overflow-x-auto px-4 py-3'
-                  ref={tabsListRef}
-                >
+              <div className='bg-background-main-bg/80 bozrder-b sticky top-0 z-30 mb-4 border-gray-800/50 py-0 backdrop-blur-md sm:mb-6 lg:mb-8'>
+                <div className='relative'>
                   {isLeftScrollable && (
                     <ChevronLeftCircle
-                      className='absolute top-1/2 left-0 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-gray-900/80 text-gray-400 backdrop-blur-sm transition-all hover:bg-gray-800 hover:text-white'
+                      className='absolute top-1/2 left-0 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-gray-900/80 text-gray-400 backdrop-blur-sm transition-all hover:bg-gray-800 hover:text-white lg:hidden'
                       onClick={scrollLeft}
                       size={24}
                     />
@@ -162,129 +186,39 @@ export function ProjectLayout({
 
                   {isRightScrollable && (
                     <ChevronRightCircle
-                      className='absolute top-1/2 right-0 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-gray-900/80 text-gray-400 backdrop-blur-sm transition-all hover:bg-gray-800 hover:text-white'
+                      className='absolute top-1/2 right-0 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-gray-900/80 text-gray-400 backdrop-blur-sm transition-all hover:bg-gray-800 hover:text-white lg:hidden'
                       onClick={scrollRight}
                       size={24}
                     />
                   )}
 
-                  {visibleTabs.map(tab => (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className={cn(
-                        'relative rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
-                        'text-gray-400 hover:text-gray-300',
-                        'data-[state=active]:bg-primary/10 data-[state=active]:text-primary',
-                        'data-[state=active]:border-primary/30 data-[state=active]:border'
-                      )}
-                    >
-                      {tab.label}
-                    </TabsTrigger>
-                  ))}
+                  <TabsList
+                    className='scrollbar-hide bg-background-card flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg p-1 sm:gap-2'
+                    ref={tabsListRef}
+                  >
+                    {visibleTabs.map(tab => (
+                      <TabsTrigger
+                        key={tab.value}
+                        value={tab.value}
+                        className={cn(
+                          'relative rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-all duration-200',
+                          'sm:px-4 sm:py-2 lg:px-5 lg:py-2.5',
+                          'text-gray-400 hover:bg-gray-800/30 hover:text-gray-300',
+                          'data-[state=active]:bg-primary/10 data-[state=active]:text-primary',
+                          'data-[state=active]:border-primary/30 data-[state=active]:border',
+                          'focus-visible:ring-primary/20 focus-visible:ring-2'
+                          // 'lg:rounded-t-2xl lg:rounded-b-none'
+                        )}
+                      >
+                        {tab.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
                 </div>
-              </TabsList>
-            </Tabs>
-          </div>
-
-          {/* Content Area */}
-          <div className='px-4 py-6'>
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className='w-full'
-            >
-              <TabsContent value='about' className='mt-0'>
-                <ProjectAbout project={project} />
-              </TabsContent>
-              <TabsContent value='details' className='mt-0'>
-                <ProjectDetails project={project} />
-              </TabsContent>
-              <TabsContent value='team' className='mt-0'>
-                <ProjectTeam crowdfund={crowdfund} />
-              </TabsContent>
-              <TabsContent value='milestones' className='mt-0'>
-                <ProjectMilestone crowdfund={crowdfund} />
-              </TabsContent>
-              <TabsContent value='voters' className='mt-0'>
-                <ProjectVoters project={project} crowdfund={crowdfund} />
-              </TabsContent>
-              <TabsContent value='comments' className='mt-0'>
-                <ProjectComments projectId={crowdfund.project.id || ''} />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className='min-h-screen bg-linear-to-b'>
-      <div className='mx-auto max-w-7xl'>
-        <div className='flex gap-8 lg:gap-12'>
-          {/* Sidebar - Sticky */}
-          <div className='sticky top-8 h-fit w-full max-w-[420px] shrink-0'>
-            <div className='rounded-2xl border border-gray-800/50 bg-linear-to-b from-gray-900/50 to-gray-950/50 p-6 shadow-xl backdrop-blur-sm'>
-              <ProjectSidebar
-                project={project}
-                crowdfund={crowdfund}
-                isMobile={false}
-                hideProgress={hideProgress}
-              />
-            </div>
-          </div>
-
-          {/* Main Content Area */}
-          <div className='min-h-0 flex-1'>
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className='w-full'
-            >
-              {/* Enhanced Tab Navigation */}
-              <div className='bg-background-main-bg/80 sticky top-0 z-30 mb-8 border-b border-gray-800/50 py-0 backdrop-blur-md'>
-                <TabsList className='h-auto w-fit justify-start gap-2 rounded-none bg-transparent p-0'>
-                  {visibleTabs.map(tab => (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className={cn(
-                        'relative rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200',
-                        'text-gray-400 hover:bg-gray-800/30 hover:text-gray-300',
-                        'data-[state=active]:bg-primary/10 data-[state=active]:text-primary',
-                        'data-[state=active]:border-primary/30 data-[state=active]:border',
-                        'focus-visible:ring-primary/20 focus-visible:ring-2',
-                        'rounded-t-2xl rounded-b-none'
-                      )}
-                    >
-                      {tab.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
               </div>
 
               {/* Tab Content */}
-              <div className='space-y-8'>
-                <TabsContent value='details' className='mt-0'>
-                  <ProjectDetails project={project} />
-                </TabsContent>
-                <TabsContent value='team' className='mt-0'>
-                  <ProjectTeam crowdfund={crowdfund} />
-                </TabsContent>
-                <TabsContent value='milestones' className='mt-0'>
-                  <ProjectMilestone crowdfund={crowdfund} />
-                </TabsContent>
-                <TabsContent value='voters' className='mt-0'>
-                  <ProjectVoters project={project} crowdfund={crowdfund} />
-                </TabsContent>
-                <TabsContent value='backers' className='mt-0'>
-                  <ProjectBackers crowdfund={crowdfund} />
-                </TabsContent>
-                <TabsContent value='comments' className='mt-0'>
-                  <ProjectComments projectId={project.id} />
-                </TabsContent>
-              </div>
+              <div className='space-y-6 sm:space-y-8'>{tabContent}</div>
             </Tabs>
           </div>
         </div>

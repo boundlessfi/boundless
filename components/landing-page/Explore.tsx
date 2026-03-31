@@ -155,7 +155,7 @@ export default function Explore() {
   return (
     <section className='relative flex flex-col items-center justify-center text-white'>
       <div className='flex flex-col items-center gap-6 text-center'>
-        <p className='to-primary bg-linear-to-r from-[#3AE6B2] bg-clip-text text-transparent'>
+        <p className='to-primary bg-gradient-to-r from-[#2EEDAA] bg-clip-text text-transparent'>
           Active Opportunities
         </p>
         <h2 className='text-5xl max-sm:text-3xl'>Explore What's Happening</h2>
@@ -270,14 +270,14 @@ export default function Explore() {
         alt='Glow Effect'
         width={300}
         height={200}
-        className='absolute top-[75px] right-16 -z-5 max-sm:hidden'
+        className='absolute top-[75px] right-16 -z-5 h-auto max-sm:hidden'
       />
       <Image
         src='/landing/explore/explore-glow-bottom.svg'
         alt='Glow Effect'
         width={300}
         height={200}
-        className='absolute bottom-12 left-10 -z-5 max-sm:hidden'
+        className='absolute bottom-12 left-10 -z-5 h-auto max-sm:hidden'
       />
     </section>
   );

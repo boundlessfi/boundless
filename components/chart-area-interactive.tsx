@@ -2,36 +2,17 @@
 
 import * as React from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
-import { motion } from 'motion/react';
-
-import { useIsMobile } from '@/hooks/use-mobile';
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const chartConfig = {
   projects: {
-    label: 'Projects Created',
-    color: '#a7f950',
+    label: 'Activity',
+    color: '#2EEDAA',
   },
 } satisfies ChartConfig;
 
@@ -43,86 +24,69 @@ interface ChartAreaInteractiveProps {
 
 export function ChartAreaInteractive({
   chartData = [],
-  title = 'Total Projects Created',
-  description: desc = 'Total for the last 3 months',
-}: ChartAreaInteractiveProps = {}) {
-  const isMobile = useIsMobile();
-  const [timeRange, setTimeRange] = React.useState('90d');
+  title = 'Activity',
+  description: desc = 'Project activity over time',
+}: ChartAreaInteractiveProps) {
+  const [timeRange, setTimeRange] = React.useState<'90d' | '30d' | '7d'>('30d');
 
-  React.useEffect(() => {
-    if (isMobile) {
-      setTimeRange('7d');
-    }
-  }, [isMobile]);
-
-  const filteredData = chartData.filter(item => {
-    const date = new Date(item.date);
-    const referenceDate = new Date();
-    let daysToSubtract = 90;
-    if (timeRange === '30d') {
-      daysToSubtract = 30;
-    } else if (timeRange === '7d') {
-      daysToSubtract = 7;
-    }
-    const startDate = new Date(referenceDate);
+  const filteredData = React.useMemo(() => {
+    const daysMap = { '90d': 90, '30d': 30, '7d': 7 } as const;
+    const daysToSubtract = daysMap[timeRange];
+    const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysToSubtract);
-    return date >= startDate;
-  });
+    return chartData.filter(item => new Date(item.date) >= startDate);
+  }, [chartData, timeRange]);
+
+  const ranges = [
+    { value: '7d', label: '7d' },
+    { value: '30d', label: '30d' },
+    { value: '90d', label: '90d' },
+  ] as const;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <Card className='bg-background border-border/10 hover:border-primary/30 hover:shadow-primary/10 @container/card border transition-all duration-300 hover:shadow-lg'>
-        <CardHeader>
-          <CardTitle className='text-white'>{title}</CardTitle>
-          <CardDescription className='text-white/70'>
-            <span className='hidden @[540px]/card:block'>{desc}</span>
-            <span className='@[540px]/card:hidden'>{desc}</span>
-          </CardDescription>
-          <CardAction>
-            <ToggleGroup
-              type='single'
-              value={timeRange}
-              onValueChange={setTimeRange}
-              variant='outline'
-              className='*:data-[state=on]:border-primary! *:data-[state=on]:bg-primary/20! hidden *:data-[slot=toggle-group-item]:border-white/30! *:data-[slot=toggle-group-item]:px-4! *:data-[slot=toggle-group-item]:text-white/60! *:data-[slot=toggle-group-item]:hover:border-white/50! *:data-[slot=toggle-group-item]:hover:bg-white/5! *:data-[slot=toggle-group-item]:hover:text-white! *:data-[state=on]:px-4! *:data-[state=on]:text-white! @[767px]/card:flex'
+    <div className='flex h-full flex-col rounded-xl border border-white/6 bg-white/2'>
+      {/* Header */}
+      <div className='flex items-center justify-between border-b border-white/6 px-4 py-3 sm:px-5'>
+        <div>
+          <h3 className='text-sm font-medium text-white'>{title}</h3>
+          <p className='mt-0.5 hidden text-xs text-white/30 sm:block'>{desc}</p>
+        </div>
+        <div className='flex gap-0.5 rounded-lg bg-white/4 p-0.5'>
+          {ranges.map(r => (
+            <button
+              key={r.value}
+              onClick={() => setTimeRange(r.value)}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                timeRange === r.value
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/30 hover:text-white/50'
+              }`}
             >
-              <ToggleGroupItem value='90d'>Last 3 months</ToggleGroupItem>
-              <ToggleGroupItem value='30d'>Last 30 days</ToggleGroupItem>
-              <ToggleGroupItem value='7d'>Last 7 days</ToggleGroupItem>
-            </ToggleGroup>
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger
-                className='flex w-40 **:data-[slot=select-trigger]:border-white/30! **:data-[slot=select-trigger]:hover:border-white/50! **:data-[slot=select-trigger]:hover:bg-white/5! **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate **:data-[slot=select-value]:text-white/60! @[767px]/card:hidden'
-                size='sm'
-                aria-label='Select a value'
-              >
-                <SelectValue placeholder='Last 3 months' />
-              </SelectTrigger>
-              <SelectContent className='rounded-xl'>
-                <SelectItem value='90d'>Last 3 months</SelectItem>
-                <SelectItem value='30d'>Last 30 days</SelectItem>
-                <SelectItem value='7d'>Last 7 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardAction>
-        </CardHeader>
-        <CardContent className='px-2 pt-4 sm:px-6 sm:pt-6'>
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className='flex-1 p-4 sm:p-5'>
+        {filteredData.length === 0 ? (
+          <div className='flex h-full min-h-[180px] items-center justify-center'>
+            <p className='text-xs text-white/20'>No activity in this period</p>
+          </div>
+        ) : (
           <ChartContainer
             config={chartConfig}
-            className='aspect-auto h-[250px] w-full'
+            className='aspect-auto h-[200px] w-full sm:aspect-video lg:h-[240px]'
           >
             <BarChart data={filteredData}>
-              <CartesianGrid vertical={false} stroke='rgba(255,255,255,0.1)' />
+              <CartesianGrid vertical={false} stroke='rgba(255,255,255,0.04)' />
               <XAxis
                 dataKey='date'
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
+                tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 11 }}
                 tickFormatter={value => {
                   const date = new Date(value);
                   return date.toLocaleDateString('en-US', {
@@ -135,26 +99,26 @@ export function ChartAreaInteractive({
                 cursor={false}
                 content={
                   <ChartTooltipContent
-                    className='bg-background! border-border/20! w-[150px] text-white!'
-                    labelFormatter={value => {
-                      return new Date(value).toLocaleDateString('en-US', {
+                    className='border-white/10 bg-zinc-900 text-white'
+                    labelFormatter={value =>
+                      new Date(value).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
-                      });
-                    }}
+                      })
+                    }
                   />
                 }
               />
               <Bar
                 dataKey='projects'
                 fill='var(--color-projects)'
-                radius={[4, 4, 0, 0]}
+                radius={[3, 3, 0, 0]}
               />
             </BarChart>
           </ChartContainer>
-        </CardContent>
-      </Card>
-    </motion.div>
+        )}
+      </div>
+    </div>
   );
 }

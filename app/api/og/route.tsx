@@ -89,7 +89,7 @@ export async function GET(request: Request) {
           left: 0,
           right: 0,
           height: 4,
-          background: 'linear-gradient(90deg, #a7f950 0%, #a7f95080 100%)',
+          background: 'linear-gradient(90deg, #2EEDAA 0%, #2EEDAA80 100%)',
         }}
       />
       <div
@@ -170,7 +170,7 @@ export async function GET(request: Request) {
             <span
               style={{
                 fontSize: 22,
-                color: '#a7f950',
+                color: '#2EEDAA',
                 fontWeight: 600,
               }}
             >

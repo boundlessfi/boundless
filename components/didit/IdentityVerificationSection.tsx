@@ -22,7 +22,6 @@ export type IdentityVerificationStatus =
 
 export interface IdentityVerificationSectionProps {
   user: GetMeResponse | null;
-  onVerificationComplete?: () => void;
 }
 
 const statusConfig: Record<
@@ -53,7 +52,6 @@ const isLocalhost = (): boolean =>
 
 export function IdentityVerificationSection({
   user,
-  onVerificationComplete,
 }: IdentityVerificationSectionProps) {
   const status = user?.user
     ?.identityVerificationStatus as IdentityVerificationStatus;
@@ -71,7 +69,8 @@ export function IdentityVerificationSection({
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-4'>
-        {status && config ? (
+        {/* Status badge row */}
+        {status && config && (
           <div className='flex flex-wrap items-center gap-3'>
             <Badge
               variant='outline'
@@ -92,18 +91,56 @@ export function IdentityVerificationSection({
               </span>
             )}
           </div>
-        ) : (
-          <p className='text-sm text-zinc-500'>
-            You have not completed identity verification yet.
+        )}
+
+        {/* Per-state messaging */}
+        {status === 'Approved' && (
+          <p className='text-sm text-zinc-400'>
+            Your identity has been verified. You have full access to all
+            compliance-gated features.
           </p>
         )}
 
-        {(status !== 'Approved' || !status) && (
+        {status === 'In Review' && (
+          <div className='rounded-md border border-amber-500/20 bg-amber-500/5 px-4 py-3'>
+            <p className='text-sm font-medium text-amber-400'>
+              Your submission is under review
+            </p>
+            <p className='mt-1 text-sm text-zinc-400'>
+              We&apos;re reviewing your identity documents. This typically takes
+              1–3 business days. You&apos;ll be notified once a decision has
+              been made — no further action is needed right now.
+            </p>
+          </div>
+        )}
+
+        {status === 'Declined' && (
+          <div className='rounded-md border border-red-500/20 bg-red-500/5 px-4 py-3'>
+            <p className='text-sm font-medium text-red-400'>
+              Verification was declined
+            </p>
+            <p className='mt-1 text-sm text-zinc-400'>
+              Your identity verification was not successful. This can happen if
+              the documents were unclear, expired, or didn&apos;t match the
+              required criteria. Please try again with valid, legible documents.
+            </p>
+          </div>
+        )}
+
+        {!status && (
+          <p className='text-sm text-zinc-500'>
+            You have not completed identity verification yet. Verify your
+            identity to unlock compliance-gated features.
+          </p>
+        )}
+
+        {/* CTA — shown for unverified and declined users */}
+        {user && status !== 'Approved' && status !== 'In Review' && (
           <>
             <DiditVerifyButton
-              onSuccess={() => {
-                onVerificationComplete?.();
-              }}
+              label={
+                status === 'Declined' ? 'Re-verify identity' : 'Verify identity'
+              }
             />
             {isLocalhost() && (
               <p className='rounded-md border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs text-zinc-500'>

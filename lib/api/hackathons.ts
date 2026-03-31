@@ -121,6 +121,7 @@ export interface PrizeTier {
 
 export interface HackathonRewards {
   prizeTiers: PrizeTier[];
+  winnerOverrides?: Record<string, number>; // submissionId -> rank
 }
 
 // Judging Tab Types
@@ -432,6 +433,7 @@ export type Hackathon = {
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
+  winnerOverrides?: Record<string, number>; // Added for manual rank overrides
   participants: Participant[];
 
   _count: {
@@ -475,7 +477,9 @@ export interface PublishHackathonRequest extends Hackathon {
   escrowDetails?: object;
 }
 
-export type UpdateHackathonRequest = Partial<Hackathon>;
+export type UpdateHackathonRequest = Partial<Hackathon> & {
+  rewards?: HackathonRewards;
+};
 
 // Response Types
 export interface CreateDraftResponse extends ApiResponse<HackathonDraft> {
@@ -1607,7 +1611,7 @@ export const getHackathonEscrow = async (
   hackathonId: string
 ): Promise<GetHackathonEscrowResponse> => {
   const res = await api.get(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/escrow`
+    `/organizations/${organizationId}/hackathons/${hackathonId}/rewards/escrow`
   );
   return res.data;
 };
@@ -2920,6 +2924,7 @@ export const toggleRoleHired = async (
 export interface HackathonWinner {
   rank: number;
   projectName: string;
+  logo: string;
   projectId?: string;
   teamName: string | null;
   participants: Array<{

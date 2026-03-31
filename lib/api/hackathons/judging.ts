@@ -77,10 +77,12 @@ export interface JudgingResult {
     variance: number;
   }>;
   rank: number;
+  computedRank?: number;
   isComplete: boolean;
   isPending: boolean;
   hasDisagreement: boolean;
   prize?: string;
+  overriddenRank?: number; // Added to track manual overrides
 }
 
 export interface AggregatedJudgingResults {
@@ -90,7 +92,9 @@ export interface AggregatedJudgingResults {
   submissionsPendingCount: number;
   averageScoreAcrossAll: number;
   judgesAssigned: number;
+  resultsPublished: boolean;
   results: JudgingResult[];
+  winnerOverrides?: Record<string, number>; // submissionId -> rank
   generatedAt: string;
   metadata: {
     sortedBy: string;
@@ -98,27 +102,29 @@ export interface AggregatedJudgingResults {
     includesIndividualScores: boolean;
     includesProgressTracking: boolean;
   };
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface JudgingSubmission {
   participant: {
     id: string;
     userId: string;
-    hackathonId: string;
-    organizationId: string;
     user: {
       id: string;
-      profile: {
-        firstName: string;
-        lastName: string;
-        username: string;
-        avatar?: string;
-      };
       email: string;
+      name: string;
+      username: string;
+      image?: string;
     };
-    participationType: 'individual' | 'team';
+    participationType: string;
     teamId?: string;
     teamName?: string;
+    teamMembers?: any[];
   };
   submission: {
     id: string;
@@ -130,11 +136,11 @@ export interface JudgingSubmission {
     introduction?: string;
     links?: Array<{ type: string; url: string }>;
     submissionDate: string;
-    status: 'shortlisted';
+    status: string;
     rank?: number;
+    socialLinks?: any;
   };
-  criteria: JudgingCriterion[];
-  scores: JudgeScore[];
+  myScore?: IndividualJudgeScore;
   averageScore: number | null;
   judgeCount: number;
 }
@@ -229,6 +235,7 @@ export interface SubmitJudgingScoreRequest {
 export interface OverrideSubmissionScoreRequest {
   criteriaScores: CriterionScoreRequest[];
   judgeId?: string;
+  notes?: string;
 }
 
 export interface OverrideSubmissionScoreResponse extends ApiResponse<{
@@ -363,12 +370,19 @@ export const getJudgingSubmissions = async (
   hackathonId: string,
   page = 1,
   limit = 10,
-  status?: string
+  status?: string,
+  search?: string,
+  sortBy?: string,
+  order?: 'asc' | 'desc'
 ): Promise<GetJudgingSubmissionsResponse> => {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
   });
+
+  if (search) params.append('search', search);
+  if (sortBy) params.append('sortBy', sortBy);
+  if (order) params.append('order', order);
 
   // Default to SHORTLISTED for backwards-compatibility, passing 'all' bypasses it
   const filterStatus = status === 'all' ? undefined : status || 'SHORTLISTED';
@@ -404,12 +418,12 @@ export const submitGrade = async (
 export const getSubmissionScores = async (
   organizationId: string,
   hackathonId: string,
-  participantId: string
+  submissionId: string
 ): Promise<GetSubmissionScoresResponse> => {
   const res = await api.get<
     IndividualJudgeScore[] | ApiResponse<IndividualJudgeScore[]>
   >(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/submissions/${participantId}/scores`
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/submissions/${submissionId}/scores`
   );
 
   // Handle raw array response format
@@ -469,12 +483,26 @@ export const overrideSubmissionScore = async (
  */
 export const getJudgingResults = async (
   organizationId: string,
-  hackathonId: string
+  hackathonId: string,
+  page = 1,
+  limit = 10,
+  search?: string,
+  sortBy?: string,
+  order?: 'asc' | 'desc'
 ): Promise<GetJudgingResultsResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+
+  if (search) params.append('search', search);
+  if (sortBy) params.append('sortBy', sortBy);
+  if (order) params.append('order', order);
+
   const res = await api.get<
     AggregatedJudgingResults | ApiResponse<AggregatedJudgingResults>
   >(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/results`
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/results?${params.toString()}`
   );
 
   // Handle case where backend returns AggregatedJudgingResults directly vs ApiResponse wrapped
@@ -547,12 +575,26 @@ export const getHackathonJudges = async (
  */
 export const getJudgingWinners = async (
   organizationId: string,
-  hackathonId: string
+  hackathonId: string,
+  page = 1,
+  limit = 10,
+  search?: string,
+  sortBy?: string,
+  order?: 'asc' | 'desc'
 ): Promise<GetJudgingWinnersResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+
+  if (search) params.append('search', search);
+  if (sortBy) params.append('sortBy', sortBy);
+  if (order) params.append('order', order);
+
   const res = await api.get<{
     data: JudgingResult[] | AggregatedJudgingResults;
   }>(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/winners`
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/winners?${params.toString()}`
   );
 
   const payload = res.data?.data;
@@ -589,6 +631,42 @@ export const publishJudgingResults = async (
 ): Promise<ApiResponse<null>> => {
   const res = await api.post(
     `/organizations/${organizationId}/hackathons/${hackathonId}/judging/publish-results`
+  );
+  return res.data;
+};
+
+/**
+ * Optimized endpoint for judges to get their assigned submissions with criteria and scores
+ */
+export const getJudgingSubmissionsForJudge = async (
+  hackathonId: string,
+  page = 1,
+  limit = 10,
+  search?: string,
+  sortBy?: string,
+  order?: 'asc' | 'desc'
+): Promise<
+  ApiResponse<{
+    submissions: JudgingSubmission[];
+    criteria: JudgingCriterion[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }>
+> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  if (search) params.append('search', search);
+  if (sortBy) params.append('sortBy', sortBy);
+  if (order) params.append('order', order);
+
+  const res = await api.get(
+    `/hackathons/${hackathonId}/judging/submissions?${params.toString()}`
   );
   return res.data;
 };

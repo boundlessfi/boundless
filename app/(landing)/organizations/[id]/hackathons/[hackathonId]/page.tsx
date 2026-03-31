@@ -18,6 +18,7 @@ import { HackathonTimeline } from '@/components/organization/hackathons/details/
 import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
 import HackathonPublishedModal from '@/components/organization/hackathons/new/tabs/components/review/HackathonPublishedModal';
+import { ExportButton } from '@/components/organization/hackathons/details/ExportButton';
 import type { PublishResponseData } from '@/hooks/use-hackathon-publish';
 
 const STORAGE_KEY = 'boundless_hackathon_published';
@@ -146,10 +147,15 @@ export default function HackathonPage() {
 
         {/* Hero Section with Hackathon Name */}
         <div className='border-b border-gray-900 p-4'>
-          <div className='mx-auto max-w-7xl'>
+          <div className='mx-auto flex max-w-7xl items-center justify-between gap-4'>
             <h1 className='text-3xl font-light tracking-tight text-white sm:text-4xl'>
               {currentHackathon?.name || 'Hackathon Dashboard'}
             </h1>
+            <ExportButton
+              organizationId={organizationId}
+              hackathonId={hackathonId}
+              hackathonName={currentHackathon?.name}
+            />
           </div>
         </div>
 

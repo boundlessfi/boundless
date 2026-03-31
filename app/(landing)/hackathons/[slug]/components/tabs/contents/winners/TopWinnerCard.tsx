@@ -4,6 +4,7 @@ import { Trophy } from 'lucide-react';
 import Image from 'next/image';
 import { SubmissionCardProps } from '@/types/hackathon';
 import BasicAvatar from '@/components/avatars/BasicAvatar';
+import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 
 interface TopWinnerCardProps {
   winner: HackathonWinner;
@@ -11,18 +12,19 @@ interface TopWinnerCardProps {
 }
 
 export const TopWinnerCard = ({ winner, submission }: TopWinnerCardProps) => {
-  const bannerUrl = submission?.logo || '/images/default-project-banner.png'; // Fallback to logo or default
+  const bannerUrl = winner?.logo || '/images/default-project-banner.png'; // Fallback to logo or default
+  const projectUrl = `/projects/${winner.submissionId}?type=submission`;
 
   return (
     <div className='relative w-full overflow-hidden rounded-2xl border border-white/5 bg-[#0A0A0A] p-6 transition-all hover:border-white/10'>
       <div className='flex flex-col gap-8 md:flex-row'>
-        {/* Project Visual */}
         <div className='relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-xl bg-linear-to-br from-indigo-500/20 to-purple-500/20 md:w-[240px] lg:w-[280px]'>
-          {submission?.logo ? (
+          {bannerUrl ? (
             <Image
-              src={submission.logo}
+              src={bannerUrl}
               alt={winner.projectName}
               fill
+              sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
               className='object-cover'
             />
           ) : (
@@ -32,7 +34,6 @@ export const TopWinnerCard = ({ winner, submission }: TopWinnerCardProps) => {
           )}
         </div>
 
-        {/* Project Info */}
         <div className='flex flex-1 flex-col py-1'>
           <div className='mb-6 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between lg:mb-2'>
             <div className='space-y-1'>
@@ -64,36 +65,29 @@ export const TopWinnerCard = ({ winner, submission }: TopWinnerCardProps) => {
               'No description provided for this project.'}
           </p>
 
-          <div className='mt-auto flex items-center gap-4'>
-            <div className='flex -space-x-3'>
-              {winner.participants.map((participant, idx) => (
-                <BasicAvatar
-                  key={idx}
-                  image={participant.avatar}
-                  name={'Participant'}
-                  username={participant.username}
-                />
-                // <Avatar
-                //   key={idx}
-                //   className='h-10 w-10 border-2 border-[#0A0A0A]'
-                // >
-                //   <AvatarImage src={participant.avatar} />
-                //   <AvatarFallback className='bg-white/5 text-xs font-bold text-white/60'>
-                //     {participant.username.slice(0, 2).toUpperCase()}
-                //   </AvatarFallback>
-                // </Avatar>
-              ))}
+          <div className='mt-auto flex items-center justify-between gap-4'>
+            <div className='flex items-center gap-4'>
+              <div className='flex -space-x-3'>
+                {winner.participants.map((participant, idx) => (
+                  <BasicAvatar
+                    key={idx}
+                    image={participant.avatar}
+                    name={'Participant'}
+                    username={participant.username}
+                  />
+                ))}
+              </div>
             </div>
-            {/* <div className='flex flex-col'>
-              <span className='text-[10px] font-bold tracking-wider text-white/40 uppercase'>
-                {winner.teamName ? 'Team members' : 'Participant'}
-              </span>
-              <span className='text-xs font-medium text-white/80'>
-                {winner.teamName
-                  ? winner.teamName
-                  : winner.participants[0]?.username}
-              </span>
-            </div> */}
+
+            <a href={projectUrl} target='_blank' rel='noopener noreferrer'>
+              <BoundlessButton
+                variant='outline'
+                size='sm'
+                className='hover:bg-primary h-9 rounded-xl border-white/5 bg-white/5 px-4 text-xs font-bold transition-all hover:text-black'
+              >
+                View Project
+              </BoundlessButton>
+            </a>
           </div>
         </div>
       </div>

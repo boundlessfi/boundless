@@ -7,7 +7,7 @@ import { ProjectSidebarProgress } from './ProjectSidebarProgress';
 import { ProjectSidebarActions } from './ProjectSidebarActions';
 import { ProjectSidebarCreator } from './ProjectSidebarCreator';
 import { ProjectSidebarLinks } from './ProjectSidebarLinks';
-import { createVote, deleteVote } from '@/lib/api/votes';
+import { createVote } from '@/lib/api/votes';
 import { getProjectStatus } from './utils';
 import { ProjectSidebarProps } from './types';
 import { VoteCountResponse, VoteEntityType, VoteType } from '@/types/votes';
@@ -15,12 +15,7 @@ import { useVoteRealtime } from '@/hooks/use-vote-realtime';
 import { getVoteCounts } from '@/lib/api/votes';
 import { toast } from 'sonner';
 
-export function ProjectSidebar({
-  project,
-  crowdfund,
-  isMobile = false,
-  hideProgress = false,
-}: ProjectSidebarProps) {
+export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
   const searchParams = useSearchParams();
   const isSubmission = searchParams.get('type') === 'submission';
   const entityType = isSubmission
@@ -29,18 +24,31 @@ export function ProjectSidebar({
 
   const [isVoting, setIsVoting] = useState(false);
   const [voteCounts, setVoteCounts] = useState<VoteCountResponse | null>(
-    project.voting
+    vm.voting
       ? {
-          upvotes: project.voting.data?.upvotes ?? project.voting.upvotes,
-          downvotes: project.voting.data?.downvotes ?? project.voting.downvotes,
-          totalVotes:
-            project.voting.data?.totalVotes ?? project.voting.totalVotes,
-          userVote: project.voting.data?.userVote ?? project.voting.userVote,
+          upvotes: (vm.voting as Record<string, unknown>).data
+            ? ((vm.voting as Record<string, Record<string, number>>).data
+                ?.upvotes ?? (vm.voting as Record<string, number>).upvotes)
+            : ((vm.voting as Record<string, number>).upvotes ?? 0),
+          downvotes: (vm.voting as Record<string, unknown>).data
+            ? ((vm.voting as Record<string, Record<string, number>>).data
+                ?.downvotes ?? (vm.voting as Record<string, number>).downvotes)
+            : ((vm.voting as Record<string, number>).downvotes ?? 0),
+          totalVotes: (vm.voting as Record<string, unknown>).data
+            ? ((vm.voting as Record<string, Record<string, number>>).data
+                ?.totalVotes ??
+              (vm.voting as Record<string, number>).totalVotes)
+            : ((vm.voting as Record<string, number>).totalVotes ?? 0),
+          userVote: (vm.voting as Record<string, unknown>).data
+            ? (((vm.voting as Record<string, Record<string, unknown>>).data
+                ?.userVote as VoteType) ?? null)
+            : (((vm.voting as Record<string, unknown>).userVote as VoteType) ??
+              null),
         }
       : null
   );
-  const projectStatus = getProjectStatus(project, crowdfund);
-  const projectId = project?.id;
+  const projectStatus = getProjectStatus(vm);
+  const projectId = vm.id;
 
   // Real-time vote updates
   useVoteRealtime(
@@ -82,12 +90,14 @@ export function ProjectSidebar({
 
     const fetchVoteCounts = async () => {
       try {
-        const response: any = await getVoteCounts(
+        const response = (await getVoteCounts(
           projectId,
           VoteEntityType.CROWDFUNDING_CAMPAIGN
+        )) as unknown as Record<string, unknown>;
+        setVoteCounts(
+          (response.data as VoteCountResponse) ||
+            (response as unknown as VoteCountResponse)
         );
-        // The API returns { success: true, message: '...', data: { ... } }
-        setVoteCounts(response.data || response);
       } catch {
         // Silently fail - voting data is not critical
       }
@@ -102,42 +112,46 @@ export function ProjectSidebar({
     setIsVoting(true);
     try {
       await createVote({
-        projectId: project.id,
+        projectId: vm.id,
         entityType: entityType,
         voteType: value === 1 ? VoteType.UPVOTE : VoteType.DOWNVOTE,
       });
-      // Optimistic update could go here, but we rely on realtime/refetch
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to submit vote');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to submit vote';
+      toast.error(message);
     } finally {
       setIsVoting(false);
     }
   };
 
-  return (
-    <div className='w-full space-y-6'>
-      <ProjectSidebarHeader project={project} projectStatus={projectStatus} />
+  const shouldShowProgress =
+    vm.projectType === 'campaign' || projectStatus === 'Validation';
 
-      {project.vision && (
-        <div className='rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 backdrop-blur-sm'>
-          <p className='text-sm leading-relaxed text-gray-300'>
-            {project.vision}
+  return (
+    <div className='w-full space-y-4 sm:space-y-5 lg:space-y-6'>
+      <ProjectSidebarHeader vm={vm} projectStatus={projectStatus} />
+
+      {vm.vision && (
+        <div className='rounded-lg border border-gray-800/50 bg-gray-900/30 p-3 backdrop-blur-sm sm:p-4'>
+          <p className='text-xs leading-relaxed text-gray-300 sm:text-sm'>
+            {vm.vision}
           </p>
         </div>
       )}
 
-      <div className='rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 backdrop-blur-sm'>
-        <ProjectSidebarProgress
-          project={project}
-          crowdfund={crowdfund}
-          projectStatus={projectStatus}
-          voteCounts={voteCounts}
-        />
-      </div>
+      {shouldShowProgress && (
+        <div className='rounded-lg border border-gray-800/50 bg-gray-900/30 p-3 backdrop-blur-sm sm:p-4'>
+          <ProjectSidebarProgress
+            vm={vm}
+            projectStatus={projectStatus}
+            voteCounts={voteCounts}
+          />
+        </div>
+      )}
 
       <ProjectSidebarActions
-        project={project}
-        crowdfund={crowdfund}
+        vm={vm}
         projectStatus={projectStatus}
         isVoting={isVoting}
         userVote={
@@ -151,9 +165,9 @@ export function ProjectSidebar({
       />
 
       {!isMobile && (
-        <div className='space-y-6 border-t border-gray-800/50 pt-6'>
-          <ProjectSidebarCreator project={project} />
-          <ProjectSidebarLinks project={project} />
+        <div className='space-y-4 border-t border-gray-800/50 pt-4 sm:space-y-6 sm:pt-6'>
+          <ProjectSidebarCreator vm={vm} />
+          <ProjectSidebarLinks vm={vm} />
         </div>
       )}
     </div>

@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { CreationInput } from '../CreationUI';
-import { Share2 } from 'lucide-react';
+import { Info, Shield } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SocialLinksProps {
   formData: any;
@@ -13,89 +14,152 @@ export default function SocialLinks({
   formData,
   updateFormData,
 }: SocialLinksProps) {
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const contact = formData.contact ?? {};
+
+  const markTouched = (field: string) =>
+    setTouched(prev => ({ ...prev, [field]: true }));
+
+  const updateContact = (field: string, value: string) => {
+    updateFormData({
+      contact: { ...formData.contact, [field]: value },
+    });
+  };
+
+  // Validation
+  const errors: Record<string, string | undefined> = {};
+
+  if (touched.telegram) {
+    const tg = (contact.telegram ?? '').replace(/^@/, '').trim();
+    if (!tg) {
+      errors.telegram = 'Telegram username is required';
+    } else if (tg.length < 5) {
+      errors.telegram = 'Must be at least 5 characters';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(tg)) {
+      errors.telegram = 'Only letters, numbers, and underscores allowed';
+    }
+  }
+
+  if (touched.email) {
+    const email = (contact.email ?? '').trim();
+    if (!email) {
+      errors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+  }
+
+  const backupType = contact.backupType ?? 'discord';
+
   return (
-    <div className='flex flex-col gap-8'>
-      <div className='flex flex-col gap-2'>
-        <h2 className='text-3xl font-bold text-white'>How can we reach you?</h2>
-        <p className='text-white/40'>
-          Provide your contact information so potential backers and partners can
-          get in touch.
+    <div className='flex flex-col gap-8 sm:gap-10'>
+      <div className='flex flex-col gap-1'>
+        <h2 className='text-xl font-semibold text-white sm:text-2xl'>
+          Contact Information
+        </h2>
+        <p className='text-xs text-white/40 sm:text-sm'>
+          How can the Boundless team and potential backers reach you?
         </p>
       </div>
 
-      <div className='mt-4 flex flex-col gap-8'>
-        <div className='flex flex-col gap-6'>
-          <h3 className='border-b border-white/5 pb-2 text-xs font-black tracking-[0.2em] text-white/50 uppercase'>
-            Direct Contact
+      {/* Privacy notice */}
+      <div className='flex items-start gap-3 rounded-xl border border-amber-500/15 bg-amber-500/5 p-4'>
+        <Shield className='mt-0.5 h-4 w-4 shrink-0 text-amber-400' />
+        <div className='flex flex-col gap-0.5'>
+          <p className='text-sm font-medium text-amber-200'>
+            Your contact info is private
+          </p>
+          <p className='text-xs text-amber-400/70'>
+            Contact details are only visible to the Boundless team for
+            verification. They will not be shown publicly.
+          </p>
+        </div>
+      </div>
+
+      <div className='flex flex-col gap-8'>
+        {/* Primary Contact */}
+        <section className='flex flex-col gap-5'>
+          <h3 className='text-sm font-semibold text-white sm:text-base'>
+            Primary Contact
           </h3>
 
-          <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
             <CreationInput
               label='Email Address'
               placeholder='hello@yourproject.com'
-              value={formData.contact.email}
-              onChange={e =>
-                updateFormData({
-                  contact: { ...formData.contact, email: e.target.value },
-                })
-              }
+              type='email'
+              value={contact.email ?? ''}
+              onChange={e => updateContact('email', e.target.value)}
+              onBlur={() => markTouched('email')}
+              error={errors.email}
               required
+              helperText='Used for verification and important updates'
             />
             <CreationInput
               label='Telegram Username'
-              placeholder='@project_lead'
-              value={formData.contact.telegram}
-              onChange={e =>
-                updateFormData({
-                  contact: { ...formData.contact, telegram: e.target.value },
-                })
-              }
+              placeholder='username (without @)'
+              value={contact.telegram ?? ''}
+              onChange={e => updateContact('telegram', e.target.value)}
+              onBlur={() => markTouched('telegram')}
+              error={errors.telegram}
+              required
+              helperText='Primary channel for team communication'
             />
+          </div>
+        </section>
+
+        {/* Backup Contact */}
+        <section className='flex flex-col gap-5'>
+          <div className='flex items-baseline gap-2'>
+            <h3 className='text-sm font-semibold text-white sm:text-base'>
+              Backup Contact
+            </h3>
+            <span className='text-xs text-white/30'>recommended</span>
           </div>
 
-          <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
-            <CreationInput
-              label='Discord Username'
-              placeholder='username'
-              value={formData.contact.discord}
-              onChange={e =>
-                updateFormData({
-                  contact: { ...formData.contact, discord: e.target.value },
-                })
-              }
-            />
-            <CreationInput
-              label='Alternative Contact'
-              placeholder='Telegram, Email, or Signal'
-              value={formData.contact.primary}
-              onChange={e =>
-                updateFormData({
-                  contact: { ...formData.contact, primary: e.target.value },
-                })
-              }
-            />
+          {/* Backup type selector */}
+          <div className='flex flex-wrap gap-2'>
+            {(['discord', 'whatsapp'] as const).map(type => (
+              <button
+                key={type}
+                type='button'
+                onClick={() => updateContact('backupType', type)}
+                className={cn(
+                  'rounded-lg border px-4 py-2 text-sm font-medium transition-colors',
+                  backupType === type
+                    ? 'border-primary/30 bg-primary/5 text-primary'
+                    : 'border-white/10 bg-white/2 text-white/40 hover:border-white/20 hover:text-white/60'
+                )}
+              >
+                {type === 'discord' ? 'Discord' : 'WhatsApp'}
+              </button>
+            ))}
           </div>
-        </div>
 
-        <div className='rounded-xl border border-blue-500/20 bg-blue-500/5 p-6'>
-          <div className='flex gap-4'>
-            <Share2 className='mt-0.5 h-5 w-5 shrink-0 text-blue-400' />
-            <div className='flex flex-col gap-1'>
-              <p className='text-sm font-bold text-blue-100'>
-                Looking for Social Links?
-              </p>
-              <p className='text-xs leading-relaxed font-medium text-blue-400/80'>
-                X/Twitter, GitHub, and other project-wide social profiles have
-                been moved to the{' '}
-                <span className='font-bold text-blue-200 underline'>
-                  Basic Info
-                </span>{' '}
-                tab. This section is specifically for your personal or team
-                contact handles.
-              </p>
-            </div>
-          </div>
-        </div>
+          <CreationInput
+            label={
+              backupType === 'discord' ? 'Discord Username' : 'WhatsApp Number'
+            }
+            placeholder={backupType === 'discord' ? 'username' : '+1234567890'}
+            value={contact.backup ?? ''}
+            onChange={e => updateContact('backup', e.target.value)}
+            helperText={
+              backupType === 'discord'
+                ? 'Your Discord username for backup communication'
+                : 'International format with country code'
+            }
+          />
+        </section>
+      </div>
+
+      {/* Info note */}
+      <div className='flex items-start gap-2.5 rounded-lg border border-blue-500/10 bg-blue-500/5 p-3.5'>
+        <Info className='mt-0.5 h-4 w-4 shrink-0 text-blue-400/60' />
+        <p className='text-xs text-blue-400/60'>
+          Project social profiles (X/Twitter, GitHub, etc.) are configured in
+          the <span className='font-medium text-blue-300'>Basic Info</span>{' '}
+          step. This section is for personal/team contact details only.
+        </p>
       </div>
     </div>
   );

@@ -515,3 +515,212 @@ export const contributeToProject = async (
   );
   return res.data;
 };
+
+// ─── Project API (/api/projects/*) ───────────────────────────────────────────
+
+import type {
+  Project,
+  ProjectDetail,
+  ProjectApiResponse,
+  ProjectDraftPayload,
+  ProjectListData,
+  PublishProjectRequest,
+  GetMyProjectsParams,
+  SubmitProjectEditRequest,
+  ProjectEdit,
+  PublicProjectsQuery,
+  PaginatedProjectsResponse,
+} from '@/features/projects/types';
+
+/**
+ * POST /api/projects/drafts
+ * Create a new project draft (stepped form — step 1).
+ * Returns the full project entity on success (HTTP 201).
+ */
+export const createProjectDraft = async (
+  data: ProjectDraftPayload
+): Promise<Project> => {
+  const res = await api.post<ProjectApiResponse<Project>>(
+    '/projects/drafts',
+    data
+  );
+  return res.data.data;
+};
+
+/**
+ * PATCH /api/projects/{id}/draft
+ * Autosave / update an existing project draft (stepped form).
+ * Accepts a partial payload — only changed fields need to be sent.
+ */
+export const updateProjectDraft = async (
+  id: string,
+  data: Partial<ProjectDraftPayload>
+): Promise<Project> => {
+  const res = await api.patch<ProjectApiResponse<Project>>(
+    `/projects/${id}/draft`,
+    data
+  );
+  return res.data.data;
+};
+
+/**
+ * GET /api/projects
+ * List all public projects (PRD products directory).
+ */
+export const listPublicProjects = async (): Promise<Project[]> => {
+  const res = await api.get<ProjectApiResponse<ProjectListData>>('/projects');
+  return res.data.data?.projects ?? [];
+};
+
+/**
+ * GET /api/projects (paginated)
+ * List public projects with pagination, filtering, sorting, and search.
+ */
+export const listPublicProjectsPaginated = async (
+  query: PublicProjectsQuery = {}
+): Promise<PaginatedProjectsResponse> => {
+  const params = new URLSearchParams();
+
+  if (query.page) params.append('page', query.page.toString());
+  if (query.limit) params.append('limit', query.limit.toString());
+  if (query.category) params.append('category', query.category);
+  if (query.publicStatus) params.append('publicStatus', query.publicStatus);
+  if (query.originType) params.append('originType', query.originType);
+  if (query.featured) params.append('featured', 'true');
+  if (query.search) params.append('search', query.search);
+  if (query.sortBy) params.append('sortBy', query.sortBy);
+  if (query.sortOrder) params.append('sortOrder', query.sortOrder);
+
+  const qs = params.toString();
+  const url = qs ? `/projects?${qs}` : '/projects';
+
+  const res = await api.get<ProjectApiResponse<PaginatedProjectsResponse>>(url);
+  return res.data.data;
+};
+
+/**
+ * GET /api/projects/search?search=<query>
+ * Full-text search over public projects.
+ */
+export const searchProjects = async (query: string): Promise<Project[]> => {
+  const params = new URLSearchParams({ search: query });
+  const res = await api.get<ProjectApiResponse<ProjectListData>>(
+    `/projects/search?${params.toString()}`
+  );
+  return res.data.data?.projects ?? [];
+};
+
+/**
+ * GET /api/projects/featured
+ * List featured / curated projects.
+ */
+export const listFeaturedProjects = async (): Promise<Project[]> => {
+  const res =
+    await api.get<ProjectApiResponse<ProjectListData>>('/projects/featured');
+  return res.data.data?.projects ?? [];
+};
+
+/**
+ * POST /api/projects/{id}/publish
+ * Publish/submit a project draft for review (Review & Submit step).
+ * Returns the updated project entity (HTTP 201).
+ */
+export const publishProject = async (
+  id: string,
+  payload: PublishProjectRequest
+): Promise<Project> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { projectId, ...body } = payload;
+  const res = await api.post<ProjectApiResponse<Project>>(
+    `/projects/${id}/publish`,
+    body
+  );
+  return res.data.data;
+};
+
+/**
+ * GET /api/projects/me
+ * List the authenticated user's own projects (with optional pagination).
+ */
+export const getMyProjects = async (
+  params?: GetMyProjectsParams
+): Promise<ProjectApiResponse<Project[]>> => {
+  const searchParams = new URLSearchParams();
+
+  if (params?.limit !== undefined) {
+    searchParams.append('limit', params.limit.toString());
+  }
+  if (params?.offset !== undefined) {
+    searchParams.append('offset', params.offset.toString());
+  }
+  if (params?.status) {
+    searchParams.append('status', params.status);
+  }
+
+  const qs = searchParams.toString();
+  const url = qs ? `/projects/me?${qs}` : '/projects/me';
+
+  const res = await api.get<ProjectApiResponse<Project[]>>(url);
+  return res.data;
+};
+
+/**
+ * GET /api/projects/{slug}
+ * Get a single public project by slug.
+ */
+export const getPublicProjectBySlug = async (
+  slug: string
+): Promise<Project> => {
+  const res = await api.get<ProjectApiResponse<Project>>(`/projects/${slug}`);
+  return res.data.data;
+};
+
+/**
+ * GET /api/projects/{slug}
+ * Get a single public project by slug with full relations
+ * (crowdfundingCampaigns, journeyTimeline, etc.).
+ */
+export const getProjectDetailBySlug = async (
+  slug: string
+): Promise<ProjectDetail> => {
+  const res = await api.get<ProjectApiResponse<ProjectDetail>>(
+    `/projects/${slug}`
+  );
+  return res.data.data;
+};
+
+/**
+ * GET /api/projects/me/{id}
+ * Get the authenticated user's own project by ID.
+ */
+export const getMyProjectById = async (id: string): Promise<Project> => {
+  const res = await api.get<ProjectApiResponse<Project>>(`/projects/me/${id}`);
+  return res.data.data;
+};
+
+/**
+ * POST /api/projects/{id}/edits
+ * Submit an edit for a published project.
+ * MINOR edits are auto-approved; MAJOR edits put project into REVIEWING.
+ */
+export const submitProjectEdit = async (
+  id: string,
+  data: SubmitProjectEditRequest
+): Promise<ProjectEdit> => {
+  const res = await api.post<ProjectApiResponse<ProjectEdit>>(
+    `/projects/${id}/edits`,
+    data
+  );
+  return res.data.data;
+};
+
+/**
+ * GET /api/projects/{id}/edits
+ * List edit history for a project.
+ */
+export const getProjectEdits = async (id: string): Promise<ProjectEdit[]> => {
+  const res = await api.get<ProjectApiResponse<ProjectEdit[]>>(
+    `/projects/${id}/edits`
+  );
+  return res.data.data;
+};

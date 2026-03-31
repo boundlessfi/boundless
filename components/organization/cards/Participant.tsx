@@ -150,6 +150,7 @@ const Participant = ({
             onOpenChange={setIsJudgeModalOpen}
             organizationId={organizationId}
             hackathonId={hackathonId}
+            submissionId={participant.submission.id}
             participantId={participant.id}
             judgingCriteria={criteria}
             submission={{

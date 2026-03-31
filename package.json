@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@countrystatecity/countries": "^1.0.4",
+    "@creit-tech/stellar-wallets-kit": "npm:@jsr/creit-tech__stellar-wallets-kit@^2.0.1",
     "@didit-protocol/sdk-web": "^0.1.8",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
@@ -63,7 +64,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.3.0",
-    "@sentry/nextjs": "^10.42.0",
+    "@sentry/nextjs": "^10.45.0",
     "@stellar/freighter-api": "^4.1.0",
     "@stellar/stellar-sdk": "^13.3.0",
     "@tabler/icons-react": "^3.36.1",
@@ -140,6 +141,15 @@
     "recharts": "^2.15.4",
     "rehype-prism-plus": "^2.0.2",
     "remark-gfm": "^4.0.1",
+    "core-escrow": "file:bindings/core-escrow",
+    "reputation-registry": "file:bindings/reputation-registry",
+    "governance-voting": "file:bindings/governance-voting",
+    "project-registry": "file:bindings/project-registry",
+    "bounty-registry": "file:bindings/bounty-registry",
+    "crowdfund-registry": "file:bindings/crowdfund-registry",
+    "grant-hub": "file:bindings/grant-hub",
+    "hackathon-registry": "file:bindings/hackathon-registry",
+    "smart-account-kit": "^0.2.10",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
@@ -171,7 +181,7 @@
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^4",
-    "typescript": "5.9.2"
+    "typescript": "^5.9.3"
   },
   "optionalDependencies": {
     "usb": "*"

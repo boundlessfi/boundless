@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Empty from './Empty';
 import Image from 'next/image';
-import { CrowdfundingProject, Crowdfunding } from '@/features/projects/types';
+import type { ProjectViewModel } from '@/features/projects/types/view-model';
 import { VoteType, VoteEntityType, VoterDto } from '@/types/votes';
 import {
   getVoteCounts as apiGetVoteCounts,
@@ -31,11 +31,10 @@ interface VoteStats {
 }
 
 interface ProjectVotersProps {
-  project?: CrowdfundingProject;
-  crowdfund?: Crowdfunding;
+  vm: ProjectViewModel;
 }
 
-const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
+const ProjectVoters = ({ vm }: ProjectVotersProps) => {
   const { user } = useOptionalAuth();
   const [voteStats, setVoteStats] = useState<VoteStats>({
     upvotes: 0,
@@ -47,16 +46,13 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState(false);
 
-  const isOwner = user?.id === project?.creatorId;
-  const team = crowdfund?.team || [];
-  const isTeamMember = team.some(
-    member =>
-      member.id === user?.id ||
-      (member.username && member.username === user?.profile?.username)
+  const isOwner = user?.id === vm.creatorId;
+  const isTeamMember = vm.team.some(
+    member => member.username && member.username === user?.profile?.username
   );
   const isGated = isOwner || isTeamMember;
 
-  const projectId = project?.id;
+  const projectId = vm.id;
 
   useVoteRealtime(
     {
@@ -162,8 +158,12 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
       } else {
         toast.success(voteType === VoteType.UPVOTE ? 'Upvoted!' : 'Downvoted!');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to submit vote. Please try again.');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Failed to submit vote. Please try again.';
+      toast.error(message);
     } finally {
       setVoting(false);
     }
@@ -200,10 +200,10 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
   return (
     <div className='space-y-6'>
       <div className='overflow-hidden rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900/50 to-zinc-900/30 backdrop-blur-sm'>
-        <div className='space-y-6 p-6'>
-          <div className='flex items-center justify-between'>
+        <div className='space-y-4 p-4 sm:space-y-6 sm:p-6'>
+          <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
             <div>
-              <h3 className='flex items-center gap-2 text-xl font-semibold text-white'>
+              <h3 className='flex items-center gap-2 text-lg font-semibold text-white sm:text-xl'>
                 <Award className='text-primary h-5 w-5' />
                 Community Vote
               </h3>
@@ -212,8 +212,8 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
               </p>
             </div>
             {voteStats.totalVotes > 0 && (
-              <div className='text-right'>
-                <div className='text-3xl font-bold text-white tabular-nums'>
+              <div className='sm:text-right'>
+                <div className='text-2xl font-bold text-white tabular-nums sm:text-3xl'>
                   {voteStats.totalVotes}
                 </div>
                 <div className='text-xs tracking-wide text-zinc-400 uppercase'>
@@ -346,11 +346,13 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
         </div>
       </div>
 
-      <div className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-6'>
-        <div className='mb-4 flex items-center justify-between'>
+      <div className='rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 sm:p-6'>
+        <div className='mb-3 flex items-center justify-between sm:mb-4'>
           <div className='flex items-center gap-2'>
             <Users className='h-5 w-5 text-zinc-400' />
-            <h3 className='text-lg font-semibold text-white'>Recent Voters</h3>
+            <h3 className='text-base font-semibold text-white sm:text-lg'>
+              Recent Voters
+            </h3>
           </div>
           {voters.length > 0 && (
             <span className='inline-flex items-center rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-300'>
@@ -361,7 +363,7 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
 
         {voters.length === 0 ? (
           <Empty
-            projectStatus={project?.status ?? ''}
+            projectStatus={vm.status}
             isGated={isGated}
             onVote={() => handleVote(VoteType.UPVOTE)}
           />

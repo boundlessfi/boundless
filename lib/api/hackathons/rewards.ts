@@ -1,7 +1,9 @@
 import api from '../api';
 import { ApiResponse } from '../types';
 
-// Fee estimate (GET /api/hackathons/fee-estimate?totalPool=...)
+// ── Fee Estimate ─────────────────────────────────────────────────────────────
+// GET /api/hackathons/fee-estimate?totalPool=...
+
 export interface FeeEstimateData {
   totalPool: number;
   feeRate: number;
@@ -36,7 +38,65 @@ export const getFeeEstimate = async (
   return res.data.data;
 };
 
-// Rewards API Request/Response Types
+// ── Financial Preview (dry-run) ──────────────────────────────────────────────
+// POST /api/organizations/:orgId/hackathons/:id/financial/preview
+
+export interface FinancialPreviewTier {
+  place: string;
+  amount: number;
+  fee: number;
+  total: number;
+}
+
+export interface FinancialPreviewData {
+  currentPrizePool: number;
+  newPrizePool: number;
+  currentPlatformFee: number;
+  newPlatformFee: number;
+  currentTotalRequired: number;
+  newTotalRequired: number;
+  additionalFundingRequired: number;
+  walletBalance: number;
+  sufficient: boolean;
+  shortfall: number;
+  escrowStatus: string;
+  breakdown: FinancialPreviewTier[];
+}
+
+export interface GetFinancialPreviewResponse {
+  success: boolean;
+  message: string;
+  data: FinancialPreviewData;
+}
+
+/**
+ * Dry-run preview: calculates the exact USDC cost of a proposed reward update
+ * without touching escrow state or the wallet.
+ *
+ * Call this before PATCH /financial to power the confirmation dialog and avoid
+ * surprising the organizer with an insufficient-balance error.
+ */
+export const getFinancialPreview = async (
+  organizationId: string,
+  hackathonId: string,
+  rewards: {
+    prizeTiers: Array<{
+      place: string;
+      prizeAmount: string | number;
+      [key: string]: unknown;
+    }>;
+  }
+): Promise<FinancialPreviewData> => {
+  const res = await api.post<GetFinancialPreviewResponse>(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/financial/preview`,
+    { rewards }
+  );
+  if (!res.data?.data) throw new Error('Invalid financial preview response');
+  return res.data.data;
+};
+
+// ── Rewards: Assign Ranks ────────────────────────────────────────────────────
+
 export interface AssignRanksRequest {
   ranks: Array<{
     participantId: string;
@@ -121,7 +181,7 @@ export const getHackathonEscrow = async (
   hackathonId: string
 ): Promise<GetHackathonEscrowResponse> => {
   const res = await api.get(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/escrow`
+    `/organizations/${organizationId}/hackathons/${hackathonId}/rewards/escrow`
   );
   return res.data;
 };
@@ -137,6 +197,31 @@ export const createWinnerMilestones = async (
   const res = await api.post(
     `/organizations/${organizationId}/hackathons/${hackathonId}/rewards/milestones`,
     data
+  );
+  return res.data;
+};
+/**
+ * Export hackathon data (organizer only)
+ * GET /api/organizations/:organizationId/hackathons/:id/export?format=csv|pdf&dataset=full|...
+ */
+export const exportHackathon = async (
+  organizationId: string,
+  hackathonId: string,
+  format: 'csv' | 'pdf',
+  dataset:
+    | 'overview'
+    | 'participants'
+    | 'submissions'
+    | 'prize_tiers'
+    | 'winners'
+    | 'full' = 'full'
+): Promise<Blob> => {
+  const res = await api.get(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/export`,
+    {
+      params: { format, dataset },
+      responseType: 'blob', // Important for binary data
+    }
   );
   return res.data;
 };

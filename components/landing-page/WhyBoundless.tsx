@@ -126,7 +126,7 @@ const WhyBoundless = () => {
           className='relative z-10 rounded-xl border border-white/48 px-5 py-5 md:px-10 md:py-10'
           style={{
             background:
-              'linear-gradient(258deg, rgba(167, 249, 80, 0.46) 53.09%, rgba(58, 230, 178, 0.92) 103.03%)',
+              'linear-gradient(258deg, rgba(46, 237, 170, 0.46) 53.09%, rgba(46, 237, 170, 0.92) 103.03%)',
           }}
         >
           <div className='relative'>

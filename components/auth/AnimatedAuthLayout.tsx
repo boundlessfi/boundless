@@ -412,7 +412,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='481.616'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -423,7 +423,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='472.479'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -434,7 +434,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='467.115'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -445,7 +445,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='478.863'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -456,7 +456,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='490.638'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -467,7 +467,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='502.415'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -478,7 +478,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='514.211'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -489,7 +489,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='526.017'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -500,7 +500,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='537.872'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -511,7 +511,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='549.729'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -522,7 +522,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='561.623'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -533,7 +533,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='573.524'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -544,7 +544,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='585.487'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -555,7 +555,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='597.44'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -566,7 +566,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='609.441'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -577,7 +577,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='621.491'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -588,7 +588,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='633.559'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -599,7 +599,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='645.688'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -610,7 +610,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='657.861'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -621,7 +621,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='670.1'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -632,7 +632,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='682.386'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -643,7 +643,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='694.756'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -654,7 +654,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='708.051'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -665,7 +665,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='722.683'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -676,7 +676,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='737.322'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -687,7 +687,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='751.959'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -698,7 +698,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='766.598'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -709,7 +709,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='781.242'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -720,7 +720,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='795.869'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -731,7 +731,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='810.495'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -742,7 +742,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='825.145'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -753,7 +753,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='839.772'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -764,7 +764,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='873.758'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -775,7 +775,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='866.366'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -786,7 +786,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='858.981'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -797,7 +797,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='851.59'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -808,7 +808,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='844.204'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -819,7 +819,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='836.814'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -830,7 +830,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='829.423'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -841,7 +841,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='822.038'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -852,7 +852,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='814.646'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -863,7 +863,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='807.254'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -874,7 +874,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='799.87'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -885,7 +885,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='792.478'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -896,7 +896,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='785.094'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -907,7 +907,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='777.703'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -918,7 +918,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='770.311'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -929,7 +929,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='762.926'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -940,7 +940,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='755.535'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -951,7 +951,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='748.151'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -962,7 +962,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='740.76'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -973,7 +973,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='733.428'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -984,7 +984,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='726.513'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -995,7 +995,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='719.612'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -1006,7 +1006,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='712.737'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -1017,7 +1017,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='705.876'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -1028,7 +1028,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='699.034'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -1039,7 +1039,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='692.215'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -1050,7 +1050,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='685.404'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -1061,7 +1061,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='678.613'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -1072,7 +1072,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='674.765'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -1083,7 +1083,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='675.504'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -1094,7 +1094,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='676.812'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <linearGradient
@@ -1105,7 +1105,7 @@ const AnimatedAuthLayout = ({ children }: AnimatedAuthLayoutProps) => {
               y2='678.516'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stopColor='#A7F950' />
+              <stop stopColor='#2EEDAA' />
               <stop offset='1' stopColor='#00F0FF' />
             </linearGradient>
             <clipPath id='clip0_2294_15135'>

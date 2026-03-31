@@ -63,9 +63,9 @@ const MiddleRightSvg: React.FC<MiddleRightSvgProps> = ({ svgRefs }) => {
             y2='7.5'
             gradientUnits='userSpaceOnUse'
           >
-            <stop stopColor='#A7F950' stopOpacity='0' />
-            <stop offset='0.494762' stopColor='#A7F950' />
-            <stop offset='1' stopColor='#A7F950' stopOpacity='0' />
+            <stop stopColor='#2EEDAA' stopOpacity='0' />
+            <stop offset='0.494762' stopColor='#2EEDAA' />
+            <stop offset='1' stopColor='#2EEDAA' stopOpacity='0' />
           </linearGradient>
         </defs>
       </svg>

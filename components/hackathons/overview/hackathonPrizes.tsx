@@ -11,6 +11,12 @@ interface HackathonPrizesProps {
   prizes: PrizeTier[];
 }
 
+function getOrdinal(n: number) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 export function HackathonPrizes({
   title = 'Prize Tiers',
   totalPrizePool,
@@ -143,7 +149,7 @@ export function HackathonPrizes({
                       className='border-b border-white/10 transition-colors hover:bg-white/5'
                     >
                       <td className='px-4 py-4 text-left text-sm font-medium text-white'>
-                        {prize.place}
+                        {getOrdinal(index + 4)}
                       </td>
                       <td className='px-4 py-4 text-left text-sm text-white/90'>
                         {prize.prizeAmount}

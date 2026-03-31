@@ -68,58 +68,49 @@ const HackathonsFiltersHeader = ({
   };
 
   return (
-    <div className={cn('w-full py-12 text-white', className)}>
-      <div className=''>
-        <div className='mb-6 flex items-center justify-between'>
-          <h1
-            id='explore-hackathons'
-            className='font-inter text-center text-xl text-white md:text-left md:text-2xl lg:text-3xl'
-          >
-            Explore Hackathons
-          </h1>
-          {totalCount !== undefined && (
-            <div className='hidden text-sm text-gray-400 md:block'>
-              {totalCount} hackathon{totalCount !== 1 ? 's' : ''} available
-            </div>
-          )}
-        </div>
-
-        <div className='mb-4 flex items-center justify-between md:hidden'>
-          {totalCount !== undefined && (
-            <div className='text-sm text-gray-400'>
-              {totalCount} hackathon{totalCount !== 1 ? 's' : ''} available
-            </div>
-          )}
-        </div>
-
-        <DesktopFilters
-          searchTerm={searchTerm}
-          selectedSort={selectedSort}
-          selectedStatus={selectedStatus}
-          selectedCategory={selectedCategory}
-          selectedLocation={selectedLocation}
-          searchPlaceholder={searchPlaceholder}
-          onSearch={handleSearch}
-          onSortChange={handleSort}
-          onStatusChange={handleStatus}
-          onCategoryChange={handleCategory}
-          onLocationChange={handleLocation}
-        />
-
-        <MobileFilters
-          searchTerm={searchTerm}
-          selectedSort={selectedSort}
-          selectedStatus={selectedStatus}
-          selectedCategory={selectedCategory}
-          selectedLocation={selectedLocation}
-          searchPlaceholder={searchPlaceholder}
-          onSearch={handleSearch}
-          onSortChange={handleSort}
-          onStatusChange={handleStatus}
-          onCategoryChange={handleCategory}
-          onLocationChange={handleLocation}
-        />
+    <div className={cn('w-full py-8 text-white sm:py-10', className)}>
+      {/* Title row */}
+      <div className='mb-6 flex items-end justify-between'>
+        <h2
+          id='explore-hackathons'
+          className='text-xl font-bold text-white sm:text-2xl lg:text-3xl'
+        >
+          Explore Hackathons
+        </h2>
+        {totalCount !== undefined && (
+          <span className='text-sm text-zinc-500 tabular-nums'>
+            {totalCount} hackathon{totalCount !== 1 ? 's' : ''}
+          </span>
+        )}
       </div>
+
+      <DesktopFilters
+        searchTerm={searchTerm}
+        selectedSort={selectedSort}
+        selectedStatus={selectedStatus}
+        selectedCategory={selectedCategory}
+        selectedLocation={selectedLocation}
+        searchPlaceholder={searchPlaceholder}
+        onSearch={handleSearch}
+        onSortChange={handleSort}
+        onStatusChange={handleStatus}
+        onCategoryChange={handleCategory}
+        onLocationChange={handleLocation}
+      />
+
+      <MobileFilters
+        searchTerm={searchTerm}
+        selectedSort={selectedSort}
+        selectedStatus={selectedStatus}
+        selectedCategory={selectedCategory}
+        selectedLocation={selectedLocation}
+        searchPlaceholder={searchPlaceholder}
+        onSearch={handleSearch}
+        onSortChange={handleSort}
+        onStatusChange={handleStatus}
+        onCategoryChange={handleCategory}
+        onLocationChange={handleLocation}
+      />
     </div>
   );
 };

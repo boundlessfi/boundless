@@ -10,7 +10,7 @@ function BlogHero() {
       <section className='relative mx-auto flex min-h-[500px] flex-col justify-center gap-6 overflow-hidden pb-[50px] md:gap-[52px] md:px-0'>
         <div className='flex flex-col items-start justify-between gap-6 md:flex-row md:items-end md:gap-0'>
           <h1 className='text-[32px] font-normal text-white md:text-5xl'>
-            <span className='mb-1 bg-gradient-to-r from-[#3AE6B2] to-[#A7F95080] bg-clip-text text-transparent'>
+            <span className='mb-1 bg-gradient-to-r from-[#3AE6B2] to-[#2EEDAA80] bg-clip-text text-transparent'>
               Insights That Matter
             </span>
             <br />

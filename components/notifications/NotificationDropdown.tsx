@@ -1,17 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { isToday, isYesterday } from 'date-fns';
-import {
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenuContent } from '@/components/ui/dropdown-menu';
 import { NotificationItem } from './NotificationItem';
 import { Notification } from '@/types/notifications';
 import { Skeleton } from '@/components/ui/skeleton';
 import { markAsRead } from '@/lib/api/notifications';
 import { toast } from 'sonner';
+import { Bell } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface NotificationDropdownProps {
   notifications: Notification[];
@@ -22,9 +22,11 @@ interface NotificationDropdownProps {
   onClose?: () => void;
 }
 
+type FilterTab = 'all' | 'unread';
+
 const groupNotificationsByTime = (
   notifications: Notification[]
-): Record<string, Notification[]> => {
+): { key: string; label: string; items: Notification[] }[] => {
   const groups: Record<string, Notification[]> = {
     today: [],
     yesterday: [],
@@ -37,34 +39,22 @@ const groupNotificationsByTime = (
 
   notifications.forEach(notification => {
     const date = new Date(notification.createdAt);
-
-    if (isToday(date)) {
-      groups.today.push(notification);
-    } else if (isYesterday(date)) {
-      groups.yesterday.push(notification);
-    } else if (date > oneWeekAgo) {
-      groups.thisWeek.push(notification);
-    } else {
-      groups.older.push(notification);
-    }
+    if (isToday(date)) groups.today.push(notification);
+    else if (isYesterday(date)) groups.yesterday.push(notification);
+    else if (date > oneWeekAgo) groups.thisWeek.push(notification);
+    else groups.older.push(notification);
   });
 
-  return groups;
-};
+  const labels: Record<string, string> = {
+    today: 'Today',
+    yesterday: 'Yesterday',
+    thisWeek: 'This Week',
+    older: 'Older',
+  };
 
-const getGroupLabel = (group: string): string => {
-  switch (group) {
-    case 'today':
-      return 'Today';
-    case 'yesterday':
-      return 'Yesterday';
-    case 'thisWeek':
-      return 'This Week';
-    case 'older':
-      return 'Older';
-    default:
-      return group;
-  }
+  return Object.entries(groups)
+    .filter(([, items]) => items.length > 0)
+    .map(([key, items]) => ({ key, label: labels[key], items }));
 };
 
 export const NotificationDropdown = ({
@@ -76,49 +66,38 @@ export const NotificationDropdown = ({
   onClose,
 }: NotificationDropdownProps) => {
   const router = useRouter();
+  const [filter, setFilter] = useState<FilterTab>('all');
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (onNotificationClick) {
-      onNotificationClick(notification);
-    }
+    if (onNotificationClick) onNotificationClick(notification);
 
-    // Auto-mark as read on click
     if (!notification.read) {
       try {
         await markAsRead({ ids: [notification.id] });
       } catch {
-        // Silently handle error - user feedback already provided
+        // Silently handle
       }
     }
 
-    // Navigate to relevant page based on priority (guard: data may be null from API)
     const data = notification.data;
     if (!data) {
       if (onClose) onClose();
       return;
     }
 
-    if (data.organizationId) {
+    if (data.organizationId)
       router.push(`/organizations/${data.organizationId}`);
-    } else if (data.hackathonId) {
-      if (data.hackathonSlug) {
-        router.push(`/hackathons/${data.hackathonSlug}`);
-      } else {
-        router.push(`/hackathons/${data.hackathonId}`);
-      }
-    } else if (data.teamInvitationId && data.projectId) {
-      router.push(`/projects/${data.projectId}`);
-    } else if (data.projectId) {
-      router.push(`/projects/${data.projectId}`);
-    } else if (data.commentId) {
-      router.push(`/comments/${data.commentId}`);
-    } else if (data.milestoneId) {
-      router.push(`/milestones/${data.milestoneId}`);
-    }
+    else if (data.hackathonId)
+      router.push(
+        data.hackathonSlug
+          ? `/hackathons/${data.hackathonSlug}`
+          : `/hackathons/${data.hackathonId}`
+      );
+    else if (data.projectId) router.push(`/projects/${data.projectId}`);
+    else if (data.commentId) router.push(`/comments/${data.commentId}`);
+    else if (data.milestoneId) router.push(`/milestones/${data.milestoneId}`);
 
-    if (onClose) {
-      onClose();
-    }
+    if (onClose) onClose();
   };
 
   const handleMarkAllAsRead = async () => {
@@ -132,94 +111,123 @@ export const NotificationDropdown = ({
     }
   };
 
-  const groupedNotifications = groupNotificationsByTime(notifications);
+  const filteredNotifications =
+    filter === 'unread' ? notifications.filter(n => !n.read) : notifications;
+
+  const grouped = groupNotificationsByTime(filteredNotifications);
   const hasUnread = unreadCount > 0;
 
   return (
     <DropdownMenuContent
-      className='w-96 rounded-xl border border-zinc-800/50 bg-zinc-950/95 p-0 backdrop-blur-xl'
+      className='w-96 rounded-xl border border-[#2B2B2B] bg-[#0c0c0c] p-0 shadow-xl shadow-black/50'
       align='end'
+      sideOffset={8}
     >
-      <div className='border-b border-zinc-800/50 p-4'>
-        <div className='flex items-center justify-between'>
-          <h3 className='font-semibold text-white'>Notifications</h3>
+      {/* Header */}
+      <div className='flex items-center justify-between border-b border-neutral-800 px-4 pt-4 pb-3'>
+        <div className='flex items-center gap-2'>
+          <h3 className='text-sm font-semibold text-white'>Notifications</h3>
           {hasUnread && (
-            <span className='bg-primary/20 text-primary rounded-full px-2 py-0.5 text-xs font-semibold'>
-              {unreadCount} new
+            <span className='bg-primary rounded-full px-1.5 py-0.5 text-[10px] leading-none font-bold text-black'>
+              {unreadCount}
             </span>
           )}
         </div>
+        {hasUnread && (
+          <button
+            onClick={handleMarkAllAsRead}
+            className='text-primary hover:text-primary/80 text-xs font-medium transition-colors'
+          >
+            Mark all read
+          </button>
+        )}
       </div>
 
-      <div className='max-h-96 overflow-y-auto p-2'>
+      {/* Filter tabs */}
+      <div className='flex gap-1 border-b border-neutral-800 px-4 py-1.5'>
+        {(['all', 'unread'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setFilter(tab)}
+            className={cn(
+              'rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors',
+              filter === tab
+                ? 'bg-gray-800 text-white'
+                : 'text-gray-500 hover:text-gray-300'
+            )}
+          >
+            {tab}
+            {tab === 'unread' && hasUnread && (
+              <span className='ml-1 text-gray-600'>{unreadCount}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* List */}
+      <div className='max-h-96 overflow-y-auto'>
         {loading ? (
-          <div className='space-y-2'>
+          <div className='space-y-1 p-2'>
             {[1, 2, 3].map(i => (
-              <Skeleton key={i} className='h-20 w-full rounded-lg' />
+              <div key={i} className='flex gap-3 p-3'>
+                <Skeleton className='h-8 w-8 shrink-0 rounded-lg' />
+                <div className='flex-1 space-y-2'>
+                  <Skeleton className='h-3 w-3/4' />
+                  <Skeleton className='h-3 w-full' />
+                </div>
+              </div>
             ))}
           </div>
-        ) : notifications.length === 0 ? (
-          <div className='py-8 text-center'>
-            <p className='text-sm text-zinc-400'>No notifications</p>
-            <p className='mt-1 text-xs text-zinc-500'>You're all caught up!</p>
+        ) : filteredNotifications.length === 0 ? (
+          <div className='px-4 py-10 text-center'>
+            <Bell className='mx-auto h-8 w-8 text-gray-700' />
+            <p className='mt-3 text-sm text-gray-400'>
+              {filter === 'unread'
+                ? "You're all caught up!"
+                : 'No notifications yet'}
+            </p>
+            <p className='mt-1 text-xs text-gray-600'>
+              {filter === 'unread'
+                ? "You've read all your notifications."
+                : 'New notifications will show up here.'}
+            </p>
           </div>
         ) : (
-          <div className='space-y-4'>
-            {Object.entries(groupedNotifications).map(
-              ([group, groupNotifications]) => {
-                if (groupNotifications.length === 0) return null;
-
-                return (
-                  <div key={group}>
-                    <div className='mb-2 px-2'>
-                      <p className='text-xs font-medium tracking-wider text-zinc-500 uppercase'>
-                        {getGroupLabel(group)}
-                      </p>
-                    </div>
-                    <div className='space-y-1'>
-                      {groupNotifications.map(notification => (
-                        <NotificationItem
-                          key={notification.id}
-                          notification={notification}
-                          onMarkAsRead={() =>
-                            handleNotificationClick(notification)
-                          }
-                          showUnreadIndicator={true}
-                          className='cursor-pointer'
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
-            )}
+          <div className='p-1'>
+            {grouped.map(group => (
+              <div key={group.key}>
+                <div className='px-3 pt-3 pb-1'>
+                  <p className='text-[11px] font-medium tracking-wider text-gray-600 uppercase'>
+                    {group.label}
+                  </p>
+                </div>
+                {group.items.map(notification => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onMarkAsRead={() => handleNotificationClick(notification)}
+                    showUnreadIndicator
+                    compact
+                    className='cursor-pointer'
+                  />
+                ))}
+              </div>
+            ))}
           </div>
         )}
       </div>
 
+      {/* Footer */}
       {notifications.length > 0 && (
-        <>
-          <DropdownMenuSeparator className='bg-zinc-800/50' />
-          <div className='border-t border-zinc-800/50 p-2'>
-            <div className='flex items-center justify-between gap-2'>
-              {hasUnread && (
-                <button
-                  onClick={handleMarkAllAsRead}
-                  className='text-primary hover:text-primary/80 text-xs font-medium transition-colors'
-                >
-                  Mark all as read
-                </button>
-              )}
-              <Link
-                href='/me/notifications'
-                className='text-primary hover:text-primary/80 ml-auto text-xs font-medium transition-colors'
-                onClick={onClose}
-              >
-                View all notifications
-              </Link>
-            </div>
-          </div>
-        </>
+        <div className='border-t border-neutral-800 p-2'>
+          <Link
+            href='/me/notifications'
+            onClick={onClose}
+            className='text-primary hover:text-primary/80 block py-1.5 text-center text-xs font-medium transition-colors'
+          >
+            View all notifications
+          </Link>
+        </div>
       )}
     </DropdownMenuContent>
   );

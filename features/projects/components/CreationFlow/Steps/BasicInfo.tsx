@@ -9,11 +9,15 @@ import {
   Search,
   ChevronsUpDown,
   Check,
+  Gitlab,
+  Code2,
+  AlertCircle,
+  Rocket,
+  FolderOpen,
 } from 'lucide-react';
 import {
   CreationInput,
   CreationTextarea,
-  CreationToggle,
   CreationImageUpload,
 } from '../CreationUI';
 import { cn } from '@/lib/utils';
@@ -32,9 +36,8 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 
-// ── Full category list (value + label + group) ───────────────
+// ── Categories ───────────────────────────────────────────────
 const CATEGORIES = [
-  // DeFi & Finance
   { value: 'dex-amm', label: 'DEX / AMM', group: 'DeFi & Finance' },
   {
     value: 'lending-borrowing',
@@ -49,13 +52,11 @@ const CATEGORIES = [
     group: 'DeFi & Finance',
   },
   { value: 'liquid-staking', label: 'Liquid Staking', group: 'DeFi & Finance' },
-  // Payments
   { value: 'payment-gateways', label: 'Payment Gateways', group: 'Payments' },
   { value: 'remittances', label: 'Remittances', group: 'Payments' },
   { value: 'merchant-tools', label: 'Merchant Tools', group: 'Payments' },
   { value: 'point-of-sale', label: 'Point-of-Sale', group: 'Payments' },
   { value: 'wallets', label: 'Wallets', group: 'Payments' },
-  // Infrastructure
   { value: 'dev-tools', label: 'Developer Tools', group: 'Infrastructure' },
   {
     value: 'sdks-libraries',
@@ -74,7 +75,6 @@ const CATEGORIES = [
     label: 'Node Infrastructure',
     group: 'Infrastructure',
   },
-  // NFTs & Gaming
   {
     value: 'nft-marketplaces',
     label: 'NFT Marketplaces',
@@ -84,7 +84,6 @@ const CATEGORIES = [
   { value: 'collectibles', label: 'Collectibles', group: 'NFTs & Gaming' },
   { value: 'metaverse', label: 'Metaverse', group: 'NFTs & Gaming' },
   { value: 'creator-tools', label: 'Creator Tools', group: 'NFTs & Gaming' },
-  // Social & Community
   { value: 'daos', label: 'DAOs & Governance', group: 'Social & Community' },
   {
     value: 'social-networks',
@@ -101,7 +100,6 @@ const CATEGORIES = [
     label: 'Community Platforms',
     group: 'Social & Community',
   },
-  // Identity & Credentials
   { value: 'did', label: 'DID Solutions', group: 'Identity & Credentials' },
   {
     value: 'credentials',
@@ -118,7 +116,6 @@ const CATEGORIES = [
     label: 'KYC / Compliance',
     group: 'Identity & Credentials',
   },
-  // AI & Automation
   { value: 'ai-agents', label: 'AI Agents', group: 'AI & Automation' },
   {
     value: 'machine-learning',
@@ -126,7 +123,6 @@ const CATEGORIES = [
     group: 'AI & Automation',
   },
   { value: 'automation', label: 'Automation Tools', group: 'AI & Automation' },
-  // Sustainability & Impact
   {
     value: 'carbon-credits',
     label: 'Carbon Credits',
@@ -142,7 +138,6 @@ const CATEGORIES = [
     label: 'Social Impact',
     group: 'Sustainability & Impact',
   },
-  // Other
   { value: 'other', label: 'Other', group: 'Other' },
 ] as const;
 
@@ -156,106 +151,125 @@ const categoryGroups = CATEGORIES.reduce<
   return acc;
 }, {});
 
-// ── Category combobox ────────────────────────────────────────────────────────
+// ── Category combobox ────────────────────────────────────────
 function CategoryPicker({
   value,
   onChange,
+  error,
 }: {
   value: string;
   onChange: (v: string) => void;
+  error?: string;
 }) {
   const [open, setOpen] = useState(false);
   const selected = CATEGORIES.find(c => c.value === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type='button'
-          role='combobox'
-          aria-expanded={open}
-          className={cn(
-            'flex w-full items-center justify-between rounded-xl border px-5 py-4 text-sm transition-all outline-none',
-            'focus:border-primary/40 focus:ring-primary/20 focus:ring-1',
-            selected
-              ? 'border-primary/30 bg-primary/5 text-white'
-              : 'border-white/5 bg-white/5 text-white/30',
-            'hover:border-white/20'
-          )}
-        >
-          <span className='flex items-center gap-2'>
-            {selected ? (
-              <>
-                <span className='text-[10px] font-bold tracking-wider text-white/30 uppercase'>
-                  {selected.group}
-                </span>
-                <span className='text-white/20'>/</span>
-                <span className='font-semibold text-white'>
-                  {selected.label}
-                </span>
-              </>
-            ) : (
-              <span>Select a category…</span>
+    <div className='flex flex-col gap-1.5'>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type='button'
+            role='combobox'
+            aria-expanded={open}
+            className={cn(
+              'flex w-full items-center justify-between rounded-lg border px-3.5 py-2.5 text-sm transition-colors outline-none',
+              'focus:border-primary/40 focus:ring-primary/20 focus:ring-1',
+              selected
+                ? 'border-white/15 text-white'
+                : 'border-white/10 text-white/30',
+              error && 'border-red-500/60',
+              'bg-white/4 hover:border-white/20'
             )}
-          </span>
-          <ChevronsUpDown className='h-4 w-4 shrink-0 text-white/30' />
-        </button>
-      </PopoverTrigger>
+          >
+            <span className='flex items-center gap-2'>
+              {selected ? (
+                <>
+                  <span className='text-xs text-white/40'>
+                    {selected.group}
+                  </span>
+                  <span className='text-white/20'>/</span>
+                  <span className='text-white'>{selected.label}</span>
+                </>
+              ) : (
+                <span>Select a category...</span>
+              )}
+            </span>
+            <ChevronsUpDown className='h-4 w-4 shrink-0 text-white/30' />
+          </button>
+        </PopoverTrigger>
 
-      <PopoverContent
-        className='w-[420px] border-white/10 bg-[#0d0d0d] p-0 shadow-2xl'
-        align='start'
-        sideOffset={8}
-      >
-        <Command className='bg-transparent'>
-          <div className='flex items-center border-b border-white/5 px-3'>
-            <Search className='h-4 w-4 shrink-0 text-white/30' />
-            <CommandInput
-              placeholder='Search categories…'
-              className='border-0 bg-transparent py-3 text-sm text-white placeholder:text-white/20 focus:ring-0 focus:outline-none'
-            />
-          </div>
-          <CommandList className='max-h-[340px] overflow-y-auto'>
-            <CommandEmpty className='py-8 text-center text-sm text-white/30'>
-              No category found.
-            </CommandEmpty>
-            {Object.entries(categoryGroups).map(([group, cats], i) => (
-              <React.Fragment key={group}>
-                {i > 0 && <CommandSeparator className='bg-white/5' />}
-                <CommandGroup
-                  heading={group}
-                  className='**:[[cmdk-group-heading]]:px-3 **:[[cmdk-group-heading]]:py-2 **:[[cmdk-group-heading]]:text-[10px] **:[[cmdk-group-heading]]:font-bold **:[[cmdk-group-heading]]:tracking-widest **:[[cmdk-group-heading]]:text-white/30 **:[[cmdk-group-heading]]:uppercase'
-                >
-                  {cats.map(cat => (
-                    <CommandItem
-                      key={cat.value}
-                      value={`${group} ${cat.label}`}
-                      onSelect={() => {
-                        onChange(cat.value === value ? '' : cat.value);
-                        setOpen(false);
-                      }}
-                      className={cn(
-                        'flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
-                        'hover:bg-white/5 hover:text-white',
-                        cat.value === value
-                          ? 'bg-primary/10 text-primary'
-                          : 'text-white/60'
-                      )}
-                    >
-                      {cat.label}
-                      {cat.value === value && (
-                        <Check className='text-primary h-3.5 w-3.5' />
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </React.Fragment>
-            ))}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        <PopoverContent
+          className='w-[calc(100vw-2rem)] border-white/10 bg-[#111] p-0 shadow-2xl sm:w-[400px]'
+          align='start'
+          sideOffset={6}
+        >
+          <Command className='bg-transparent'>
+            <div className='flex items-center border-b border-white/6 px-3'>
+              <Search className='h-4 w-4 shrink-0 text-white/30' />
+              <CommandInput
+                placeholder='Search categories...'
+                className='border-0 bg-transparent py-2.5 text-sm text-white placeholder:text-white/25 focus:ring-0 focus:outline-none'
+              />
+            </div>
+            <CommandList className='max-h-[300px] overflow-y-auto'>
+              <CommandEmpty className='py-6 text-center text-sm text-white/30'>
+                No category found.
+              </CommandEmpty>
+              {Object.entries(categoryGroups).map(([group, cats], i) => (
+                <React.Fragment key={group}>
+                  {i > 0 && <CommandSeparator className='bg-white/5' />}
+                  <CommandGroup
+                    heading={group}
+                    className='**:[[cmdk-group-heading]]:px-3 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-white/30'
+                  >
+                    {cats.map(cat => (
+                      <CommandItem
+                        key={cat.value}
+                        value={`${group} ${cat.label}`}
+                        onSelect={() => {
+                          onChange(cat.value === value ? '' : cat.value);
+                          setOpen(false);
+                        }}
+                        className={cn(
+                          'flex cursor-pointer items-center justify-between rounded-md px-3 py-2 text-sm transition-colors',
+                          'hover:bg-white/5',
+                          cat.value === value ? 'text-primary' : 'text-white/60'
+                        )}
+                      >
+                        {cat.label}
+                        {cat.value === value && (
+                          <Check className='text-primary h-3.5 w-3.5' />
+                        )}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </React.Fragment>
+              ))}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {error && (
+        <p className='flex items-center gap-1 text-xs text-red-400'>
+          <AlertCircle className='h-3 w-3 shrink-0' />
+          {error}
+        </p>
+      )}
+    </div>
   );
+}
+
+// ── Validation helpers ───────────────────────────────────────
+function validateUrl(value: string): string | undefined {
+  if (!value || !value.trim()) return undefined;
+  try {
+    const url = value.startsWith('http') ? value : `https://${value}`;
+    new URL(url);
+    return undefined;
+  } catch {
+    return 'Please enter a valid URL';
+  }
 }
 
 // ── Props ────────────────────────────────────────────────────
@@ -266,14 +280,18 @@ interface BasicInfoProps {
   setIsCampaign: (val: boolean) => void;
 }
 
-// ── Section header helper ────────────────────────────────────
-function SectionTitle({ children }: { children: React.ReactNode }) {
+// ── Section header ───────────────────────────────────────────
+function SectionHeader({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) {
   return (
-    <div className='flex items-center gap-3 border-b border-white/5 pb-2'>
-      <div className='bg-primary h-1.5 w-1.5 rounded-full' />
-      <h3 className='text-xs font-black tracking-[0.2em] text-white/70 uppercase'>
-        {children}
-      </h3>
+    <div className='flex flex-col gap-1'>
+      <h3 className='text-sm font-semibold text-white sm:text-base'>{title}</h3>
+      {description && <p className='text-sm text-white/40'>{description}</p>}
     </div>
   );
 }
@@ -285,8 +303,50 @@ export default function BasicInfo({
   isCampaign,
   setIsCampaign,
 }: BasicInfoProps) {
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const socialLinks: string[] = formData.socialLinks ?? ['', '', ''];
   const visionLength = (formData.vision ?? '').length;
+
+  const markTouched = (field: string) =>
+    setTouched(prev => ({ ...prev, [field]: true }));
+
+  // Inline validation errors (only shown after field is touched)
+  const errors: Record<string, string | undefined> = {};
+  if (touched.projectName && !(formData.projectName ?? '').trim()) {
+    errors.projectName = 'Project name is required';
+  } else if (
+    touched.projectName &&
+    (formData.projectName ?? '').trim().length < 3
+  ) {
+    errors.projectName = 'Must be at least 3 characters';
+  }
+  if (touched.tagline && !(formData.tagline ?? '').trim()) {
+    errors.tagline = 'Tagline is required';
+  }
+  if (touched.vision && !(formData.vision ?? '').trim()) {
+    errors.vision = 'Vision statement is required';
+  } else if (touched.vision && (formData.vision ?? '').trim().length < 10) {
+    errors.vision = 'Must be at least 10 characters';
+  }
+  if (touched.category && !(formData.category ?? '')) {
+    errors.category = 'Please select a category';
+  }
+  if (touched.logoUrl && !(formData.logoUrl ?? '').trim() && !formData.logo) {
+    errors.logoUrl = 'Project logo is required';
+  }
+  if (touched.githubUrl)
+    errors.githubUrl = validateUrl(formData.githubUrl ?? '');
+  if (touched.gitlabUrl)
+    errors.gitlabUrl = validateUrl(formData.gitlabUrl ?? '');
+  if (touched.bitbucketUrl)
+    errors.bitbucketUrl = validateUrl(formData.bitbucketUrl ?? '');
+  if (touched.websiteUrl)
+    errors.websiteUrl = validateUrl(formData.websiteUrl ?? '');
+  if (touched.demoVideoUrl)
+    errors.demoVideoUrl = validateUrl(formData.demoVideoUrl ?? '');
+  if (touched.socialLinks && !socialLinks.some(l => l.trim())) {
+    errors.socialLinks = 'At least one social link is required';
+  }
 
   const updateSocialLink = (index: number, value: string) => {
     const updated = [...socialLinks];
@@ -295,237 +355,312 @@ export default function BasicInfo({
   };
 
   return (
-    <div className='mx-auto w-full'>
+    <div className='flex flex-col gap-8 sm:gap-10'>
       {/* Page header */}
-      <div className='mb-12 flex flex-col gap-2'>
-        <h2 className='text-3xl font-bold tracking-tight text-white'>
-          Let's start with the basics
+      <div className='flex flex-col gap-1'>
+        <h2 className='text-xl font-semibold text-white sm:text-2xl'>
+          Let&apos;s start with the basics
         </h2>
-        <p className='text-sm font-medium text-white/40'>
-          Required fields are marked with{' '}
-          <span className='text-red-400'>*</span>
+        <p className='text-xs text-white/40 sm:text-sm'>
+          Fields marked with <span className='text-red-400'>*</span> are
+          required.
         </p>
       </div>
 
-      <div className='flex flex-col gap-12'>
-        {/* ── IDENTITY ────────────────────────────────────── */}
-        <div className='flex flex-col gap-6'>
-          <SectionTitle>Project Identity</SectionTitle>
+      {/* ── PROJECT IDENTITY ─────────────────────────────── */}
+      <section className='flex flex-col gap-5'>
+        <SectionHeader title='Project Identity' />
 
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
           <CreationInput
             label='Project Name'
             placeholder='Enter your project name'
             value={formData.projectName ?? ''}
             onChange={e => updateFormData({ projectName: e.target.value })}
+            onBlur={() => markTouched('projectName')}
+            error={errors.projectName}
             required
           />
+          <CreationInput
+            label='Tagline'
+            placeholder='A short, catchy one-liner'
+            value={formData.tagline ?? ''}
+            onChange={e =>
+              updateFormData({ tagline: e.target.value.slice(0, 100) })
+            }
+            onBlur={() => markTouched('tagline')}
+            error={errors.tagline}
+            required
+            maxLength={100}
+          />
+        </div>
+
+        <CreationTextarea
+          label='Vision Statement'
+          placeholder='Describe the future your project is building — its long-term goal or positive change.'
+          value={formData.vision ?? ''}
+          onChange={e =>
+            updateFormData({ vision: e.target.value.slice(0, 300) })
+          }
+          onBlur={() => markTouched('vision')}
+          error={errors.vision}
+          required
+          maxLength={300}
+          rows={3}
+          helperText="A compelling vision helps backers understand your project's purpose."
+        />
+      </section>
+
+      {/* ── VISUAL ASSETS ────────────────────────────────── */}
+      <section className='flex flex-col gap-5'>
+        <SectionHeader
+          title='Visual Assets'
+          description='Upload a logo and optional banner image.'
+        />
+
+        <div className='grid grid-cols-1 gap-8 md:grid-cols-[240px_1fr]'>
+          <div className='flex flex-col gap-2'>
+            <CreationImageUpload
+              label='PROJECT LOGO'
+              value={formData.logoUrl ?? formData.logo ?? ''}
+              onChange={url => updateFormData({ logoUrl: url, logo: null })}
+              aspectRatio='square'
+              recommendedText='480×480 px · square'
+              description='Displayed at 64px and 128px across the platform'
+              required
+              error={errors.logoUrl}
+            />
+          </div>
 
           <div className='flex flex-col gap-2'>
-            <div className='flex items-center justify-between'>
-              <label className='text-[10px] font-bold tracking-[0.15em] text-white/40 uppercase'>
-                Vision Statement <span className='text-red-400'>*</span>
-              </label>
-              <span
-                className={cn(
-                  'text-[10px] font-bold tabular-nums transition-colors',
-                  visionLength >= 290
-                    ? 'text-red-400'
-                    : visionLength >= 250
-                      ? 'text-amber-400'
-                      : 'text-white/30'
-                )}
-              >
-                {visionLength}/300
-              </span>
-            </div>
-            <CreationTextarea
-              label=''
-              placeholder='Describe the future your project is building — its long-term goal or positive change it will bring.'
-              value={formData.vision ?? ''}
-              onChange={e =>
-                updateFormData({ vision: e.target.value.slice(0, 300) })
-              }
-              rows={4}
+            <CreationImageUpload
+              label='BANNER IMAGE'
+              value={formData.bannerUrl ?? formData.banner ?? ''}
+              onChange={url => updateFormData({ bannerUrl: url, banner: null })}
+              aspectRatio='banner'
+              recommendedText='1200×400 px · 3:1 ratio'
+              description='Cropped to 3:1 on mobile — keep key content centered'
             />
-            <p className='flex items-start gap-1.5 text-[10px] font-medium text-white/30'>
-              <Info className='mt-0.5 h-3 w-3 shrink-0' />A compelling vision
-              helps backers understand your project's purpose and long-term
-              goals.
-            </p>
           </div>
         </div>
+      </section>
 
-        {/* ── VISUAL ASSETS ───────────────────────────────── */}
-        <div className='flex flex-col gap-6'>
-          <SectionTitle>Visual Assets</SectionTitle>
+      {/* ── CATEGORY & TAGS ──────────────────────────────── */}
+      <section className='flex flex-col gap-5'>
+        <SectionHeader title='Category & Tags' />
 
-          <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
-            <div className='flex flex-col gap-3'>
-              <CreationImageUpload
-                label='Project Logo'
-                value={formData.logoUrl ?? formData.logo ?? ''}
-                onChange={url => updateFormData({ logoUrl: url, logo: null })}
-                aspectRatio='square'
-                description='JPEG or PNG · max 2 MB'
-                required
-              />
-              <p className='rounded-lg border border-white/5 bg-white/2 px-3 py-2 text-[10px] font-medium text-white/30'>
-                <span className='font-bold text-white/50'>Recommended:</span>{' '}
-                480×480 px minimum, square format
-              </p>
-            </div>
-
-            <div className='flex flex-col gap-3'>
-              <CreationImageUpload
-                label='Banner Image'
-                value={formData.bannerUrl ?? formData.banner ?? ''}
-                onChange={url =>
-                  updateFormData({ bannerUrl: url, banner: null })
-                }
-                aspectRatio='banner'
-                description='JPEG or PNG · max 5 MB'
-              />
-              <p className='rounded-lg border border-white/5 bg-white/2 px-3 py-2 text-[10px] font-medium text-white/30'>
-                <span className='font-bold text-white/50'>Recommended:</span>{' '}
-                1200×400 px, 3:1 aspect ratio
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── CATEGORY ────────────────────────────────────── */}
-        <div className='flex flex-col gap-6'>
-          <SectionTitle>
-            Category <span className='ml-1 text-red-400'>*</span>
-          </SectionTitle>
-
+        <div className='flex flex-col gap-1.5'>
+          <label className='text-[13px] font-medium text-white/50'>
+            Category<span className='ml-0.5 text-red-400'>*</span>
+          </label>
           <CategoryPicker
             value={formData.category ?? ''}
-            onChange={val => updateFormData({ category: val })}
+            onChange={val => {
+              updateFormData({ category: val });
+              markTouched('category');
+            }}
+            error={errors.category}
           />
-
-          <p className='flex items-start gap-2 rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 text-[10px] font-medium text-blue-400/80'>
-            <Info className='mt-0.5 h-3 w-3 shrink-0' />
-            Choose the category that best describes your project. This helps
-            users discover your project through filtered browsing.
-          </p>
         </div>
 
-        {/* ── LINKS ───────────────────────────────────────── */}
-        <div className='flex flex-col gap-6'>
-          <SectionTitle>Project Links</SectionTitle>
+        <CreationInput
+          label='Tags'
+          placeholder='DeFi, NFT, Soroban (comma separated)'
+          value={(formData.tags ?? []).join(', ')}
+          onChange={e => {
+            const tags = e.target.value
+              .split(',')
+              .map(t => t.trim())
+              .filter(Boolean);
+            updateFormData({ tags });
+          }}
+          helperText='Tags help users discover your project through filtered browsing.'
+        />
+      </section>
 
-          <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
-            <div className='flex flex-col gap-2'>
-              <CreationInput
-                label='Repository URL'
-                placeholder='https://github.com/username/repo'
-                value={formData.githubUrl ?? ''}
-                onChange={e => updateFormData({ githubUrl: e.target.value })}
-              />
-              <p className='flex items-center gap-1.5 text-[10px] font-medium text-white/30'>
-                <Github className='h-3 w-3' />
-                GitHub, GitLab, or Bitbucket
-              </p>
-            </div>
+      {/* ── PROJECT LINKS ────────────────────────────────── */}
+      <section className='flex flex-col gap-5'>
+        <SectionHeader
+          title='Project Links'
+          description='Add repository and project URLs.'
+        />
 
-            <div className='flex flex-col gap-2'>
-              <CreationInput
-                label='Project Website'
-                placeholder='https://yourproject.xyz'
-                value={formData.websiteUrl ?? ''}
-                onChange={e => updateFormData({ websiteUrl: e.target.value })}
-              />
-              <p className='flex items-center gap-1.5 text-[10px] font-medium text-white/30'>
-                <Globe className='h-3 w-3' />
-                Your project's homepage
-              </p>
-            </div>
-          </div>
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+          <CreationInput
+            label='GitHub'
+            placeholder='https://github.com/...'
+            value={formData.githubUrl ?? ''}
+            onChange={e => updateFormData({ githubUrl: e.target.value })}
+            onBlur={() => markTouched('githubUrl')}
+            error={errors.githubUrl}
+          />
+          <CreationInput
+            label='GitLab'
+            placeholder='https://gitlab.com/...'
+            value={formData.gitlabUrl ?? ''}
+            onChange={e => updateFormData({ gitlabUrl: e.target.value })}
+            onBlur={() => markTouched('gitlabUrl')}
+            error={errors.gitlabUrl}
+          />
+          <CreationInput
+            label='Bitbucket'
+            placeholder='https://bitbucket.org/...'
+            value={formData.bitbucketUrl ?? ''}
+            onChange={e => updateFormData({ bitbucketUrl: e.target.value })}
+            onBlur={() => markTouched('bitbucketUrl')}
+            error={errors.bitbucketUrl}
+          />
+        </div>
 
-          <div className='flex flex-col gap-2'>
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+          <CreationInput
+            label='Website'
+            placeholder='https://yourproject.xyz'
+            value={formData.websiteUrl ?? ''}
+            onChange={e => updateFormData({ websiteUrl: e.target.value })}
+            onBlur={() => markTouched('websiteUrl')}
+            error={errors.websiteUrl}
+            helperText="Your project's homepage"
+          />
+          <CreationInput
+            label='Demo Video'
+            placeholder='https://youtube.com/watch?v=...'
+            value={formData.demoVideoUrl ?? ''}
+            onChange={e => updateFormData({ demoVideoUrl: e.target.value })}
+            onBlur={() => markTouched('demoVideoUrl')}
+            error={errors.demoVideoUrl}
+            helperText='YouTube links will be embedded on your page'
+          />
+        </div>
+      </section>
+
+      {/* ── SOCIAL LINKS ─────────────────────────────────── */}
+      <section className='flex flex-col gap-5'>
+        <SectionHeader
+          title='Social Media'
+          description='Add up to 3 social links. At least one is required.'
+        />
+
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+          {[0, 1, 2].map(i => (
             <CreationInput
-              label='Demo Video URL'
-              placeholder='https://youtube.com/watch?v=…'
-              value={formData.demoVideoUrl ?? ''}
-              onChange={e => updateFormData({ demoVideoUrl: e.target.value })}
+              key={i}
+              label={`Social Link ${i + 1}${i === 0 ? ' *' : ''}`}
+              placeholder={
+                i === 0 ? 'https://x.com/yourproject' : 'https://...'
+              }
+              value={socialLinks[i] ?? ''}
+              onChange={e => updateSocialLink(i, e.target.value)}
+              onBlur={() => markTouched('socialLinks')}
+              error={i === 0 ? errors.socialLinks : undefined}
             />
-            <p className='border-primary/20 bg-primary/5 text-primary/90 flex items-center gap-2 rounded-lg border px-4 py-3 text-[10px] font-medium'>
-              <Video className='h-3 w-3 shrink-0' />
-              YouTube links will be embedded as a video player on your project
-              page.
+          ))}
+        </div>
+      </section>
+
+      {/* ── FUNDING MODE ─────────────────────────────────── */}
+      <section className='flex flex-col gap-5'>
+        <SectionHeader title='Project Type' />
+
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+          {/* Standard Project Card */}
+          <button
+            type='button'
+            onClick={() => setIsCampaign(false)}
+            className={cn(
+              'flex flex-col gap-3 rounded-xl border p-5 text-left transition-all',
+              !isCampaign
+                ? 'border-primary/30 bg-primary/5 ring-primary/20 ring-1'
+                : 'border-white/10 bg-white/2 hover:border-white/20'
+            )}
+          >
+            <div className='flex items-center gap-3'>
+              <div
+                className={cn(
+                  'flex h-9 w-9 items-center justify-center rounded-lg',
+                  !isCampaign
+                    ? 'bg-primary/15 text-primary'
+                    : 'bg-white/5 text-white/30'
+                )}
+              >
+                <FolderOpen className='h-4 w-4' />
+              </div>
+              <div>
+                <p className='text-sm font-semibold text-white'>
+                  Standard Project
+                </p>
+                <p className='text-xs text-white/40'>
+                  Showcase only, no funding
+                </p>
+              </div>
+            </div>
+            {!isCampaign && (
+              <div className='flex items-center gap-1.5'>
+                <div className='bg-primary h-1.5 w-1.5 rounded-full' />
+                <span className='text-primary text-xs font-medium'>
+                  Selected
+                </span>
+              </div>
+            )}
+          </button>
+
+          {/* Campaign Card */}
+          <button
+            type='button'
+            onClick={() => setIsCampaign(true)}
+            className={cn(
+              'flex flex-col gap-3 rounded-xl border p-5 text-left transition-all',
+              isCampaign
+                ? 'border-primary/30 bg-primary/5 ring-primary/20 ring-1'
+                : 'border-white/10 bg-white/2 hover:border-white/20'
+            )}
+          >
+            <div className='flex items-center gap-3'>
+              <div
+                className={cn(
+                  'flex h-9 w-9 items-center justify-center rounded-lg',
+                  isCampaign
+                    ? 'bg-primary/15 text-primary'
+                    : 'bg-white/5 text-white/30'
+                )}
+              >
+                <Rocket className='h-4 w-4' />
+              </div>
+              <div>
+                <p className='text-sm font-semibold text-white'>
+                  Crowdfunding Campaign
+                </p>
+                <p className='text-xs text-white/40'>
+                  Raise funds with milestones
+                </p>
+              </div>
+            </div>
+            {isCampaign && (
+              <div className='flex items-center gap-1.5'>
+                <div className='bg-primary h-1.5 w-1.5 rounded-full' />
+                <span className='text-primary text-xs font-medium'>
+                  Selected
+                </span>
+              </div>
+            )}
+          </button>
+        </div>
+
+        {isCampaign && (
+          <div className='border-primary/15 bg-primary/3 flex items-start gap-2.5 rounded-lg border p-3.5'>
+            <Info className='text-primary mt-0.5 h-4 w-4 shrink-0' />
+            <p className='text-sm text-white/50'>
+              You&apos;ll configure your funding goal, milestones, and timeline
+              in the
+              <strong className='text-white/70'>
+                {' '}
+                Funding & Milestones
+              </strong>{' '}
+              step.
             </p>
           </div>
-        </div>
-
-        {/* ── SOCIAL LINKS ────────────────────────────────── */}
-        <div className='flex flex-col gap-6'>
-          <SectionTitle>
-            Social Media{' '}
-            <span className='ml-1 text-red-400'>* at least one</span>
-          </SectionTitle>
-
-          <p className='-mt-2 text-xs font-medium text-white/40'>
-            Add up to 3 social links — X/Twitter, Farcaster, Instagram,
-            Substack, Facebook, etc.
-          </p>
-
-          <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-            {[0, 1, 2].map(i => (
-              <CreationInput
-                key={i}
-                label={`Social Link ${i + 1}${i === 0 ? ' *' : ''}`}
-                placeholder={
-                  i === 0 ? 'https://x.com/yourproject' : 'https://…'
-                }
-                value={socialLinks[i] ?? ''}
-                onChange={e => updateSocialLink(i, e.target.value)}
-              />
-            ))}
-          </div>
-
-          <p className='flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 text-[10px] font-medium text-amber-400/80'>
-            <Info className='mt-0.5 h-3 w-3 shrink-0' />
-            At least one social link is required. This helps build trust and
-            allows the community to follow your progress.
-          </p>
-        </div>
-
-        {/* ── FUNDING MODE ─────────────────────────────────- */}
-        <div className='flex flex-col gap-6'>
-          <SectionTitle>Funding Mode</SectionTitle>
-
-          <div className='rounded-xl border border-white/10 bg-white/2 p-6'>
-            <div className='flex flex-col gap-4'>
-              <div className='flex items-start justify-between gap-4'>
-                <div className='flex-1'>
-                  <p className='mb-1 text-sm font-bold text-white'>
-                    Enable Crowdfunding Campaign
-                  </p>
-                  <p className='text-xs font-medium text-white/40'>
-                    Turn on milestone-based crowdfunding to raise funds from the
-                    community. Funds are released as you complete verified
-                    milestones.
-                  </p>
-                </div>
-                <CreationToggle
-                  label=''
-                  enabled={isCampaign}
-                  onToggle={setIsCampaign}
-                />
-              </div>
-
-              {isCampaign && (
-                <p className='border-primary/20 bg-primary/5 text-primary/90 flex items-start gap-2 rounded-lg border px-4 py-3 text-[10px] font-medium'>
-                  <Info className='mt-0.5 h-3 w-3 shrink-0' />
-                  You'll configure your funding goal, milestones, and timeline
-                  in the next steps.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+        )}
+      </section>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useProjectCreation } from '@/features/projects/hooks/use-project-creation';
 import { CreationNavigation } from './CreationNavigation';
 import CreationSidebar from './CreationSidebar';
@@ -10,7 +10,14 @@ import ProjectDetails from './Steps/ProjectDetails';
 import TeamInfo from './Steps/TeamInfo';
 import SocialLinks from './Steps/SocialLinks';
 import CampaignDetails from './Steps/CampaignDetails';
-import { ArrowRight, ArrowLeft, Save, Sparkles, X, Rocket } from 'lucide-react';
+import {
+  ArrowRight,
+  ArrowLeft,
+  X,
+  Rocket,
+  Loader2,
+  CheckCircle2,
+} from 'lucide-react';
 import ReviewStep from './Steps/ReviewStep';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -29,13 +36,20 @@ export default function CreationLayout() {
     prevStep,
     lastSaved,
     recentDrafts,
+    draftId,
+    isPersisting,
+    persistError,
+    isPublishing,
+    publishError,
+    publishValidationError,
+    handlePublish,
+    isLoadingDraft,
+    onDeleteDraft,
   } = useProjectCreation();
 
-  // Track which steps have been visited
   const [visitedSteps, setVisitedSteps] = useState<Set<CreationStep>>(
     new Set([currentStep])
   );
-  // Track which steps are considered "completed" (user moved past them)
   const [completedSteps, setCompletedSteps] = useState<Set<CreationStep>>(
     new Set()
   );
@@ -44,14 +58,9 @@ export default function CreationLayout() {
   const isLastStep = currentStepIndex === steps.length - 1;
   const isFirstStep = currentStepIndex === 0;
 
-  // Keep a stable ref to steps so useEffect can read it without it being a dependency
   const stepsRef = useRef(steps);
   stepsRef.current = steps;
 
-  // When the step changes, mark previous as completed and new one as visited.
-  // IMPORTANT: `steps` is intentionally excluded from deps — it's a new array ref
-  // every render, which would cause an infinite loop via setVisitedSteps.
-  // We use stepsRef.current for stable reads inside the effect.
   const prevStepRef = useRef<CreationStep>(currentStep);
   useEffect(() => {
     const s = stepsRef.current;
@@ -64,59 +73,80 @@ export default function CreationLayout() {
       prevStepRef.current = currentStep;
     }
     setVisitedSteps(prev => {
-      if (prev.has(currentStep)) return prev; // avoid new Set allocation when unchanged
+      if (prev.has(currentStep)) return prev;
       return new Set([...prev, currentStep]);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep]); // `steps` intentionally omitted — use stepsRef
+  }, [currentStep]);
 
   const handleNavigateToStep = (stepKey: CreationStep) => {
-    // Mark current step as visited before leaving
     setVisitedSteps(prev => new Set([...prev, currentStep]));
     goToStep(stepKey);
   };
 
   const handleNext = () => {
-    // Mark the current step as completed when moving forward
     setCompletedSteps(prev => new Set([...prev, currentStep]));
     nextStep();
   };
 
   return (
-    <div className='flex h-screen w-full overflow-hidden bg-[#050505] text-white'>
-      {/* Sidebar */}
-      <CreationSidebar recentDrafts={recentDrafts} />
+    <div className='flex h-screen w-full overflow-hidden bg-[#0a0a0a] text-white'>
+      <CreationSidebar
+        recentDrafts={recentDrafts}
+        activeDraftId={draftId}
+        onDeleteDraft={onDeleteDraft}
+      />
 
-      {/* Main Content Column — flex column, full height, NO overflow on the column itself */}
-      <div className='relative flex min-h-0 flex-1 flex-col bg-[#060606]'>
-        {/* ── TOP HEADER ── */}
-        <header className='z-20 flex shrink-0 items-center justify-between border-b border-white/5 bg-[#060606]/80 px-8 py-4 backdrop-blur-md'>
+      {/* Loading overlay */}
+      {(isLoadingDraft || isPublishing) && (
+        <div className='absolute inset-0 z-100 flex items-center justify-center bg-black/70 backdrop-blur-sm'>
+          <div className='flex flex-col items-center gap-3'>
+            <Loader2 className='text-primary h-8 w-8 animate-spin' />
+            <p className='text-sm font-medium text-white/40'>
+              {isLoadingDraft
+                ? 'Loading draft...'
+                : 'Publishing your project...'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
+        {/* Header */}
+        <header className='z-20 flex shrink-0 items-center justify-between border-b border-white/6 px-3 py-2.5 sm:px-6 sm:py-3'>
           <div className='flex items-center gap-3'>
-            <span className='text-[10px] font-black tracking-[0.2em] text-white/20 uppercase'>
+            <span className='hidden text-xs font-medium text-white/30 sm:inline'>
               Step {currentStepIndex + 1} of {steps.length}
             </span>
-            <div className='h-3 w-px bg-white/10' />
-            <div className='flex items-center gap-1.5'>
-              {steps.map((s, i) => (
+            <div className='hidden h-3.5 w-px bg-white/10 sm:block' />
+            <div className='flex items-center gap-1'>
+              {steps.map(s => (
                 <div
                   key={s.key}
                   className={cn(
-                    'h-1 rounded-full transition-all duration-500',
+                    'h-1 rounded-full transition-all duration-300',
                     s.key === currentStep
-                      ? 'bg-primary w-6'
+                      ? 'bg-primary w-5'
                       : completedSteps.has(s.key)
-                        ? 'w-2 bg-white/30'
-                        : 'w-2 bg-white/10'
+                        ? 'w-1.5 bg-white/30'
+                        : 'w-1.5 bg-white/10'
                   )}
                 />
               ))}
             </div>
           </div>
 
-          <div className='flex items-center gap-4'>
-            {lastSaved && (
-              <div className='animate-in fade-in flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-white/20 uppercase'>
-                <Sparkles className='text-primary h-3 w-3' />
+          <div className='flex items-center gap-3'>
+            {isPersisting && (
+              <div className='hidden items-center gap-1.5 text-xs text-white/30 sm:flex'>
+                <Loader2 className='h-3 w-3 animate-spin' />
+                Saving...
+              </div>
+            )}
+            {!isPersisting && lastSaved && (
+              <div className='hidden items-center gap-1.5 text-xs text-white/25 sm:flex'>
+                <CheckCircle2 className='text-primary h-3 w-3' />
                 Saved{' '}
                 {new Date(lastSaved).toLocaleTimeString([], {
                   hour: '2-digit',
@@ -126,18 +156,18 @@ export default function CreationLayout() {
             )}
             <Link
               href='/projects'
-              className='flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/40 transition-all hover:border-red-500/20 hover:bg-red-500/10 hover:text-red-500'
+              className='flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white/40 transition-colors hover:border-white/20 hover:text-white/60'
             >
-              <X className='h-4 w-4' />
+              <X className='h-3.5 w-3.5' />
             </Link>
           </div>
         </header>
 
-        {/* ── STEP TAB NAVIGATION ── (sticky below header) */}
+        {/* Tabs wrapper */}
         <Tabs
           value={currentStep}
           onValueChange={val => handleNavigateToStep(val as CreationStep)}
-          className='flex min-h-0 flex-1 flex-col'
+          className='flex min-h-0 min-w-0 flex-1 flex-col'
         >
           <CreationNavigation
             activeTab={currentStep}
@@ -147,96 +177,107 @@ export default function CreationLayout() {
             completedSteps={completedSteps}
           />
 
-          {/* ── SCROLLABLE CONTENT AREA — flex-1, overflow here ── */}
-          <div className='flex-1 overflow-y-auto'>
-            <div className='flex justify-center px-8 py-12 pb-40 md:py-16'>
-              <div className='w-full'>
-                <TabsContent value='basic' className='mt-0 outline-none'>
-                  <BasicInfo
-                    formData={formData}
-                    updateFormData={updateFormData}
-                    isCampaign={isCampaign}
-                    setIsCampaign={setIsCampaign}
-                  />
-                </TabsContent>
+          {/* Scrollable content */}
+          <div className='flex-1 overflow-x-hidden overflow-y-auto'>
+            <div className='mx-auto w-full px-4 py-6 pb-20 sm:px-6 sm:py-10 sm:pb-32'>
+              <TabsContent value='basic' className='mt-0 outline-none'>
+                <BasicInfo
+                  formData={formData}
+                  updateFormData={updateFormData}
+                  isCampaign={isCampaign}
+                  setIsCampaign={setIsCampaign}
+                />
+              </TabsContent>
 
-                <TabsContent value='details' className='mt-0 outline-none'>
-                  <ProjectDetails
-                    formData={formData}
-                    updateFormData={updateFormData}
-                  />
-                </TabsContent>
+              <TabsContent value='details' className='mt-0 outline-none'>
+                <ProjectDetails
+                  formData={formData}
+                  updateFormData={updateFormData}
+                />
+              </TabsContent>
 
-                <TabsContent value='team' className='mt-0 outline-none'>
-                  <TeamInfo
-                    formData={formData}
-                    updateFormData={updateFormData}
-                  />
-                </TabsContent>
+              <TabsContent value='team' className='mt-0 outline-none'>
+                <TeamInfo formData={formData} updateFormData={updateFormData} />
+              </TabsContent>
 
-                <TabsContent value='social' className='mt-0 outline-none'>
-                  <SocialLinks
-                    formData={formData}
-                    updateFormData={updateFormData}
-                  />
-                </TabsContent>
+              <TabsContent value='social' className='mt-0 outline-none'>
+                <SocialLinks
+                  formData={formData}
+                  updateFormData={updateFormData}
+                />
+              </TabsContent>
 
-                <TabsContent value='funding' className='mt-0 outline-none'>
-                  <CampaignDetails
-                    formData={formData}
-                    updateFormData={updateFormData}
-                  />
-                </TabsContent>
+              <TabsContent value='funding' className='mt-0 outline-none'>
+                <CampaignDetails
+                  formData={formData}
+                  updateFormData={updateFormData}
+                />
+              </TabsContent>
 
-                <TabsContent value='review' className='mt-0 outline-none'>
-                  <ReviewStep
-                    formData={formData}
-                    onNavigate={handleNavigateToStep}
-                  />
-                </TabsContent>
-              </div>
+              <TabsContent value='review' className='mt-0 outline-none'>
+                <ReviewStep
+                  formData={formData}
+                  onNavigate={handleNavigateToStep}
+                />
+              </TabsContent>
             </div>
           </div>
 
-          {/* ── FIXED FOOTER — always visible at the bottom ── */}
-          <footer className='z-20 flex shrink-0 items-center justify-between border-t border-white/5 bg-[#060606]/90 px-8 py-5 backdrop-blur-xl'>
-            {/* Left group — Back + Save */}
-            <div className='flex items-center gap-3'>
+          {/* Publish validation / API error */}
+          {(publishValidationError || publishError) && (
+            <div className='shrink-0 border-t border-red-500/20 bg-red-500/5 px-4 py-2 text-xs text-red-400 sm:px-6'>
+              {publishValidationError || publishError}
+            </div>
+          )}
+
+          {/* Footer */}
+          <footer className='z-20 flex shrink-0 items-center justify-between border-t border-white/6 bg-[#0a0a0a]/95 px-3 py-2.5 backdrop-blur-sm sm:px-6 sm:py-3'>
+            <div className='flex items-center gap-2'>
               {!isFirstStep && (
                 <button
                   onClick={prevStep}
-                  className='flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-[11px] font-black tracking-[0.15em] text-white/60 uppercase transition-all hover:bg-white/10 hover:text-white active:scale-95'
+                  disabled={isPublishing}
+                  className='flex h-9 items-center gap-2 rounded-lg border border-white/10 px-4 text-sm font-medium text-white/60 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-40'
                 >
-                  <ArrowLeft className='h-4 w-4' />
-                  Back
+                  <ArrowLeft className='h-3.5 w-3.5' />
+                  <span className='hidden sm:inline'>Back</span>
                 </button>
               )}
-
-              <button className='hidden items-center gap-2 rounded-xl border border-white/5 px-5 py-3.5 text-[11px] font-black tracking-[0.15em] text-white/30 uppercase transition-all hover:bg-white/5 hover:text-white/60 active:scale-95 md:flex'>
-                <Save className='h-3.5 w-3.5' />
-                Save Draft
-              </button>
             </div>
 
-            {/* Right — Next / Publish */}
+            {/* Center label */}
+            <span className='hidden text-xs font-medium text-white/25 md:block'>
+              {steps[currentStepIndex]?.label}
+            </span>
+
+            {/* Continue / Publish */}
             <button
-              onClick={isLastStep ? undefined : handleNext}
+              onClick={isLastStep ? handlePublish : handleNext}
+              disabled={isLastStep ? isPublishing || !draftId : false}
               className={cn(
-                'flex items-center gap-2 rounded-xl px-8 py-3.5 text-[11px] font-black tracking-[0.2em] uppercase transition-all active:scale-[0.98]',
+                'flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-all active:scale-[0.98] sm:gap-2 sm:px-5 sm:text-sm',
                 isLastStep
-                  ? 'bg-primary shadow-primary/20 hover:bg-primary/90 text-black shadow-lg'
-                  : 'bg-primary shadow-primary/10 hover:bg-primary/90 text-black shadow-lg'
+                  ? 'bg-primary hover:bg-primary/90 text-black disabled:opacity-50'
+                  : 'bg-primary hover:bg-primary/90 text-black',
+                'disabled:pointer-events-none disabled:cursor-not-allowed'
               )}
             >
               {isLastStep ? (
-                <>
-                  <Rocket className='h-4 w-4' />
-                  Publish Project
-                </>
+                isPublishing ? (
+                  <>
+                    <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    <Rocket className='h-3.5 w-3.5' />
+                    {draftId ? 'Publish' : 'Save first'}
+                  </>
+                )
               ) : (
                 <>
                   Continue
-                  <ArrowRight className='h-4 w-4' />
+                  <ArrowRight className='h-3.5 w-3.5' />
                 </>
               )}
             </button>

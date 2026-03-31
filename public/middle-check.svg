@@ -29,8 +29,8 @@
 <stop offset="1" stop-color="#0A1C0D"/>
 </linearGradient>
 <linearGradient id="paint1_linear_2191_18092" x1="64.7979" y1="-44.9879" x2="64.7979" y2="124.122" gradientUnits="userSpaceOnUse">
-<stop stop-color="#A7F950"/>
-<stop offset="1" stop-color="#A7F950" stopOpacity="0"/>
+<stop stop-color="#2EEDAA"/>
+<stop offset="1" stop-color="#2EEDAA" stopOpacity="0"/>
 </linearGradient>
 <linearGradient id="paint3_linear_2191_18092" x1="69.5872" y1="54.4899" x2="63.0226" y2="71.4484" gradientUnits="userSpaceOnUse">
 <stop stop-color="white"/>

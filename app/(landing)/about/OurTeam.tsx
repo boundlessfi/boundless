@@ -11,7 +11,7 @@ const OurTeam = () => {
           className='mx-auto mb-4 w-fit bg-clip-text text-sm font-medium text-transparent md:text-base'
           style={{
             backgroundImage:
-              'linear-gradient(272.61deg, #A7F95080 13.84%, #3AE6B2 73.28%)',
+              'linear-gradient(272.61deg, #2EEDAA80 13.84%, #3AE6B2 73.28%)',
           }}
         >
           Our Team

@@ -21,15 +21,18 @@ import Image from 'next/image';
 
 interface CreationSidebarProps {
   recentDrafts: Partial<ProjectDraft>[];
+  activeDraftId?: string | null;
   onDraftSelect?: (draft: Partial<ProjectDraft>) => void;
   onDeleteDraft?: (draftId: string) => void;
 }
 
 const SidebarContent = ({
   recentDrafts,
+  activeDraftId,
   onDeleteDraft,
 }: {
   recentDrafts: Partial<ProjectDraft>[];
+  activeDraftId?: string | null;
   onDeleteDraft?: (draftId: string) => void;
 }) => (
   <nav className='flex h-full flex-col overflow-y-auto border-r border-white/5 bg-[#050505] px-4 py-8'>
@@ -59,60 +62,71 @@ const SidebarContent = ({
         </div>
       ) : (
         <div className='flex flex-col gap-2'>
-          {recentDrafts.map((draft, idx) => (
-            <div
-              key={draft.id || idx}
-              className='group relative flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all hover:bg-white/3'
-            >
-              <div className='group-hover:border-primary/20 group-hover:bg-primary/5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-white/3 transition-all'>
-                <FileText className='group-hover:text-primary h-4 w-4 text-white/20 transition-colors' />
-              </div>
-              <div className='flex min-w-0 flex-1 flex-col'>
-                <span className='truncate text-sm font-bold text-white/60 transition-colors group-hover:text-white'>
-                  {draft.title || 'Untitled Project'}
-                </span>
-                <span className='text-[10px] font-black tracking-wider text-white/20 uppercase'>
-                  {draft.isCampaign ? 'Crowdfunding' : 'Standard'}
-                </span>
-              </div>
+          {recentDrafts.map((draft, idx) => {
+            const isActive = draft.id === activeDraftId;
+            return (
+              <div
+                key={draft.id || idx}
+                className={cn(
+                  'group relative flex items-center gap-3 rounded-2xl text-left transition-all hover:bg-white/3',
+                  isActive && 'ring-primary/20 bg-white/5 ring-1'
+                )}
+              >
+                <Link
+                  href={`/projects/create?id=${draft.id}`}
+                  className='flex flex-1 cursor-pointer items-center gap-3 overflow-hidden px-3 py-3 outline-none focus:outline-none'
+                >
+                  <div className='group-hover:border-primary/20 group-hover:bg-primary/5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-white/3 transition-all'>
+                    <FileText className='group-hover:text-primary h-4 w-4 text-white/20 transition-colors' />
+                  </div>
+                  <div className='flex min-w-0 flex-1 flex-col'>
+                    <span className='truncate text-sm font-bold text-white/60 transition-colors group-hover:text-white'>
+                      {draft.title || 'Untitled Project'}
+                    </span>
+                    <span className='text-[10px] font-black tracking-wider text-white/20 uppercase'>
+                      {draft.isCampaign ? 'Crowdfunding' : 'Standard'}
+                    </span>
+                  </div>
+                </Link>
 
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button className='z-10 rounded-lg p-2 text-white/20 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-500'>
-                    <Trash2 className='h-3.5 w-3.5' />
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className='bg-background-main-bg border-white/10'>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className='text-white'>
-                      Delete Draft?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription className='text-white/40'>
-                      This action cannot be undone. This will permanently delete
-                      your{' '}
-                      <strong className='text-white'>
-                        {draft.title || 'Untitled Project'}
-                      </strong>{' '}
-                      draft.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className='border-white/10 bg-white/5 text-white hover:bg-white/10'>
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      className='bg-red-500 text-white hover:bg-red-600'
-                      onClick={() => draft.id && onDeleteDraft?.(draft.id)}
-                    >
-                      Delete permanently
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className='z-10 rounded-lg p-2 text-white/20 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-500'>
+                      <Trash2 className='h-3.5 w-3.5' />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className='border-white/10 bg-[#0d0d0d]'>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className='text-white'>
+                        Delete Draft?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className='text-white/40'>
+                        This action cannot be undone. This will permanently
+                        delete your{' '}
+                        <strong className='text-white'>
+                          {draft.title || 'Untitled Project'}
+                        </strong>{' '}
+                        draft.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className='border-white/10 bg-white/5 text-white hover:bg-white/10'>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        className='bg-red-500 text-white hover:bg-red-600'
+                        onClick={() => draft.id && onDeleteDraft?.(draft.id)}
+                      >
+                        Delete permanently
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
 
-              <div className='absolute inset-0 rounded-2xl border border-transparent transition-all group-hover:border-white/5'></div>
-            </div>
-          ))}
+                {/* <div className='absolute inset-0 rounded-2xl border border-transparent transition-all group-hover:border-white/5'></div> */}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -165,24 +179,26 @@ const SidebarContent = ({
 
 export default function CreationSidebar({
   recentDrafts,
+  activeDraftId,
   onDeleteDraft,
 }: CreationSidebarProps) {
   return (
     <>
       {/* Mobile Trigger */}
-      <div className='fixed top-6 left-6 z-50 md:hidden'>
+      <div className='fixed top-3 left-3 z-50 sm:top-4 sm:left-4 md:hidden'>
         <Sheet>
           <SheetTrigger asChild>
-            <button className='flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl transition-all active:scale-95'>
-              <Menu className='h-5 w-5 text-white' />
+            <button className='flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/70 backdrop-blur-xl transition-all active:scale-95 sm:h-11 sm:w-11'>
+              <Menu className='h-4 w-4 text-white sm:h-5 sm:w-5' />
             </button>
           </SheetTrigger>
           <SheetContent
             side='left'
-            className='w-[300px] border-r border-white/10 bg-black p-0'
+            className='w-[260px] border-r border-white/10 bg-black p-0 sm:w-[300px]'
           >
             <SidebarContent
               recentDrafts={recentDrafts}
+              activeDraftId={activeDraftId}
               onDeleteDraft={onDeleteDraft}
             />
           </SheetContent>
@@ -190,9 +206,10 @@ export default function CreationSidebar({
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className='sticky top-0 hidden h-screen w-80 shrink-0 border-r border-white/5 bg-[#050505] md:block'>
+      <aside className='sticky top-0 hidden h-screen w-64 shrink-0 border-r border-white/5 bg-[#050505] md:block lg:w-80'>
         <SidebarContent
           recentDrafts={recentDrafts}
+          activeDraftId={activeDraftId}
           onDeleteDraft={onDeleteDraft}
         />
       </aside>

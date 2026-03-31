@@ -9,12 +9,6 @@ export {
   useNavigationLoading,
 } from './NavigationLoadingProvider';
 
-export {
-  TrustlessWorkProvider,
-  useTrustlessWorkConfig,
-  TrustlessWorkContext,
-} from './TrustlessWorkProvider';
-
 export { EscrowProvider, useEscrowContext } from './EscrowProvider';
 
 export {

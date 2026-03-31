@@ -1,7 +1,7 @@
 import api from './api';
 import type { ApiResponse } from './types';
 
-/** Backend response shape: session is in data, verification URL is "url". */
+/** Backend response shape from POST /didit/create-session. */
 interface DiditSessionData {
   session_id: string;
   session_number?: number;

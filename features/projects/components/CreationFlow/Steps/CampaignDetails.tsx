@@ -3,12 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Plus, X, Calendar, Video, Info } from 'lucide-react';
+import { Plus, X, Info, AlertCircle, GripVertical } from 'lucide-react';
 import { z } from 'zod';
-import FormHint from '@/components/form/FormHint';
 import {
   DndContext,
   closestCenter,
@@ -27,8 +24,6 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CreationInput } from '../CreationUI';
-
-// Re-using types from hook
 import { Milestone } from '../../../hooks/use-project-creation';
 
 interface CampaignDetailsProps {
@@ -36,52 +31,7 @@ interface CampaignDetailsProps {
   updateFormData: (updates: any) => void;
 }
 
-// ── Validation Schemas ────────────────────────────────────────────────────────
-
-const milestoneSchema = z
-  .object({
-    id: z.string(),
-    title: z.string().trim().min(1, 'Title is required'),
-    description: z.string().trim().min(1, 'Description is required'),
-    startDate: z.string().min(1, 'Start date is required'),
-    endDate: z.string().min(1, 'End date is required'),
-  })
-  .superRefine((val, ctx) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const startDate = new Date(val.startDate);
-    const endDate = new Date(val.endDate);
-
-    if (startDate <= today) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['startDate'],
-        message: 'Start date must be at least tomorrow',
-      });
-    }
-
-    if (endDate <= startDate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['endDate'],
-        message: 'End date must be after start date',
-      });
-    }
-
-    const durationInDays = Math.ceil(
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    if (durationInDays < 7) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['endDate'],
-        message: 'Milestone duration must be at least 1 week',
-      });
-    }
-  });
-
-// ── Sortable Item Component ───────────────────────────────────────────────────
+// ── Sortable Milestone Card ──────────────────────────────────
 
 const SortableMilestoneItem = ({
   milestone,
@@ -121,140 +71,174 @@ const SortableMilestoneItem = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'milestone-item relative transition-all duration-200',
-        isDragging && 'milestone-dragging z-50 shadow-lg'
+        'rounded-xl border border-white/10 bg-white/2 transition-all',
+        isDragging && 'border-primary/20 bg-primary/5 z-50 shadow-xl'
       )}
     >
-      {index > 0 && (
-        <div className='absolute top-0 left-1/2 h-px w-screen -translate-x-1/2 bg-[#2B2B2B]' />
-      )}
-      <div className='p-4'>
-        <div className='flex items-start space-x-3'>
-          {/* Drag Handle */}
-          <div
-            {...attributes}
-            {...listeners}
-            className={cn(
-              'milestone-drag-handle flex h-8 w-8 cursor-move items-center justify-center rounded text-[#B5B5B5] transition-colors hover:border-[#99FF2D] hover:text-white',
-              isDragging && 'milestone-dragging'
-            )}
-          >
-            <svg
-              width='20'
-              height='20'
-              viewBox='0 0 20 20'
-              fill='none'
-              xmlns='http://www.w3.org/2000/svg'
+      <div className='p-3 sm:p-5'>
+        {/* Header */}
+        <div className='mb-4 flex items-center justify-between'>
+          <div className='flex items-center gap-2'>
+            <div
+              {...attributes}
+              {...listeners}
+              className='flex h-6 w-6 cursor-move items-center justify-center rounded-md bg-white/5 text-white/25 transition-colors hover:bg-white/10 hover:text-white/50 sm:h-7 sm:w-7'
             >
-              <path
-                d='M2.5 7.08325H17.5M2.5 12.9166H17.5'
-                stroke='#99FF2D'
-                strokeWidth='1.4'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-              />
-            </svg>
+              <GripVertical className='h-3.5 w-3.5' />
+            </div>
+            <span className='text-sm font-medium text-white/50'>
+              Milestone {index + 1}
+            </span>
           </div>
 
-          {/* Milestone Content */}
-          <div className='flex-1 space-y-4'>
-            {/* Title */}
-            <div className='space-y-2'>
-              <Input
-                placeholder='Enter milestone name/title'
-                value={milestone.title}
-                onChange={e =>
-                  onMilestoneChange(milestone.id, 'title', e.target.value)
-                }
-                className='focus-visible:border-primary border-[#2B2B2B] bg-[#101010] p-4 text-white placeholder:text-[#919191]'
-              />
-            </div>
+          {canRemove && (
+            <button
+              type='button'
+              onClick={() => onRemoveMilestone(milestone.id)}
+              className='rounded-md p-1.5 text-white/20 transition-colors hover:bg-red-500/10 hover:text-red-400'
+            >
+              <X className='h-3.5 w-3.5' />
+            </button>
+          )}
+        </div>
 
-            {/* Description */}
-            <div className='space-y-2'>
+        <div className='flex flex-col gap-4'>
+          <CreationInput
+            label='Title'
+            placeholder='e.g. MVP Launch, Smart Contract Audit'
+            value={milestone.title}
+            onChange={e =>
+              onMilestoneChange(milestone.id, 'title', e.target.value)
+            }
+            required
+          />
+
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+            <div className='flex flex-col gap-1.5'>
+              <label className='text-[13px] font-medium text-white/50'>
+                Description<span className='ml-0.5 text-red-400'>*</span>
+              </label>
               <Textarea
-                placeholder='Describe what will be achieved in this milestone, the key activities involved, and the expected outcome or deliverable.'
+                placeholder='What will be achieved in this milestone?'
                 value={milestone.description}
                 onChange={e =>
                   onMilestoneChange(milestone.id, 'description', e.target.value)
                 }
-                className='focus-visible:border-primary min-h-20 resize-none border-[#2B2B2B] bg-[#101010] p-4 text-white placeholder:text-[#919191]'
+                className='focus-visible:border-primary/40 focus-visible:ring-primary/20 min-h-20 resize-none rounded-lg border border-white/10 bg-white/4 px-3.5 py-2.5 text-sm text-white transition-colors placeholder:text-white/25 hover:border-white/20 focus-visible:ring-1'
               />
             </div>
-
-            {/* Date Inputs */}
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-              <div className='space-y-2'>
-                <Label className='text-sm text-[#B5B5B5]'>Start Date</Label>
-                <div className='relative'>
-                  <Input
-                    type='date'
-                    value={milestone.startDate}
-                    onChange={e =>
-                      onMilestoneChange(
-                        milestone.id,
-                        'startDate',
-                        e.target.value
-                      )
-                    }
-                    className={cn(
-                      'focus-visible:border-primary border-[#2B2B2B] bg-[#101010] p-4 pr-10 text-white',
-                      errors[`${milestone.id}-startDate`] && 'border-red-500'
-                    )}
-                  />
-                  <Calendar className='pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-[#919191]' />
-                </div>
-                {errors[`${milestone.id}-startDate`] && (
-                  <p className='text-sm text-red-500'>
-                    {errors[`${milestone.id}-startDate`]}
-                  </p>
-                )}
-              </div>
-
-              <div className='space-y-2'>
-                <Label className='text-sm text-[#B5B5B5]'>End Date</Label>
-                <div className='relative'>
-                  <Input
-                    type='date'
-                    value={milestone.endDate}
-                    onChange={e =>
-                      onMilestoneChange(milestone.id, 'endDate', e.target.value)
-                    }
-                    className={cn(
-                      'focus-visible:border-primary border-[#2B2B2B] bg-[#101010] p-4 pr-10 text-white',
-                      errors[`${milestone.id}-endDate`] && 'border-red-500'
-                    )}
-                  />
-                  <Calendar className='pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-[#919191]' />
-                </div>
-                {errors[`${milestone.id}-endDate`] && (
-                  <p className='text-sm text-red-500'>
-                    {errors[`${milestone.id}-endDate`]}
-                  </p>
-                )}
-              </div>
+            <div className='flex flex-col gap-1.5'>
+              <label className='text-[13px] font-medium text-white/50'>
+                Deliverable<span className='ml-0.5 text-red-400'>*</span>
+              </label>
+              <Textarea
+                placeholder='e.g. GitHub Repo, UI Mockups, Deployed Contract'
+                value={milestone.deliverable}
+                onChange={e =>
+                  onMilestoneChange(milestone.id, 'deliverable', e.target.value)
+                }
+                className='focus-visible:border-primary/40 focus-visible:ring-primary/20 min-h-20 resize-none rounded-lg border border-white/10 bg-white/4 px-3.5 py-2.5 text-sm text-white transition-colors placeholder:text-white/25 hover:border-white/20 focus-visible:ring-1'
+              />
             </div>
           </div>
 
-          {/* Remove Button */}
-          {canRemove && (
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              onClick={() => onRemoveMilestone(milestone.id)}
-              className='text-primary/32 bg-primary/8 hover:bg-primary/8 hover:text-primary h-6 w-6 rounded-full p-0'
-            >
-              <X className='h-4 w-4' />
-            </Button>
-          )}
+          <div className='flex flex-col gap-1.5'>
+            <label className='text-[13px] font-medium text-white/50'>
+              Success Criteria
+            </label>
+            <Textarea
+              placeholder='How will we verify this is complete?'
+              value={milestone.successCriteria}
+              onChange={e =>
+                onMilestoneChange(
+                  milestone.id,
+                  'successCriteria',
+                  e.target.value
+                )
+              }
+              rows={2}
+              className='focus-visible:border-primary/40 focus-visible:ring-primary/20 resize-none rounded-lg border border-white/10 bg-white/4 px-3.5 py-2.5 text-sm text-white transition-colors placeholder:text-white/25 hover:border-white/20 focus-visible:ring-1'
+            />
+          </div>
+
+          {/* Dates & percentage */}
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+            <div className='flex flex-col gap-1.5'>
+              <label className='text-[13px] font-medium text-white/50'>
+                Start Date<span className='ml-0.5 text-red-400'>*</span>
+              </label>
+              <Input
+                type='date'
+                value={milestone.startDate}
+                onChange={e =>
+                  onMilestoneChange(milestone.id, 'startDate', e.target.value)
+                }
+                className={cn(
+                  'focus-visible:border-primary/40 focus-visible:ring-primary/20 h-10 rounded-lg bg-white/4 px-3.5 text-sm text-white transition-colors focus-visible:ring-1',
+                  errors[`${milestone.id}-startDate`]
+                    ? 'border-red-500/60'
+                    : 'border-white/10 hover:border-white/20'
+                )}
+              />
+              {errors[`${milestone.id}-startDate`] && (
+                <p className='flex items-center gap-1 text-xs text-red-400'>
+                  <AlertCircle className='h-3 w-3 shrink-0' />
+                  {errors[`${milestone.id}-startDate`]}
+                </p>
+              )}
+            </div>
+
+            <div className='flex flex-col gap-1.5'>
+              <label className='text-[13px] font-medium text-white/50'>
+                End Date<span className='ml-0.5 text-red-400'>*</span>
+              </label>
+              <Input
+                type='date'
+                value={milestone.endDate}
+                onChange={e =>
+                  onMilestoneChange(milestone.id, 'endDate', e.target.value)
+                }
+                className={cn(
+                  'focus-visible:border-primary/40 focus-visible:ring-primary/20 h-10 rounded-lg bg-white/4 px-3.5 text-sm text-white transition-colors focus-visible:ring-1',
+                  errors[`${milestone.id}-endDate`]
+                    ? 'border-red-500/60'
+                    : 'border-white/10 hover:border-white/20'
+                )}
+              />
+              {errors[`${milestone.id}-endDate`] && (
+                <p className='flex items-center gap-1 text-xs text-red-400'>
+                  <AlertCircle className='h-3 w-3 shrink-0' />
+                  {errors[`${milestone.id}-endDate`]}
+                </p>
+              )}
+            </div>
+
+            <div className='flex flex-col gap-1.5'>
+              <label className='text-[13px] font-medium text-white/50'>
+                Fund Release %
+              </label>
+              <Input
+                type='number'
+                placeholder='e.g. 25'
+                value={milestone.fundingPercentage || ''}
+                onChange={e =>
+                  onMilestoneChange(
+                    milestone.id,
+                    'fundingPercentage',
+                    e.target.value
+                  )
+                }
+                className='focus-visible:border-primary/40 focus-visible:ring-primary/20 h-10 rounded-lg border border-white/10 bg-white/4 px-3.5 text-sm text-white transition-colors placeholder:text-white/25 hover:border-white/20 focus-visible:ring-1'
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// ── Main Component ───────────────────────────────────────────────────────────
+// ── Main Component ───────────────────────────────────────────
 
 export default function CampaignDetails({
   formData,
@@ -271,7 +255,6 @@ export default function CampaignDetails({
     })
   );
 
-  // Initialize first milestone if none exist
   useEffect(() => {
     if (!formData.milestones || formData.milestones.length === 0) {
       updateFormData({
@@ -298,13 +281,13 @@ export default function CampaignDetails({
 
     if (field === 'startDate' && value) {
       const startDate = new Date(value);
-      if (startDate <= today) return 'Start date must be at least tomorrow';
+      if (startDate <= today) return 'Must be at least tomorrow';
     }
 
     if (field === 'endDate' && value && milestone.startDate) {
       const startDate = new Date(milestone.startDate);
       const endDate = new Date(value);
-      if (endDate <= startDate) return 'End date must be after start date';
+      if (endDate <= startDate) return 'Must be after start date';
 
       const durationInDays = Math.ceil(
         (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -341,6 +324,9 @@ export default function CampaignDetails({
       id: `ms-${Date.now()}`,
       title: '',
       description: '',
+      deliverable: '',
+      successCriteria: '',
+      fundingPercentage: 0,
       startDate: '',
       endDate: '',
     };
@@ -371,63 +357,57 @@ export default function CampaignDetails({
   };
 
   return (
-    <div className='flex flex-col gap-10'>
-      <div className='flex flex-col gap-2'>
-        <h2 className='text-3xl font-bold tracking-tight text-white'>
+    <div className='flex flex-col gap-8 sm:gap-10'>
+      <div className='flex flex-col gap-1'>
+        <h2 className='text-xl font-semibold text-white sm:text-2xl'>
           Crowdfunding Setup
         </h2>
-        <p className='text-sm font-medium text-white/40'>
+        <p className='text-xs text-white/40 sm:text-sm'>
           Define your funding goal and project milestones.
         </p>
       </div>
 
-      <div className='flex flex-col gap-10'>
+      <div className='flex flex-col gap-8'>
         {/* Funding Goal */}
-        <div className='flex flex-col gap-6'>
-          <div className='flex items-center gap-3 border-b border-white/5 pb-2'>
-            <div className='bg-primary h-1.5 w-1.5 rounded-full' />
-            <h3 className='text-xs font-black tracking-[0.2em] text-white/70 uppercase'>
-              Goal & Allocation
-            </h3>
-          </div>
+        <section className='flex flex-col gap-5'>
+          <h3 className='text-sm font-semibold text-white sm:text-base'>
+            Funding Goal
+          </h3>
 
-          <div className='flex flex-col gap-4'>
-            <CreationInput
-              label='Funding Goal (USDC)'
-              placeholder='Enter amount e.g. 25000'
-              type='number'
-              value={formData.fundingAmount || ''}
-              onChange={e =>
-                updateFormData({ fundingAmount: Number(e.target.value) })
-              }
-              required
-            />
-            <div className='flex items-start gap-2 rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 text-[10px] font-medium text-blue-400/80'>
-              <Info className='mt-0.5 h-3 w-3 shrink-0' />
+          <CreationInput
+            label='Amount (USDC)'
+            placeholder='Enter amount e.g. 25000'
+            type='number'
+            value={formData.fundingAmount || ''}
+            onChange={e =>
+              updateFormData({ fundingAmount: Number(e.target.value) })
+            }
+            required
+          />
+
+          <div className='flex items-start gap-2.5 rounded-lg border border-blue-500/10 bg-blue-500/5 p-3.5'>
+            <Info className='mt-0.5 h-4 w-4 shrink-0 text-blue-400/50' />
+            <p className='text-xs text-blue-400/60'>
               This is the total amount you aim to raise. It will be distributed
-              across milestones in the next phases of your project.
-            </div>
+              across milestones based on the fund release percentages you set.
+            </p>
           </div>
-        </div>
+        </section>
 
         {/* Milestones */}
-        <div className='flex flex-col gap-6'>
-          <div className='flex items-center justify-between border-b border-white/5 pb-2'>
-            <div className='flex items-center gap-3'>
-              <div className='bg-primary h-1.5 w-1.5 rounded-full' />
-              <h3 className='text-xs font-black tracking-[0.2em] text-white/70 uppercase'>
-                Project Roadmap
-              </h3>
-            </div>
-            <Button
+        <section className='flex flex-col gap-5'>
+          <div className='flex items-center justify-between'>
+            <h3 className='text-sm font-semibold text-white sm:text-base'>
+              Project Roadmap
+            </h3>
+            <button
               type='button'
-              variant='outline'
               onClick={addMilestone}
-              className='border-primary hover:text-primary hover:bg-primary/5 bg-transparent font-normal text-[#99FF2D]'
+              className='border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors'
             >
+              <Plus className='h-3.5 w-3.5' />
               Add Milestone
-              <Plus className='h-4 w-4 text-[#99FF2D]' />
-            </Button>
+            </button>
           </div>
 
           <DndContext
@@ -439,7 +419,7 @@ export default function CampaignDetails({
               items={(formData.milestones || []).map((m: Milestone) => m.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className='flex flex-col gap-5'>
+              <div className='flex flex-col gap-4'>
                 {(formData.milestones || []).map(
                   (ms: Milestone, index: number) => (
                     <SortableMilestoneItem
@@ -456,7 +436,7 @@ export default function CampaignDetails({
               </div>
             </SortableContext>
           </DndContext>
-        </div>
+        </section>
       </div>
     </div>
   );

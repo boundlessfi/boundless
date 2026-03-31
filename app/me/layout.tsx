@@ -6,6 +6,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { useAuthStatus } from '@/hooks/use-auth';
 import React, { useMemo, useRef, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { ProfileIncompleteBanner } from '@/components/ProfileIncompleteBanner';
 
 interface MeLayoutProps {
   children: React.ReactNode;
@@ -120,9 +121,10 @@ const MeLayout = ({ children }: MeLayoutProps): React.ReactElement => {
         }}
         variant='inset'
       />
-      <SidebarInset className='bg-[#0e0c0c]'>
+      <SidebarInset className='min-h-screen bg-[#0e0c0c]'>
+        <ProfileIncompleteBanner />
         <SiteHeader />
-        <div className='flex flex-1 flex-col'>{children}</div>
+        <main className='flex flex-1 flex-col'>{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

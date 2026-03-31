@@ -175,7 +175,7 @@ const Team = React.forwardRef<{ validate: () => boolean }, TeamProps>(
                 {formData.members.map(member => (
                   <div
                     key={member.id}
-                    className='flex items-center space-x-1 rounded-full bg-[#A7F95014] py-1.5 pr-1.5 pl-2'
+                    className='flex items-center space-x-1 rounded-full bg-[#2EEDAA14] py-1.5 pr-1.5 pl-2'
                   >
                     <span className='text-primary text-sm'>{member.email}</span>
                     <Button

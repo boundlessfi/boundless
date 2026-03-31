@@ -18,12 +18,13 @@ import {
 interface IndividualScoresBreakdownProps {
   organizationId: string;
   hackathonId: string;
-  participantId: string;
+  submissionId: string;
   initialScores?: Array<{
     judgeId: string;
     judgeName: string;
     score: number;
   }>;
+  onScoresLoaded?: (average: number | null) => void;
 }
 
 interface JudgeScore {
@@ -43,8 +44,9 @@ interface JudgeScore {
 const IndividualScoresBreakdown = ({
   organizationId,
   hackathonId,
-  participantId,
+  submissionId,
   initialScores,
+  onScoresLoaded,
 }: IndividualScoresBreakdownProps) => {
   const [scores, setScores] = useState<JudgeScore[]>([]);
   const [isLoading, setIsLoading] = useState(!initialScores);
@@ -74,14 +76,13 @@ const IndividualScoresBreakdown = ({
         const res = await getSubmissionScores(
           organizationId,
           hackathonId,
-          participantId
+          submissionId
         );
         if (res.success && Array.isArray(res.data)) {
           // Map API response to internal state shape
           const mappedScores: JudgeScore[] = res.data.map((item: any) => ({
             judgeId: item.judgeId,
             judgeName: item.judgeName,
-            // Ensure totalScore is available, fallback to sum of criteria scores if missing
             totalScore:
               item.totalScore ??
               item.criteriaScores?.reduce(
@@ -89,23 +90,50 @@ const IndividualScoresBreakdown = ({
                 0
               ) ??
               0,
-            score: item.totalScore, // Keep score for backward compatibility if needed
+            score: item.totalScore,
             comment: item.comment,
             criteriaScores: item.criteriaScores,
           }));
           setScores(mappedScores);
+
+          if (onScoresLoaded) {
+            const avg =
+              mappedScores.length > 0
+                ? mappedScores.reduce(
+                    (sum, s) => sum + (s.totalScore ?? 0),
+                    0
+                  ) / mappedScores.length
+                : null;
+            onScoresLoaded(avg);
+          }
         } else if (initialScores) {
-          // Fallback to initialScores if API fails
-          setScores(normalizeInitialScores(initialScores));
+          const normalized = normalizeInitialScores(initialScores);
+          setScores(normalized);
+          if (onScoresLoaded) {
+            const avg =
+              normalized.length > 0
+                ? normalized.reduce((sum, s) => sum + (s.totalScore ?? 0), 0) /
+                  normalized.length
+                : null;
+            onScoresLoaded(avg);
+          }
         }
       } catch (err) {
         reportError(err, {
           context: 'judging-individualScores',
-          participantId,
+          submissionId,
         });
-        // Fallback to initialScores if fetch fails
         if (initialScores) {
-          setScores(normalizeInitialScores(initialScores));
+          const normalized = normalizeInitialScores(initialScores);
+          setScores(normalized);
+          if (onScoresLoaded) {
+            const avg =
+              normalized.length > 0
+                ? normalized.reduce((sum, s) => sum + (s.totalScore ?? 0), 0) /
+                  normalized.length
+                : null;
+            onScoresLoaded(avg);
+          }
         }
       } finally {
         setIsLoading(false);
@@ -114,7 +142,7 @@ const IndividualScoresBreakdown = ({
 
     fetchScores();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, hackathonId, participantId]);
+  }, [organizationId, hackathonId, submissionId]);
 
   const toggleExpand = (judgeId: string) => {
     setExpandedJudges(prev => ({
