@@ -1,10 +1,10 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LockIcon, MailIcon, User } from 'lucide-react';
+import { Eye, EyeOff, LockIcon, MailIcon, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import z from 'zod';
@@ -50,6 +50,7 @@ const SignupForm = ({
   lastMethod,
 }: SignupFormProps) => {
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
   const isGoogleLastUsed = lastMethod === 'google';
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -274,14 +275,25 @@ const SignupForm = ({
                     Password
                   </FormLabel>
                   <FormControl className='h-11 w-full rounded-[12px] border border-[#2B2B2B] bg-[#1C1C1C] p-2.5'>
-                    <div className='flex w-full items-center gap-2.5'>
+                    <div className='relative flex w-full items-center gap-2.5'>
                       <LockIcon className='h-5 w-5 flex-shrink-0 text-[#B5B5B5]' />
                       <Input
                         {...field}
-                        type='password'
+                        type={showPassword ? 'text' : 'password'}
                         placeholder='Enter your password'
-                        className='w-full border-none bg-transparent text-white caret-white placeholder:text-[#B5B5B5] focus-visible:ring-0 focus-visible:ring-offset-0'
+                        className='w-full border-none bg-transparent pr-10 text-white caret-white placeholder:text-[#B5B5B5] focus-visible:ring-0 focus-visible:ring-offset-0'
                       />
+                      <button
+                        type='button'
+                        onClick={() => setShowPassword(!showPassword)}
+                        className='absolute top-3 right-3 text-[#B5B5B5] hover:text-white'
+                      >
+                        {showPassword ? (
+                          <EyeOff className='h-4 w-4' />
+                        ) : (
+                          <Eye className='h-4 w-4' />
+                        )}
+                      </button>
                     </div>
                   </FormControl>
                   <FormMessage />

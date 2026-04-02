@@ -36,7 +36,7 @@ export function ProjectSidebarProgress({
     }
 
     // Validation vote progress — all project types
-    if (projectStatus === 'Validation') {
+    if (projectStatus === 'Validation' || projectStatus === 'VOTING') {
       const validationProgress = Math.min(
         ((voteCounts?.upvotes || 0) / voteGoal) * 100,
         100

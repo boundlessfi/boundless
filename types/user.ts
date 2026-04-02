@@ -8,6 +8,7 @@ export type Theme = 'light' | 'dark' | 'system';
 
 export type ProjectStatus =
   | 'IDEA'
+  | 'VOTING'
   | 'DRAFT'
   | 'PROPOSED'
   | 'APPROVED'

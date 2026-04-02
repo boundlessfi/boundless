@@ -3,7 +3,6 @@ import { Eye, EyeOff, LockIcon, MailIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { UseFormReturn } from 'react-hook-form';
-import z from 'zod';
 import { BoundlessButton } from '../buttons';
 import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
@@ -18,24 +17,15 @@ import {
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
-const formSchema = z
-  .object({
-    email: z.string().email({
-      message: 'Invalid email address',
-    }),
-    password: z.string().min(8, {
-      message: 'Password must be at least 8 characters',
-    }),
-    rememberMe: z.boolean().optional(),
-  })
-  .refine(data => data.rememberMe === true, {
-    message: 'Remember me is required',
-    path: ['rememberMe'],
-  });
+interface LoginFormData {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+}
 
 interface LoginFormProps {
-  form: UseFormReturn<z.infer<typeof formSchema>>;
-  onSubmit: (values: z.infer<typeof formSchema>) => Promise<void>;
+  form: UseFormReturn<LoginFormData>;
+  onSubmit: (values: LoginFormData) => Promise<void>;
   showPassword: boolean;
   setShowPassword: (show: boolean) => void;
   isLoading: boolean;

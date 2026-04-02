@@ -22,6 +22,8 @@ import ReviewStep from './Steps/ReviewStep';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CreationStep } from '@/features/projects/hooks/use-project-creation';
+// DEV-ONLY: Remove this import and <DevPrefillButton /> below to remove prefill
+import DevPrefillButton from './DevPrefill';
 
 export default function CreationLayout() {
   const {
@@ -154,6 +156,8 @@ export default function CreationLayout() {
                 })}
               </div>
             )}
+            {/* DEV-ONLY: Remove to disable prefill */}
+            <DevPrefillButton onPrefill={updateFormData} />
             <Link
               href='/projects'
               className='flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white/40 transition-colors hover:border-white/20 hover:text-white/60'

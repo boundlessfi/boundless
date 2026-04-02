@@ -573,14 +573,79 @@ export const useProjectCreation = () => {
         });
 
         // 3. Sign and Submit via Wallet Kit
-        const result = (await kit.signAndSubmit(tx)) as any;
+        const result = await kit.signAndSubmit(tx);
 
         // 4. Extract results
-        // AssembledTransaction.signAndSubmit returns a result that contains the unmarshaled contract return value
-        if (result && result.result) {
-          onChainId = result.result.unwrap().toString();
-        }
+        // kit.signAndSubmit returns { success, hash, error?, ledger? }
+        // It does NOT include the contract return value, so we need to
+        // fetch the tx result from Stellar RPC to get the campaign ID.
         transactionHash = result.hash;
+
+        if (!result.success) {
+          throw new Error(
+            `Contract transaction failed: ${result.error || 'Unknown error'}`
+          );
+        }
+
+        if (result.hash) {
+          try {
+            const rpcUrl =
+              process.env.NEXT_PUBLIC_STELLAR_RPC_URL ||
+              'https://soroban-testnet.stellar.org';
+            const { rpc, scValToNative } = await import('@stellar/stellar-sdk');
+            const server = new rpc.Server(rpcUrl);
+
+            // The tx may not be confirmed instantly — retry a few times
+            let txResponse;
+            for (let attempt = 0; attempt < 10; attempt++) {
+              txResponse = await server.getTransaction(result.hash);
+              if (txResponse.status === 'SUCCESS') break;
+              if (txResponse.status === 'NOT_FOUND') {
+                await new Promise(r => setTimeout(r, 2000));
+                continue;
+              }
+              break; // FAILED or other terminal status
+            }
+
+            if (txResponse?.status === 'SUCCESS' && txResponse.returnValue) {
+              // create_campaign returns Result<u64>.
+              // On success the runtime strips the Ok wrapper, so
+              // returnValue is the u64 directly.
+              const rv = txResponse.returnValue;
+              const typeName = rv.switch().name;
+              if (typeName === 'scvU64') {
+                onChainId = rv.u64().toString();
+              } else {
+                // Fallback: use scValToNative for wrapped Result or other types
+                const native = scValToNative(rv);
+                if (native !== null && native !== undefined) {
+                  // Handle BigInt, number, or nested Result { tag: 'Ok', values: [val] }
+                  const val =
+                    typeof native === 'object' &&
+                    native?.values?.[0] !== undefined
+                      ? native.values[0]
+                      : native;
+                  onChainId = val.toString();
+                } else {
+                  console.warn('Unexpected returnValue type:', typeName, rv);
+                }
+              }
+            } else if (txResponse?.status === 'FAILED') {
+              throw new Error(
+                'On-chain campaign creation transaction failed. Please try again.'
+              );
+            }
+          } catch (parseErr) {
+            // If it's our own thrown error, re-throw
+            if (
+              parseErr instanceof Error &&
+              parseErr.message.includes('transaction failed')
+            ) {
+              throw parseErr;
+            }
+            console.warn('Could not parse onChainId from tx result:', parseErr);
+          }
+        }
       }
 
       // 5. Publish to backend

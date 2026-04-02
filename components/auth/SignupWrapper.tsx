@@ -14,7 +14,10 @@ const SignupWrapper = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastMethod, setLastMethod] = useState<string | null>(null);
-  setLoadingState(isLoading);
+
+  useEffect(() => {
+    setLoadingState(isLoading);
+  }, [isLoading, setLoadingState]);
 
   useEffect(() => {
     const method = authClient.getLastUsedLoginMethod();
@@ -23,7 +26,6 @@ const SignupWrapper = ({
 
   const handleGoogleSignIn = useCallback(async () => {
     setIsLoading(true);
-    setLoadingState(true);
 
     try {
       await authClient.signIn.social(
@@ -34,11 +36,9 @@ const SignupWrapper = ({
         {
           onRequest: () => {
             setIsLoading(true);
-            setLoadingState(true);
           },
           onError: ctx => {
             setIsLoading(false);
-            setLoadingState(false);
 
             const errorObj = ctx.error || ctx;
             const errorMessage =
@@ -52,7 +52,6 @@ const SignupWrapper = ({
       );
     } catch (error) {
       setIsLoading(false);
-      setLoadingState(false);
 
       const errorMessage =
         error instanceof Error
@@ -61,7 +60,7 @@ const SignupWrapper = ({
 
       toast.error(errorMessage);
     }
-  }, [setLoadingState]);
+  }, []);
 
   return (
     <SignupForm

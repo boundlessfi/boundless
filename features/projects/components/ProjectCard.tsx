@@ -94,6 +94,7 @@ function ProjectCard({
       return 'Submission';
     }
     if (projectStatus === 'IDEA') return 'Draft';
+    if (projectStatus === 'VOTING') return 'Voting';
     if (projectStatus === 'REVIEWING') return 'In Review';
     if (projectStatus === 'ACTIVE') return 'Funding';
     if (projectStatus === 'LIVE') return 'Funded';
@@ -107,6 +108,8 @@ function ProjectCard({
     switch (status) {
       case 'Draft':
         return 'text-amber-400 bg-amber-400/10';
+      case 'Voting':
+        return 'text-purple-400 bg-purple-400/10';
       case 'In Review':
         return 'text-yellow-400 bg-yellow-400/10';
       case 'Funding':
@@ -228,7 +231,9 @@ function ProjectCard({
 
       {/* Progress — contextual per status */}
       <div className='mt-auto px-4 pt-3 sm:px-5'>
-        {(status === 'Draft' || status === 'In Review') && (
+        {(status === 'Draft' ||
+          status === 'Voting' ||
+          status === 'In Review') && (
           <div>
             <div className='flex items-baseline justify-between'>
               <span className='text-xs text-gray-500'>Votes</span>
@@ -299,6 +304,7 @@ function ProjectCard({
       <div className='mt-3 flex items-center justify-between border-t border-neutral-800 px-4 py-3 sm:px-5'>
         {(status === 'Funding' ||
           status === 'Draft' ||
+          status === 'Voting' ||
           status === 'In Review') &&
         fundingEndDate ? (
           <div className='flex items-center gap-2'>
