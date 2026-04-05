@@ -22,6 +22,8 @@ import {
 import { useOptionalAuth } from '@/hooks/use-auth';
 import { MilestoneSubmissionModal } from './MilestoneSubmissionModal';
 import { MilestoneDisputeModal } from './MilestoneDisputeModal';
+import { DisputeStatusBadge } from './DisputeStatusBadge';
+import { DisputeDetailPanel } from './DisputeDetailPanel';
 
 const filterOptions = [
   { value: 'all', label: 'All Milestones', count: 0 },
@@ -42,6 +44,11 @@ const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
   const [selectedFilter, setSelectedFilter] = useState<Status | 'all'>('all');
   const [fetchedMilestones, setFetchedMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
+  const [disputePanelState, setDisputePanelState] = useState<{
+    open: boolean;
+    milestone: Milestone | null;
+    index: number;
+  }>({ open: false, milestone: null, index: 0 });
   const { user } = useOptionalAuth();
 
   const campaignSlug = vm.campaign?.campaignSlug;
@@ -251,6 +258,7 @@ const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
                 key={milestone.id || index}
                 campaignId={vm.campaign!.campaignId}
                 onChainId={onChainId}
+                milestoneId={milestone.id!}
                 milestoneIndex={index}
                 milestoneTitle={milestone.title}
                 onSuccess={refreshMilestones}
@@ -269,30 +277,66 @@ const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
         </div>
       )}
 
-      {/* Backer: Dispute milestone buttons — only when campaign is funded */}
+      {/* Backer: Dispute controls — only when campaign is funded */}
       {isBacker && onChainId && vm.campaign && isFundedOrExecuting && (
         <div className='mb-4 space-y-2'>
           {fetchedMilestones.map((milestone, index) => {
             const status = (milestone.reviewStatus || 'pending').toLowerCase();
-            const canDispute = status === 'submitted' || status === 'approved';
-            if (!canDispute) return null;
+            const hasActiveDispute = !!milestone.disputeStatus;
+            const canDispute =
+              !hasActiveDispute &&
+              (status === 'submitted' || status === 'approved');
+
+            if (!hasActiveDispute && !canDispute) return null;
+
             return (
-              <MilestoneDisputeModal
+              <div
                 key={milestone.id || index}
-                campaignId={vm.campaign!.campaignId}
-                onChainId={onChainId}
-                milestoneIndex={index}
-                milestoneTitle={milestone.title}
-                onSuccess={refreshMilestones}
+                className='flex flex-wrap items-center gap-2'
               >
-                <Button
-                  variant='outline'
-                  size='sm'
-                  className='mr-2 gap-2 border-red-500/50 text-red-400 hover:bg-red-500/10'
-                >
-                  Dispute: {milestone.title}
-                </Button>
-              </MilestoneDisputeModal>
+                {/* Dispute status badge + view details */}
+                {hasActiveDispute && milestone.disputeStatus && (
+                  <>
+                    <DisputeStatusBadge
+                      status={milestone.disputeStatus}
+                      resolution={milestone.disputeResolution}
+                    />
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      className='h-7 px-2 text-xs text-white/60 hover:text-white'
+                      onClick={() =>
+                        setDisputePanelState({
+                          open: true,
+                          milestone,
+                          index,
+                        })
+                      }
+                    >
+                      View dispute — {milestone.title}
+                    </Button>
+                  </>
+                )}
+
+                {/* File new dispute (only when no active dispute) */}
+                {canDispute && (
+                  <MilestoneDisputeModal
+                    campaignId={vm.campaign!.campaignId}
+                    onChainId={onChainId}
+                    milestoneIndex={index}
+                    milestoneTitle={milestone.title}
+                    onSuccess={refreshMilestones}
+                  >
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      className='gap-2 border-red-500/50 text-red-400 hover:bg-red-500/10'
+                    >
+                      Dispute: {milestone.title}
+                    </Button>
+                  </MilestoneDisputeModal>
+                )}
+              </div>
             );
           })}
         </div>
@@ -324,6 +368,18 @@ const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Dispute detail slide-over */}
+      {disputePanelState.milestone && (
+        <DisputeDetailPanel
+          milestone={disputePanelState.milestone}
+          milestoneIndex={disputePanelState.index}
+          open={disputePanelState.open}
+          onOpenChange={open =>
+            setDisputePanelState(prev => ({ ...prev, open }))
+          }
+        />
       )}
     </div>
   );

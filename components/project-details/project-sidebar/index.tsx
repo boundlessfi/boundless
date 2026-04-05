@@ -139,7 +139,9 @@ export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
   const shouldShowProgress =
     vm.projectType === 'campaign' ||
     projectStatus === CampaignStatus.IDEA ||
-    projectStatus === CampaignStatus.VOTING;
+    projectStatus === CampaignStatus.VOTING ||
+    projectStatus === CampaignStatus.FAILED ||
+    projectStatus === CampaignStatus.CANCELLED;
 
   return (
     <div className='w-full space-y-4 sm:space-y-5 lg:space-y-6'>

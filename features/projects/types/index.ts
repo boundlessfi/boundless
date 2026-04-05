@@ -329,6 +329,8 @@ export interface ProjectEdit {
   updatedAt: string;
 }
 
+export type RefundStatus = 'PENDING' | 'PROCESSING' | 'PROCESSED';
+
 export interface Contributor {
   date: string;
   amount: number;
@@ -338,6 +340,11 @@ export interface Contributor {
   name: string;
   image: string;
   message?: string;
+  // Refund fields (populated once boundlessfi/boundless-nestjs#76 lands)
+  refundStatus?: RefundStatus;
+  refundTransactionHash?: string;
+  refundProcessedAt?: string;
+  refundAmount?: number;
 }
 
 export interface TeamMember {
@@ -358,6 +365,9 @@ export interface SocialLink {
   url: string;
   platform: string;
 }
+
+export type DisputeStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'ESCALATED';
+export type DisputeResolution = 'CREATOR_FAVORED' | 'BACKER_FAVORED' | 'SPLIT';
 
 export interface Milestone {
   id?: string;
@@ -383,6 +393,16 @@ export interface Milestone {
   releaseTransactionHash?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Dispute fields (populated once boundlessfi/boundless-nestjs#78 lands)
+  disputeStatus?: DisputeStatus;
+  disputeReason?: string;
+  disputeEvidenceLinks?: string[];
+  disputeEvidenceFiles?: string[];
+  disputeFiledAt?: string;
+  disputeResolvedAt?: string;
+  disputeResolution?: DisputeResolution;
+  disputeAdminResponse?: string;
+  disputeTransactionHash?: string;
 }
 
 export interface User {

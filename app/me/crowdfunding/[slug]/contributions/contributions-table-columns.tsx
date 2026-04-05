@@ -8,6 +8,45 @@ import { getTransactionExplorerUrl } from '@/lib/wallet-utils';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { RefundStatusBadge } from '@/components/crowdfunding/refund-status-badge';
+
+const refundColumn: ColumnDef<Contributor> = {
+  accessorKey: 'refundStatus',
+  header: 'Refund',
+  cell: ({ row }) => {
+    const contributor = row.original;
+    const status = contributor.refundStatus ?? 'PENDING';
+
+    return (
+      <div className='flex items-center gap-2'>
+        <RefundStatusBadge status={status} />
+        {contributor.refundTransactionHash && (
+          <a
+            href={getTransactionExplorerUrl(contributor.refundTransactionHash)}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='text-blue-400 transition-opacity hover:opacity-70'
+            title='View refund transaction'
+          >
+            <ExternalLink className='h-3.5 w-3.5' />
+          </a>
+        )}
+      </div>
+    );
+  },
+};
+
+/**
+ * Returns the contributions table columns.
+ * Pass `showRefund: true` for failed/cancelled campaigns to include the
+ * per-backer refund status column.
+ */
+export function getContributionsTableColumns(
+  showRefund = false
+): ColumnDef<Contributor>[] {
+  const base = contributionsTableColumns;
+  return showRefund ? [...base, refundColumn] : base;
+}
 
 export const contributionsTableColumns: ColumnDef<Contributor>[] = [
   {

@@ -4,8 +4,9 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Target, Calendar } from 'lucide-react';
+import { Target, Calendar, ExternalLink } from 'lucide-react';
 import { Milestone } from '@/features/projects/types';
+import { getTransactionExplorerUrl } from '@/lib/wallet-utils';
 
 interface CampaignMilestonesTabProps {
   milestones: Milestone[];
@@ -134,6 +135,37 @@ export function CampaignMilestonesTab({
                       </span>
                     </div>
                   </div>
+
+                  {milestone.releaseTransactionHash && (
+                    <div className='mt-3 flex items-center justify-between rounded-md border border-green-500/20 bg-green-500/10 px-3 py-2'>
+                      <div className='flex items-center gap-2'>
+                        <div className='h-2 w-2 rounded-full bg-green-400' />
+                        <span className='text-sm font-medium text-green-400'>
+                          Funds Released
+                        </span>
+                        {milestone.completedAt && (
+                          <span className='text-xs text-green-400/70'>
+                            —{' '}
+                            {format(
+                              new Date(milestone.completedAt),
+                              'MMM dd, yyyy'
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      <a
+                        href={getTransactionExplorerUrl(
+                          milestone.releaseTransactionHash
+                        )}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='flex items-center gap-1 text-xs text-green-400 transition-opacity hover:opacity-70'
+                      >
+                        View tx
+                        <ExternalLink className='h-3 w-3' />
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             );

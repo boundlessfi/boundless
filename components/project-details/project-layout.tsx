@@ -13,6 +13,7 @@ import ProjectMilestone from './project-milestone';
 import ProjectVoters from './project-voters';
 import ProjectBackers from './project-backers';
 import { ProjectSidebar } from './project-sidebar';
+import { CampaignEndBanner } from './CampaignEndBanner';
 import { cn } from '@/lib/utils';
 import type { ProjectViewModel } from '@/features/projects/types/view-model';
 
@@ -169,6 +170,7 @@ export function ProjectLayout({
 
           {/* Main Content Area */}
           <div className='min-h-0 min-w-0 flex-1'>
+            <CampaignEndBanner vm={vm} />
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}

@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 interface MilestoneSubmissionModalProps {
   campaignId: string;
   onChainId: string;
+  milestoneId: string;
   milestoneIndex: number;
   milestoneTitle: string;
   onSuccess?: () => void;
@@ -37,6 +38,7 @@ interface MilestoneSubmissionModalProps {
 export function MilestoneSubmissionModal({
   campaignId,
   onChainId,
+  milestoneId,
   milestoneIndex,
   milestoneTitle,
   onSuccess,
@@ -107,7 +109,7 @@ export function MilestoneSubmissionModal({
 
       // Step 2: Record the submission in the backend
       setStep('confirming');
-      await updateMilestone(campaignId, milestoneIndex, {
+      await updateMilestone(campaignId, milestoneId, {
         proofOfWorkLinks: validLinks,
         proofOfWorkFiles: validFiles,
         submissionNotes: submissionNotes || undefined,

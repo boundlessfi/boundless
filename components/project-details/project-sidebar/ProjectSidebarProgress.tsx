@@ -5,7 +5,7 @@ import { ProjectSidebarProgressProps } from './types';
 import { CampaignStatus } from './utils';
 import { Progress } from '@/components/ui/progress';
 import { useCrowdfundContract } from '@/hooks/use-crowdfund-contract';
-import { Shield } from 'lucide-react';
+import { RefreshCw, Shield } from 'lucide-react';
 
 export function ProjectSidebarProgress({
   vm,
@@ -57,6 +57,51 @@ export function ProjectSidebarProgress({
   }, [campaign?.onChainId, getCampaignOnChain]);
 
   const renderProgressSection = () => {
+    if (
+      projectStatus === CampaignStatus.FAILED ||
+      projectStatus === CampaignStatus.CANCELLED
+    ) {
+      const contributors = campaign?.contributors ?? [];
+      const refundedCount = contributors.filter(
+        c => c.refundStatus === 'PROCESSED'
+      ).length;
+      const totalCount = contributors.length;
+      const refundProgress =
+        totalCount > 0 ? (refundedCount / totalCount) * 100 : 0;
+
+      return (
+        <div className='space-y-3'>
+          <div className='flex items-center justify-between text-sm'>
+            <span
+              className={`font-medium ${projectStatus === CampaignStatus.FAILED ? 'text-red-400' : 'text-white/60'}`}
+            >
+              {projectStatus === CampaignStatus.FAILED
+                ? 'Campaign Failed'
+                : 'Campaign Cancelled'}
+            </span>
+          </div>
+          {totalCount > 0 ? (
+            <>
+              <Progress
+                value={refundProgress}
+                className='h-2 bg-zinc-800 [&>div]:bg-amber-500'
+              />
+              <div className='flex items-center gap-1.5 text-xs text-zinc-500'>
+                <RefreshCw className='h-3 w-3' />
+                <span>
+                  {refundedCount}/{totalCount} backers refunded
+                </span>
+              </div>
+            </>
+          ) : (
+            <p className='text-xs text-zinc-500'>
+              Refunds will be processed automatically.
+            </p>
+          )}
+        </div>
+      );
+    }
+
     if (campaign && projectStatus === CampaignStatus.CAMPAIGNING) {
       return (
         <div className='space-y-3'>

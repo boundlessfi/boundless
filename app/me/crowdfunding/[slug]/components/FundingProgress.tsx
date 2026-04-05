@@ -14,6 +14,16 @@ export function FundingProgress({ campaign }: FundingProgressProps) {
     campaign.fundingGoal > 0
       ? (campaign.fundingRaised / campaign.fundingGoal) * 100
       : 0;
+
+  const milestones = campaign.milestones ?? [];
+  const releasedCount = milestones.filter(m => m.releaseTransactionHash).length;
+  const totalReleased = milestones
+    .filter(m => m.releaseTransactionHash)
+    .reduce((sum, m) => sum + m.amount, 0);
+  const disbursementProgress =
+    campaign.fundingGoal > 0
+      ? Math.min((totalReleased / campaign.fundingGoal) * 100, 100)
+      : 0;
   const daysLeft = Math.ceil(
     (new Date(campaign.fundingEndDate).getTime() - new Date().getTime()) /
       (1000 * 60 * 60 * 24)
@@ -70,6 +80,24 @@ export function FundingProgress({ campaign }: FundingProgressProps) {
             </span>
           </div>
         </div>
+
+        {milestones.length > 0 && (
+          <>
+            <Separator className='bg-border' />
+            <div className='space-y-2'>
+              <div className='flex items-center justify-between text-sm'>
+                <span className='text-white/60'>Disbursed</span>
+                <span className='font-medium text-green-400'>
+                  {disbursementProgress.toFixed(1)}%
+                </span>
+              </div>
+              <Progress value={disbursementProgress} className='h-2' />
+              <p className='text-center text-xs text-white/40'>
+                {releasedCount}/{milestones.length} milestones released
+              </p>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

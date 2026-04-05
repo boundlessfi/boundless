@@ -22,19 +22,24 @@ import {
 } from '@tanstack/react-table';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { Contributor } from '@/features/projects/types';
-import { contributionsTableColumns } from './contributions-table-columns';
+import { getContributionsTableColumns } from './contributions-table-columns';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
 interface ContributionsDataTableProps {
   data: Contributor[];
   loading?: boolean;
+  campaignStatus?: string;
 }
 
 export function ContributionsDataTable({
   data,
   loading = false,
+  campaignStatus,
 }: ContributionsDataTableProps) {
+  const showRefund =
+    campaignStatus === 'FAILED' || campaignStatus === 'CANCELLED';
+  const columns = getContributionsTableColumns(showRefund);
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'date', desc: true }, // Sort by date descending by default
   ]);
@@ -48,7 +53,7 @@ export function ContributionsDataTable({
 
   const table = useReactTable({
     data,
-    columns: contributionsTableColumns,
+    columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -117,7 +122,7 @@ export function ContributionsDataTable({
             {loading ? (
               <TableRow>
                 <TableCell
-                  colSpan={contributionsTableColumns.length}
+                  colSpan={columns.length}
                   className='h-24 text-center'
                 >
                   <div className='flex items-center justify-center'>
@@ -145,7 +150,7 @@ export function ContributionsDataTable({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={contributionsTableColumns.length}
+                  colSpan={columns.length}
                   className='h-24 text-center'
                 >
                   <div className='flex flex-col items-center gap-2'>
