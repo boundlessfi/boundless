@@ -11,6 +11,7 @@ export function ProjectSidebarProgress({
   vm,
   projectStatus,
   voteCounts,
+  refreshTrigger,
 }: ProjectSidebarProgressProps) {
   const campaign = vm.campaign;
   const fundingRaised = campaign?.fundingRaised ?? 0;
@@ -54,7 +55,7 @@ export function ProjectSidebarProgress({
     return () => {
       cancelled = true;
     };
-  }, [campaign?.onChainId, getCampaignOnChain]);
+  }, [campaign?.onChainId, getCampaignOnChain, refreshTrigger]);
 
   const renderProgressSection = () => {
     if (

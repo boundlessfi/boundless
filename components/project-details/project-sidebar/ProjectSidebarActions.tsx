@@ -40,6 +40,7 @@ export function ProjectSidebarActions({
   isVoting,
   userVote,
   onVote,
+  onRefresh,
 }: ProjectSidebarActionsProps) {
   const [isSharePopupOpen, setIsSharePopupOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -78,7 +79,7 @@ export function ProjectSidebarActions({
         description: `Your campaign has been cancelled. Tx: ${transactionHash.slice(0, 8)}...`,
       });
 
-      window.location.reload();
+      onRefresh?.();
     } catch (err: unknown) {
       const errorMessage = parseCrowdfundError(err);
       toast.error('Failed to cancel campaign', { description: errorMessage });
@@ -130,6 +131,7 @@ export function ProjectSidebarActions({
           currentRaised={vm.campaign.fundingRaised}
           fundingGoal={vm.campaign.fundingGoal}
           escrowAddress={vm.campaign.escrowAddress}
+          onSuccess={onRefresh}
         >
           <BoundlessButton
             className='bg-primary hover:bg-primary flex h-10 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-semibold text-black shadow-lg transition-all duration-200 hover:shadow-xl sm:h-12 sm:text-base'

@@ -244,7 +244,7 @@ const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
       </div>
 
       {/* Creator: Submit milestone buttons — only when campaign is funded */}
-      {isCreator && onChainId && vm.campaign && !isFundedOrExecuting && (
+      {isCreator && onChainId && vm.campaign && isFundedOrExecuting && (
         <div className='mb-4 space-y-2'>
           {fetchedMilestones.map((milestone, index) => {
             const status = (milestone.reviewStatus || 'pending').toLowerCase();
@@ -323,6 +323,7 @@ const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
                   <MilestoneDisputeModal
                     campaignId={vm.campaign!.campaignId}
                     onChainId={onChainId}
+                    milestoneId={milestone.id!}
                     milestoneIndex={index}
                     milestoneTitle={milestone.title}
                     onSuccess={refreshMilestones}

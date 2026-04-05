@@ -26,6 +26,7 @@ interface FundingModalProps {
   currentRaised: number;
   fundingGoal: number;
   escrowAddress: string;
+  onSuccess?: () => void;
   children: React.ReactNode;
 }
 
@@ -36,6 +37,7 @@ export function FundingModal({
   currentRaised,
   fundingGoal,
   escrowAddress,
+  onSuccess,
   children,
 }: FundingModalProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -109,7 +111,7 @@ export function FundingModal({
       setAnonymous(false);
       setStep('input');
 
-      window.location.reload();
+      onSuccess?.();
     } catch (err: unknown) {
       // This only catches on-chain pledge failures (step 1)
       const errorMessage = parseCrowdfundError(err);

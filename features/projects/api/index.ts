@@ -565,16 +565,17 @@ export const getRefundStatus = async (
  */
 export const submitDisputeEvidence = async (
   campaignIdOrSlug: string,
-  milestoneIndex: number,
+  milestoneId: string,
   data: {
     reason: string;
+    description: string;
     evidenceLinks: string[];
     evidenceFiles: string[];
     transactionHash: string;
   }
 ): Promise<any> => {
   const res = await api.post<any>(
-    `/crowdfunding/${campaignIdOrSlug}/milestones/${milestoneIndex}/dispute`,
+    `/crowdfunding/${campaignIdOrSlug}/milestones/${milestoneId}/disputes`,
     data
   );
   return res.data;

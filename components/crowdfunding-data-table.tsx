@@ -24,6 +24,7 @@ import {
 } from '@tanstack/react-table';
 import { CardContent } from '@/components/ui/card';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CrowdfundingCampaign } from '@/lib/api/types';
 import { getCrowdfundingTableColumns } from './crowdfunding-table-columns';
 import { CrowdfundingTableToolbar } from './crowdfunding-table-toolbar';
@@ -135,14 +136,15 @@ export function CrowdfundingDataTable({
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className='text-muted-foreground h-24 text-center'
-                >
-                  Loading campaigns...
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i} className='border-border'>
+                  {columns.map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className='h-4 w-full' />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
                 <TableRow

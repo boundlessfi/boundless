@@ -7,6 +7,7 @@ export type ProjectStatus = CampaignStatusValue;
 export interface ProjectSidebarProps {
   vm: ProjectViewModel;
   isMobile?: boolean;
+  onRefresh?: () => void;
 }
 
 export interface ProjectSidebarHeaderProps {
@@ -18,6 +19,7 @@ export interface ProjectSidebarProgressProps {
   vm: ProjectViewModel;
   projectStatus: ProjectStatus;
   voteCounts: VoteCountResponse | null;
+  refreshTrigger?: number;
 }
 
 export interface ProjectSidebarActionsProps {
@@ -26,6 +28,7 @@ export interface ProjectSidebarActionsProps {
   isVoting: boolean;
   userVote: 1 | -1 | null;
   onVote: (value: 1 | -1) => void;
+  onRefresh?: () => void;
 }
 
 export interface ProjectSidebarCreatorProps {

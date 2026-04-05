@@ -13,6 +13,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCrowdfundContract } from '@/hooks/use-crowdfund-contract';
 import {
@@ -31,6 +38,7 @@ import { submitDisputeEvidence } from '@/features/projects/api';
 interface MilestoneDisputeModalProps {
   campaignId: string;
   onChainId: string;
+  milestoneId: string;
   milestoneIndex: number;
   milestoneTitle: string;
   onSuccess?: () => void;
@@ -38,6 +46,18 @@ interface MilestoneDisputeModalProps {
 }
 
 type Step = 'input' | 'uploading' | 'signing' | 'saving';
+
+const DISPUTE_REASONS = [
+  { value: 'MILESTONE_NOT_DELIVERED', label: 'Milestone not delivered' },
+  { value: 'POOR_QUALITY_WORK', label: 'Poor quality work' },
+  { value: 'DEADLINE_MISSED', label: 'Deadline missed' },
+  { value: 'MISUSE_OF_FUNDS', label: 'Misuse of funds' },
+  { value: 'COMMUNICATION_ISSUES', label: 'Communication issues' },
+  { value: 'SCOPE_CHANGE', label: 'Scope change' },
+  { value: 'OTHER', label: 'Other' },
+] as const;
+
+type DisputeReason = (typeof DISPUTE_REASONS)[number]['value'];
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const MAX_TOTAL_SIZE = 15 * 1024 * 1024; // 15 MB
@@ -62,13 +82,15 @@ const STEP_DESCRIPTION: Record<Step, string> = {
 export function MilestoneDisputeModal({
   campaignId,
   onChainId,
+  milestoneId,
   milestoneIndex,
   milestoneTitle,
   onSuccess,
   children,
 }: MilestoneDisputeModalProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState<DisputeReason | ''>('');
+  const [description, setDescription] = useState('');
   const [evidenceLinks, setEvidenceLinks] = useState<string[]>([]);
   const [newLink, setNewLink] = useState('');
   const [documents, setDocuments] = useState<File[]>([]);
@@ -81,6 +103,7 @@ export function MilestoneDisputeModal({
 
   const resetForm = () => {
     setReason('');
+    setDescription('');
     setEvidenceLinks([]);
     setNewLink('');
     setDocuments([]);
@@ -140,9 +163,14 @@ export function MilestoneDisputeModal({
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleDispute = async () => {
-    if (!reason || reason.trim().length < 10) {
+    if (!reason) {
+      setError('Please select a reason for the dispute.');
+      return;
+    }
+
+    if (!description || description.trim().length < 10) {
       setError(
-        'Please provide a reason for the dispute (at least 10 characters).'
+        'Please describe the dispute in detail (at least 10 characters).'
       );
       return;
     }
@@ -175,8 +203,9 @@ export function MilestoneDisputeModal({
       // 3. Persist evidence to backend (fire-and-forget — gated on #78)
       setStep('saving');
       try {
-        await submitDisputeEvidence(campaignId, milestoneIndex, {
-          reason: reason.trim(),
+        await submitDisputeEvidence(campaignId, milestoneId, {
+          reason,
+          description: description.trim(),
           evidenceLinks,
           evidenceFiles: uploadedFileUrls,
           transactionHash,
@@ -239,35 +268,60 @@ export function MilestoneDisputeModal({
 
           {isInputStep && (
             <div className='space-y-5'>
-              {/* Reason */}
+              {/* Reason — enum select */}
               <div className='space-y-2'>
                 <Label className='text-sm font-medium'>
                   Reason for Dispute
+                </Label>
+                <Select
+                  value={reason}
+                  onValueChange={v => {
+                    setReason(v as DisputeReason);
+                    if (error) setError(null);
+                  }}
+                >
+                  <SelectTrigger className='w-full'>
+                    <SelectValue placeholder='Select a reason…' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DISPUTE_REASONS.map(r => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Description */}
+              <div className='space-y-2'>
+                <Label className='text-sm font-medium'>
+                  Description
                   <span className='text-muted-foreground ml-1 text-xs font-normal'>
                     (min 10 characters)
                   </span>
                 </Label>
                 <Textarea
                   placeholder='Explain why you believe this milestone has not been properly completed…'
-                  value={reason}
+                  value={description}
                   onChange={e => {
-                    setReason(e.target.value);
+                    setDescription(e.target.value);
                     if (error) setError(null);
                   }}
                   className='min-h-[100px] resize-none'
-                  maxLength={2000}
+                  maxLength={5000}
                 />
                 <div className='flex justify-end'>
                   <span
                     className={`font-mono text-xs tabular-nums ${
-                      reason.length < 10
+                      description.length < 10
                         ? 'text-amber-500'
-                        : reason.length > 1800
+                        : description.length > 4500
                           ? 'text-red-500'
                           : 'text-muted-foreground'
                     }`}
                   >
-                    {reason.length}/2000
+                    {description.length}/5000
                   </span>
                 </div>
               </div>
@@ -431,6 +485,8 @@ export function MilestoneDisputeModal({
                   disabled={
                     isLoading ||
                     !isConnected ||
+                    !reason ||
+                    description.trim().length < 10 ||
                     documents.some(d => d.size > MAX_FILE_SIZE)
                   }
                   variant='destructive'

@@ -22,9 +22,11 @@ export type { ProjectType } from '@/features/projects/types/view-model';
 export function ProjectLayout({
   vm,
   hiddenTabs = [],
+  onRefresh,
 }: {
   vm: ProjectViewModel;
   hiddenTabs?: string[];
+  onRefresh?: () => void;
 }) {
   const isMobile = useIsMobile();
   const searchParams = useSearchParams();
@@ -164,7 +166,11 @@ export function ProjectLayout({
                 'p-4 sm:p-5 lg:p-6'
               )}
             >
-              <ProjectSidebar vm={vm} isMobile={isMobile} />
+              <ProjectSidebar
+                vm={vm}
+                isMobile={isMobile}
+                onRefresh={onRefresh}
+              />
             </div>
           </div>
 
