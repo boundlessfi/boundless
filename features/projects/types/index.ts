@@ -1,6 +1,3 @@
-// ─── Project API Types (/api/projects/*) ────────────────────────────────────
-
-/** Minimal creator shape returned in project responses. */
 export interface ProjectCreator {
   id: string;
   name: string;
@@ -9,7 +6,6 @@ export interface ProjectCreator {
   image: string;
 }
 
-/** Shape of `_count` returned on project entities. */
 export interface ProjectCounts {
   activities: number;
   crowdfundingCampaigns: number;
@@ -20,19 +16,17 @@ export interface ProjectCounts {
   votes: number;
 }
 
-/** Campaign milestone for the draft payload. */
 export interface DraftMilestone {
   title: string;
   description: string;
   deliverable: string;
   fundingPercentage: number;
   amount: number;
-  expectedDeliveryDate: string; // ISO 8601
+  expectedDeliveryDate: string;
   successCriteria: string;
   orderIndex: number;
 }
 
-/** Team member inside a campaign draft. */
 export interface DraftTeamMember {
   name: string;
   role: string;
@@ -41,22 +35,18 @@ export interface DraftTeamMember {
   twitter?: string;
 }
 
-/** Object-form social links (project level, e.g. { twitter: "…", discord: "…" }). */
 export type SocialLinksMap = Record<string, string>;
 
-/** Array-form social links (campaign level, e.g. [{ platform, url }]). */
 export interface SocialLinkEntry {
   platform: string;
   url: string;
 }
 
-/** Contact shape used in drafts and project entities. */
 export interface ProjectContact {
   primary: string;
   backup: string;
 }
 
-/** The nested campaign payload inside `draftData`. */
 export interface CampaignDraftPayload {
   title: string;
   logo?: string;
@@ -76,16 +66,11 @@ export interface CampaignDraftPayload {
   socialLinks: SocialLinkEntry[];
 }
 
-/** `draftData` field on a project entity. */
 export interface ProjectDraftData {
   isCampaign: boolean;
   campaign?: CampaignDraftPayload;
 }
 
-/**
- * Full payload for POST /api/projects/drafts and PATCH /api/projects/{id}/draft.
- * All fields are optional on PATCH (partial autosave).
- */
 export interface ProjectDraftPayload {
   title?: string;
   tagline?: string;
@@ -109,10 +94,6 @@ export interface ProjectDraftPayload {
   draftData?: ProjectDraftData;
 }
 
-/**
- * The canonical project entity returned by the API.
- * Used for draft creation responses, `GET /api/projects/me`, etc.
- */
 export interface Project {
   id: string;
   title: string;
@@ -122,8 +103,8 @@ export interface Project {
   vision: string | null;
   details: string | null;
   category: string;
-  status: string; // e.g. "IDEA", "IN_REVIEW", "APPROVED"
-  publicStatus: string; // e.g. "IN_DEVELOPMENT"
+  status: string;
+  publicStatus: string;
   creatorId: string;
   organizationId: string | null;
   slug: string;
@@ -159,11 +140,9 @@ export interface Project {
   creator: ProjectCreator;
   organization: unknown | null;
   _count: ProjectCounts;
-  // Optionally present on some endpoints
   votes?: number;
 }
 
-/** Crowdfunding campaign embedded in a project detail response. */
 export interface EmbeddedCrowdfundingCampaign {
   id: string;
   projectId: string;
@@ -190,7 +169,6 @@ export interface EmbeddedCrowdfundingCampaign {
   milestones: Milestone[];
 }
 
-/** Full project detail returned by GET /api/projects/{slug}. */
 export interface ProjectDetail extends Project {
   crowdfundingCampaigns: EmbeddedCrowdfundingCampaign[];
   journeyTimeline?: Array<{
@@ -201,7 +179,6 @@ export interface ProjectDetail extends Project {
   }>;
 }
 
-/** Standard API envelope wrapper. */
 export interface ProjectApiResponse<T> {
   success: boolean;
   message: string;
@@ -212,7 +189,6 @@ export interface ProjectApiResponse<T> {
   };
 }
 
-/** Paginated list of projects. */
 export interface ProjectListData {
   projects: Project[];
   pagination?: {
@@ -223,7 +199,6 @@ export interface ProjectListData {
   };
 }
 
-/** Query params for GET /api/projects (public listing). */
 export interface PublicProjectsQuery {
   page?: number;
   limit?: number;
@@ -236,7 +211,6 @@ export interface PublicProjectsQuery {
   sortOrder?: 'asc' | 'desc';
 }
 
-/** Paginated response from GET /api/projects. */
 export interface PaginatedProjectsResponse {
   data: Project[];
   pagination: {
@@ -249,7 +223,6 @@ export interface PaginatedProjectsResponse {
   };
 }
 
-/** Publish/submit request payload. */
 export interface PublishProjectRequest {
   projectId: string;
   onChainId?: string;
@@ -257,14 +230,17 @@ export interface PublishProjectRequest {
   isCampaign: boolean;
 }
 
-/** Params for GET /api/projects/me. */
+export interface UpdateProjectEscrowRequest {
+  onChainId: string;
+  escrowAddress?: string;
+  transactionHash?: string;
+}
+
 export interface GetMyProjectsParams {
   limit?: number;
   offset?: number;
   status?: string;
 }
-
-// ─── Project Edit types ──────────────────────────────────────────────────────
 
 export type ProjectEditType = 'MAJOR' | 'MINOR';
 
@@ -299,8 +275,6 @@ export interface ProjectEdit {
   updatedAt: string;
 }
 
-// ─── Crowdfunding types ───────────────────────────────────────────────────────
-// Crowdfunding types
 export interface Contributor {
   date: string;
   amount: number;
@@ -363,7 +337,6 @@ export interface User {
   twoFactorEnabled: boolean;
 }
 
-// Public profile view for other users
 export interface PublicUserProfile {
   id: string;
   name: string;
@@ -495,10 +468,10 @@ export interface Crowdfunding {
   escrowDetails: any | null;
   creationTxHash: string | null;
   transactionHash: string;
+  onChainId: string | null;
   createdAt: string;
   updatedAt: string;
   project: CrowdfundingProject;
-  // Vote-related properties for UI compatibility
   totalVotes?: number;
   thresholdVotes?: number;
   isVotingActive?: boolean;

@@ -191,7 +191,16 @@ export const getCrowdfundingTableColumns = (
       );
     },
     cell: ({ row }) => {
-      const endDate = new Date(row.original.fundingEndDate);
+      const raw = row.original.fundingEndDate;
+      if (!raw) {
+        return <div className='text-muted-foreground text-sm'>—</div>;
+      }
+
+      const endDate = new Date(raw);
+      if (isNaN(endDate.getTime())) {
+        return <div className='text-muted-foreground text-sm'>—</div>;
+      }
+
       const now = new Date();
       const daysLeft = Math.ceil(
         (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
@@ -291,8 +300,8 @@ export const getCrowdfundingTableColumns = (
                 campaignTitle={campaign.project.title}
                 onSuccess={onDeleteSuccess}
               >
-                <div className='text-reds-500 tsext-sm psx-2 flex cursor-pointer items-center'>
-                  <Trash2 className='text-red-4s00 mr-2 h-4 w-4' />
+                <div className='flex cursor-pointer items-center px-2 text-sm'>
+                  <Trash2 className='mr-2 h-4 w-4' />
                   Delete Campaign
                 </div>
               </DeleteCampaignAlert>

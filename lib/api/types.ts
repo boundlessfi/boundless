@@ -1,7 +1,6 @@
 import { CrowdfundingProject, Crowdfunding } from '@/features/projects/types';
 import type { Hackathon } from '@/types/hackathon/core';
 
-// Backend API Response Structure
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
@@ -47,7 +46,6 @@ export type IdentityVerificationStatus =
   | 'In Review'
   | null;
 
-// User type
 export interface UserProfile {
   firstName: string;
   lastName: string;
@@ -145,9 +143,6 @@ export interface OrganizationLinks {
   others: string;
 }
 
-/**
- * Organization Analytics Trend Data
- */
 export interface OrganizationTrend {
   current: number;
   previous: number;
@@ -156,9 +151,6 @@ export interface OrganizationTrend {
   isPositive: boolean;
 }
 
-/**
- * Organization Analytics Time Series Data Point
- */
 export interface OrganizationTimeSeriesPoint {
   month: string;
   year: number;
@@ -204,13 +196,11 @@ export interface Organization {
   };
 }
 
-// Auth tokens
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
 
-// Register
 export interface RegisterRequest {
   email: string;
   password: string;
@@ -223,29 +213,24 @@ export interface RegisterResponse {
   message: string;
 }
 
-// Login
 export interface LoginRequest {
   email: string;
   password: string;
 }
 export type LoginResponse = AuthTokens;
 
-// GitHub Auth
 export interface GithubAuthRequest {
   code: string;
 }
 export type GithubAuthResponse = AuthTokens;
 
-// Google Auth
 export interface GoogleAuthRequest {
   token: string;
 }
 export type GoogleAuthResponse = AuthTokens;
 
-// GetMe
 export interface GetMeResponse {
   user: User;
-  /** Optional profile display fields (may be populated from user or nested profile). */
   firstName?: string;
   lastName?: string;
   username?: string;
@@ -287,12 +272,10 @@ export interface GetMeResponse {
   }>;
 }
 
-// Logout
 export interface LogoutResponse {
   message: string;
 }
 
-// Verify OTP
 export interface VerifyOtpRequest {
   email: string;
   otp: string;
@@ -302,7 +285,6 @@ export interface VerifyOtpResponse {
   message: string;
 }
 
-// Resend OTP
 export interface ResendOtpRequest {
   email: string;
 }
@@ -454,7 +436,6 @@ export interface ProjectInitResponse {
   [key: string]: unknown;
 }
 
-// Campaign Review and Launch Types
 export interface CampaignDetails {
   id: string;
   title: string;
@@ -510,7 +491,6 @@ export interface ShareLinkResponse {
   };
 }
 
-// Crowdfunding Project Types
 export interface CrowdfundingMilestone {
   name: string;
   description: string;
@@ -578,28 +558,26 @@ export interface CreateCrowdfundingProjectRequest {
   transactionHash: string;
 }
 
-// Step 1: Prepare Project Response
 export interface PrepareCrowdfundingProjectResponse {
   success: boolean;
   message: string;
   data: {
-    unsignedXdr: string; // Transaction to sign
-    escrowAddress: string; // Generated escrow address
-    network: string; // Network identifier
-    projectData: object; // Prepared project data
-    milestoneAmount: number; // Calculated milestone amount
-    mappedMilestones: Array<object>; // Processed milestones
-    teamInvitations: Array<object>; // Team invitations data
+    unsignedXdr: string;
+    escrowAddress: string;
+    network: string;
+    projectData: object;
+    milestoneAmount: number;
+    mappedMilestones: Array<object>;
+    teamInvitations: Array<object>;
   };
 }
 
-// Step 2: Confirm Project Response
 export interface ConfirmCrowdfundingProjectRequest {
-  signedXdr: string; // Signed transaction from user's wallet
-  escrowAddress: string; // From step 1 response
-  projectData: object; // From step 1 response
-  mappedMilestones: Array<object>; // From step 1 response
-  teamInvitations: Array<object>; // Team invitations data
+  signedXdr: string;
+  escrowAddress: string;
+  projectData: object;
+  mappedMilestones: Array<object>;
+  teamInvitations: Array<object>;
 }
 
 export interface ConfirmCrowdfundingProjectResponse {
@@ -803,13 +781,11 @@ export interface CrowdfundData {
   id: string;
 }
 
-// Escrow Response Types
 export interface EscrowResponse {
   status: string;
   unsignedTransaction: string;
 }
 
-// Stakeholders for trustless system
 export interface Stakeholders {
   serviceProvider: string;
   approver: string;
@@ -819,7 +795,6 @@ export interface Stakeholders {
   platformAddress: string;
 }
 
-// Grant system types
 export interface GrantData {
   isGrant: boolean;
   totalBudget: number;
@@ -884,10 +859,9 @@ export interface DeleteCrowdfundingProjectResponse {
   message: string;
 }
 
-// Funding Types
 export interface FundCrowdfundingProjectRequest {
   amount: number;
-  transactionHash?: string;
+  transactionHash: string;
   anonymous?: boolean;
   message?: string;
 }
@@ -907,7 +881,6 @@ export interface FundCrowdfundingProjectResponse {
   };
 }
 
-// Deprecated: Legacy funding types (kept for backward compatibility)
 export interface PrepareFundingRequest {
   amount: number;
   signer: string;
@@ -950,7 +923,6 @@ export interface ConfirmFundingResponse {
   };
 }
 
-// Vote Types
 export interface Vote {
   _id: string;
   userId: string;
@@ -1012,9 +984,6 @@ export interface RemoveVoteResponse {
   };
   message: string;
 }
-
-// Alias for backward compatibility
-// export type CrowdfundingCampaign = CreateCrowdfundingProjectResponse;
 
 export interface AnnouncementAuthor {
   id: string;

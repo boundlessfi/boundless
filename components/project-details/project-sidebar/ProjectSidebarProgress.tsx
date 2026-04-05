@@ -1,7 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { ProjectSidebarProgressProps } from './types';
 import { Progress } from '@/components/ui/progress';
+import { useCrowdfundContract } from '@/hooks/use-crowdfund-contract';
+import { Shield } from 'lucide-react';
 
 export function ProjectSidebarProgress({
   vm,
@@ -15,6 +18,47 @@ export function ProjectSidebarProgress({
 
   const fundingPercentage =
     fundingGoal > 0 ? (fundingRaised / fundingGoal) * 100 : 0;
+
+  // On-chain verification data
+  const { getCampaignOnChain } = useCrowdfundContract();
+  const [onChainData, setOnChainData] = useState<{
+    currentFunding: number;
+    backerCount: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!campaign?.onChainId) return;
+
+    let cancelled = false;
+    getCampaignOnChain(campaign.onChainId)
+      .then(result => {
+        if (cancelled || !result) return;
+        // Result may be a Soroban Result<Campaign> or direct Campaign object
+        // Use unknown intermediate to safely extract fields
+        const raw = result as unknown as Record<string, unknown>;
+        let campaignData: Record<string, unknown> | null = null;
+
+        if (raw.tag === 'Ok' && Array.isArray(raw.values)) {
+          campaignData = raw.values[0] as Record<string, unknown>;
+        } else if ('current_funding' in raw) {
+          campaignData = raw;
+        }
+
+        if (campaignData) {
+          setOnChainData({
+            currentFunding: Number(campaignData.current_funding) / 10_000_000,
+            backerCount: Number(campaignData.backer_count),
+          });
+        }
+      })
+      .catch(() => {
+        // Silently fail — on-chain data is supplementary
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [campaign?.onChainId, getCampaignOnChain]);
 
   const renderProgressSection = () => {
     // Funding progress — only for campaigns in funding phase
@@ -31,6 +75,16 @@ export function ProjectSidebarProgress({
             </span>
           </div>
           <Progress value={fundingPercentage} className='h-2 bg-zinc-800' />
+          {onChainData && (
+            <div className='flex items-center gap-1.5 text-xs text-zinc-500'>
+              <Shield className='h-3 w-3' />
+              <span>
+                On-chain: ${onChainData.currentFunding.toLocaleString()} raised
+                · {onChainData.backerCount} backer
+                {onChainData.backerCount !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
         </div>
       );
     }
@@ -86,6 +140,16 @@ export function ProjectSidebarProgress({
             )}
           </div>
           <Progress value={milestonePercentage} className='h-2 bg-zinc-800' />
+          {onChainData && (
+            <div className='flex items-center gap-1.5 text-xs text-zinc-500'>
+              <Shield className='h-3 w-3' />
+              <span>
+                On-chain: ${onChainData.currentFunding.toLocaleString()} total
+                funded · {onChainData.backerCount} backer
+                {onChainData.backerCount !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
         </div>
       );
     }

@@ -6,7 +6,7 @@ import {
   AlertCircle,
   ArrowRight,
   Rocket,
-  Info,
+  TriangleAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -155,7 +155,20 @@ export default function ReviewStep({ formData, onNavigate }: ReviewStepProps) {
   const requiredFields = allFields.filter(f => f.required);
   const filledRequired = requiredFields.filter(f => isFilled(f.value));
   const allFilled = allFields.filter(f => isFilled(f.value));
-  const isReady = filledRequired.length === requiredFields.length;
+
+  // Milestone percentage validation
+  const milestonePctTotal =
+    formData.isCampaign && formData.milestones && formData.milestones.length > 0
+      ? formData.milestones.reduce(
+          (sum, m) => sum + Number(m.fundingPercentage || 0),
+          0
+        )
+      : null;
+  const milestonePctValid =
+    milestonePctTotal === null || milestonePctTotal === 100;
+
+  const isReady =
+    filledRequired.length === requiredFields.length && milestonePctValid;
   const completionPct =
     requiredFields.length > 0
       ? Math.round((filledRequired.length / requiredFields.length) * 100)
@@ -304,6 +317,35 @@ export default function ReviewStep({ formData, onNavigate }: ReviewStepProps) {
           );
         })}
       </div>
+
+      {/* Milestone percentage warning */}
+      {!milestonePctValid && milestonePctTotal !== null && (
+        <div className='flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 sm:p-5'>
+          <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10'>
+            <TriangleAlert className='h-4 w-4 text-amber-400' />
+          </div>
+          <div className='flex flex-col gap-0.5'>
+            <h4 className='text-sm font-semibold text-amber-300'>
+              Milestone percentages don&apos;t add up
+            </h4>
+            <p className='text-sm text-white/40'>
+              Your milestone funding percentages total{' '}
+              <span className='font-medium text-amber-300'>
+                {milestonePctTotal}%
+              </span>
+              . They must sum to exactly{' '}
+              <span className='font-medium text-white/70'>100%</span> before you
+              can publish.{' '}
+              <button
+                onClick={() => onNavigate('funding')}
+                className='text-amber-300 underline hover:text-amber-200'
+              >
+                Fix milestones
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Ready to launch callout */}
       <div className='border-primary/15 bg-primary/3 flex items-start gap-3 rounded-xl border p-4 sm:p-5'>

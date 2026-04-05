@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Timeline, TimelineItemType } from '@/components/ui/timeline';
 import {
   DropdownMenu,
@@ -7,7 +7,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
-import { ListFilter } from 'lucide-react';
+import { ListFilter, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Status } from './milestone-card';
 import EmptyState from '@/components/EmptyState';
@@ -15,6 +15,9 @@ import { Milestone } from '@/features/projects/types';
 import type { ProjectViewModel } from '@/features/projects/types/view-model';
 import Link from 'next/link';
 import { getCrowdfundingMilestones } from '@/features/projects/api';
+import { useOptionalAuth } from '@/hooks/use-auth';
+import { MilestoneSubmissionModal } from './MilestoneSubmissionModal';
+import { MilestoneDisputeModal } from './MilestoneDisputeModal';
 
 const filterOptions = [
   { value: 'all', label: 'All Milestones', count: 0 },
@@ -35,8 +38,21 @@ const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
   const [selectedFilter, setSelectedFilter] = useState<Status | 'all'>('all');
   const [fetchedMilestones, setFetchedMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useOptionalAuth();
 
   const campaignSlug = vm.campaign?.campaignSlug;
+  const onChainId = vm.campaign?.onChainId;
+  const isCreator = !!(user && user.id === vm.creatorId);
+  const isBacker = !!(
+    user && vm.campaign?.contributors?.some(c => c.userId === user.id)
+  );
+  // Milestones can only be submitted/disputed when the campaign is funded or executing
+  const campaignStatus = (vm.status || '').toUpperCase();
+  const isFundedOrExecuting =
+    campaignStatus === 'LIVE' ||
+    campaignStatus === 'FUNDED' ||
+    campaignStatus === 'EXECUTING' ||
+    vm.campaign?.trustlessWorkStatus === 'funded';
   const inlineMilestones =
     vm.campaign?.milestones ?? vm.submission?.milestones ?? [];
 
@@ -60,6 +76,18 @@ const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
       setLoading(false);
     }
   }, [campaignSlug, inlineMilestones]);
+
+  const refreshMilestones = useCallback(async () => {
+    if (campaignSlug) {
+      try {
+        const data = await getCrowdfundingMilestones(campaignSlug);
+        setFetchedMilestones(data || []);
+      } catch {
+        // Keep current milestones on error
+      }
+    }
+  }, [campaignSlug]);
+
   const milestones: TimelineItemType[] = useMemo(() => {
     if (!fetchedMilestones || fetchedMilestones.length === 0) {
       return [];
@@ -204,6 +232,68 @@ const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
           </Link>
         )}
       </div>
+
+      {/* Creator: Submit milestone buttons — only when campaign is funded */}
+      {isCreator && onChainId && vm.campaign && !isFundedOrExecuting && (
+        <div className='mb-4 space-y-2'>
+          {fetchedMilestones.map((milestone, index) => {
+            const status = (milestone.reviewStatus || 'pending').toLowerCase();
+            const canSubmit =
+              status === 'pending' ||
+              status === 'resubmission_required' ||
+              status === 'awaiting';
+            if (!canSubmit) return null;
+            return (
+              <MilestoneSubmissionModal
+                key={milestone.id || index}
+                campaignId={vm.campaign!.campaignId}
+                onChainId={onChainId}
+                milestoneIndex={index}
+                milestoneTitle={milestone.title}
+                onSuccess={refreshMilestones}
+              >
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='mr-2 gap-2 border-[#ffffff]/24 text-white'
+                >
+                  <Upload className='h-4 w-4' />
+                  Submit: {milestone.title}
+                </Button>
+              </MilestoneSubmissionModal>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Backer: Dispute milestone buttons — only when campaign is funded */}
+      {isBacker && onChainId && vm.campaign && isFundedOrExecuting && (
+        <div className='mb-4 space-y-2'>
+          {fetchedMilestones.map((milestone, index) => {
+            const status = (milestone.reviewStatus || 'pending').toLowerCase();
+            const canDispute = status === 'submitted' || status === 'approved';
+            if (!canDispute) return null;
+            return (
+              <MilestoneDisputeModal
+                key={milestone.id || index}
+                campaignId={vm.campaign!.campaignId}
+                onChainId={onChainId}
+                milestoneIndex={index}
+                milestoneTitle={milestone.title}
+                onSuccess={refreshMilestones}
+              >
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='mr-2 gap-2 border-red-500/50 text-red-400 hover:bg-red-500/10'
+                >
+                  Dispute: {milestone.title}
+                </Button>
+              </MilestoneDisputeModal>
+            );
+          })}
+        </div>
+      )}
 
       <Timeline
         items={filteredMilestones}

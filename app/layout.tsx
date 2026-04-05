@@ -149,8 +149,13 @@ export default function RootLayout({
             position='top-center'
             gap={8}
             offset={16}
+            expand
             visibleToasts={3}
-            closeButton
+            // closeButton
+            style={{
+              borderRadius: '22px',
+            }}
+            richColors
             toastOptions={{
               duration: 4000,
             }}

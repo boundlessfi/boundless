@@ -13,6 +13,8 @@ import { BoundlessButton } from '../buttons';
 import { HackathonCard } from '@/components/landing-page/hackathon/HackathonCard';
 import ProjectCard from '@/features/projects/components/ProjectCard';
 import { Crowdfunding } from '@/features/projects/types';
+import { Button } from '../ui/button';
+import { toast } from 'sonner';
 
 const BRAND_COLOR = '#2EEDAA';
 
@@ -36,6 +38,7 @@ export default function Hero2() {
           <CursorMessage>Community Validation</CursorMessage>
         </CursorBody>
       </Cursor>
+      <Button onClick={() => toast.success('Toast')}>Toast</Button>
 
       <div className='relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
         <div className='mb-8 flex justify-center md:mb-12'>

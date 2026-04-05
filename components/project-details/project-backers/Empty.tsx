@@ -6,12 +6,14 @@ import { useSearchParams } from 'next/navigation';
 
 const Empty = ({
   campaignId,
+  onChainId,
   escrowAddress,
   fundingGoal,
   fundingRaised,
   projectTitle,
 }: {
   campaignId?: string;
+  onChainId?: string | null;
   escrowAddress?: string;
   fundingGoal: number;
   fundingRaised: number;
@@ -40,6 +42,7 @@ const Empty = ({
       {!isSubmission && (
         <FundingModal
           campaignId={campaignId || ''}
+          onChainId={onChainId ?? null}
           projectTitle={projectTitle}
           currentRaised={fundingRaised}
           fundingGoal={fundingGoal}

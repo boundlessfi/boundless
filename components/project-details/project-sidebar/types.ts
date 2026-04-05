@@ -42,4 +42,5 @@ export type ProjectStatus =
   | 'idea'
   | 'pending'
   | 'SUBMITTED'
-  | 'Live';
+  | 'Live'
+  | 'VOTING';

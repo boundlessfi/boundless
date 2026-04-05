@@ -204,7 +204,7 @@ export const getCrowdfundingProjects = async (
  */
 export const getMyCrowdfundingProjects = async (
   page = 1,
-  limit = 3,
+  limit = 10,
   filters?: {
     category?: string;
     status?: string;
@@ -525,6 +525,7 @@ import type {
   ProjectDraftPayload,
   ProjectListData,
   PublishProjectRequest,
+  UpdateProjectEscrowRequest,
   GetMyProjectsParams,
   SubmitProjectEditRequest,
   ProjectEdit,
@@ -618,6 +619,22 @@ export const listFeaturedProjects = async (): Promise<Project[]> => {
   const res =
     await api.get<ProjectApiResponse<ProjectListData>>('/projects/featured');
   return res.data.data?.projects ?? [];
+};
+
+/**
+ * PUT /api/projects/{id}/escrow
+ * Link on-chain campaign data (onChainId, escrowAddress, transactionHash) to a draft
+ * after a successful blockchain deployment. Called between deploy and final publish.
+ */
+export const updateProjectEscrow = async (
+  id: string,
+  data: UpdateProjectEscrowRequest
+): Promise<Project> => {
+  const res = await api.put<ProjectApiResponse<Project>>(
+    `/projects/${id}/escrow`,
+    data
+  );
+  return res.data.data;
 };
 
 /**

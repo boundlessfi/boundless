@@ -12,8 +12,6 @@ import type {
 } from '../types/view-model';
 import type { ParticipantSubmission, Hackathon } from '@/lib/api/hackathons';
 
-// ─── From ProjectDetail (primary path) ────────────────────────────────────────
-
 export function buildFromProjectDetail(
   detail: ProjectDetail
 ): ProjectViewModel {
@@ -101,6 +99,7 @@ function mapEmbeddedCampaign(c: EmbeddedCrowdfundingCampaign): VMCampaign {
   return {
     campaignId: c.id,
     campaignSlug: c.slug,
+    onChainId: c.onChainId ?? null,
     fundingGoal: c.fundingGoal,
     fundingRaised: c.fundingRaised,
     fundingCurrency: c.fundingCurrency,
@@ -114,8 +113,6 @@ function mapEmbeddedCampaign(c: EmbeddedCrowdfundingCampaign): VMCampaign {
     transactionHash: c.transactionHash,
   };
 }
-
-// ─── From Crowdfunding (fallback path) ────────────────────────────────────────
 
 export function buildFromCrowdfunding(
   crowdfund: Crowdfunding
@@ -176,6 +173,7 @@ export function buildFromCrowdfunding(
     campaign: {
       campaignId: crowdfund.id,
       campaignSlug: crowdfund.slug,
+      onChainId: crowdfund.onChainId ?? null,
       fundingGoal: crowdfund.fundingGoal,
       fundingRaised: crowdfund.fundingRaised,
       fundingCurrency: crowdfund.fundingCurrency,
@@ -194,8 +192,6 @@ export function buildFromCrowdfunding(
     voteCount: p._count?.votes ?? p.votes ?? 0,
   };
 }
-
-// ─── From Hackathon Submission ────────────────────────────────────────────────
 
 export function buildFromSubmission(
   submission: ParticipantSubmission & { members?: unknown[] },
@@ -397,8 +393,6 @@ export function buildFromSubmission(
     voteCount: typeof sub.votes === 'number' ? sub.votes : 0,
   };
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function normalizeSocialLinks(
   links: Record<string, string> | SocialLink[] | null | undefined

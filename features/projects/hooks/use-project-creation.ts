@@ -12,7 +12,11 @@ import {
 } from './use-project-queries';
 import { Project } from '@/features/projects/types';
 import crowdfundRegistry from '@/lib/stellar/clients/crowdfundRegistry';
-import { getConnectedKit } from '@/lib/smart-wallet/client';
+import {
+  getConnectedKit,
+  getSmartAccountKit,
+  connectSmartWallet,
+} from '@/lib/smart-wallet/client';
 import { useWalletInfo } from '@/hooks/use-wallet';
 
 export type CreationStep =
@@ -22,6 +26,14 @@ export type CreationStep =
   | 'social'
   | 'funding'
   | 'review';
+
+export type PublishPhase =
+  | 'idle'
+  | 'validating'
+  | 'flushing'
+  | 'deploying'
+  | 'submitting'
+  | 'done';
 
 export interface Milestone {
   id: string;
@@ -49,7 +61,6 @@ export interface SocialLink {
 }
 
 export interface ProjectDraft {
-  // Common Fields
   projectName: string;
   title: string;
   tagline: string;
@@ -69,7 +80,6 @@ export interface ProjectDraft {
   projectWebsite: string;
   demoVideoUrl: string;
   demoVideo: string;
-
   creatorId: string;
   organizationId?: string;
   thumbnail?: string;
@@ -83,8 +93,6 @@ export interface ProjectDraft {
     backup?: string;
   };
   tags: string[];
-
-  // Campaign-specific
   isCampaign: boolean;
   fundingAmount: number;
   milestones: Milestone[];
@@ -92,14 +100,10 @@ export interface ProjectDraft {
   socialLinks: string[];
   escrowId?: string;
   transactionHash?: string;
-
   updatedAt: number;
   id?: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Detect a social platform name from a URL, falling back to the hostname. */
 function detectPlatformFromUrl(url: string): string {
   try {
     const hostname = new URL(url).hostname.toLowerCase().replace('www.', '');
@@ -125,10 +129,6 @@ function detectPlatformFromUrl(url: string): string {
   }
 }
 
-/**
- * Maps the local `ProjectDraft` shape to the API's `ProjectDraftPayload`.
- * Only non-empty values are included — safe for both create and autosave PATCH.
- */
 function toApiPayload(
   data: Partial<ProjectDraft>,
   isCampaign: boolean
@@ -227,13 +227,10 @@ function toApiPayload(
     payload.draftData = { isCampaign: false };
   }
 
-  // Strip undefined keys so PATCH only sends changed fields
   return Object.fromEntries(
     Object.entries(payload).filter(([, v]) => v !== undefined)
   );
 }
-
-// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 const INITIAL_FORM_DATA: Partial<ProjectDraft> = {
   projectName: '',
@@ -273,19 +270,14 @@ export const useProjectCreation = () => {
   const [isCampaign, setIsCampaignState] = useState(initialMode);
   const [lastSaved, setLastSaved] = useState<number | null>(null);
   const [isPublishInProgress, setIsPublishInProgress] = useState(false);
-
-  /** ID assigned after the first successful draft creation. */
   const [draftId, setDraftId] = useState<string | null>(editingId);
-
   const [formData, setFormData] = useState<Partial<ProjectDraft>>({
     ...INITIAL_FORM_DATA,
     isCampaign: initialMode,
   });
 
-  /** Track if we've already synced a loaded project's data into formData */
   const hasLoadedInitial = useRef<string | null>(null);
 
-  // Sync draftId with URL (handles "New Project" click)
   useEffect(() => {
     setDraftId(editingId);
     if (!editingId) {
@@ -295,23 +287,15 @@ export const useProjectCreation = () => {
     }
   }, [editingId, initialMode]);
 
-  // ── Real data fetching ──────────────────────────────────────────────────
-
-  // Fetch recent drafts for the sidebar
   const { data: myDrafts } = useMyProjects({ status: 'IDEA' });
-
-  // Load an existing draft if ID is in the URL
   const { data: loadedProject, isLoading: isLoadingDraft } = useMyProject(
     editingId ?? '',
     !!editingId
   );
 
-  // Sync loaded project into formData
   useEffect(() => {
     if (loadedProject && hasLoadedInitial.current !== loadedProject.id) {
       const draft = loadedProject.draftData?.campaign;
-
-      // Extract social links from the platform-keyed map back to array slots
       const socialValues = loadedProject.socialLinks
         ? Object.values(loadedProject.socialLinks)
         : [];
@@ -371,66 +355,46 @@ export const useProjectCreation = () => {
     }
   }, [loadedProject]);
 
-  // ── React Query mutations ──────────────────────────────────────────────────
-
   const createDraftMutation = useCreateProjectDraft();
   const updateDraftMutation = useUpdateProjectDraft(draftId ?? '');
   const publishMutation = usePublishProject(draftId ?? '');
   const deleteMutation = useDeleteProject();
 
-  /** Helper to extract and format error messages from the API. */
   const formatError = useCallback((error: any): string | null => {
     if (!error) return null;
-
-    // 1. If the API returned a structured 'errors' array (e.g. from a Validator), use those first.
     if (Array.isArray(error.errors) && error.errors.length > 0) {
       return error.errors.map((e: any) => e.message).join('\n');
     }
-
-    // 2. Fallback to the 'message' field (which can be a string or array in NestJS/Express)
     const msg = error.message;
     if (Array.isArray(msg)) return msg.join('\n');
     if (typeof msg === 'string') return msg;
-
     return 'An unexpected error occurred';
   }, []);
 
-  // Derived loading / error states exposed to the UI
   const isPersisting =
     createDraftMutation.isPending || updateDraftMutation.isPending;
   const persistError =
     formatError(createDraftMutation.error) ||
     formatError(updateDraftMutation.error);
-
   const isPublishing = publishMutation.isPending;
   const publishError = formatError(publishMutation.error);
 
-  // ── Autosave logic ─────────────────────────────────────────────────────────
-
-  // Keep the latest formData + isCampaign in a ref so the timer callback
-  // can capture them without becoming a new function on every render.
   const autosaveRef = useRef({ formData, isCampaign, draftId });
   autosaveRef.current = { formData, isCampaign, draftId };
 
   useEffect(() => {
     const timer = setTimeout(async () => {
       const { formData: fd, isCampaign: ic, draftId: id } = autosaveRef.current;
-
-      // Backend requires title with 3–200 chars — skip autosave until we have one
       const title = (fd.title || fd.projectName || '').trim();
       if (title.length < 3) return;
 
       const payload = toApiPayload(fd, ic);
-
       try {
         if (id) {
-          // Already have a draft — patch it
           await updateDraftMutation.mutateAsync(payload);
         } else {
-          // First save — create the draft and store the returned ID
           const created = await createDraftMutation.mutateAsync(payload);
           setDraftId(created.id);
-          // Update URL so refreshing the page reloads this draft
           router.replace(
             `/projects/create?id=${created.id}${ic ? '&mode=campaign' : ''}`,
             { scroll: false }
@@ -438,15 +402,13 @@ export const useProjectCreation = () => {
         }
         setLastSaved(Date.now());
       } catch {
-        // Errors surface through persistError
+        // surfaces through persistError
       }
-    }, 5000); // 5-second debounce
+    }, 5000);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData]);
-
-  // ── Steps ──────────────────────────────────────────────────────────────────
 
   const steps: { key: CreationStep; label: string; hidden?: boolean }[] = [
     { key: 'basic', label: 'Basic Info' },
@@ -458,8 +420,6 @@ export const useProjectCreation = () => {
   ];
 
   const activeSteps = steps.filter(s => !s.hidden);
-
-  // ── Form helpers ───────────────────────────────────────────────────────────
 
   const updateFormData = useCallback((updates: Partial<ProjectDraft>) => {
     setFormData(prev => ({ ...prev, ...updates }));
@@ -486,18 +446,18 @@ export const useProjectCreation = () => {
     }
   };
 
-  // ── Publish ────────────────────────────────────────────────────────────────
-
   const [publishValidationError, setPublishValidationError] = useState<
     string | null
   >(null);
+  const [publishPhase, setPublishPhase] = useState<PublishPhase>('idle');
 
   const handlePublish = useCallback(async () => {
     if (!draftId) return;
 
-    // Pre-flight validation — check fields the backend requires for publishing
+    setPublishPhase('validating');
     const fd = autosaveRef.current.formData;
     const missing: string[] = [];
+
     if (!fd.title && !fd.projectName) missing.push('Project Name');
     if (!fd.description || fd.description.trim().length < 10)
       missing.push('Description (min 10 characters)');
@@ -509,11 +469,23 @@ export const useProjectCreation = () => {
     if (autosaveRef.current.isCampaign) {
       if (!fd.fundingAmount || fd.fundingAmount <= 0)
         missing.push('Funding Amount');
-      if (!fd.milestones || fd.milestones.length === 0)
+      if (!fd.milestones || fd.milestones.length === 0) {
         missing.push('At least one milestone');
+      } else {
+        const totalPct = fd.milestones.reduce(
+          (sum, m) => sum + Number(m.fundingPercentage || 0),
+          0
+        );
+        if (totalPct !== 100) {
+          missing.push(
+            `Milestone percentages must sum to 100% (currently ${totalPct}%)`
+          );
+        }
+      }
     }
 
     if (missing.length > 0) {
+      setPublishPhase('idle');
       setPublishValidationError(
         `Missing required fields: ${missing.join(', ')}`
       );
@@ -523,10 +495,11 @@ export const useProjectCreation = () => {
 
     setIsPublishInProgress(true);
     try {
-      // Flush latest data before publishing
+      setPublishPhase('flushing');
       const isCampaignToPublish = autosaveRef.current.isCampaign;
-      const payload = toApiPayload(fd, isCampaignToPublish);
-      await updateDraftMutation.mutateAsync(payload);
+      await updateDraftMutation.mutateAsync(
+        toApiPayload(fd, isCampaignToPublish)
+      );
 
       let onChainId: string | undefined;
       let transactionHash: string | undefined;
@@ -538,29 +511,39 @@ export const useProjectCreation = () => {
           );
         }
 
+        setPublishPhase('deploying');
+
+        const rawKit = await getSmartAccountKit();
+        if (!rawKit.isConnected) {
+          const connected = await connectSmartWallet();
+          if (!connected) {
+            throw new Error(
+              'Wallet connection was cancelled. Please connect your wallet and try again.'
+            );
+          }
+        }
         const kit = await getConnectedKit();
 
-        // 1. Prepare contract arguments
-        // Scaling to 7 decimals for Soroban assets (e.g. USDC)
         const funding_goal = BigInt(
           Math.floor((fd.fundingAmount || 0) * 10_000_000)
         );
         const asset =
-          'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'; // USDC Testnet
+          process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet'
+            ? 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75'
+            : 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA';
         const deadline = BigInt(
           Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60
-        ); // 90 days
-        const min_pledge = BigInt(10_000_000); // 1 USDC min pledge
-
+        );
+        const min_pledge = BigInt(10_000_000);
         const milestones = fd.milestones || [];
-        const milestone_descs = milestones.map(m => {
-          return [
-            m.title || m.description || 'Milestone',
-            Math.floor((m.fundingPercentage || 0) * 100),
-          ] as [string, number];
-        });
+        const milestone_descs = milestones.map(
+          m =>
+            [
+              m.title || m.description || 'Milestone',
+              Math.floor((m.fundingPercentage || 0) * 100),
+            ] as [string, number]
+        );
 
-        // 2. Build the "create_campaign" transaction
         const tx = await crowdfundRegistry.create_campaign({
           owner: address,
           metadata_cid: draftId,
@@ -572,13 +555,44 @@ export const useProjectCreation = () => {
           submit: true,
         });
 
-        // 3. Sign and Submit via Wallet Kit
-        const result = await kit.signAndSubmit(tx);
+        const simResult = tx.result as
+          | {
+              isOk(): boolean;
+              isErr(): boolean;
+              unwrap(): bigint;
+              unwrapErr(): { message: string };
+            }
+          | bigint
+          | null
+          | undefined;
 
-        // 4. Extract results
-        // kit.signAndSubmit returns { success, hash, error?, ledger? }
-        // It does NOT include the contract return value, so we need to
-        // fetch the tx result from Stellar RPC to get the campaign ID.
+        if (simResult === null || simResult === undefined) {
+          throw new Error(
+            'Contract simulation returned no campaign ID. Please try again.'
+          );
+        }
+
+        if (typeof simResult === 'bigint') {
+          onChainId = simResult.toString();
+        } else if (typeof simResult === 'object') {
+          if (simResult.isErr()) {
+            throw new Error(
+              `Contract simulation error: ${simResult.unwrapErr()?.message ?? 'unknown'}`
+            );
+          }
+          if (simResult.isOk()) {
+            const val = simResult.unwrap();
+            if (val !== undefined && val !== null) onChainId = val.toString();
+          }
+        }
+
+        if (!onChainId) {
+          throw new Error(
+            'Contract simulation returned no campaign ID. Please try again.'
+          );
+        }
+
+        const result = await kit.signAndSubmit(tx);
         transactionHash = result.hash;
 
         if (!result.success) {
@@ -588,67 +602,42 @@ export const useProjectCreation = () => {
         }
 
         if (result.hash) {
-          try {
-            const rpcUrl =
-              process.env.NEXT_PUBLIC_STELLAR_RPC_URL ||
-              'https://soroban-testnet.stellar.org';
-            const { rpc, scValToNative } = await import('@stellar/stellar-sdk');
-            const server = new rpc.Server(rpcUrl);
+          const rpcUrl =
+            process.env.NEXT_PUBLIC_STELLAR_RPC_URL ||
+            'https://soroban-testnet.stellar.org';
 
-            // The tx may not be confirmed instantly — retry a few times
-            let txResponse;
-            for (let attempt = 0; attempt < 10; attempt++) {
-              txResponse = await server.getTransaction(result.hash);
-              if (txResponse.status === 'SUCCESS') break;
-              if (txResponse.status === 'NOT_FOUND') {
-                await new Promise(r => setTimeout(r, 2000));
-                continue;
-              }
-              break; // FAILED or other terminal status
-            }
+          let status: string | undefined;
+          for (let attempt = 0; attempt < 12; attempt++) {
+            const resp = await fetch(rpcUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'getTransaction',
+                params: { hash: result.hash },
+              }),
+            });
+            const json = await resp.json();
+            status = json?.result?.status as string | undefined;
+            if (status === 'SUCCESS' || status === 'FAILED') break;
+            await new Promise(r => setTimeout(r, 2000));
+          }
 
-            if (txResponse?.status === 'SUCCESS' && txResponse.returnValue) {
-              // create_campaign returns Result<u64>.
-              // On success the runtime strips the Ok wrapper, so
-              // returnValue is the u64 directly.
-              const rv = txResponse.returnValue;
-              const typeName = rv.switch().name;
-              if (typeName === 'scvU64') {
-                onChainId = rv.u64().toString();
-              } else {
-                // Fallback: use scValToNative for wrapped Result or other types
-                const native = scValToNative(rv);
-                if (native !== null && native !== undefined) {
-                  // Handle BigInt, number, or nested Result { tag: 'Ok', values: [val] }
-                  const val =
-                    typeof native === 'object' &&
-                    native?.values?.[0] !== undefined
-                      ? native.values[0]
-                      : native;
-                  onChainId = val.toString();
-                } else {
-                  console.warn('Unexpected returnValue type:', typeName, rv);
-                }
-              }
-            } else if (txResponse?.status === 'FAILED') {
-              throw new Error(
-                'On-chain campaign creation transaction failed. Please try again.'
-              );
-            }
-          } catch (parseErr) {
-            // If it's our own thrown error, re-throw
-            if (
-              parseErr instanceof Error &&
-              parseErr.message.includes('transaction failed')
-            ) {
-              throw parseErr;
-            }
-            console.warn('Could not parse onChainId from tx result:', parseErr);
+          if (status === 'FAILED') {
+            throw new Error(
+              'On-chain campaign creation transaction failed. Please try again.'
+            );
+          }
+          if (status !== 'SUCCESS') {
+            throw new Error(
+              `On-chain transaction timed out. Verify transaction ${result.hash} and try again.`
+            );
           }
         }
       }
 
-      // 5. Publish to backend
+      setPublishPhase('submitting');
       await publishMutation.mutateAsync({
         projectId: draftId,
         isCampaign: isCampaignToPublish,
@@ -656,11 +645,13 @@ export const useProjectCreation = () => {
         transactionHash,
       });
 
+      setPublishPhase('done');
       setIsPublishInProgress(false);
-      router.push('/me/projects');
+      router.replace(isCampaignToPublish ? '/me/crowdfunding' : '/me/projects');
     } catch (err: any) {
       console.error('Publishing failed:', err);
       setIsPublishInProgress(false);
+      setPublishPhase('idle');
       setPublishValidationError(
         err.message || 'An error occurred during publishing'
       );
@@ -680,7 +671,6 @@ export const useProjectCreation = () => {
     async (id: string) => {
       try {
         await deleteMutation.mutateAsync(id);
-        // If we just deleted the currently-open draft, reset the form
         if (id === draftId) {
           setDraftId(null);
           setFormData({ ...INITIAL_FORM_DATA, isCampaign });
@@ -689,7 +679,7 @@ export const useProjectCreation = () => {
           router.replace('/projects/create', { scroll: false });
         }
       } catch {
-        // Mutation error surfaces via deleteMutation.error if needed
+        // surfaces via deleteMutation.error
       }
     },
     [draftId, isCampaign, deleteMutation, router]
@@ -707,13 +697,13 @@ export const useProjectCreation = () => {
     prevStep,
     lastSaved,
     recentDrafts,
-    // API state
     draftId,
     isPersisting,
     persistError,
     isPublishing: isPublishInProgress || publishMutation.isPending,
     publishError,
     publishValidationError,
+    publishPhase,
     handlePublish,
     isLoadingDraft,
     onDeleteDraft,

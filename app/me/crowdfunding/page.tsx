@@ -27,6 +27,7 @@ export default function MyCrowdfundingPage() {
     totalPages: 0,
   });
   const [loading, setLoading] = React.useState(false);
+  const [initialLoading, setInitialLoading] = React.useState(true);
 
   const fetchCampaigns = React.useCallback(async (page = 1, limit = 10) => {
     try {
@@ -40,6 +41,7 @@ export default function MyCrowdfundingPage() {
       // Error handled by UI state
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, []);
 
@@ -49,7 +51,7 @@ export default function MyCrowdfundingPage() {
     }
   }, [user, fetchCampaigns]);
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className='mx-auto flex h-screen items-center justify-center py-10'>
         <LoadingSpinner size='xl' />
