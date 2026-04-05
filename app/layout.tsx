@@ -90,7 +90,7 @@ export const metadata: Metadata = {
       'Validate, fund, and grow your project with milestone-based support on Stellar.',
     images: [
       {
-        url: 'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+        url: 'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
         width: 1200,
         height: 630,
         alt: 'Boundless',
@@ -105,7 +105,7 @@ export const metadata: Metadata = {
     description:
       'Validate, fund, and grow your project with milestone-based support on Stellar.',
     images: [
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
     ],
   },
   alternates: {

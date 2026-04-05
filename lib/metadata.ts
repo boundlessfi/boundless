@@ -23,7 +23,7 @@ const baseMetadata = {
   siteName: 'Boundless',
   siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://boundlessfi.xyz',
   defaultOgImage:
-    'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+    'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   twitterHandle: '@boundlessfi',
   locale: 'en_US',
   defaultDescription:
@@ -76,7 +76,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'stellar blockchain',
     ],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   about: {
     title: 'About Us - Boundless',
@@ -84,7 +84,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'Learn about Boundless and our mission to make ideas boundless through milestone-based funding on Stellar.',
     keywords: ['about', 'mission', 'team', 'vision', 'boundless'],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   projects: {
     title: 'Projects - Boundless',
@@ -98,7 +98,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'innovation',
     ],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   grants: {
     title: 'Grants - Boundless',
@@ -106,7 +106,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'Apply for grants and funding opportunities on Boundless. Turn your ideas into reality.',
     keywords: ['grants', 'funding', 'opportunities', 'apply', 'support'],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   hackathons: {
     title: 'Hackathons - Boundless',
@@ -120,7 +120,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'competition',
     ],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   contact: {
     title: 'Contact Us - Boundless',
@@ -128,7 +128,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       "Get in touch with the Boundless team. We're here to help with your questions and feedback.",
     keywords: ['contact', 'support', 'help', 'feedback', 'questions'],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   privacy: {
     title: 'Privacy Policy - Boundless',
@@ -136,7 +136,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'Learn about how Boundless protects your privacy and handles your personal information.',
     keywords: ['privacy', 'policy', 'data protection', 'personal information'],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   terms: {
     title: 'Terms of Service - Boundless',
@@ -144,7 +144,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'Read the terms and conditions for using Boundless services and platform.',
     keywords: ['terms', 'service', 'conditions', 'agreement', 'legal'],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   disclaimer: {
     title: 'Disclaimer - Boundless',
@@ -152,7 +152,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'Important disclaimers and legal information about using the Boundless platform.',
     keywords: ['disclaimer', 'legal', 'information', 'terms'],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   codeOfConduct: {
     title: 'Code of Conduct - Boundless',
@@ -166,7 +166,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'behavior',
     ],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   waitlist: {
     title: 'Join Waitlist - Boundless',
@@ -174,7 +174,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'Join the Boundless waitlist and be among the first to experience the future of project funding.',
     keywords: ['waitlist', 'early access', 'beta', 'signup', 'exclusive'],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
   blog: {
     title: 'Blog - Boundless',
@@ -182,7 +182,7 @@ export const pageMetadata: Record<string, PageMetadata> = {
       'Read the latest insights, updates, and stories from the Boundless community.',
     keywords: ['blog', 'insights', 'updates', 'community', 'news', 'articles'],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },
 };
 
@@ -194,7 +194,7 @@ export const blogMetadata: Record<string, BlogPostMetadata> = {
       'Read the latest insights, updates, and stories from the Boundless community.',
     keywords: ['blog', 'insights', 'updates', 'community', 'news'],
     ogImage:
-      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+      'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
     category: 'general',
   },
 };
