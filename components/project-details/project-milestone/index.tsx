@@ -15,6 +15,10 @@ import { Milestone } from '@/features/projects/types';
 import type { ProjectViewModel } from '@/features/projects/types/view-model';
 import Link from 'next/link';
 import { getCrowdfundingMilestones } from '@/features/projects/api';
+import {
+  CampaignStatus,
+  normalizeCampaignStatus,
+} from '@/features/projects/types';
 import { useOptionalAuth } from '@/hooks/use-auth';
 import { MilestoneSubmissionModal } from './MilestoneSubmissionModal';
 import { MilestoneDisputeModal } from './MilestoneDisputeModal';
@@ -46,12 +50,11 @@ const ProjectMilestone = ({ vm }: ProjectMilestoneProps) => {
   const isBacker = !!(
     user && vm.campaign?.contributors?.some(c => c.userId === user.id)
   );
-  // Milestones can only be submitted/disputed when the campaign is funded or executing
-  const campaignStatus = (vm.status || '').toUpperCase();
+  const campaignStatus = normalizeCampaignStatus(vm.status);
   const isFundedOrExecuting =
-    campaignStatus === 'LIVE' ||
-    campaignStatus === 'FUNDED' ||
-    campaignStatus === 'EXECUTING' ||
+    campaignStatus === CampaignStatus.LIVE ||
+    campaignStatus === CampaignStatus.FUNDED ||
+    campaignStatus === CampaignStatus.EXECUTING ||
     vm.campaign?.trustlessWorkStatus === 'funded';
   const inlineMilestones =
     vm.campaign?.milestones ?? vm.submission?.milestones ?? [];

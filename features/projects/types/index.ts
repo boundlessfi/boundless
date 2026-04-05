@@ -1,3 +1,57 @@
+export const CampaignStatus = {
+  IDEA: 'IDEA',
+  REVIEWING: 'REVIEWING',
+  VOTING: 'VOTING',
+  CAMPAIGNING: 'CAMPAIGNING',
+  FUNDED: 'FUNDED',
+  EXECUTING: 'EXECUTING',
+  LIVE: 'LIVE',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED',
+  DRAFT: 'DRAFT',
+} as const;
+
+export type CampaignStatusValue =
+  (typeof CampaignStatus)[keyof typeof CampaignStatus];
+
+export function normalizeCampaignStatus(
+  raw: string | null | undefined
+): CampaignStatusValue {
+  switch ((raw || '').toUpperCase()) {
+    case 'IDEA':
+    case 'VALIDATION':
+      return CampaignStatus.IDEA;
+    case 'REVIEWING':
+    case 'SUBMITTED':
+    case 'PENDING':
+      return CampaignStatus.REVIEWING;
+    case 'VOTING':
+      return CampaignStatus.VOTING;
+    case 'CAMPAIGNING':
+    case 'FUNDING':
+    case 'ACTIVE':
+      return CampaignStatus.CAMPAIGNING;
+    case 'FUNDED':
+      return CampaignStatus.FUNDED;
+    case 'EXECUTING':
+      return CampaignStatus.EXECUTING;
+    case 'LIVE':
+      return CampaignStatus.LIVE;
+    case 'COMPLETED':
+      return CampaignStatus.COMPLETED;
+    case 'FAILED':
+      return CampaignStatus.FAILED;
+    case 'CANCELLED':
+    case 'CANCELED':
+      return CampaignStatus.CANCELLED;
+    case 'DRAFT':
+      return CampaignStatus.DRAFT;
+    default:
+      return CampaignStatus.REVIEWING;
+  }
+}
+
 export interface ProjectCreator {
   id: string;
   name: string;
@@ -307,15 +361,28 @@ export interface SocialLink {
 
 export interface Milestone {
   id?: string;
-  name: string;
-  amount: number;
-  reviewStatus: string;
-  endDate: string;
-  startDate: string;
-  description: string;
-  fundingPercentage: number;
   title: string;
-  orderIndex?: string;
+  description: string;
+  deliverable?: string;
+  successCriteria?: string;
+  amount: number;
+  fundingPercentage: number;
+  startDate: string;
+  endDate: string;
+  orderIndex?: number;
+  reviewStatus: string;
+  submittedAt?: string;
+  proofOfWorkFiles?: string[];
+  proofOfWorkLinks?: string[];
+  submissionNotes?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  rejectionFeedback?: string;
+  resubmissionDeadline?: string;
+  completedAt?: string;
+  releaseTransactionHash?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface User {

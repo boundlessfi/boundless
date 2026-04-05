@@ -15,6 +15,7 @@ import { useVoteRealtime } from '@/hooks/use-vote-realtime';
 import { getVoteCounts } from '@/lib/api/votes';
 import { toast } from 'sonner';
 import { useCrowdfundContract } from '@/hooks/use-crowdfund-contract';
+import { CampaignStatus } from './utils';
 
 export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
   const searchParams = useSearchParams();
@@ -136,7 +137,9 @@ export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
   };
 
   const shouldShowProgress =
-    vm.projectType === 'campaign' || projectStatus === 'Validation';
+    vm.projectType === 'campaign' ||
+    projectStatus === CampaignStatus.IDEA ||
+    projectStatus === CampaignStatus.VOTING;
 
   return (
     <div className='w-full space-y-4 sm:space-y-5 lg:space-y-6'>

@@ -88,7 +88,7 @@ export function MilestoneCard({
               {/* Milestone Info */}
               <div className='min-w-0 flex-1'>
                 <h3 className='text-foreground truncate text-lg font-semibold transition-colors group-hover:text-amber-500'>
-                  {milestone.name}
+                  {milestone.title}
                 </h3>
                 <p className='text-muted-foreground mt-1 line-clamp-2 text-sm'>
                   {milestone.description}

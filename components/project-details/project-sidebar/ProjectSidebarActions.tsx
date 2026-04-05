@@ -12,6 +12,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { ProjectSidebarActionsProps } from './types';
+import { CampaignStatus } from './utils';
+import type { CampaignStatusValue } from '@/features/projects/types';
 import { BoundlessButton } from '@/components/buttons';
 import { SharePopup } from './SharePopup';
 import { FollowButton } from '@/components/follow';
@@ -46,12 +48,15 @@ export function ProjectSidebarActions({
     useCrowdfundContract();
 
   const isCreator = !!(user && user.id === vm.creatorId);
+  const cancellableStatuses: CampaignStatusValue[] = [
+    CampaignStatus.CAMPAIGNING,
+    CampaignStatus.IDEA,
+    CampaignStatus.REVIEWING,
+  ];
   const canCancel =
     isCreator &&
     vm.campaign?.onChainId &&
-    ['CAMPAIGNING', 'Validation', 'idea', 'pending', 'SUBMITTED'].includes(
-      projectStatus
-    );
+    cancellableStatuses.includes(projectStatus);
 
   const handleShareClick = () => {
     setIsSharePopupOpen(true);
@@ -66,10 +71,7 @@ export function ProjectSidebarActions({
 
     setIsCancelling(true);
     try {
-      // Sign cancel_campaign transaction on-chain
       const transactionHash = await cancelCampaign(vm.campaign.onChainId);
-
-      // Record in backend
       await deleteCrowdfundingProject(vm.campaign.campaignId);
 
       toast.success('Campaign cancelled', {
@@ -87,7 +89,7 @@ export function ProjectSidebarActions({
 
   return (
     <div className='flex flex-wrap gap-2 sm:gap-3'>
-      {projectStatus === 'VOTING' && (
+      {projectStatus === CampaignStatus.VOTING && (
         <div className='group relative inline-block'>
           <BoundlessButton
             onClick={() => onVote(1)}
@@ -120,8 +122,7 @@ export function ProjectSidebarActions({
         </div>
       )}
 
-      {/* Back Project — only for campaigns in funding phase */}
-      {vm.campaign && projectStatus === 'CAMPAIGNING' && (
+      {vm.campaign && projectStatus === CampaignStatus.CAMPAIGNING && (
         <FundingModal
           campaignId={vm.campaign.campaignId}
           onChainId={vm.campaign.onChainId}
@@ -140,7 +141,7 @@ export function ProjectSidebarActions({
         </FundingModal>
       )}
 
-      {projectStatus === 'Completed' && (
+      {projectStatus === CampaignStatus.COMPLETED && (
         <BoundlessButton
           disabled
           className='bg-success-75 border-success-600 text-success-600 flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border text-sm font-semibold shadow-lg transition-all duration-200 sm:h-12 sm:text-base'
@@ -151,7 +152,7 @@ export function ProjectSidebarActions({
         </BoundlessButton>
       )}
 
-      {projectStatus === 'Funded' && (
+      {projectStatus === CampaignStatus.FUNDED && (
         <BoundlessButton
           disabled
           className='bg-secondary-75 border-secondary-600 text-secondary-600 flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border text-sm font-semibold shadow-lg transition-all duration-200 sm:h-12 sm:text-base'
@@ -162,7 +163,6 @@ export function ProjectSidebarActions({
         </BoundlessButton>
       )}
 
-      {/* Cancel Campaign — only for campaign creator in cancellable states */}
       {canCancel && (
         <AlertDialog>
           <AlertDialogTrigger asChild>

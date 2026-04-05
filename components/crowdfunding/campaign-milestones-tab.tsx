@@ -5,15 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Target, Calendar } from 'lucide-react';
-
-interface Milestone {
-  name: string;
-  description: string;
-  amount: number;
-  reviewStatus: string;
-  endDate: string;
-  progress?: number;
-}
+import { Milestone } from '@/features/projects/types';
 
 interface CampaignMilestonesTabProps {
   milestones: Milestone[];
@@ -91,7 +83,7 @@ export function CampaignMilestonesTab({
                 <div className='mb-4 flex items-start justify-between'>
                   <div className='flex-1'>
                     <h4 className='mb-2 text-lg font-semibold text-white'>
-                      {milestone.name}
+                      {milestone.title}
                     </h4>
                     <p className='mb-3 text-white/80'>
                       {milestone.description}

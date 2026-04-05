@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ProjectSidebarProgressProps } from './types';
+import { CampaignStatus } from './utils';
 import { Progress } from '@/components/ui/progress';
 import { useCrowdfundContract } from '@/hooks/use-crowdfund-contract';
 import { Shield } from 'lucide-react';
@@ -19,7 +20,6 @@ export function ProjectSidebarProgress({
   const fundingPercentage =
     fundingGoal > 0 ? (fundingRaised / fundingGoal) * 100 : 0;
 
-  // On-chain verification data
   const { getCampaignOnChain } = useCrowdfundContract();
   const [onChainData, setOnChainData] = useState<{
     currentFunding: number;
@@ -33,8 +33,6 @@ export function ProjectSidebarProgress({
     getCampaignOnChain(campaign.onChainId)
       .then(result => {
         if (cancelled || !result) return;
-        // Result may be a Soroban Result<Campaign> or direct Campaign object
-        // Use unknown intermediate to safely extract fields
         const raw = result as unknown as Record<string, unknown>;
         let campaignData: Record<string, unknown> | null = null;
 
@@ -51,9 +49,7 @@ export function ProjectSidebarProgress({
           });
         }
       })
-      .catch(() => {
-        // Silently fail — on-chain data is supplementary
-      });
+      .catch(() => {});
 
     return () => {
       cancelled = true;
@@ -61,11 +57,7 @@ export function ProjectSidebarProgress({
   }, [campaign?.onChainId, getCampaignOnChain]);
 
   const renderProgressSection = () => {
-    // Funding progress — only for campaigns in funding phase
-    if (
-      campaign &&
-      (projectStatus === 'Funding' || projectStatus === 'CAMPAIGNING')
-    ) {
+    if (campaign && projectStatus === CampaignStatus.CAMPAIGNING) {
       return (
         <div className='space-y-3'>
           <div className='flex items-center justify-between text-sm'>
@@ -89,8 +81,10 @@ export function ProjectSidebarProgress({
       );
     }
 
-    // Validation vote progress — all project types
-    if (projectStatus === 'Validation' || projectStatus === 'VOTING') {
+    if (
+      projectStatus === CampaignStatus.IDEA ||
+      projectStatus === CampaignStatus.VOTING
+    ) {
       const validationProgress = Math.min(
         ((voteCounts?.upvotes || 0) / voteGoal) * 100,
         100
@@ -111,10 +105,11 @@ export function ProjectSidebarProgress({
       );
     }
 
-    // Milestone progress — only for funded/completed campaigns
     if (
       campaign &&
-      (projectStatus === 'Completed' || projectStatus === 'Funded')
+      (projectStatus === CampaignStatus.COMPLETED ||
+        projectStatus === CampaignStatus.FUNDED ||
+        projectStatus === CampaignStatus.EXECUTING)
     ) {
       const completedMilestones =
         campaign.milestones?.filter(m => m.reviewStatus === 'completed')
@@ -154,7 +149,6 @@ export function ProjectSidebarProgress({
       );
     }
 
-    // Default: vote progress
     const defaultProgress = Math.min(
       ((voteCounts?.totalVotes || 0) / voteGoal) * 100,
       100

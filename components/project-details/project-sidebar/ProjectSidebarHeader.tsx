@@ -3,6 +3,7 @@
 import { Calendar, Rocket, Trophy, Layers } from 'lucide-react';
 import Image from 'next/image';
 import { ProjectSidebarHeaderProps } from './types';
+import { CampaignStatus } from './utils';
 import type { ProjectOrigin } from '@/features/projects/types/view-model';
 
 const ORIGIN_CONFIG: Record<
@@ -26,32 +27,43 @@ const ORIGIN_CONFIG: Record<
   },
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  [CampaignStatus.IDEA]: 'Validation',
+  [CampaignStatus.REVIEWING]: 'Reviewing',
+  [CampaignStatus.VOTING]: 'Voting',
+  [CampaignStatus.CAMPAIGNING]: 'Funding',
+  [CampaignStatus.FUNDED]: 'Funded',
+  [CampaignStatus.EXECUTING]: 'Executing',
+  [CampaignStatus.LIVE]: 'Live',
+  [CampaignStatus.COMPLETED]: 'Completed',
+  [CampaignStatus.FAILED]: 'Failed',
+  [CampaignStatus.CANCELLED]: 'Cancelled',
+  [CampaignStatus.DRAFT]: 'Draft',
+};
+
+const STATUS_STYLES: Record<string, string> = {
+  [CampaignStatus.CAMPAIGNING]:
+    'bg-secondary-75 border-secondary-600 text-secondary-600',
+  [CampaignStatus.FUNDED]: 'bg-active-bg border-primary text-primary',
+  [CampaignStatus.COMPLETED]:
+    'bg-success-75 border-success-600 text-success-600',
+  [CampaignStatus.IDEA]: 'bg-warning-75 border-warning-600 text-warning-600',
+  [CampaignStatus.VOTING]: 'bg-warning-75 border-warning-600 text-warning-600',
+  [CampaignStatus.LIVE]: 'bg-active-bg border-primary text-primary',
+  [CampaignStatus.REVIEWING]: 'bg-gray-800 border-gray-700 text-white',
+  [CampaignStatus.DRAFT]: 'bg-gray-800 border-gray-700 text-white',
+  [CampaignStatus.EXECUTING]: 'bg-active-bg border-primary text-primary',
+  [CampaignStatus.FAILED]: 'bg-red-500/10 border-red-500/30 text-red-400',
+  [CampaignStatus.CANCELLED]: 'bg-gray-800 border-gray-700 text-white/50',
+};
+
 export function ProjectSidebarHeader({
   vm,
   projectStatus,
 }: ProjectSidebarHeaderProps) {
-  const getStatusStyles = () => {
-    switch (projectStatus) {
-      case 'CAMPAIGNING':
-        return 'bg-secondary-75 border-secondary-600 text-secondary-600';
-      case 'Funded':
-        return 'bg-active-bg border-primary text-primary';
-      case 'Completed':
-        return 'bg-success-75 border-success-600 text-success-600';
-      case 'Validation':
-        return 'bg-warning-75 border-warning-600 text-warning-600';
-      case 'idea':
-        return 'bg-warning-75 border-warning-600 text-warning-600';
-      case 'Live':
-        return 'bg-active-bg border-primary text-primary';
-      case 'pending':
-      case 'SUBMITTED':
-        return 'bg-gray-800 border-gray-700 text-white';
-      default:
-        return 'text-white border-gray-700';
-    }
-  };
-
+  const statusStyle =
+    STATUS_STYLES[projectStatus] ?? 'text-white border-gray-700';
+  const statusLabel = STATUS_LABELS[projectStatus] ?? projectStatus;
   const originCfg = ORIGIN_CONFIG[vm.origin];
 
   return (
@@ -74,22 +86,19 @@ export function ProjectSidebarHeader({
           </h1>
 
           <div className='flex flex-wrap items-center gap-1.5 sm:gap-2'>
-            {/* Origin badge */}
             <div
               className={`flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-xs ${originCfg.className}`}
             >
               {originCfg.icon}
               {originCfg.label}
             </div>
-            {/* Category badge */}
             <div className='rounded-lg border border-orange-500/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 sm:px-2.5 sm:py-1 sm:text-xs'>
               {vm.category}
             </div>
-            {/* Status badge */}
             <div
-              className={`rounded-lg border px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-xs ${getStatusStyles()}`}
+              className={`rounded-lg border px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-xs ${statusStyle}`}
             >
-              {projectStatus}
+              {statusLabel}
             </div>
           </div>
         </div>

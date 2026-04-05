@@ -217,7 +217,6 @@ export function buildFromSubmission(
   const milestones = [
     {
       id: 'registration',
-      name: 'Registration',
       title: 'Registration',
       description: 'Registration period for the hackathon',
       amount: 0,
@@ -231,7 +230,6 @@ export function buildFromSubmission(
     },
     {
       id: 'submission',
-      name: 'Submission',
       title: 'Submission',
       description: 'Project submission period',
       amount: 0,
@@ -245,7 +243,6 @@ export function buildFromSubmission(
     },
     {
       id: 'judging',
-      name: 'Judging',
       title: 'Judging',
       description: 'Judging period',
       amount: 0,
@@ -256,7 +253,6 @@ export function buildFromSubmission(
     },
     {
       id: 'winners',
-      name: 'Winners Announced',
       title: 'Winners Announced',
       description: 'Announcement of hackathon winners',
       amount: 0,

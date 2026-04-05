@@ -62,7 +62,7 @@ const SortableMilestoneItem = ({
   };
 
   const hasContent =
-    milestone.name ||
+    milestone.title ||
     milestone.description ||
     milestone.startDate ||
     milestone.endDate;
@@ -118,7 +118,7 @@ const SortableMilestoneItem = ({
                   className='hover:text-primary flex items-center gap-2 text-white transition-colors'
                 >
                   <span className='text-sm font-medium'>
-                    {milestone.name || `Milestone ${index + 1}`}
+                    {milestone.title || `Milestone ${index + 1}`}
                   </span>
                   <svg
                     width='16'
@@ -154,11 +154,11 @@ const SortableMilestoneItem = ({
               <div className='space-y-2'>
                 <Input
                   placeholder='Enter milestone name/title'
-                  value={milestone.name}
+                  value={milestone.title}
                   onChange={e =>
                     onMilestoneChange(
                       milestone.id || '',
-                      'name',
+                      'title',
                       e.target.value
                     )
                   }
@@ -257,14 +257,13 @@ export function MilestonesSection({
   const addMilestone = () => {
     const newMilestone: Milestone = {
       id: `milestone-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: '',
+      title: '',
       description: '',
       amount: 0,
       fundingPercentage: 0,
       reviewStatus: 'pending',
       startDate: '',
       endDate: '',
-      title: '',
     };
     onChange([...milestones, newMilestone]);
   };
