@@ -98,6 +98,33 @@ function ProjectContent({
     };
   }, [slug, isSubmission]);
 
+  // Silent background re-fetch after pledge or cancellation — no loading flash,
+  // keeps existing vm if the request fails.
+  const refreshData = async () => {
+    try {
+      if (isSubmission) {
+        const result = await fetchAsSubmission(slug);
+        setVm(result);
+        return;
+      }
+      try {
+        const projectDetail = await getProjectDetailBySlug(slug);
+        setVm(buildFromProjectDetail(projectDetail));
+        return;
+      } catch {
+        /* try next */
+      }
+      try {
+        const crowdfundData = await getCrowdfundingProject(slug);
+        if (crowdfundData) setVm(buildFromCrowdfunding(crowdfundData));
+      } catch {
+        /* fail silently — existing vm stays */
+      }
+    } catch {
+      /* fail silently */
+    }
+  };
+
   if (loading) {
     return <ProjectLoading />;
   }
@@ -109,7 +136,7 @@ function ProjectContent({
   return (
     <div className='mx-auto flex min-h-screen max-w-[1440px] flex-col space-y-10 px-4 py-4 sm:space-y-[60px] sm:px-6 sm:py-5 md:space-y-20 md:px-[50px] lg:px-[80px] xl:px-[100px] 2xl:max-w-[1800px] 2xl:px-[120px]'>
       <div className='flex-1'>
-        <ProjectLayout vm={vm} />
+        <ProjectLayout vm={vm} onRefresh={refreshData} />
       </div>
     </div>
   );

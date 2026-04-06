@@ -4,6 +4,7 @@ import { memo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'nextjs-toploader/app';
 import { cn } from '@/lib/utils';
+import { ChevronUp, MessageSquare, MoveRight, VoteIcon } from 'lucide-react';
 import type { Project } from '@/features/projects/types';
 
 interface ProjectListCardProps {
@@ -13,21 +14,12 @@ interface ProjectListCardProps {
 
 const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   IDEA: { label: 'Draft', style: 'text-amber-400 bg-amber-400/10' },
-  REVIEWING: {
-    label: 'In Review',
-    style: 'text-yellow-400 bg-yellow-400/10',
-  },
+  REVIEWING: { label: 'In Review', style: 'text-yellow-400 bg-yellow-400/10' },
   ACTIVE: { label: 'Active', style: 'text-blue-400 bg-blue-400/10' },
   CAMPAIGNING: { label: 'Funding', style: 'text-blue-400 bg-blue-400/10' },
   LIVE: { label: 'Live', style: 'text-green-400 bg-green-400/10' },
-  COMPLETED: {
-    label: 'Completed',
-    style: 'text-green-400 bg-green-400/10',
-  },
-  APPROVED: {
-    label: 'Approved',
-    style: 'text-emerald-400 bg-emerald-400/10',
-  },
+  COMPLETED: { label: 'Completed', style: 'text-green-400 bg-green-400/10' },
+  APPROVED: { label: 'Approved', style: 'text-emerald-400 bg-emerald-400/10' },
 };
 
 function ProjectListCard({ project, className }: ProjectListCardProps) {
@@ -43,6 +35,10 @@ function ProjectListCard({ project, className }: ProjectListCardProps) {
     style: 'text-gray-400 bg-gray-800/20',
   };
 
+  const votes = project._count?.votes ?? 0;
+  const comments = project._count?.comments ?? 0;
+  const hasActivity = votes > 0 || comments > 0;
+
   const handleClick = () => {
     router.push(`/projects/${project.slug}`);
   };
@@ -51,7 +47,7 @@ function ProjectListCard({ project, className }: ProjectListCardProps) {
     <div
       onClick={handleClick}
       className={cn(
-        'group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-neutral-800 bg-[#0c0c0c] transition-all duration-300 hover:border-neutral-700 hover:shadow-lg hover:shadow-black/40',
+        'group flex cursor-pointer flex-col overflow-hidden rounded-lg border border-neutral-800 bg-[#0c0c0c] transition-all duration-300 hover:border-neutral-700 hover:shadow-lg hover:shadow-black/40',
         className
       )}
     >
@@ -76,7 +72,7 @@ function ProjectListCard({ project, className }: ProjectListCardProps) {
         />
         <div className='absolute inset-0 bg-linear-to-t from-[#0c0c0c] via-black/40 to-transparent' />
 
-        {/* Top: Category + Status */}
+        {/* Category + Status */}
         <div className='absolute top-3 right-3 left-3 flex items-center justify-between'>
           {project.category && (
             <span className='rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-gray-300 backdrop-blur-md'>
@@ -93,7 +89,7 @@ function ProjectListCard({ project, className }: ProjectListCardProps) {
           </span>
         </div>
 
-        {/* Bottom: Logo + Creator */}
+        {/* Logo + Creator */}
         <div className='absolute right-3 bottom-3 left-3 flex items-end justify-between'>
           <div className='flex items-center gap-2'>
             {project.logo && (
@@ -112,9 +108,7 @@ function ProjectListCard({ project, className }: ProjectListCardProps) {
               {project.creator?.image && (
                 <div
                   className='size-5 rounded-full border border-white/20 bg-cover bg-center'
-                  style={{
-                    backgroundImage: `url(${project.creator.image})`,
-                  }}
+                  style={{ backgroundImage: `url(${project.creator.image})` }}
                 />
               )}
               <span className='text-xs font-medium text-white/80 drop-shadow-md'>
@@ -135,27 +129,11 @@ function ProjectListCard({ project, className }: ProjectListCardProps) {
             {project.vision || project.tagline}
           </p>
         )}
-      </div>
 
-      {/* Footer */}
-      <div className='mt-auto flex items-center justify-between border-t border-neutral-800 px-4 py-3 sm:px-5'>
-        <div className='flex items-center gap-3'>
-          {project._count?.votes !== undefined && project._count.votes > 0 && (
-            <span className='text-xs text-gray-500'>
-              {project._count.votes} vote{project._count.votes !== 1 && 's'}
-            </span>
-          )}
-          {project._count?.comments !== undefined &&
-            project._count.comments > 0 && (
-              <span className='text-xs text-gray-500'>
-                {project._count.comments} comment
-                {project._count.comments !== 1 && 's'}
-              </span>
-            )}
-        </div>
+        {/* Tags */}
         {project.tags.length > 0 && (
-          <div className='flex items-center gap-1'>
-            {project.tags.slice(0, 2).map(tag => (
+          <div className='mt-2.5 flex flex-wrap gap-1'>
+            {project.tags.slice(0, 3).map(tag => (
               <span
                 key={tag}
                 className='rounded bg-neutral-800/60 px-1.5 py-0.5 text-[10px] text-gray-500'
@@ -163,13 +141,38 @@ function ProjectListCard({ project, className }: ProjectListCardProps) {
                 {tag}
               </span>
             ))}
-            {project.tags.length > 2 && (
+            {project.tags.length > 3 && (
               <span className='text-[10px] text-gray-600'>
-                +{project.tags.length - 2}
+                +{project.tags.length - 3}
               </span>
             )}
           </div>
         )}
+      </div>
+
+      {/* Footer */}
+      <div className='mt-auto flex items-center justify-between border-t border-neutral-800 px-4 py-3 sm:px-5'>
+        {hasActivity ? (
+          <div className='flex items-center gap-3'>
+            {votes > 0 && (
+              <span className='flex items-center gap-1 text-xs text-gray-500'>
+                <VoteIcon className='h-3.5 w-3.5' />
+                {votes}
+              </span>
+            )}
+            {comments > 0 && (
+              <span className='flex items-center gap-1 text-xs text-gray-500'>
+                <MessageSquare className='h-3 w-3' />
+                {comments}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div />
+        )}
+        <span className='flex items-center gap-1 text-xs text-gray-700 transition-colors group-hover:text-gray-500'>
+          View project <MoveRight className='h-3 w-3' />
+        </span>
       </div>
     </div>
   );

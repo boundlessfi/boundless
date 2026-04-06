@@ -35,6 +35,11 @@
       "source": "didit-protocol/skills",
       "sourceType": "github",
       "computedHash": "ea63a4e88eacfbe3f7c9bfcde14ac56e12fea6463c6e639f6ab23c4ca27d6cea"
+    },
+    "stellar-dev": {
+      "source": "stellar/stellar-dev-skill",
+      "sourceType": "github",
+      "computedHash": "6eb4c009e07890f486774eda6ce4decaef6b171277bd1fd6f6b50302d05ba514"
     }
   }
 }

@@ -22,6 +22,7 @@ export interface VMTeamMember {
 export interface VMCampaign {
   campaignId: string;
   campaignSlug: string;
+  onChainId: string | null;
   fundingGoal: number;
   fundingRaised: number;
   fundingCurrency: string;
@@ -42,13 +43,10 @@ export interface VMSubmission {
 }
 
 export interface ProjectViewModel {
-  // Identity
   id: string;
   slug: string;
   projectType: ProjectType;
   origin: ProjectOrigin;
-
-  // Display
   title: string;
   tagline: string | null;
   description: string;
@@ -62,14 +60,10 @@ export interface ProjectViewModel {
   tags: string[];
   createdAt: string;
   updatedAt: string;
-
-  // Creator
   creator: VMCreator;
   creatorId: string;
   organizationId: string | null;
   organization: unknown | null;
-
-  // Links
   socialLinks: SocialLink[];
   githubUrl: string | null;
   gitlabUrl: string | null;
@@ -80,17 +74,9 @@ export interface ProjectViewModel {
   pitchVideoUrl: string | null;
   whitepaper: string | null;
   pitchDeck: string | null;
-
-  // Team
   team: VMTeamMember[];
-
-  // Campaign-specific (null for non-campaign projects)
   campaign: VMCampaign | null;
-
-  // Submission-specific (null for non-submissions)
   submission: VMSubmission | null;
-
-  // Voting
   voting: unknown | null;
   voteCount: number;
 }

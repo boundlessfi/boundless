@@ -50,7 +50,7 @@ export function MilestoneDetailHeader({
         </Button>
         <div className='flex-1'>
           <h1 className='text-3xl font-bold tracking-tight'>
-            {milestone.name}
+            {milestone.title}
           </h1>
         </div>
       </div>

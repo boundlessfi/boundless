@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { DollarSign, TrendingUp, Users, Calendar } from 'lucide-react';
+import { Milestone } from '@/features/projects/types';
+import { FundDisbursementTracker } from './fund-disbursement-tracker';
 
 interface Contributor {
   name: string;
@@ -22,6 +24,7 @@ interface CampaignFundingTabProps {
   fundingGoal: number;
   fundingCurrency: string;
   fundingEndDate: string;
+  milestones?: Milestone[];
 }
 
 export function CampaignFundingTab({
@@ -30,6 +33,7 @@ export function CampaignFundingTab({
   fundingGoal,
   fundingCurrency,
   fundingEndDate,
+  milestones = [],
 }: CampaignFundingTabProps) {
   const fundingProgress =
     fundingGoal > 0 ? (fundingRaised / fundingGoal) * 100 : 0;
@@ -181,6 +185,15 @@ export function CampaignFundingTab({
           </div>
         </CardContent>
       </Card>
+
+      {/* Fund Disbursements */}
+      {milestones.length > 0 && (
+        <FundDisbursementTracker
+          milestones={milestones}
+          fundingGoal={fundingGoal}
+          fundingCurrency={fundingCurrency}
+        />
+      )}
     </div>
   );
 }

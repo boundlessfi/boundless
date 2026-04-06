@@ -67,6 +67,7 @@ export function CampaignTabs({ campaign }: CampaignTabsProps) {
           fundingGoal={campaign.fundingGoal}
           fundingCurrency={campaign.fundingCurrency}
           fundingEndDate={campaign.fundingEndDate}
+          milestones={campaign.milestones || []}
         />
       </TabsContent>
     </Tabs>

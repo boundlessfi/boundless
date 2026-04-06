@@ -174,7 +174,7 @@ const ValidationFlow: React.FC<ValidationFlowProps> = ({ project, onVote }) => {
 
         <div className='flex justify-center'>
           <Image
-            src='https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png'
+            src='https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png'
             alt='Boundless Logo'
             width={500}
             height={280}
@@ -245,11 +245,8 @@ const ValidationFlow: React.FC<ValidationFlowProps> = ({ project, onVote }) => {
                   className='flex w-full items-center justify-between bg-[#2A2A2A] p-4 text-[#F5F5F5] transition-colors hover:bg-[#2A2A2A]/80'
                 >
                   <div className='text-left'>
-                    <h4 className='mb-1 text-xs font-medium text-[#B5B5B5]'>
-                      {milestone.title}
-                    </h4>
                     <span className='text-sm font-medium'>
-                      {milestone.name}
+                      {milestone.title}
                     </span>
                   </div>
                   {expandedMilestones.includes(index) ? (

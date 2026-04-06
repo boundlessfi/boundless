@@ -15,25 +15,29 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { contributeToProject } from '@/features/projects/api';
-import { useWalletInfo } from '@/hooks/use-wallet';
+import { useCrowdfundContract } from '@/hooks/use-crowdfund-contract';
 import { Loader2, DollarSign, MessageSquare, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FundingModalProps {
   campaignId: string;
+  onChainId: string | null;
   projectTitle: string;
   currentRaised: number;
   fundingGoal: number;
   escrowAddress: string;
+  onSuccess?: () => void;
   children: React.ReactNode;
 }
 
 export function FundingModal({
   campaignId,
+  onChainId,
   projectTitle,
   currentRaised,
   fundingGoal,
   escrowAddress,
+  onSuccess,
   children,
 }: FundingModalProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,8 +47,7 @@ export function FundingModal({
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'input' | 'signing' | 'confirming'>('input');
   const [error, setError] = useState<string | null>(null);
-  const walletInfo = useWalletInfo();
-  const address = walletInfo?.address || '';
+  const { isConnected, pledge, parseCrowdfundError } = useCrowdfundContract();
 
   const remainingGoal = Math.max(0, fundingGoal - currentRaised);
   const progressPercentage = (currentRaised / fundingGoal) * 100;
@@ -62,34 +65,57 @@ export function FundingModal({
       return;
     }
 
+    if (!isConnected) {
+      setError('Please connect your wallet to contribute');
+      return;
+    }
+
+    if (!onChainId) {
+      setError('This campaign is not registered on-chain yet');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await contributeToProject(campaignId, {
-        amount: parseFloat(amount),
-        message: message || undefined,
-        anonymous,
+      // Step 1: Sign and submit the pledge transaction on-chain
+      setStep('signing');
+      const transactionHash = await pledge(onChainId, parseFloat(amount));
+
+      // Step 2: Record the contribution in the backend
+      // If this fails, the on-chain pledge already succeeded — show success anyway
+      setStep('confirming');
+      try {
+        await contributeToProject(campaignId, {
+          amount: parseFloat(amount),
+          message: message || undefined,
+          anonymous,
+          transactionHash,
+        });
+      } catch (backendErr) {
+        console.warn(
+          '[FundingModal] Backend recording failed (on-chain pledge succeeded):',
+          backendErr
+        );
+      }
+
+      toast.success('Thank you for your contribution!', {
+        description: `You've successfully funded $${parseFloat(amount).toLocaleString()} USDC`,
       });
 
-      if (data.success) {
-        toast.success('Thank you for your contribution!', {
-          description: `You've successfully funded $${parseFloat(amount).toLocaleString()} USDC`,
-        });
+      // Success - close modal and refresh data
+      setIsOpen(false);
+      setAmount('');
+      setMessage('');
+      setAnonymous(false);
+      setStep('input');
 
-        // Success - close modal and refresh data
-        setIsOpen(false);
-        setAmount('');
-        setMessage('');
-        setAnonymous(false);
-        setStep('input');
-
-        window.location.reload();
-      } else {
-        throw new Error(data.message || 'Failed to contribute');
-      }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during contribution');
+      onSuccess?.();
+    } catch (err: unknown) {
+      // This only catches on-chain pledge failures (step 1)
+      const errorMessage = parseCrowdfundError(err);
+      setError(errorMessage);
       setStep('input');
     } finally {
       setIsLoading(false);
@@ -97,7 +123,14 @@ export function FundingModal({
   };
 
   const getStepMessage = () => {
-    return 'Enter the amount you want to contribute';
+    switch (step) {
+      case 'signing':
+        return 'Please approve the transaction in your wallet';
+      case 'confirming':
+        return 'Recording your contribution...';
+      default:
+        return 'Enter the amount you want to contribute';
+    }
   };
 
   return (
@@ -221,6 +254,12 @@ export function FundingModal({
                 </div>
               </div>
 
+              {!isConnected && (
+                <div className='rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-600'>
+                  Please connect your wallet to contribute to this campaign.
+                </div>
+              )}
+
               {error && (
                 <div className='border-destructive/50 bg-destructive/10 text-destructive rounded-lg border p-3 text-sm'>
                   {error}
@@ -238,7 +277,12 @@ export function FundingModal({
                 </Button>
                 <Button
                   onClick={handleFund}
-                  disabled={!amount || parseFloat(amount) <= 0 || isLoading}
+                  disabled={
+                    !amount ||
+                    parseFloat(amount) <= 0 ||
+                    isLoading ||
+                    !isConnected
+                  }
                   className='flex-1'
                 >
                   {isLoading ? (

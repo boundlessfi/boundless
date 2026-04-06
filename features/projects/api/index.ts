@@ -204,7 +204,7 @@ export const getCrowdfundingProjects = async (
  */
 export const getMyCrowdfundingProjects = async (
   page = 1,
-  limit = 3,
+  limit = 10,
   filters?: {
     category?: string;
     status?: string;
@@ -393,7 +393,7 @@ export const validateMilestoneSubmission = async (
  */
 export const updateMilestone = async (
   campaignIdOrSlug: string,
-  milestoneIndex: number,
+  milestoneId: string,
   data: {
     status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
     submissionNotes?: string;
@@ -404,7 +404,7 @@ export const updateMilestone = async (
   }
 ): Promise<any> => {
   const res = await api.put<any>(
-    `/crowdfunding/${campaignIdOrSlug}/milestones/${milestoneIndex}`,
+    `/crowdfunding/${campaignIdOrSlug}/milestones/${milestoneId}`,
     data
   );
   return res.data;
@@ -516,6 +516,71 @@ export const contributeToProject = async (
   return res.data;
 };
 
+/**
+ * Get per-backer refund status for a failed/cancelled campaign.
+ *
+ * NOTE: This endpoint is gated on boundlessfi/boundless-nestjs#76.
+ * The caller should wrap this in try/catch and fall back to
+ * the contributor data already present on the campaign object.
+ *
+ * @param campaignIdOrSlug - Campaign ID or slug
+ * @returns Promise with array of per-backer refund records
+ */
+export const getRefundStatus = async (
+  campaignIdOrSlug: string
+): Promise<
+  Array<{
+    userId: string;
+    refundStatus: 'PENDING' | 'PROCESSING' | 'PROCESSED';
+    refundTransactionHash?: string;
+    refundProcessedAt?: string;
+    refundAmount?: number;
+  }>
+> => {
+  const res = await api.get<
+    ApiResponse<
+      Array<{
+        userId: string;
+        refundStatus: 'PENDING' | 'PROCESSING' | 'PROCESSED';
+        refundTransactionHash?: string;
+        refundProcessedAt?: string;
+        refundAmount?: number;
+      }>
+    >
+  >(`/crowdfunding/${campaignIdOrSlug}/refunds`);
+  return res.data.data ?? [];
+};
+
+/**
+ * Persist dispute reason + evidence to the backend after the on-chain
+ * dispute_milestone transaction is confirmed.
+ *
+ * NOTE: This endpoint is gated on boundlessfi/boundless-nestjs#78.
+ * The caller should wrap this in try/catch and swallow errors until
+ * the backend PR lands.
+ *
+ * @param campaignIdOrSlug - Campaign ID or slug
+ * @param milestoneIndex   - 0-based milestone index
+ * @param data             - Dispute details to persist
+ */
+export const submitDisputeEvidence = async (
+  campaignIdOrSlug: string,
+  milestoneId: string,
+  data: {
+    reason: string;
+    description: string;
+    evidenceLinks: string[];
+    evidenceFiles: string[];
+    transactionHash: string;
+  }
+): Promise<any> => {
+  const res = await api.post<any>(
+    `/crowdfunding/${campaignIdOrSlug}/milestones/${milestoneId}/disputes`,
+    data
+  );
+  return res.data;
+};
+
 // ─── Project API (/api/projects/*) ───────────────────────────────────────────
 
 import type {
@@ -525,6 +590,7 @@ import type {
   ProjectDraftPayload,
   ProjectListData,
   PublishProjectRequest,
+  UpdateProjectEscrowRequest,
   GetMyProjectsParams,
   SubmitProjectEditRequest,
   ProjectEdit,
@@ -618,6 +684,22 @@ export const listFeaturedProjects = async (): Promise<Project[]> => {
   const res =
     await api.get<ProjectApiResponse<ProjectListData>>('/projects/featured');
   return res.data.data?.projects ?? [];
+};
+
+/**
+ * PUT /api/projects/{id}/escrow
+ * Link on-chain campaign data (onChainId, escrowAddress, transactionHash) to a draft
+ * after a successful blockchain deployment. Called between deploy and final publish.
+ */
+export const updateProjectEscrow = async (
+  id: string,
+  data: UpdateProjectEscrowRequest
+): Promise<Project> => {
+  const res = await api.put<ProjectApiResponse<Project>>(
+    `/projects/${id}/escrow`,
+    data
+  );
+  return res.data.data;
 };
 
 /**

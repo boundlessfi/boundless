@@ -14,6 +14,7 @@ const ProjectBackers = ({ vm }: { vm: ProjectViewModel }) => {
     return (
       <Empty
         campaignId={vm.campaign?.campaignId}
+        onChainId={vm.campaign?.onChainId}
         escrowAddress={vm.campaign?.escrowAddress}
         fundingGoal={vm.campaign?.fundingGoal ?? 0}
         fundingRaised={vm.campaign?.fundingRaised ?? 0}

@@ -13,6 +13,7 @@ import ProjectMilestone from './project-milestone';
 import ProjectVoters from './project-voters';
 import ProjectBackers from './project-backers';
 import { ProjectSidebar } from './project-sidebar';
+import { CampaignEndBanner } from './CampaignEndBanner';
 import { cn } from '@/lib/utils';
 import type { ProjectViewModel } from '@/features/projects/types/view-model';
 
@@ -21,9 +22,11 @@ export type { ProjectType } from '@/features/projects/types/view-model';
 export function ProjectLayout({
   vm,
   hiddenTabs = [],
+  onRefresh,
 }: {
   vm: ProjectViewModel;
   hiddenTabs?: string[];
+  onRefresh?: () => void;
 }) {
   const isMobile = useIsMobile();
   const searchParams = useSearchParams();
@@ -163,12 +166,17 @@ export function ProjectLayout({
                 'p-4 sm:p-5 lg:p-6'
               )}
             >
-              <ProjectSidebar vm={vm} isMobile={isMobile} />
+              <ProjectSidebar
+                vm={vm}
+                isMobile={isMobile}
+                onRefresh={onRefresh}
+              />
             </div>
           </div>
 
           {/* Main Content Area */}
           <div className='min-h-0 min-w-0 flex-1'>
+            <CampaignEndBanner vm={vm} />
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}

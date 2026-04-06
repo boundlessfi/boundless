@@ -14,15 +14,29 @@ import { VoteCountResponse, VoteEntityType, VoteType } from '@/types/votes';
 import { useVoteRealtime } from '@/hooks/use-vote-realtime';
 import { getVoteCounts } from '@/lib/api/votes';
 import { toast } from 'sonner';
+import { useCrowdfundContract } from '@/hooks/use-crowdfund-contract';
+import { CampaignStatus } from './utils';
 
-export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
+export function ProjectSidebar({
+  vm,
+  isMobile = false,
+  onRefresh,
+}: ProjectSidebarProps) {
   const searchParams = useSearchParams();
   const isSubmission = searchParams.get('type') === 'submission';
   const entityType = isSubmission
     ? VoteEntityType.HACKATHON_SUBMISSION
     : VoteEntityType.CROWDFUNDING_CAMPAIGN;
 
+  const { voteCampaign, isConnected: isWalletConnected } =
+    useCrowdfundContract();
   const [isVoting, setIsVoting] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleRefresh = () => {
+    setRefreshTrigger(t => t + 1);
+    onRefresh?.();
+  };
   const [voteCounts, setVoteCounts] = useState<VoteCountResponse | null>(
     vm.voting
       ? {
@@ -50,7 +64,6 @@ export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
   const projectStatus = getProjectStatus(vm);
   const projectId = vm.id;
 
-  // Real-time vote updates
   useVoteRealtime(
     {
       entityType: VoteEntityType.CROWDFUNDING_CAMPAIGN,
@@ -99,7 +112,7 @@ export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
             (response as unknown as VoteCountResponse)
         );
       } catch {
-        // Silently fail - voting data is not critical
+        // non-critical
       }
     };
 
@@ -111,6 +124,14 @@ export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
 
     setIsVoting(true);
     try {
+      if (vm.campaign?.onChainId && isWalletConnected) {
+        try {
+          await voteCampaign(vm.campaign.onChainId, value === 1 ? 1 : 0);
+        } catch {
+          // non-fatal: no vote session may exist
+        }
+      }
+
       await createVote({
         projectId: vm.id,
         entityType: entityType,
@@ -126,7 +147,11 @@ export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
   };
 
   const shouldShowProgress =
-    vm.projectType === 'campaign' || projectStatus === 'Validation';
+    vm.projectType === 'campaign' ||
+    projectStatus === CampaignStatus.IDEA ||
+    projectStatus === CampaignStatus.VOTING ||
+    projectStatus === CampaignStatus.FAILED ||
+    projectStatus === CampaignStatus.CANCELLED;
 
   return (
     <div className='w-full space-y-4 sm:space-y-5 lg:space-y-6'>
@@ -146,6 +171,7 @@ export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
             vm={vm}
             projectStatus={projectStatus}
             voteCounts={voteCounts}
+            refreshTrigger={refreshTrigger}
           />
         </div>
       )}
@@ -162,6 +188,7 @@ export function ProjectSidebar({ vm, isMobile = false }: ProjectSidebarProps) {
               : null
         }
         onVote={handleVote}
+        onRefresh={handleRefresh}
       />
 
       {!isMobile && (

@@ -180,7 +180,7 @@ export default function MilestoneDetailPage({ params }: PageProps) {
 
       toast('Updating milestone...');
 
-      await updateMilestone(campaign.slug, milestoneIndex, {
+      await updateMilestone(campaign.slug, String(milestoneIndex), {
         status: data.status as
           | 'pending'
           | 'in_progress'

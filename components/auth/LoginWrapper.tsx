@@ -40,6 +40,10 @@ const LoginWrapper = ({
   const [lastMethod, setLastMethod] = useState<string | null>(null);
   const [twoFactorRequired, setTwoFactorRequired] = useState(false);
 
+  useEffect(() => {
+    setLoadingState(isLoading);
+  }, [isLoading, setLoadingState]);
+
   const rawCallbackUrl =
     callbackUrlProp ??
     (searchParams.get('callbackUrl')
@@ -150,7 +154,6 @@ const LoginWrapper = ({
 
   const handleGoogleSignIn = useCallback(async () => {
     setIsLoading(true);
-    setLoadingState(true);
 
     try {
       await authClient.signIn.social(
@@ -161,11 +164,9 @@ const LoginWrapper = ({
         {
           onRequest: () => {
             setIsLoading(true);
-            setLoadingState(true);
           },
           onError: ctx => {
             setIsLoading(false);
-            setLoadingState(false);
 
             const errorObj = ctx.error || ctx;
             const errorMessage =
@@ -179,7 +180,6 @@ const LoginWrapper = ({
       );
     } catch (error) {
       setIsLoading(false);
-      setLoadingState(false);
 
       const errorMessage =
         error instanceof Error
@@ -188,12 +188,11 @@ const LoginWrapper = ({
 
       toast.error(errorMessage);
     }
-  }, [setLoadingState, callbackUrl]);
+  }, [callbackUrl]);
 
   const onSubmit = useCallback(
     async (values: FormData) => {
       setIsLoading(true);
-      setLoadingState(true);
 
       const syncSession = async () => {
         const session = await authClient.getSession();
@@ -234,7 +233,6 @@ const LoginWrapper = ({
           {
             onRequest: () => {
               setIsLoading(true);
-              setLoadingState(true);
             },
             onSuccess: async ctx => {
               const resData = ctx?.data as
@@ -247,11 +245,9 @@ const LoginWrapper = ({
               if (resData?.twoFactorRequired || resData?.twoFactorRedirect) {
                 setTwoFactorRequired(true);
                 setIsLoading(false);
-                setLoadingState(false);
                 return;
               }
 
-              await new Promise(resolve => setTimeout(resolve, 200));
               await syncSession();
               window.location.href = callbackUrl;
             },
@@ -264,7 +260,6 @@ const LoginWrapper = ({
                 values
               );
               setIsLoading(false);
-              setLoadingState(false);
             },
           }
         );
@@ -272,7 +267,6 @@ const LoginWrapper = ({
         if (error) {
           handleAuthError(error, values);
           setIsLoading(false);
-          setLoadingState(false);
         } else if (
           (data as { twoFactorRequired?: boolean; twoFactorRedirect?: boolean })
             ?.twoFactorRequired ||
@@ -281,7 +275,6 @@ const LoginWrapper = ({
         ) {
           setTwoFactorRequired(true);
           setIsLoading(false);
-          setLoadingState(false);
         }
       } catch (error) {
         const errorObj =
@@ -291,10 +284,9 @@ const LoginWrapper = ({
 
         handleAuthError(errorObj, values);
         setIsLoading(false);
-        setLoadingState(false);
       }
     },
-    [handleAuthError, setLoadingState, callbackUrl]
+    [handleAuthError, callbackUrl]
   );
 
   if (twoFactorRequired) {

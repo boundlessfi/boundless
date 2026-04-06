@@ -8,6 +8,8 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/components/ui/input-otp';
+import { Input } from '@/components/ui/input';
+import { BoundlessButton } from '@/components/buttons';
 import { LockIcon } from 'lucide-react';
 
 interface TwoFactorVerifyProps {
@@ -135,22 +137,23 @@ const TwoFactorVerify = ({ onSuccess, onCancel }: TwoFactorVerifyProps) => {
           <div className='w-full space-y-6'>
             <form onSubmit={handleVerifyBackupCode} className='space-y-4'>
               <div className='space-y-2'>
-                <input
+                <Input
                   type='text'
                   placeholder='Enter backup code'
                   value={backupCode}
                   onChange={e => setBackupCode(e.target.value)}
-                  className='focus:border-primary/50 h-14 w-full rounded-lg border border-zinc-800 bg-zinc-900/50 text-center text-xl tracking-widest text-white focus:outline-none'
+                  className='h-14 w-full rounded-lg border-zinc-800 bg-zinc-900/50 text-center text-xl tracking-widest text-white placeholder:text-[#B5B5B5] focus-visible:ring-0 focus-visible:ring-offset-0'
                   autoFocus
                 />
               </div>
-              <button
+              <BoundlessButton
                 type='submit'
                 disabled={isLoading || !backupCode}
-                className='bg-primary h-12 w-full rounded-lg font-bold text-black transition-colors hover:bg-[#96e048] disabled:opacity-50'
+                fullWidth
+                loading={isLoading}
               >
-                {isLoading ? 'Verifying...' : 'Recover Account'}
-              </button>
+                Recover Account
+              </BoundlessButton>
             </form>
 
             <button
