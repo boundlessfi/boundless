@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Check, Megaphone, Upload } from 'lucide-react';
+import { Check, Loader2, Megaphone, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { useFollow } from '@/hooks/use-follow';
 import {
   Select,
   SelectContent,
@@ -336,7 +338,7 @@ export function MilestonesTab({ vm }: MilestonesTabProps) {
       )}
 
       {/* Follow progress card */}
-      <FollowProgressCard />
+      <FollowProgressCard vm={vm} />
 
       {/* Dispute detail slide-over */}
       {disputePanel.milestone && (
@@ -568,10 +570,26 @@ function MilestonesEmptyState() {
 
 /* ───────────────────── Follow progress card ───────────────────── */
 
-function FollowProgressCard() {
-  const handleScrollToTop = () => {
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+function FollowProgressCard({ vm }: { vm: ProjectViewModel }) {
+  const {
+    isFollowing,
+    isLoading: isFollowLoading,
+    toggleFollow,
+  } = useFollow('PROJECT', vm.id);
+
+  const handleFollowClick = async () => {
+    try {
+      await toggleFollow();
+      toast.success(
+        // toggleFollow flips the state internally; isFollowing here still
+        // reflects the value before the request resolved, so the message
+        // describes the action just performed.
+        !isFollowing
+          ? 'You are now watching this project'
+          : 'You stopped watching this project'
+      );
+    } catch {
+      toast.error('Failed to update watch status');
     }
   };
 
@@ -592,10 +610,17 @@ function FollowProgressCard() {
           </div>
         </div>
         <Button
-          onClick={handleScrollToTop}
-          className='bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-5 text-sm font-semibold'
+          onClick={handleFollowClick}
+          disabled={isFollowLoading}
+          className={cn(
+            'h-10 px-5 text-sm font-semibold',
+            isFollowing
+              ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 border'
+              : 'bg-primary text-primary-foreground hover:bg-primary/90'
+          )}
         >
-          Watch Project
+          {isFollowLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+          {isFollowing ? 'Watching' : 'Watch Project'}
         </Button>
       </div>
     </div>

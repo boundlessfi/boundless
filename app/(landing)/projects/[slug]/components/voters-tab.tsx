@@ -139,7 +139,7 @@ export function VotersTab({ vm }: VotersTabProps) {
             upvotes: response.data.voteCounts.upvotes,
             downvotes: response.data.voteCounts.downvotes,
             totalVotes: response.data.voteCounts.totalVotes,
-            userVote: null,
+            userVote: response.data.voteCounts.userVote ?? null,
           });
           setVoters(response.data.voters);
           setTotalVoters(
