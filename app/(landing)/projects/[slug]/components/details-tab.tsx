@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Bell, FileText, Info, Loader2, Share2 } from 'lucide-react';
+import { Bell, FileText, HandCoins, Info, Loader2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { FundingModal } from '@/components/project-details/funding-modal';
 import { useMarkdown } from '@/hooks/use-markdown';
 import { cn } from '@/lib/utils';
+import { CampaignStatus, getProjectStatus } from './utils';
 import {
   MediaPlayer,
   MediaPlayerControls,
@@ -24,6 +26,8 @@ import type { ProjectViewModel } from '@/features/projects/types/view-model';
 
 interface DetailsTabProps {
   vm: ProjectViewModel;
+  isSubmission?: boolean;
+  onRefresh?: () => void;
 }
 
 interface OutlineItem {
@@ -40,17 +44,19 @@ function slugify(text: string) {
     .replace(/-+/g, '-');
 }
 
-export function DetailsTab({ vm }: DetailsTabProps) {
+export function DetailsTab({ vm, isSubmission, onRefresh }: DetailsTabProps) {
   const hasDescription = !!vm.description?.trim();
 
   if (!hasDescription) {
     return <DetailsEmptyState vm={vm} />;
   }
 
-  return <DetailsContent vm={vm} />;
+  return (
+    <DetailsContent vm={vm} isSubmission={isSubmission} onRefresh={onRefresh} />
+  );
 }
 
-function DetailsContent({ vm }: DetailsTabProps) {
+function DetailsContent({ vm, isSubmission, onRefresh }: DetailsTabProps) {
   const { loading, error, styledContent } = useMarkdown(vm.description, {
     breaks: true,
     gfm: true,
@@ -105,7 +111,13 @@ function DetailsContent({ vm }: DetailsTabProps) {
     }
   };
 
-  const isCampaign = vm.projectType === 'campaign';
+  // Match the gating used by ProjectActions in the hero card so the support
+  // CTA only appears when the project is actively accepting funds. A
+  // submission, completed campaign, or fully-funded campaign won't show it.
+  const canBack =
+    !isSubmission &&
+    !!vm.campaign &&
+    getProjectStatus(vm) === CampaignStatus.CAMPAIGNING;
 
   return (
     <div className='grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr] lg:gap-10 xl:grid-cols-[240px_1fr]'>
@@ -170,8 +182,8 @@ function DetailsContent({ vm }: DetailsTabProps) {
         {/* Demo video showcase — preserves the legacy media player behavior */}
         {vm.demoVideo && <DemoVideo url={vm.demoVideo} />}
 
-        {/* Campaign-only support CTA */}
-        {isCampaign && <SupportCard vm={vm} />}
+        {/* Support CTA — only when the campaign is actively accepting funds */}
+        {canBack && <SupportCard vm={vm} onRefresh={onRefresh} />}
       </div>
     </div>
   );
@@ -258,12 +270,18 @@ function DemoVideo({ url }: { url: string }) {
 
 /* ───────────────────────── Support CTA ────────────────────────── */
 
-function SupportCard({ vm }: { vm: ProjectViewModel }) {
-  const handleBackProject = () => {
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
+function SupportCard({
+  vm,
+  onRefresh,
+}: {
+  vm: ProjectViewModel;
+  onRefresh?: () => void;
+}) {
+  // canBack in the parent has already verified vm.campaign exists, but the
+  // type system doesn't know that — narrow defensively before opening the
+  // modal so the file stays typesafe if SupportCard is ever rendered without
+  // the gate.
+  if (!vm.campaign) return null;
 
   return (
     <section className='border-primary/30 from-primary/10 via-primary/5 rounded-2xl border bg-linear-to-r to-transparent p-6 sm:p-8'>
@@ -279,12 +297,20 @@ function SupportCard({ vm }: { vm: ProjectViewModel }) {
             space and helping bring this vision to life.
           </p>
         </div>
-        <Button
-          onClick={handleBackProject}
-          className='bg-primary text-primary-foreground hover:bg-primary/90 h-11 shrink-0 px-6 text-sm font-semibold'
+        <FundingModal
+          campaignId={vm.campaign.campaignId}
+          onChainId={vm.campaign.onChainId}
+          projectTitle={vm.title}
+          currentRaised={vm.campaign.fundingRaised}
+          fundingGoal={vm.campaign.fundingGoal}
+          escrowAddress={vm.campaign.escrowAddress}
+          onSuccess={onRefresh}
         >
-          Back Project Now
-        </Button>
+          <Button className='bg-primary text-primary-foreground hover:bg-primary/90 h-11 shrink-0 px-6 text-sm font-semibold'>
+            <HandCoins className='mr-2 h-5 w-5' />
+            Back Project Now
+          </Button>
+        </FundingModal>
       </div>
     </section>
   );

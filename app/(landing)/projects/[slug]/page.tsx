@@ -202,7 +202,13 @@ function ProjectPageContent({
           />
 
           {/* Tab content panels — built one tab at a time */}
-          {activeTab === 'details' && <DetailsTab vm={vm} />}
+          {activeTab === 'details' && (
+            <DetailsTab
+              vm={vm}
+              isSubmission={isSubmission}
+              onRefresh={onRefresh}
+            />
+          )}
           {activeTab === 'team' && <TeamTab vm={vm} />}
           {activeTab === 'milestones' && <MilestonesTab vm={vm} />}
           {activeTab === 'voters' && <VotersTab vm={vm} />}
