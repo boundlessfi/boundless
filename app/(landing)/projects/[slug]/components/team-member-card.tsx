@@ -38,6 +38,10 @@ export function TeamMemberCard({
       onKeyDown={
         hasProfile
           ? e => {
+              // Only react when the card itself is focused — never steal
+              // Enter/Space from inner interactive elements (the profile/email
+              // links).
+              if (e.target !== e.currentTarget) return;
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 onProfileClick?.(member);
@@ -51,7 +55,7 @@ export function TeamMemberCard({
         className
       )}
     >
-      <div className='ring-primary/40 bg-inactive relative h-24 w-24 overflow-hidden rounded-full ring-2 ring-offset-4 ring-offset-[var(--color-background-card)]'>
+      <div className='ring-primary/40 bg-inactive ring-offset-background-card relative h-24 w-24 overflow-hidden rounded-full ring-2 ring-offset-4'>
         {member.avatar ? (
           <Image
             src={member.avatar}

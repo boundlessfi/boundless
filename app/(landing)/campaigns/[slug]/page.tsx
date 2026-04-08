@@ -16,6 +16,7 @@ import {
   buildFromSubmission,
 } from '@/features/projects/lib/build-view-model';
 
+import { isApiNotFound } from '../../projects/[slug]/components/utils';
 import { HeroSection } from '../../projects/[slug]/components/hero-section';
 import {
   ProjectTabs,
@@ -67,14 +68,16 @@ function ProjectContent({
         }
 
         // ── Primary path for the campaigns route: try crowdfunding first ──
+        // Only fall through on a real 404 — other errors (network, 5xx, rate
+        // limit) propagate so they aren't masked as "Project not found".
         try {
           const projectData = await getCrowdfundingProject(id);
           if (!cancelled && projectData) {
             setVm(buildFromCrowdfunding(projectData));
             return;
           }
-        } catch {
-          // Not a crowdfunding campaign — fall through to submission
+        } catch (err) {
+          if (!isApiNotFound(err)) throw err;
         }
 
         // ── Fallback: hackathon submission ──
@@ -82,7 +85,8 @@ function ProjectContent({
           const result = await fetchAsSubmission(id);
           if (!cancelled) setVm(result);
           return;
-        } catch {
+        } catch (err) {
+          if (!isApiNotFound(err)) throw err;
           // Nothing found at all
         }
 
@@ -151,6 +155,14 @@ function ProjectPageContent({
   const [activeTab, setActiveTab] = useState<ProjectTabValue>(
     tabs[0]?.value ?? 'details'
   );
+
+  // Reset the active tab whenever the tab set changes so the selection never
+  // points at a tab that no longer exists.
+  useEffect(() => {
+    if (!tabs.some(t => t.value === activeTab)) {
+      setActiveTab(tabs[0]?.value ?? 'details');
+    }
+  }, [tabs, activeTab]);
 
   return (
     <main className='bg-background-main-bg min-h-screen'>
@@ -230,12 +242,22 @@ async function fetchAsSubmission(id: string): Promise<ProjectViewModel> {
 
 export default function CampaignPage({ params }: ProjectPageProps) {
   const [id, setId] = useState<string | null>(null);
+  const [paramsError, setParamsError] = useState(false);
   const searchParams = useSearchParams();
   const isSubmission = searchParams.get('type') === 'submission';
 
   useEffect(() => {
-    params.then(resolved => setId(resolved.slug));
+    params
+      .then(resolved => setId(resolved.slug))
+      .catch(err => {
+        reportError(err, { context: 'campaigns-page-params' });
+        setParamsError(true);
+      });
   }, [params]);
+
+  if (paramsError) {
+    notFound();
+  }
 
   if (!id) {
     return <ProjectPageSkeleton />;

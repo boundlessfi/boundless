@@ -35,6 +35,21 @@ import type { ProjectViewModel } from '@/features/projects/types/view-model';
 import { VoterRow } from './voter-row';
 import { VotersTabSkeleton } from './skeletons';
 
+const VOTERS_PAGE_SIZE = 20;
+
+function mergeVoteCounts(
+  prev: VoteCountResponse,
+  incoming: VoteCountResponse
+): VoteCountResponse {
+  return {
+    upvotes: incoming.upvotes,
+    downvotes: incoming.downvotes,
+    totalVotes: incoming.totalVotes,
+    userVote:
+      incoming.userVote !== undefined ? incoming.userVote : prev.userVote,
+  };
+}
+
 type StanceFilter = 'all' | 'support' | 'against';
 
 const FILTERS: { value: StanceFilter; label: string }[] = [
@@ -58,7 +73,9 @@ export function VotersTab({ vm }: VotersTabProps) {
     userVote: null,
   });
   const [voters, setVoters] = useState<VoterDto[]>([]);
+  const [totalVoters, setTotalVoters] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [voting, setVoting] = useState(false);
   const [filter, setFilter] = useState<StanceFilter>('all');
 
@@ -71,6 +88,9 @@ export function VotersTab({ vm }: VotersTabProps) {
   const isGated = isOwner || isTeamMember;
 
   // ── Realtime updates ──
+  // Merge incoming aggregates so a vote from another user can't accidentally
+  // wipe the current viewer's `userVote` selection (the realtime payload may
+  // omit it or set it for a different user).
   useVoteRealtime(
     {
       entityType: VoteEntityType.CROWDFUNDING_CAMPAIGN,
@@ -79,15 +99,15 @@ export function VotersTab({ vm }: VotersTabProps) {
     },
     {
       onVoteUpdated: data => {
-        setVoteCounts({ ...data.voteCounts });
+        setVoteCounts(prev => mergeVoteCounts(prev, data.voteCounts));
         setVoters(data.voters);
       },
       onVoteCreated: data => {
-        setVoteCounts({ ...data.voteCounts });
+        setVoteCounts(prev => mergeVoteCounts(prev, data.voteCounts));
         setVoters(data.voters);
       },
       onVoteDeleted: data => {
-        setVoteCounts({ ...data.voteCounts, userVote: null });
+        setVoteCounts(prev => mergeVoteCounts(prev, data.voteCounts));
         setVoters(data.voters);
       },
     }
@@ -102,7 +122,7 @@ export function VotersTab({ vm }: VotersTabProps) {
       try {
         setLoading(true);
         const response = await getProjectVotes(projectId, {
-          limit: 20,
+          limit: VOTERS_PAGE_SIZE,
           offset: 0,
           entityType: VoteEntityType.CROWDFUNDING_CAMPAIGN,
           includeVoters: true,
@@ -122,6 +142,10 @@ export function VotersTab({ vm }: VotersTabProps) {
             userVote: null,
           });
           setVoters(response.data.voters);
+          setTotalVoters(
+            response.pagination?.totalItems ??
+              response.data.voteCounts.totalVotes
+          );
         } else {
           const counts = await apiGetVoteCounts(
             projectId,
@@ -135,6 +159,7 @@ export function VotersTab({ vm }: VotersTabProps) {
             userVote: counts.userVote || null,
           });
           setVoters([]);
+          setTotalVoters(0);
         }
       } catch {
         if (!cancelled) toast.error('Failed to load voting data');
@@ -147,6 +172,49 @@ export function VotersTab({ vm }: VotersTabProps) {
       cancelled = true;
     };
   }, [projectId]);
+
+  // ── Load more voters ──
+  const handleLoadMore = async () => {
+    if (!projectId || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const response = await getProjectVotes(projectId, {
+        limit: VOTERS_PAGE_SIZE,
+        offset: voters.length,
+        entityType: VoteEntityType.CROWDFUNDING_CAMPAIGN,
+        includeVoters: true,
+      });
+
+      if (
+        response.data &&
+        typeof response.data === 'object' &&
+        'voters' in response.data &&
+        'voteCounts' in response.data
+      ) {
+        // Dedupe by id in case the realtime listener already merged some of
+        // these voters between the request and the response.
+        setVoters(prev => {
+          const seen = new Set(prev.map(v => v.id));
+          const next = [...prev];
+          for (const v of response.data && 'voters' in response.data
+            ? response.data.voters
+            : []) {
+            if (!seen.has(v.id)) next.push(v);
+          }
+          return next;
+        });
+        if (response.pagination?.totalItems !== undefined) {
+          setTotalVoters(response.pagination.totalItems);
+        }
+      }
+    } catch {
+      toast.error('Failed to load more voters');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const hasMoreVoters = totalVoters !== null && voters.length < totalVoters;
 
   // ── Vote action ──
   const handleVote = async (voteType: VoteType) => {
@@ -355,11 +423,30 @@ export function VotersTab({ vm }: VotersTabProps) {
           </div>
         )
       ) : (
-        <ul className='flex flex-col'>
-          {visible.map(voter => (
-            <VoterRow key={voter.id} voter={voter} onClick={handleVoterClick} />
-          ))}
-        </ul>
+        <>
+          <ul className='flex flex-col'>
+            {visible.map(voter => (
+              <VoterRow
+                key={voter.id}
+                voter={voter}
+                onClick={handleVoterClick}
+              />
+            ))}
+          </ul>
+
+          {hasMoreVoters && filter === 'all' && (
+            <div className='flex justify-center pt-2'>
+              <Button
+                variant='outline'
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className='border-primary/40 bg-background-card hover:bg-primary/10 text-primary h-11 px-8 text-sm font-bold tracking-wider uppercase disabled:opacity-50'
+              >
+                {loadingMore ? 'Loading...' : 'Load more voters'}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );

@@ -44,6 +44,7 @@ import { useVoteRealtime } from '@/hooks/use-vote-realtime';
 
 import { createVote, getVoteCounts } from '@/lib/api/votes';
 import { deleteCrowdfundingProject } from '@/features/projects/api';
+import { reportError } from '@/lib/error-reporting';
 
 import {
   VoteEntityType,
@@ -85,17 +86,25 @@ export function ProjectActions({
     initialVoteCounts(vm)
   );
 
+  // Realtime listeners must subscribe to the same entityType used for writes
+  // (submission vs crowdfunding) so a hackathon submission's votes don't get
+  // routed through the campaign channel.
   useVoteRealtime(
     {
-      entityType: VoteEntityType.CROWDFUNDING_CAMPAIGN,
+      entityType,
       entityId: vm.id || '',
       enabled: !!vm.id,
     },
     {
-      onVoteUpdated: data => setVoteCounts({ ...data.voteCounts }),
-      onVoteCreated: data => setVoteCounts({ ...data.voteCounts }),
+      // Merge incoming aggregates into the existing state — never let an
+      // incoming payload that omits userVote wipe the current viewer's
+      // selection (e.g. when another user votes).
+      onVoteUpdated: data =>
+        setVoteCounts(prev => mergeVoteCounts(prev, data.voteCounts)),
+      onVoteCreated: data =>
+        setVoteCounts(prev => mergeVoteCounts(prev, data.voteCounts)),
       onVoteDeleted: data =>
-        setVoteCounts({ ...data.voteCounts, userVote: null }),
+        setVoteCounts(prev => mergeVoteCounts(prev, data.voteCounts)),
     }
   );
 
@@ -106,7 +115,7 @@ export function ProjectActions({
       try {
         const response = (await getVoteCounts(
           vm.id,
-          VoteEntityType.CROWDFUNDING_CAMPAIGN
+          entityType
         )) as unknown as Record<string, unknown>;
         if (cancelled) return;
         setVoteCounts(
@@ -120,7 +129,7 @@ export function ProjectActions({
     return () => {
       cancelled = true;
     };
-  }, [vm.id]);
+  }, [vm.id, entityType]);
 
   const userVote: 1 | -1 | null =
     voteCounts?.userVote === VoteType.UPVOTE
@@ -174,17 +183,41 @@ export function ProjectActions({
   const handleCancelCampaign = async () => {
     if (!vm.campaign?.onChainId) return;
     setIsCancelling(true);
+
+    // Step 1 — on-chain cancellation. If this fails, nothing has changed and
+    // we surface the parsed contract error to the user.
+    let transactionHash: string;
     try {
-      const transactionHash = await cancelCampaign(vm.campaign.onChainId);
-      await deleteCrowdfundingProject(vm.campaign.campaignId);
-      toast.success('Campaign cancelled', {
-        description: `Your campaign has been cancelled. Tx: ${transactionHash.slice(0, 8)}...`,
-      });
-      onRefresh?.();
+      transactionHash = await cancelCampaign(vm.campaign.onChainId);
     } catch (err: unknown) {
       const errorMessage = parseCrowdfundError(err);
       toast.error('Failed to cancel campaign', { description: errorMessage });
+      setIsCancelling(false);
+      return;
+    }
+
+    toast.success('Campaign cancelled on-chain', {
+      description: `Tx: ${transactionHash.slice(0, 8)}...`,
+    });
+
+    // Step 2 — off-chain delete. The on-chain state is already cancelled at
+    // this point, so a failure here leaves the records out of sync; we tell
+    // the user explicitly so they can retry rather than hiding it as a
+    // generic cancel failure.
+    try {
+      await deleteCrowdfundingProject(vm.campaign.campaignId);
+    } catch (err: unknown) {
+      reportError(err, {
+        context: 'project-actions-deleteCrowdfundingProject',
+        campaignId: vm.campaign.campaignId,
+        transactionHash,
+      });
+      toast.error('On-chain cancel succeeded but record cleanup failed', {
+        description:
+          'Your campaign was cancelled on-chain but we could not remove the off-chain record. Please refresh and try again.',
+      });
     } finally {
+      onRefresh?.();
       setIsCancelling(false);
     }
   };
@@ -320,6 +353,27 @@ function initialVoteCounts(vm: ProjectViewModel): VoteCountResponse | null {
     downvotes: Number(data.downvotes ?? 0),
     totalVotes: Number(data.totalVotes ?? 0),
     userVote: (data.userVote as VoteType) ?? null,
+  };
+}
+
+/**
+ * Merge an incoming aggregate vote count update into the current state
+ * without losing the viewer's `userVote` selection. Realtime payloads from
+ * other users typically omit `userVote`; we preserve the previous value in
+ * that case so a teammate's upvote can't accidentally clear our own.
+ */
+function mergeVoteCounts(
+  prev: VoteCountResponse | null,
+  incoming: VoteCountResponse
+): VoteCountResponse {
+  return {
+    upvotes: incoming.upvotes,
+    downvotes: incoming.downvotes,
+    totalVotes: incoming.totalVotes,
+    userVote:
+      incoming.userVote !== undefined
+        ? incoming.userVote
+        : (prev?.userVote ?? null),
   };
 }
 

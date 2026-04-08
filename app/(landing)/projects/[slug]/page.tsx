@@ -8,6 +8,7 @@ import {
   buildProjectTabs,
   type ProjectTabValue,
 } from './components/project-tabs';
+import { isApiNotFound } from './components/utils';
 import { DetailsTab } from './components/details-tab';
 import { TeamTab } from './components/team-tab';
 import { MilestonesTab } from './components/milestones-tab';
@@ -70,12 +71,15 @@ function ProjectContent({
         }
 
         // ── Primary path: fetch from /api/projects/{slug} ──
+        // Only fall through on a real 404. Other errors (network, 5xx, rate
+        // limit, etc.) are surfaced so we don't mask backend incidents as
+        // "Project not found".
         try {
           const projectDetail = await getProjectDetailBySlug(slug);
           if (!cancelled) setVm(buildFromProjectDetail(projectDetail));
           return;
-        } catch {
-          // Project slug not found — try crowdfunding
+        } catch (err) {
+          if (!isApiNotFound(err)) throw err;
         }
 
         // ── Fallback: try /api/crowdfunding/{slug} directly ──
@@ -85,8 +89,8 @@ function ProjectContent({
             setVm(buildFromCrowdfunding(crowdfundData));
             return;
           }
-        } catch {
-          // Not a crowdfunding campaign either
+        } catch (err) {
+          if (!isApiNotFound(err)) throw err;
         }
 
         // ── Last resort: try as hackathon submission ──
@@ -94,7 +98,8 @@ function ProjectContent({
           const result = await fetchAsSubmission(slug);
           if (!cancelled) setVm(result);
           return;
-        } catch {
+        } catch (err) {
+          if (!isApiNotFound(err)) throw err;
           // Nothing found at all
         }
 
@@ -170,6 +175,15 @@ function ProjectPageContent({
   const [activeTab, setActiveTab] = useState<ProjectTabValue>(
     tabs[0]?.value ?? 'details'
   );
+
+  // Reset the active tab whenever the tab set changes (e.g. the project type
+  // morphs after a refresh) so the selection never points at a tab that no
+  // longer exists.
+  useEffect(() => {
+    if (!tabs.some(t => t.value === activeTab)) {
+      setActiveTab(tabs[0]?.value ?? 'details');
+    }
+  }, [tabs, activeTab]);
 
   return (
     <main className='bg-background-main-bg min-h-screen'>
@@ -261,12 +275,22 @@ async function fetchAsSubmission(id: string): Promise<ProjectViewModel> {
 
 export default function ProjectPage({ params }: ProjectPageProps) {
   const [slug, setSlug] = useState<string | null>(null);
+  const [paramsError, setParamsError] = useState(false);
   const searchParams = useSearchParams();
   const isSubmission = searchParams.get('type') === 'submission';
 
   useEffect(() => {
-    params.then(resolved => setSlug(resolved.slug));
+    params
+      .then(resolved => setSlug(resolved.slug))
+      .catch(err => {
+        reportError(err, { context: 'project-page-params' });
+        setParamsError(true);
+      });
   }, [params]);
+
+  if (paramsError) {
+    notFound();
+  }
 
   if (!slug) {
     return <ProjectPageSkeleton />;

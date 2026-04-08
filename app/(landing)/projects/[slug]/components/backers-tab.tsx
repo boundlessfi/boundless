@@ -7,11 +7,8 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { FundingModal } from '@/components/project-details/funding-modal';
 import { BackerCard, type BackerTier } from './backer-card';
-import {
-  CampaignStatus,
-  normalizeCampaignStatus,
-  type Contributor,
-} from '@/features/projects/types';
+import { CampaignStatus, getProjectStatus } from './utils';
+import { type Contributor } from '@/features/projects/types';
 import type { ProjectViewModel } from '@/features/projects/types/view-model';
 
 interface BackersTabProps {
@@ -41,11 +38,13 @@ export function BackersTab({ vm }: BackersTabProps) {
   const currency = vm.campaign?.fundingCurrency;
 
   // Only show the funding CTA when the campaign is actually accepting funds.
-  // Mirrors the gating used by ProjectActions in the hero card.
+  // Uses the same derived status as ProjectActions in the hero card so a
+  // fully-funded campaign with a stale CAMPAIGNING backend status doesn't
+  // get an actionable Back CTA here while the hero shows "Funded".
   const canBack =
     !isSubmission &&
     !!vm.campaign &&
-    normalizeCampaignStatus(vm.status) === CampaignStatus.CAMPAIGNING;
+    getProjectStatus(vm) === CampaignStatus.CAMPAIGNING;
 
   const handleBackerClick = (backer: Contributor) => {
     // Mirrors legacy ProjectBackers — uses userId for the profile path.

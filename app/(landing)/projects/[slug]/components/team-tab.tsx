@@ -31,10 +31,13 @@ function buildMembers(vm: ProjectViewModel): TeamMemberCardData[] {
   }
 
   for (const member of vm.team ?? []) {
+    // VMCreator only carries `username` (no email), so we can only dedupe on
+    // matching usernames. Comparing member.email to creator.username was
+    // ineffective in the previous revision.
     const matchesCreator =
       vm.creator &&
-      ((member.email && member.email === vm.creator.username) ||
-        (member.username && member.username === vm.creator.username));
+      member.username !== undefined &&
+      member.username === vm.creator.username;
 
     if (matchesCreator) continue;
 

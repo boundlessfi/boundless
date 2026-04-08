@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { Gem, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatRelative } from './utils';
 import type { Contributor } from '@/features/projects/types';
 
 export type BackerTier = 'lead' | 'top' | null;
@@ -24,28 +25,6 @@ const TIER_ICONS: Record<Exclude<BackerTier, null>, typeof Gem> = {
   lead: Gem,
   top: Trophy,
 };
-
-function formatRelative(iso: string) {
-  try {
-    const then = new Date(iso).getTime();
-    const now = Date.now();
-    const diff = Math.max(1, Math.round((now - then) / 1000));
-    if (diff < 60) return `${diff}s ago`;
-    const min = Math.round(diff / 60);
-    if (min < 60) return `${min} minute${min === 1 ? '' : 's'} ago`;
-    const hr = Math.round(min / 60);
-    if (hr < 24) return `${hr} hour${hr === 1 ? '' : 's'} ago`;
-    const day = Math.round(hr / 24);
-    if (day < 30) return `${day} day${day === 1 ? '' : 's'} ago`;
-    return new Date(iso).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  } catch {
-    return '';
-  }
-}
 
 function formatAmount(amount: number, currency?: string) {
   const formatted = new Intl.NumberFormat('en-US').format(amount);
@@ -94,7 +73,7 @@ export function BackerCard({
 
       {/* Header */}
       <header className='flex items-center gap-3'>
-        <div className='ring-primary/40 bg-inactive border-stepper-border relative h-12 w-12 shrink-0 overflow-hidden rounded-full border ring-2 ring-offset-2 ring-offset-[var(--color-background-card)]'>
+        <div className='ring-primary/40 bg-inactive border-stepper-border ring-offset-background-card relative h-12 w-12 shrink-0 overflow-hidden rounded-full border ring-2 ring-offset-2'>
           <Image
             src={backer.image || '/avatar.png'}
             alt={backer.name || 'Backer'}

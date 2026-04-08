@@ -116,6 +116,14 @@ function mapStatus(reviewStatus?: string): DisplayStatus {
     case 'submission':
     case 'submitted':
       return 'submission';
+    // Resubmission states are actionable for the creator (they can submit
+    // again), so display them as in-progress rather than the muted "upcoming"
+    // styling that the awaiting fallback gives.
+    case 'resubmission_required':
+    case 'resubmission-required':
+    case 'resubmit_required':
+    case 'resubmit-required':
+      return 'in-progress';
     case 'review':
     case 'in-review':
       return 'in-review';
@@ -130,15 +138,13 @@ function mapStatus(reviewStatus?: string): DisplayStatus {
 
 function formatDate(endDate?: string) {
   if (!endDate) return 'TBD';
-  try {
-    return new Date(endDate).toLocaleDateString('en-US', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return 'TBD';
-  }
+  const d = new Date(endDate);
+  if (!Number.isFinite(d.getTime())) return 'TBD';
+  return d.toLocaleDateString('en-US', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 interface MilestonesTabProps {
