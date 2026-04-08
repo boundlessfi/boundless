@@ -1,9 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, notFound } from 'next/navigation';
-import { ProjectLayout } from '@/components/project-details/project-layout';
-import { ProjectLoading } from '@/components/project-details/project-loading';
+import { HeroSection } from './components/hero-section';
+import {
+  ProjectTabs,
+  buildProjectTabs,
+  type ProjectTabValue,
+} from './components/project-tabs';
+import { DetailsTab } from './components/details-tab';
+import { TeamTab } from './components/team-tab';
+import { MilestonesTab } from './components/milestones-tab';
+import { VotersTab } from './components/voters-tab';
+import { BackersTab } from './components/backers-tab';
+import { ProjectComments } from '@/components/project-details/comment-section/project-comments';
+import {
+  HeroSectionSkeleton,
+  ProjectTabsSkeleton,
+  DetailsTabSkeleton,
+} from './components/skeletons';
 import { reportError } from '@/lib/error-reporting';
 import {
   getProjectDetailBySlug,
@@ -126,7 +141,7 @@ function ProjectContent({
   };
 
   if (loading) {
-    return <ProjectLoading />;
+    return <ProjectPageSkeleton />;
   }
 
   if (error || !vm) {
@@ -134,11 +149,81 @@ function ProjectContent({
   }
 
   return (
-    <div className='mx-auto flex min-h-screen max-w-[1440px] flex-col space-y-10 px-4 py-4 sm:space-y-[60px] sm:px-6 sm:py-5 md:space-y-20 md:px-[50px] lg:px-[80px] xl:px-[100px] 2xl:max-w-[1800px] 2xl:px-[120px]'>
-      <div className='flex-1'>
-        <ProjectLayout vm={vm} onRefresh={refreshData} />
+    <ProjectPageContent
+      vm={vm}
+      isSubmission={isSubmission}
+      onRefresh={refreshData}
+    />
+  );
+}
+
+function ProjectPageContent({
+  vm,
+  isSubmission,
+  onRefresh,
+}: {
+  vm: ProjectViewModel;
+  isSubmission: boolean;
+  onRefresh: () => Promise<void>;
+}) {
+  const tabs = useMemo(() => buildProjectTabs(vm), [vm]);
+  const [activeTab, setActiveTab] = useState<ProjectTabValue>(
+    tabs[0]?.value ?? 'details'
+  );
+
+  return (
+    <main className='bg-background-main-bg min-h-screen'>
+      <div className='mx-auto max-w-[1440px] space-y-8 px-4 py-6 sm:space-y-10 sm:px-6 sm:py-8 md:px-[50px] lg:px-[80px] xl:px-[100px] 2xl:max-w-[1800px] 2xl:px-[120px]'>
+        <HeroSection
+          vm={vm}
+          isSubmission={isSubmission}
+          onRefresh={onRefresh}
+        />
+
+        <div className='space-y-8'>
+          <ProjectTabs
+            tabs={tabs}
+            value={activeTab}
+            onValueChange={setActiveTab}
+          />
+
+          {/* Tab content panels — built one tab at a time */}
+          {activeTab === 'details' && <DetailsTab vm={vm} />}
+          {activeTab === 'team' && <TeamTab vm={vm} />}
+          {activeTab === 'milestones' && <MilestonesTab vm={vm} />}
+          {activeTab === 'voters' && <VotersTab vm={vm} />}
+          {activeTab === 'backers' && <BackersTab vm={vm} />}
+          {activeTab === 'comments' && <ProjectComments projectId={vm.id} />}
+          {activeTab !== 'details' &&
+            activeTab !== 'team' &&
+            activeTab !== 'milestones' &&
+            activeTab !== 'voters' &&
+            activeTab !== 'backers' &&
+            activeTab !== 'comments' && (
+              <div className='border-stepper-border bg-background-card flex min-h-[200px] items-center justify-center rounded-2xl border p-8 text-sm text-gray-500'>
+                {tabs.find(t => t.value === activeTab)?.label} content coming
+                soon
+              </div>
+            )}
+        </div>
       </div>
-    </div>
+    </main>
+  );
+}
+
+// ─── Initial-load skeleton ───────────────────────────────────────────────────
+
+function ProjectPageSkeleton() {
+  return (
+    <main className='bg-background-main-bg min-h-screen'>
+      <div className='mx-auto max-w-[1440px] space-y-8 px-4 py-6 sm:space-y-10 sm:px-6 sm:py-8 md:px-[50px] lg:px-[80px] xl:px-[100px] 2xl:max-w-[1800px] 2xl:px-[120px]'>
+        <HeroSectionSkeleton />
+        <div className='space-y-8'>
+          <ProjectTabsSkeleton />
+          <DetailsTabSkeleton />
+        </div>
+      </div>
+    </main>
   );
 }
 
@@ -184,7 +269,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   }, [params]);
 
   if (!slug) {
-    return <ProjectLoading />;
+    return <ProjectPageSkeleton />;
   }
 
   return <ProjectContent slug={slug} isSubmission={isSubmission} />;
