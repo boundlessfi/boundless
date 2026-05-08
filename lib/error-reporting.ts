@@ -1,95 +1,51 @@
-/**
- * Central error reporting for production observability.
- * When NEXT_PUBLIC_SENTRY_DSN is set, errors are sent to Sentry.
- * Otherwise logs to console in development and no-ops in production.
- */
+/* eslint-disable no-console */
 
-import type { Scope } from '@sentry/nextjs';
+export type ReportContext = Record<string, unknown>;
 
-type ReportContext = Record<string, unknown>;
+export type ReportLevel = 'info' | 'warning' | 'error';
 
-const hasSentry = (): boolean =>
-  typeof process !== 'undefined' &&
-  typeof process.env !== 'undefined' &&
-  Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN);
-
-/**
- * Report an error to the configured service (e.g. Sentry).
- * Safe to call from any environment; no-ops when Sentry is not configured.
- */
-export const reportError = (error: unknown, context?: ReportContext): void => {
-  if (hasSentry()) {
-    try {
-      import('@sentry/nextjs')
-        .then(Sentry => {
-          const err = error instanceof Error ? error : new Error(String(error));
-          if (context && Object.keys(context).length > 0) {
-            Sentry.withScope((scope: Scope) => {
-              scope.setContext('extra', context);
-              Sentry.captureException(err);
-            });
-          } else {
-            Sentry.captureException(err);
-          }
-        })
-        .catch(() => {
-          if (process.env.NODE_ENV === 'development') {
-            console.error(
-              '[reportError] Sentry capture failed',
-              error,
-              context
-            );
-          }
-        });
-    } catch {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[reportError]', error, context);
-      }
-    }
-    return;
+function normalizeError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (typeof error === 'string') return new Error(error);
+  try {
+    return new Error(JSON.stringify(error));
+  } catch {
+    return new Error(String(error));
   }
-  if (process.env.NODE_ENV === 'development') {
-    console.error('[reportError]', error, context ?? '');
-  }
-};
+}
 
-/**
- * Report a message (warning or info) to the configured service.
- * Use for non-exception events you want to track in production.
- */
-export const reportMessage = (
+export function reportError(error: unknown, context?: ReportContext): void {
+  const normalized = normalizeError(error);
+  const payload = {
+    name: normalized.name,
+    message: normalized.message,
+    stack: normalized.stack,
+    ...(context ?? {}),
+  };
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('[reportError]', payload);
+  } else {
+    console.error(JSON.stringify({ level: 'error', ...payload }));
+  }
+}
+
+export function reportMessage(
   message: string,
-  level: 'info' | 'warning' | 'error' = 'info',
+  level: ReportLevel = 'info',
   context?: ReportContext
-): void => {
-  if (hasSentry()) {
-    try {
-      import('@sentry/nextjs')
-        .then(Sentry => {
-          if (context && Object.keys(context).length > 0) {
-            Sentry.withScope((scope: Scope) => {
-              scope.setContext('extra', context);
-              Sentry.captureMessage(message, level);
-            });
-          } else {
-            Sentry.captureMessage(message, level);
-          }
-        })
-        .catch(() => {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`[reportMessage] ${level}:`, message, context);
-          }
-        });
-    } catch {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn(`[reportMessage] ${level}:`, message, context);
-      }
-    }
-    return;
+): void {
+  const payload = { message, ...(context ?? {}) };
+  const method =
+    level === 'error'
+      ? console.error
+      : level === 'warning'
+        ? console.warn
+        : console.info;
+
+  if (process.env.NODE_ENV !== 'production') {
+    method('[reportMessage]', level, payload);
+  } else {
+    method(JSON.stringify({ level, ...payload }));
   }
-  if (process.env.NODE_ENV === 'development') {
-    if (level === 'error')
-      console.error('[reportMessage]', message, context ?? '');
-    else console.warn('[reportMessage]', message, context ?? '');
-  }
-};
+}

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useWalletStore } from '@/lib/stores/walletStore';
 import { useWalletProtection } from './use-wallet-protection';
 
 interface UseProtectedActionOptions {
@@ -13,7 +13,7 @@ export function useProtectedAction({
   onSuccess,
   redirectTo,
 }: UseProtectedActionOptions) {
-  const { walletAddress } = useWalletContext();
+  const walletAddress = useWalletStore(s => s.contractId);
   const isConnected = Boolean(walletAddress);
   const {
     requireWallet,

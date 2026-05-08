@@ -10,14 +10,21 @@ import {
   useMyProjects,
   useMyProject,
 } from './use-project-queries';
-import { Project } from '@/features/projects/types';
+import type {
+  Project,
+  ProjectDraftPayload,
+  CampaignDraftPayload,
+  DraftMilestone,
+  DraftTeamMember,
+  SocialLinksMap,
+  ProjectContact,
+} from '@/features/projects/types';
 import crowdfundRegistry from '@/lib/stellar/clients/crowdfundRegistry';
-import {
-  getConnectedKit,
-  getSmartAccountKit,
-  connectSmartWallet,
-} from '@/lib/smart-wallet/client';
-import { useWalletInfo } from '@/hooks/use-wallet';
+import { getKit } from '@/lib/smartwallet/client';
+import { useWalletStore } from '@/lib/stores/walletStore';
+import { parseWalletError } from '@/lib/smartwallet/errors';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export type CreationStep =
   | 'basic'
@@ -53,11 +60,6 @@ export interface TeamMember {
   email: string;
   linkedin?: string;
   twitter?: string;
-}
-
-export interface SocialLink {
-  platform: string;
-  url: string;
 }
 
 export interface ProjectDraft {
@@ -104,133 +106,18 @@ export interface ProjectDraft {
   id?: string;
 }
 
-function detectPlatformFromUrl(url: string): string {
-  try {
-    const hostname = new URL(url).hostname.toLowerCase().replace('www.', '');
-    const platforms: Record<string, string> = {
-      'x.com': 'twitter',
-      'twitter.com': 'twitter',
-      'discord.gg': 'discord',
-      'discord.com': 'discord',
-      'telegram.me': 'telegram',
-      't.me': 'telegram',
-      'linkedin.com': 'linkedin',
-      'facebook.com': 'facebook',
-      'instagram.com': 'instagram',
-      'youtube.com': 'youtube',
-      'youtu.be': 'youtube',
-      'reddit.com': 'reddit',
-      'medium.com': 'medium',
-      'tiktok.com': 'tiktok',
-    };
-    return platforms[hostname] || hostname.split('.')[0];
-  } catch {
-    return 'link';
-  }
-}
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-function toApiPayload(
-  data: Partial<ProjectDraft>,
-  isCampaign: boolean
-): Record<string, unknown> {
-  const socialLinksMap: Record<string, string> = {};
-  if (Array.isArray(data.socialLinks)) {
-    data.socialLinks.forEach(url => {
-      if (!url?.trim()) return;
-      const key = detectPlatformFromUrl(url);
-      socialLinksMap[key] = url;
-    });
-  }
+const STROOPS_PER_XLM = 10_000_000;
+const CAMPAIGN_DEADLINE_DAYS = 90;
+const MIN_PLEDGE_STROOPS = BigInt(10_000_000);
+const AUTOSAVE_DEBOUNCE_MS = 5_000;
+const TX_POLL_ATTEMPTS = 12;
+const TX_POLL_INTERVAL_MS = 2_000;
 
-  const payload: Record<string, unknown> = {
-    title: data.title || data.projectName || undefined,
-    tagline: data.tagline || undefined,
-    category: data.category || undefined,
-    description: data.description || undefined,
-    summary: data.summary || undefined,
-    vision: data.vision || undefined,
-    details: data.details || undefined,
-    banner: data.bannerUrl || undefined,
-    logo: data.logoUrl || undefined,
-    githubUrl: data.githubUrl || undefined,
-    gitlabUrl: data.gitlabUrl || undefined,
-    bitbucketUrl: data.bitbucketUrl || undefined,
-    projectWebsite: data.websiteUrl || data.projectWebsite || undefined,
-    demoVideo: data.demoVideoUrl || data.demoVideo || undefined,
-    whitepaperUrl: data.whitepaperUrl || undefined,
-    pitchVideoUrl: data.pitchVideoUrl || undefined,
-    socialLinks: Object.keys(socialLinksMap).length
-      ? socialLinksMap
-      : undefined,
-    contact:
-      data.contact?.telegram ||
-      data.contact?.primary ||
-      data.contact?.discord ||
-      data.contact?.backup
-        ? {
-            primary: data.contact.telegram || data.contact.primary || undefined,
-            backup: data.contact.discord || data.contact.backup || undefined,
-          }
-        : undefined,
-    tags: Array.isArray(data.tags) && data.tags.length ? data.tags : undefined,
-  };
-
-  if (isCampaign) {
-    const team = (Array.isArray(data.team) ? data.team : []) as TeamMember[];
-    const milestones = Array.isArray(data.milestones) ? data.milestones : [];
-
-    payload.draftData = {
-      isCampaign: true,
-      campaign: {
-        title: data.title || data.projectName,
-        logo: data.logoUrl,
-        banner: data.bannerUrl,
-        vision: data.vision,
-        category: data.category,
-        details: data.details,
-        fundingAmount: data.fundingAmount || 0,
-        githubUrl: data.githubUrl,
-        gitlabUrl: data.gitlabUrl,
-        bitbucketUrl: data.bitbucketUrl,
-        projectWebsite: data.websiteUrl,
-        demoVideo: data.demoVideoUrl,
-        milestones: milestones.map((m, idx) => ({
-          title: m.title,
-          description: m.description,
-          deliverable: m.deliverable || m.title,
-          fundingPercentage:
-            m.fundingPercentage || Math.floor(100 / (milestones.length || 1)),
-          amount: (data.fundingAmount || 0) / (milestones.length || 1),
-          expectedDeliveryDate: m.endDate || new Date().toISOString(),
-          successCriteria: m.successCriteria || m.description,
-          orderIndex: idx,
-        })),
-        team: team.map(t => ({
-          name: t.name,
-          role: t.role,
-          email: t.email,
-          linkedin: t.linkedin,
-          twitter: t.twitter,
-        })),
-        contact: {
-          primary: data.contact?.telegram || data.contact?.primary || '',
-          backup: data.contact?.discord || data.contact?.backup || '',
-        },
-        email: data.contact?.email || '',
-        socialLinks: Object.entries(socialLinksMap).map(([platform, url]) => ({
-          platform,
-          url,
-        })),
-      },
-    };
-  } else {
-    payload.draftData = { isCampaign: false };
-  }
-
-  return Object.fromEntries(
-    Object.entries(payload).filter(([, v]) => v !== undefined)
-  );
-}
+const USDC_MAINNET = 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75';
+const USDC_TESTNET = 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA';
+const DEFAULT_RPC_URL = 'https://soroban-testnet.stellar.org';
 
 const INITIAL_FORM_DATA: Partial<ProjectDraft> = {
   projectName: '',
@@ -259,12 +146,323 @@ const INITIAL_FORM_DATA: Partial<ProjectDraft> = {
   socialLinks: ['', '', ''],
 };
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function detectPlatformFromUrl(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase().replace('www.', '');
+    const platforms: Record<string, string> = {
+      'x.com': 'twitter',
+      'twitter.com': 'twitter',
+      'discord.gg': 'discord',
+      'discord.com': 'discord',
+      'telegram.me': 'telegram',
+      't.me': 'telegram',
+      'linkedin.com': 'linkedin',
+      'facebook.com': 'facebook',
+      'instagram.com': 'instagram',
+      'youtube.com': 'youtube',
+      'youtu.be': 'youtube',
+      'reddit.com': 'reddit',
+      'medium.com': 'medium',
+      'tiktok.com': 'tiktok',
+    };
+    return platforms[hostname] || hostname.split('.')[0];
+  } catch {
+    return 'link';
+  }
+}
+
+function buildSocialLinksMap(urls: string[] | undefined): SocialLinksMap {
+  const map: SocialLinksMap = {};
+  if (!Array.isArray(urls)) return map;
+  for (const url of urls) {
+    if (!url?.trim()) continue;
+    map[detectPlatformFromUrl(url)] = url;
+  }
+  return map;
+}
+
+function buildContactPayload(
+  contact: ProjectDraft['contact'] | undefined
+): ProjectContact | undefined {
+  const telegram = contact?.telegram || contact?.primary;
+  const backup = contact?.discord || contact?.backup;
+  if (!telegram && !backup) return undefined;
+  return {
+    primary: telegram || '',
+    backup: backup || '',
+  };
+}
+
+function buildCampaignPayload(
+  data: Partial<ProjectDraft>,
+  socialLinksMap: SocialLinksMap
+): CampaignDraftPayload & { email?: string } {
+  const team = Array.isArray(data.team) ? data.team : [];
+  const milestones = Array.isArray(data.milestones) ? data.milestones : [];
+  const fundingAmount = data.fundingAmount || 0;
+  const milestoneCount = milestones.length || 1;
+
+  return {
+    title: data.title || data.projectName || '',
+    logo: data.logoUrl,
+    banner: data.bannerUrl,
+    vision: data.vision,
+    category: data.category || '',
+    details: data.details,
+    fundingAmount,
+    githubUrl: data.githubUrl,
+    gitlabUrl: data.gitlabUrl,
+    bitbucketUrl: data.bitbucketUrl,
+    projectWebsite: data.websiteUrl,
+    demoVideo: data.demoVideoUrl,
+    milestones: milestones.map<DraftMilestone>((m, idx) => ({
+      title: m.title,
+      description: m.description,
+      deliverable: m.deliverable || m.title,
+      fundingPercentage:
+        m.fundingPercentage || Math.floor(100 / milestoneCount),
+      amount: fundingAmount / milestoneCount,
+      expectedDeliveryDate: m.endDate || new Date().toISOString(),
+      successCriteria: m.successCriteria || m.description,
+      orderIndex: idx,
+    })),
+    team: team.map<DraftTeamMember>(t => ({
+      name: t.name,
+      role: t.role,
+      email: t.email,
+      linkedin: t.linkedin,
+      twitter: t.twitter,
+    })),
+    contact: {
+      primary: data.contact?.telegram || data.contact?.primary || '',
+      backup: data.contact?.discord || data.contact?.backup || '',
+    },
+    email: data.contact?.email || '',
+    socialLinks: Object.entries(socialLinksMap).map(([platform, url]) => ({
+      platform,
+      url,
+    })),
+  };
+}
+
+function buildDraftPayload(
+  data: Partial<ProjectDraft>,
+  isCampaign: boolean
+): ProjectDraftPayload {
+  const socialLinksMap = buildSocialLinksMap(data.socialLinks);
+  const hasSocials = Object.keys(socialLinksMap).length > 0;
+
+  const payload: ProjectDraftPayload = {
+    title: data.title || data.projectName || undefined,
+    tagline: data.tagline || undefined,
+    category: data.category || undefined,
+    description: data.description || undefined,
+    summary: data.summary || undefined,
+    vision: data.vision || undefined,
+    details: data.details || undefined,
+    banner: data.bannerUrl || undefined,
+    logo: data.logoUrl || undefined,
+    githubUrl: data.githubUrl || undefined,
+    gitlabUrl: data.gitlabUrl || undefined,
+    bitbucketUrl: data.bitbucketUrl || undefined,
+    projectWebsite: data.websiteUrl || data.projectWebsite || undefined,
+    demoVideo: data.demoVideoUrl || data.demoVideo || undefined,
+    whitepaperUrl: data.whitepaperUrl || undefined,
+    pitchVideoUrl: data.pitchVideoUrl || undefined,
+    socialLinks: hasSocials ? socialLinksMap : undefined,
+    contact: buildContactPayload(data.contact),
+    tags: data.tags?.length ? data.tags : undefined,
+    draftData: isCampaign
+      ? {
+          isCampaign: true,
+          campaign: buildCampaignPayload(data, socialLinksMap),
+        }
+      : { isCampaign: false },
+  };
+
+  // Strip undefined so PATCH doesn't null-out existing fields.
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, v]) => v !== undefined)
+  ) as ProjectDraftPayload;
+}
+
+function validatePublishFields(
+  fd: Partial<ProjectDraft>,
+  isCampaign: boolean
+): string[] {
+  const missing: string[] = [];
+
+  if (!fd.title && !fd.projectName) missing.push('Project Name');
+  if (!fd.description || fd.description.trim().length < 10) {
+    missing.push('Description (min 10 characters)');
+  }
+  if (!fd.category) missing.push('Category');
+  if (!fd.contact?.telegram && !fd.contact?.primary) {
+    missing.push('Telegram (contact)');
+  }
+  if (!fd.contact?.email) missing.push('Email (contact)');
+
+  if (isCampaign) {
+    if (!fd.fundingAmount || fd.fundingAmount <= 0) {
+      missing.push('Funding Amount');
+    }
+    if (!fd.milestones?.length) {
+      missing.push('At least one milestone');
+    } else {
+      const totalPct = fd.milestones.reduce(
+        (sum, m) => sum + Number(m.fundingPercentage || 0),
+        0
+      );
+      if (totalPct !== 100) {
+        missing.push(
+          `Milestone percentages must sum to 100% (currently ${totalPct}%)`
+        );
+      }
+    }
+  }
+
+  return missing;
+}
+
+function rid(prefix: string): string {
+  return `${prefix}-${Math.random().toString(36).substring(2, 11)}`;
+}
+
+function hydrateFromLoadedProject(loaded: Project): Partial<ProjectDraft> {
+  const draft = loaded.draftData?.campaign as
+    | (CampaignDraftPayload & { email?: string })
+    | undefined;
+
+  const socialValues = loaded.socialLinks
+    ? Object.values(loaded.socialLinks)
+    : [];
+
+  return {
+    id: loaded.id,
+    title: loaded.title,
+    projectName: loaded.title,
+    tagline: loaded.tagline ?? '',
+    category: loaded.category,
+    description: loaded.description,
+    summary: loaded.summary ?? '',
+    vision: loaded.vision ?? '',
+    details: loaded.details ?? '',
+    logoUrl: loaded.logo ?? '',
+    bannerUrl: loaded.banner ?? '',
+    githubUrl: loaded.githubUrl ?? '',
+    websiteUrl: loaded.projectWebsite ?? '',
+    demoVideoUrl: loaded.demoVideo ?? '',
+    socialLinks: [
+      socialValues[0] ?? '',
+      socialValues[1] ?? '',
+      socialValues[2] ?? '',
+    ],
+    contact: {
+      email: draft?.email ?? '',
+      telegram: loaded.contact?.primary ?? '',
+      discord: loaded.contact?.backup ?? '',
+      primary: loaded.contact?.primary ?? '',
+      backup: loaded.contact?.backup ?? '',
+    },
+    isCampaign: loaded.draftData?.isCampaign ?? false,
+    fundingAmount: draft?.fundingAmount ?? 0,
+    milestones: (draft?.milestones ?? []).map<Milestone>(m => ({
+      id: rid('m'),
+      title: m.title || '',
+      description: m.description || '',
+      deliverable: m.deliverable || m.title || '',
+      successCriteria: m.successCriteria || m.description || '',
+      fundingPercentage: m.fundingPercentage || 0,
+      startDate: '',
+      endDate: m.expectedDeliveryDate || '',
+    })),
+    team: (draft?.team ?? []).map<TeamMember>(t => ({
+      id: rid('tm'),
+      name: t.name || '',
+      email: t.email || '',
+      role: t.role || 'MEMBER',
+      linkedin: t.linkedin || '',
+      twitter: t.twitter || '',
+    })),
+  };
+}
+
+/**
+ * Poll Stellar RPC until a tx is SUCCESS, FAILED, or we time out.
+ * Returns the terminal status — callers decide what to do with each outcome.
+ */
+async function waitForStellarTx(
+  hash: string
+): Promise<'SUCCESS' | 'FAILED' | 'TIMEOUT'> {
+  const rpcUrl = process.env.NEXT_PUBLIC_STELLAR_RPC_URL || DEFAULT_RPC_URL;
+
+  for (let attempt = 0; attempt < TX_POLL_ATTEMPTS; attempt++) {
+    const resp = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'getTransaction',
+        params: { hash },
+      }),
+    });
+    const json = await resp.json();
+    const status = json?.result?.status as string | undefined;
+    if (status === 'SUCCESS' || status === 'FAILED') return status;
+    await new Promise(r => setTimeout(r, TX_POLL_INTERVAL_MS));
+  }
+
+  return 'TIMEOUT';
+}
+
+async function ensureWalletConnected(): Promise<void> {
+  const store = useWalletStore.getState();
+  const kit = getKit();
+  if (kit.isConnected && store.isConnected) return;
+
+  await store.connect();
+
+  const after = useWalletStore.getState();
+  if (after.isConnected) return;
+
+  throw new Error(
+    after.error ||
+      'Wallet connection was cancelled. Please connect your wallet and try again.'
+  );
+}
+
+type MutationLikeError = {
+  message?: unknown;
+  errors?: Array<{ message?: unknown }>;
+};
+
+function formatMutationError(error: unknown): string | null {
+  if (!error) return null;
+  const e = error as MutationLikeError;
+
+  if (Array.isArray(e.errors) && e.errors.length > 0) {
+    return e.errors
+      .map(x => (typeof x?.message === 'string' ? x.message : ''))
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  if (Array.isArray(e.message)) return e.message.join('\n');
+  if (typeof e.message === 'string') return e.message;
+  return 'An unexpected error occurred';
+}
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
 export const useProjectCreation = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialMode = searchParams.get('mode') === 'campaign';
   const editingId = searchParams.get('id');
-  const { address } = useWalletInfo();
+  const address = useWalletStore(s => s.contractId);
 
   const [currentStep, setCurrentStep] = useState<CreationStep>('basic');
   const [isCampaign, setIsCampaignState] = useState(initialMode);
@@ -275,9 +473,14 @@ export const useProjectCreation = () => {
     ...INITIAL_FORM_DATA,
     isCampaign: initialMode,
   });
+  const [publishValidationError, setPublishValidationError] = useState<
+    string | null
+  >(null);
+  const [publishPhase, setPublishPhase] = useState<PublishPhase>('idle');
 
   const hasLoadedInitial = useRef<string | null>(null);
 
+  // Reset when the route's editing id changes (incl. navigating away from a draft).
   useEffect(() => {
     setDraftId(editingId);
     if (!editingId) {
@@ -293,66 +496,17 @@ export const useProjectCreation = () => {
     !!editingId
   );
 
+  // Hydrate form once per loaded project id.
   useEffect(() => {
-    if (loadedProject && hasLoadedInitial.current !== loadedProject.id) {
-      const draft = loadedProject.draftData?.campaign;
-      const socialValues = loadedProject.socialLinks
-        ? Object.values(loadedProject.socialLinks)
-        : [];
-      const socialLinks = [
-        socialValues[0] ?? '',
-        socialValues[1] ?? '',
-        socialValues[2] ?? '',
-      ];
+    if (!loadedProject) return;
+    if (hasLoadedInitial.current === loadedProject.id) return;
 
-      setFormData(prev => ({
-        ...prev,
-        id: loadedProject.id,
-        title: loadedProject.title,
-        projectName: loadedProject.title,
-        tagline: loadedProject.tagline ?? '',
-        category: loadedProject.category,
-        description: loadedProject.description,
-        summary: loadedProject.summary ?? '',
-        vision: loadedProject.vision ?? '',
-        details: loadedProject.details ?? '',
-        logoUrl: loadedProject.logo ?? '',
-        bannerUrl: loadedProject.banner ?? '',
-        githubUrl: loadedProject.githubUrl ?? '',
-        websiteUrl: loadedProject.projectWebsite ?? '',
-        demoVideoUrl: loadedProject.demoVideo ?? '',
-        socialLinks,
-        contact: {
-          email: (draft as any)?.email || '',
-          telegram: loadedProject.contact?.primary ?? '',
-          discord: loadedProject.contact?.backup ?? '',
-          primary: loadedProject.contact?.primary ?? '',
-          backup: loadedProject.contact?.backup ?? '',
-        },
-        isCampaign: loadedProject.draftData?.isCampaign ?? false,
-        fundingAmount: draft?.fundingAmount ?? 0,
-        milestones: (draft?.milestones ?? []).map((m: any) => ({
-          id: m.id || `m-${Math.random().toString(36).substring(2, 11)}`,
-          title: m.title || '',
-          description: m.description || '',
-          deliverable: m.deliverable || m.title || '',
-          successCriteria: m.successCriteria || m.description || '',
-          fundingPercentage: m.fundingPercentage || 0,
-          startDate: m.startDate || '',
-          endDate: m.expectedDeliveryDate || m.endDate || '',
-        })),
-        team: (draft?.team ?? []).map((t: any) => ({
-          id: t.id || `tm-${Math.random().toString(36).substring(2, 11)}`,
-          name: t.name || '',
-          email: t.email || '',
-          role: t.role || 'MEMBER',
-          linkedin: t.linkedin || '',
-          twitter: t.twitter || '',
-        })),
-      }));
-      setIsCampaignState(loadedProject.draftData?.isCampaign ?? false);
-      hasLoadedInitial.current = loadedProject.id;
-    }
+    setFormData(prev => ({
+      ...prev,
+      ...hydrateFromLoadedProject(loadedProject),
+    }));
+    setIsCampaignState(loadedProject.draftData?.isCampaign ?? false);
+    hasLoadedInitial.current = loadedProject.id;
   }, [loadedProject]);
 
   const createDraftMutation = useCreateProjectDraft();
@@ -360,25 +514,14 @@ export const useProjectCreation = () => {
   const publishMutation = usePublishProject(draftId ?? '');
   const deleteMutation = useDeleteProject();
 
-  const formatError = useCallback((error: any): string | null => {
-    if (!error) return null;
-    if (Array.isArray(error.errors) && error.errors.length > 0) {
-      return error.errors.map((e: any) => e.message).join('\n');
-    }
-    const msg = error.message;
-    if (Array.isArray(msg)) return msg.join('\n');
-    if (typeof msg === 'string') return msg;
-    return 'An unexpected error occurred';
-  }, []);
-
   const isPersisting =
     createDraftMutation.isPending || updateDraftMutation.isPending;
   const persistError =
-    formatError(createDraftMutation.error) ||
-    formatError(updateDraftMutation.error);
-  const isPublishing = publishMutation.isPending;
-  const publishError = formatError(publishMutation.error);
+    formatMutationError(createDraftMutation.error) ||
+    formatMutationError(updateDraftMutation.error);
+  const publishError = formatMutationError(publishMutation.error);
 
+  // Autosave: run 5s after the last formData change.
   const autosaveRef = useRef({ formData, isCampaign, draftId });
   autosaveRef.current = { formData, isCampaign, draftId };
 
@@ -388,7 +531,7 @@ export const useProjectCreation = () => {
       const title = (fd.title || fd.projectName || '').trim();
       if (title.length < 3) return;
 
-      const payload = toApiPayload(fd, ic);
+      const payload = buildDraftPayload(fd, ic);
       try {
         if (id) {
           await updateDraftMutation.mutateAsync(payload);
@@ -402,13 +545,15 @@ export const useProjectCreation = () => {
         }
         setLastSaved(Date.now());
       } catch {
-        // surfaces through persistError
+        // Surfaces via persistError.
       }
-    }, 5000);
+    }, AUTOSAVE_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData]);
+
+  // ─── Step Navigation ───────────────────────────────────────────────────────
 
   const steps: { key: CreationStep; label: string; hidden?: boolean }[] = [
     { key: 'basic', label: 'Basic Info' },
@@ -418,7 +563,6 @@ export const useProjectCreation = () => {
     { key: 'funding', label: 'Funding & Milestones', hidden: !isCampaign },
     { key: 'review', label: 'Review & Submit' },
   ];
-
   const activeSteps = steps.filter(s => !s.hidden);
 
   const updateFormData = useCallback((updates: Partial<ProjectDraft>) => {
@@ -431,59 +575,92 @@ export const useProjectCreation = () => {
   };
 
   const goToStep = (step: CreationStep) => setCurrentStep(step);
-
   const nextStep = () => {
-    const currentIndex = activeSteps.findIndex(s => s.key === currentStep);
-    if (currentIndex < activeSteps.length - 1) {
-      setCurrentStep(activeSteps[currentIndex + 1].key);
-    }
+    const idx = activeSteps.findIndex(s => s.key === currentStep);
+    if (idx < activeSteps.length - 1) setCurrentStep(activeSteps[idx + 1].key);
   };
-
   const prevStep = () => {
-    const currentIndex = activeSteps.findIndex(s => s.key === currentStep);
-    if (currentIndex > 0) {
-      setCurrentStep(activeSteps[currentIndex - 1].key);
-    }
+    const idx = activeSteps.findIndex(s => s.key === currentStep);
+    if (idx > 0) setCurrentStep(activeSteps[idx - 1].key);
   };
 
-  const [publishValidationError, setPublishValidationError] = useState<
-    string | null
-  >(null);
-  const [publishPhase, setPublishPhase] = useState<PublishPhase>('idle');
+  // ─── Publish (campaign path deploys on-chain first) ─────────────────────────
+
+  const deployCampaignOnChain = useCallback(
+    async (
+      fd: Partial<ProjectDraft>,
+      owner: string
+    ): Promise<{ onChainId: string; transactionHash: string }> => {
+      await ensureWalletConnected();
+      const kit = getKit();
+
+      const fundingAmount = fd.fundingAmount || 0;
+      const milestonePcts = (fd.milestones || []).map(m =>
+        Math.floor((m.fundingPercentage || 0) * 100)
+      );
+
+      const tx = await crowdfundRegistry.create_campaign({
+        owner,
+        funding_goal: BigInt(Math.floor(fundingAmount * STROOPS_PER_XLM)),
+        asset:
+          process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet'
+            ? USDC_MAINNET
+            : USDC_TESTNET,
+        deadline: BigInt(
+          Math.floor(Date.now() / 1000) + CAMPAIGN_DEADLINE_DAYS * 24 * 60 * 60
+        ),
+        milestone_pcts: milestonePcts,
+        min_pledge: MIN_PLEDGE_STROOPS,
+      });
+
+      const sim = tx.result;
+      if (!sim) {
+        throw new Error(
+          'Contract simulation returned no campaign ID. Please try again.'
+        );
+      }
+      if (sim.isErr()) {
+        throw new Error(
+          `Contract simulation error: ${sim.unwrapErr()?.message ?? 'unknown'}`
+        );
+      }
+      const onChainId = sim.unwrap().toString();
+
+      // Cast via unknown: bindings pkg ships a nested @stellar/stellar-sdk, so TS sees two copies of AssembledTransaction.
+      const submitted = await kit.signAndSubmit(
+        tx as unknown as Parameters<typeof kit.signAndSubmit>[0]
+      );
+      if (!submitted.success) {
+        throw new Error(
+          `Contract transaction failed: ${submitted.error || 'Unknown error'}`
+        );
+      }
+
+      const status = await waitForStellarTx(submitted.hash);
+      if (status === 'FAILED') {
+        throw new Error(
+          'On-chain campaign creation transaction failed. Please try again.'
+        );
+      }
+      if (status === 'TIMEOUT') {
+        throw new Error(
+          `On-chain transaction timed out. Verify transaction ${submitted.hash} and try again.`
+        );
+      }
+
+      return { onChainId, transactionHash: submitted.hash };
+    },
+    []
+  );
 
   const handlePublish = useCallback(async () => {
     if (!draftId) return;
 
     setPublishPhase('validating');
     const fd = autosaveRef.current.formData;
-    const missing: string[] = [];
+    const isCampaignToPublish = autosaveRef.current.isCampaign;
 
-    if (!fd.title && !fd.projectName) missing.push('Project Name');
-    if (!fd.description || fd.description.trim().length < 10)
-      missing.push('Description (min 10 characters)');
-    if (!fd.category) missing.push('Category');
-    if (!fd.contact?.telegram && !fd.contact?.primary)
-      missing.push('Telegram (contact)');
-    if (!fd.contact?.email) missing.push('Email (contact)');
-
-    if (autosaveRef.current.isCampaign) {
-      if (!fd.fundingAmount || fd.fundingAmount <= 0)
-        missing.push('Funding Amount');
-      if (!fd.milestones || fd.milestones.length === 0) {
-        missing.push('At least one milestone');
-      } else {
-        const totalPct = fd.milestones.reduce(
-          (sum, m) => sum + Number(m.fundingPercentage || 0),
-          0
-        );
-        if (totalPct !== 100) {
-          missing.push(
-            `Milestone percentages must sum to 100% (currently ${totalPct}%)`
-          );
-        }
-      }
-    }
-
+    const missing = validatePublishFields(fd, isCampaignToPublish);
     if (missing.length > 0) {
       setPublishPhase('idle');
       setPublishValidationError(
@@ -496,9 +673,8 @@ export const useProjectCreation = () => {
     setIsPublishInProgress(true);
     try {
       setPublishPhase('flushing');
-      const isCampaignToPublish = autosaveRef.current.isCampaign;
       await updateDraftMutation.mutateAsync(
-        toApiPayload(fd, isCampaignToPublish)
+        buildDraftPayload(fd, isCampaignToPublish)
       );
 
       let onChainId: string | undefined;
@@ -510,131 +686,11 @@ export const useProjectCreation = () => {
             'Wallet not connected. Please connect your wallet to publish a campaign.'
           );
         }
-
         setPublishPhase('deploying');
-
-        const rawKit = await getSmartAccountKit();
-        if (!rawKit.isConnected) {
-          const connected = await connectSmartWallet();
-          if (!connected) {
-            throw new Error(
-              'Wallet connection was cancelled. Please connect your wallet and try again.'
-            );
-          }
-        }
-        const kit = await getConnectedKit();
-
-        const funding_goal = BigInt(
-          Math.floor((fd.fundingAmount || 0) * 10_000_000)
-        );
-        const asset =
-          process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet'
-            ? 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75'
-            : 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA';
-        const deadline = BigInt(
-          Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60
-        );
-        const min_pledge = BigInt(10_000_000);
-        const milestones = fd.milestones || [];
-        const milestone_descs = milestones.map(
-          m =>
-            [
-              m.title || m.description || 'Milestone',
-              Math.floor((m.fundingPercentage || 0) * 100),
-            ] as [string, number]
-        );
-
-        const tx = await crowdfundRegistry.create_campaign({
-          owner: address,
-          metadata_cid: draftId,
-          funding_goal,
-          asset,
-          deadline,
-          milestone_descs,
-          min_pledge,
-          submit: true,
-        });
-
-        const simResult = tx.result as
-          | {
-              isOk(): boolean;
-              isErr(): boolean;
-              unwrap(): bigint;
-              unwrapErr(): { message: string };
-            }
-          | bigint
-          | null
-          | undefined;
-
-        if (simResult === null || simResult === undefined) {
-          throw new Error(
-            'Contract simulation returned no campaign ID. Please try again.'
-          );
-        }
-
-        if (typeof simResult === 'bigint') {
-          onChainId = simResult.toString();
-        } else if (typeof simResult === 'object') {
-          if (simResult.isErr()) {
-            throw new Error(
-              `Contract simulation error: ${simResult.unwrapErr()?.message ?? 'unknown'}`
-            );
-          }
-          if (simResult.isOk()) {
-            const val = simResult.unwrap();
-            if (val !== undefined && val !== null) onChainId = val.toString();
-          }
-        }
-
-        if (!onChainId) {
-          throw new Error(
-            'Contract simulation returned no campaign ID. Please try again.'
-          );
-        }
-
-        const result = await kit.signAndSubmit(tx);
-        transactionHash = result.hash;
-
-        if (!result.success) {
-          throw new Error(
-            `Contract transaction failed: ${result.error || 'Unknown error'}`
-          );
-        }
-
-        if (result.hash) {
-          const rpcUrl =
-            process.env.NEXT_PUBLIC_STELLAR_RPC_URL ||
-            'https://soroban-testnet.stellar.org';
-
-          let status: string | undefined;
-          for (let attempt = 0; attempt < 12; attempt++) {
-            const resp = await fetch(rpcUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                jsonrpc: '2.0',
-                id: 1,
-                method: 'getTransaction',
-                params: { hash: result.hash },
-              }),
-            });
-            const json = await resp.json();
-            status = json?.result?.status as string | undefined;
-            if (status === 'SUCCESS' || status === 'FAILED') break;
-            await new Promise(r => setTimeout(r, 2000));
-          }
-
-          if (status === 'FAILED') {
-            throw new Error(
-              'On-chain campaign creation transaction failed. Please try again.'
-            );
-          }
-          if (status !== 'SUCCESS') {
-            throw new Error(
-              `On-chain transaction timed out. Verify transaction ${result.hash} and try again.`
-            );
-          }
-        }
+        ({ onChainId, transactionHash } = await deployCampaignOnChain(
+          fd,
+          address
+        ));
       }
 
       setPublishPhase('submitting');
@@ -646,17 +702,26 @@ export const useProjectCreation = () => {
       });
 
       setPublishPhase('done');
-      setIsPublishInProgress(false);
       router.replace(isCampaignToPublish ? '/me/crowdfunding' : '/me/projects');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Publishing failed:', err);
-      setIsPublishInProgress(false);
       setPublishPhase('idle');
       setPublishValidationError(
-        err.message || 'An error occurred during publishing'
+        parseWalletError(err) || 'An error occurred during publishing'
       );
+    } finally {
+      setIsPublishInProgress(false);
     }
-  }, [draftId, address, publishMutation, updateDraftMutation, router]);
+  }, [
+    draftId,
+    address,
+    publishMutation,
+    updateDraftMutation,
+    router,
+    deployCampaignOnChain,
+  ]);
+
+  // ─── Drafts List / Delete ───────────────────────────────────────────────────
 
   const recentDrafts = (myDrafts ?? []).map((p: Project) => ({
     id: p.id,
@@ -679,7 +744,7 @@ export const useProjectCreation = () => {
           router.replace('/projects/create', { scroll: false });
         }
       } catch {
-        // surfaces via deleteMutation.error
+        // Surfaces via deleteMutation.error.
       }
     },
     [draftId, isCampaign, deleteMutation, router]

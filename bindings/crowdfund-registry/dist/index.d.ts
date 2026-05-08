@@ -80,9 +80,6 @@ export declare const CrowdfundError: {
     822: {
         message: string;
     };
-    823: {
-        message: string;
-    };
     824: {
         message: string;
     };
@@ -92,7 +89,21 @@ export declare const CrowdfundError: {
     826: {
         message: string;
     };
+    827: {
+        message: string;
+    };
+    828: {
+        message: string;
+    };
+    829: {
+        message: string;
+    };
 };
+/**
+ * On-chain campaign state.
+ * Metadata (title, description, team, etc.) lives in the backend database.
+ * Only financial and access-control state is stored here.
+ */
 export interface Campaign {
     asset: string;
     backer_count: u32;
@@ -100,21 +111,42 @@ export interface Campaign {
     deadline: u64;
     funding_goal: i128;
     id: u64;
-    metadata_cid: string;
     milestone_count: u32;
     min_pledge: i128;
     owner: string;
     pool_id: Buffer;
-    refund_progress: u32;
     status: CampaignStatus;
     vote_session_id: Option<Buffer>;
 }
+/**
+ * On-chain milestone state.
+ * Descriptions live in the backend database — only financial state is stored here.
+ */
 export interface Milestone {
-    description: string;
+    flagged_at: u64;
     id: u32;
     pct: u32;
     status: CrowdfundMilestoneStatus;
 }
+export interface VoteOption {
+    id: u32;
+    label: string;
+    votes: u32;
+    weighted_votes: u64;
+}
+export type VoteStatus = {
+    tag: "Pending";
+    values: void;
+} | {
+    tag: "Active";
+    values: void;
+} | {
+    tag: "Concluded";
+    values: void;
+} | {
+    tag: "Cancelled";
+    values: void;
+};
 export type VoteContext = {
     tag: "CampaignValidation";
     values: void;
@@ -128,10 +160,21 @@ export type VoteContext = {
     tag: "HackathonJudging";
     values: void;
 };
+export interface VotingSession {
+    context: VoteContext;
+    created_at: u64;
+    end_at: u64;
+    module_id: u64;
+    quorum: Option<u32>;
+    session_id: Buffer;
+    start_at: u64;
+    status: VoteStatus;
+    threshold: Option<u32>;
+    threshold_reached: boolean;
+    total_votes: u32;
+    weight_by_reputation: boolean;
+}
 export type CampaignStatus = {
-    tag: "Draft";
-    values: void;
-} | {
     tag: "Submitted";
     values: void;
 } | {
@@ -180,9 +223,25 @@ export type CrowdfundDataKey = {
 } | {
     tag: "Pledge";
     values: readonly [u64, string];
+};
+export type DisputeResolution = {
+    tag: "ApproveCreator";
+    values: void;
 } | {
-    tag: "BackerBatch";
-    values: readonly [u64, u32];
+    tag: "ApproveBacker";
+    values: void;
+};
+/**
+ * Reason a community vote rejected a campaign.
+ * Replaces the old free-form String so the indexer can distinguish cases
+ * without parsing strings.
+ */
+export type VoteRejectionReason = {
+    tag: "RejectMajority";
+    values: void;
+} | {
+    tag: "ExpiredWithoutApproval";
+    values: void;
 };
 export type CrowdfundMilestoneStatus = {
     tag: "Pending";
@@ -339,33 +398,42 @@ export interface Client {
     /**
      * Construct and simulate a create_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
-    create_campaign: ({ owner, metadata_cid, funding_goal, asset, deadline, milestone_descs, min_pledge, submit }: {
+    create_campaign: ({ owner, funding_goal, asset, deadline, milestone_pcts, min_pledge }: {
         owner: string;
-        metadata_cid: string;
         funding_goal: i128;
         asset: string;
         deadline: u64;
-        milestone_descs: Array<readonly [string, u32]>;
+        milestone_pcts: Array<u32>;
         min_pledge: i128;
-        submit: boolean;
     }, options?: MethodOptions) => Promise<AssembledTransaction<Result<u64>>>;
     /**
      * Construct and simulate a reject_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     * Admin pre-vote rejection: cancels the campaign.
+     * The rejection reason is recorded in the backend database, not on-chain.
      */
-    reject_campaign: ({ campaign_id, reason }: {
+    reject_campaign: ({ campaign_id }: {
         campaign_id: u64;
-        reason: string;
+    }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
+    /**
+     * Construct and simulate a resolve_dispute transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     */
+    resolve_dispute: ({ campaign_id, milestone_index, resolution }: {
+        campaign_id: u64;
+        milestone_index: u32;
+        resolution: DisputeResolution;
     }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
     /**
      * Construct and simulate a update_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     * Update a campaign that is still in Submitted status (awaiting review).
+     * Only financial/structural parameters are stored on-chain; metadata
+     * updates (title, description, team, etc.) go through the backend only.
      */
-    update_campaign: ({ campaign_id, metadata_cid, funding_goal, asset, deadline, milestone_descs, min_pledge }: {
+    update_campaign: ({ campaign_id, funding_goal, asset, deadline, milestone_pcts, min_pledge }: {
         campaign_id: u64;
-        metadata_cid: string;
         funding_goal: i128;
         asset: string;
         deadline: u64;
-        milestone_descs: Array<readonly [string, u32]>;
+        milestone_pcts: Array<u32>;
         min_pledge: i128;
     }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
     /**
@@ -412,15 +480,16 @@ export interface Client {
         milestone_index: u32;
     }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
     /**
-     * Construct and simulate a submit_for_review transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-     */
-    submit_for_review: ({ campaign_id }: {
-        campaign_id: u64;
-    }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
-    /**
      * Construct and simulate a get_campaign_count transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
     get_campaign_count: (options?: MethodOptions) => Promise<AssembledTransaction<u64>>;
+    /**
+     * Construct and simulate a get_dispute_status transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     */
+    get_dispute_status: ({ campaign_id, milestone_index }: {
+        campaign_id: u64;
+        milestone_index: u32;
+    }, options?: MethodOptions) => Promise<AssembledTransaction<Result<CrowdfundMilestoneStatus>>>;
     /**
      * Construct and simulate a terminate_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
@@ -435,14 +504,40 @@ export interface Client {
     }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
     /**
      * Construct and simulate a process_refund_batch transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     * Process a batch of refunds for a Failed or Cancelled campaign.
+     *
+     * The backend provides the list of backers to refund in this call.
+     * The contract verifies each backer's stored pledge amount (ignoring
+     * the hint amount from the caller) to prevent over-refunding, then
+     * zeroes the pledge to prevent double-refunds.
+     *
+     * The backend is responsible for batch pagination and tracking which
+     * backers have already been processed. This function is permissionless —
+     * any caller may submit a batch.
      */
-    process_refund_batch: ({ campaign_id }: {
+    process_refund_batch: ({ campaign_id, backers }: {
+        campaign_id: u64;
+        backers: Array<readonly [string, i128]>;
+    }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
+    /**
+     * Construct and simulate a owner_cancel_campaign transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     */
+    owner_cancel_campaign: ({ campaign_id }: {
         campaign_id: u64;
     }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
     /**
      * Construct and simulate a flag_overdue_milestone transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
      */
     flag_overdue_milestone: ({ campaign_id, milestone_index }: {
+        campaign_id: u64;
+        milestone_index: u32;
+    }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
+    /**
+     * Construct and simulate a escalate_overdue_milestone transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+     * Permissionless: escalate an overdue milestone after the 14-day grace period.
+     * Rejects the milestone and cancels the campaign, enabling refunds.
+     */
+    escalate_overdue_milestone: ({ campaign_id, milestone_index }: {
         campaign_id: u64;
         milestone_index: u32;
     }, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>;
@@ -479,6 +574,7 @@ export declare class Client extends ContractClient {
         cancel_campaign: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         create_campaign: (json: string) => AssembledTransaction<Result<bigint, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         reject_campaign: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
+        resolve_dispute: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         update_campaign: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         approve_campaign: (json: string) => AssembledTransaction<Result<Buffer<ArrayBufferLike>, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         get_vote_session: (json: string) => AssembledTransaction<Result<Buffer<ArrayBufferLike>, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
@@ -486,12 +582,14 @@ export declare class Client extends ContractClient {
         submit_milestone: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         approve_milestone: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         dispute_milestone: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
-        submit_for_review: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         get_campaign_count: (json: string) => AssembledTransaction<bigint>;
+        get_dispute_status: (json: string) => AssembledTransaction<Result<CrowdfundMilestoneStatus, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         terminate_campaign: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         check_vote_threshold: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         process_refund_batch: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
+        owner_cancel_campaign: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         flag_overdue_milestone: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
+        escalate_overdue_milestone: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
         request_milestone_revision: (json: string) => AssembledTransaction<Result<void, import("@stellar/stellar-sdk/contract").ErrorMessage>>;
     };
 }

@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useWalletStore } from '@/lib/stores/walletStore';
 import { fundPool, getPool, type EscrowPool } from '@/lib/api/escrow';
 import { toast } from 'sonner';
 import { Loader2, CheckCircle2, DollarSign, AlertCircle } from 'lucide-react';
@@ -30,7 +30,7 @@ export const ProjectFundEscrow = ({
   contractId,
   onSuccess,
 }: ProjectFundEscrowProps) => {
-  const { walletAddress } = useWalletContext();
+  const walletAddress = useWalletStore(s => s.contractId);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingEscrow, setIsFetchingEscrow] = useState(false);
   const [pool, setPool] = useState<EscrowPool | null>(null);

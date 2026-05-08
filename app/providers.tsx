@@ -2,11 +2,10 @@
 
 import { ReactNode, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/components/providers/auth-provider';
 import { SessionProvider } from '@/components/providers/AuthProvider';
 import { SocketProvider } from '@/components/providers/socket-provider';
-import { WalletProvider } from '@/components/providers/wallet-provider';
-import { SmartWalletProvider } from '@/components/providers/smart-wallet-provider';
 import { OnboardingGuardProvider } from '@/components/providers/onboarding-guard-provider';
 import { MessagesProvider } from '@/components/messages/MessagesProvider';
 import { EscrowProvider } from '@/lib/providers/EscrowProvider';
@@ -32,24 +31,27 @@ export function Providers({ children }: ProvidersProps) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SessionProvider>
-          <AuthModalProvider>
-            <SocketProvider>
-              <WalletProvider>
-                <SmartWalletProvider>
-                  <OnboardingGuardProvider>
-                    <MessagesProvider>
-                      <EscrowProvider>{children}</EscrowProvider>
-                    </MessagesProvider>
-                  </OnboardingGuardProvider>
-                </SmartWalletProvider>
-              </WalletProvider>
-            </SocketProvider>
-          </AuthModalProvider>
-        </SessionProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider
+      attribute='class'
+      defaultTheme='dark'
+      enableSystem={false}
+      disableTransitionOnChange
+    >
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <SessionProvider>
+            <AuthModalProvider>
+              <SocketProvider>
+                <OnboardingGuardProvider>
+                  <MessagesProvider>
+                    <EscrowProvider>{children}</EscrowProvider>
+                  </MessagesProvider>
+                </OnboardingGuardProvider>
+              </SocketProvider>
+            </AuthModalProvider>
+          </SessionProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

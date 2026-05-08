@@ -16,31 +16,20 @@ import {
   ArrowDownLeft,
   History,
   Coins,
-  LogOut,
   CheckCircle,
-  RefreshCw,
   Loader2,
-  Plus,
-  CheckCircle2,
   ChevronLeft,
-  X,
-  QrCode,
   AlertCircle,
-  Fingerprint,
   Flame,
   Undo2,
-  type LucideIcon,
 } from 'lucide-react';
 import { AssetIcon } from './AssetIcon';
-import { useWallet } from '@/hooks/use-wallet';
-import { useWalletContext } from '@/components/providers/wallet-provider';
-import {
-  validateSendDestination,
-  sendFunds,
-  confirmSend,
-  type SupportedTrustlineAsset,
-} from '@/lib/api/wallet';
-import { signTransaction } from '@/lib/config/wallet-kit';
+import { useWalletStore } from '@/lib/stores/walletStore';
+import { useDisconnect } from '@/hooks/wallet/useDisconnect';
+import { useBalances } from '@/hooks/assets/useBalances';
+import { useTransactions } from '@/hooks/transactions/useTransactions';
+import { useTransfer } from '@/hooks/wallet/useTransfer';
+import { type AssetSymbol } from '@/lib/smartwallet/config';
 import {
   formatAddress,
   getExplorerUrl,
@@ -76,59 +65,54 @@ import type { ApiError } from '@/lib/api/api';
 import { QRCodeSVG } from 'qrcode.react';
 
 /**
- * Map transaction type to display properties: label, icon, colors.
+ * Map transaction type + direction to display properties: label, icon, colors.
  */
-function getTxDisplay(type: string, note?: string | null) {
-  switch (type) {
-    case 'DEPOSIT':
-      return {
+function getTxDisplay(type: string, isReceive: boolean) {
+  const normalized = type.toLowerCase();
+
+  if (normalized === 'fee') {
+    return {
+      label: 'Network Fee',
+      icon: <Flame className='h-5 w-5' />,
+      bgColor: 'bg-red-500/10 text-red-400',
+      amountColor: 'text-red-400',
+      sign: '-',
+    };
+  }
+  if (normalized === 'payout') {
+    return {
+      label: 'Payout',
+      icon: <Coins className='h-5 w-5' />,
+      bgColor: 'bg-blue-500/10 text-blue-500',
+      amountColor: 'text-blue-500',
+      sign: '+',
+    };
+  }
+  if (normalized === 'refund') {
+    return {
+      label: 'Refund',
+      icon: <Undo2 className='h-5 w-5' />,
+      bgColor: 'bg-purple-500/10 text-purple-500',
+      amountColor: 'text-purple-500',
+      sign: '+',
+    };
+  }
+
+  return isReceive
+    ? {
         label: 'Received',
         icon: <ArrowDownLeft className='h-5 w-5' />,
         bgColor: 'bg-green-500/10 text-green-500',
         amountColor: 'text-green-600',
         sign: '+',
-      };
-    case 'WITHDRAWAL':
-      return {
-        label: note?.startsWith('approved') ? 'Approval' : 'Sent',
+      }
+    : {
+        label: 'Sent',
         icon: <ArrowUpRight className='h-5 w-5' />,
         bgColor: 'bg-orange-500/10 text-orange-500',
         amountColor: 'text-foreground',
         sign: '-',
       };
-    case 'FEE':
-      return {
-        label: 'Network Fee',
-        icon: <Flame className='h-5 w-5' />,
-        bgColor: 'bg-red-500/10 text-red-400',
-        amountColor: 'text-red-400',
-        sign: '-',
-      };
-    case 'PAYOUT':
-      return {
-        label: 'Payout',
-        icon: <Coins className='h-5 w-5' />,
-        bgColor: 'bg-blue-500/10 text-blue-500',
-        amountColor: 'text-blue-500',
-        sign: '+',
-      };
-    case 'REFUND':
-      return {
-        label: 'Refund',
-        icon: <Undo2 className='h-5 w-5' />,
-        bgColor: 'bg-purple-500/10 text-purple-500',
-        amountColor: 'text-purple-500',
-        sign: '+',
-      };
-    default:
-      return {
-        label: type.charAt(0) + type.slice(1).toLowerCase(),
-        icon: <History className='h-5 w-5' />,
-        bgColor: 'bg-muted text-muted-foreground',
-        amountColor: 'text-foreground',
-        sign: '',
-      };
-  }
 }
 
 export type DrawerView = 'main' | 'receive' | 'send';
@@ -145,27 +129,16 @@ export function WalletSheet({
   initialView,
 }: WalletSheetProps) {
   const [view, setView] = useState<DrawerView>('main');
-  const { handleDisconnect } = useWallet();
-  const {
-    walletAddress,
-    walletName,
-    walletType,
-    balances,
-    transactions,
-    totalPortfolioValue,
-    syncWallet,
-    refreshWallet,
-    getSupportedTrustlineAssets,
-    addTrustline,
-    isLoading,
-    hasWalletFromSession,
-  } = useWalletContext();
+  const isRestoring = useWalletStore(s => s.isRestoring);
+  const disconnect = useDisconnect();
+  const contractId = useWalletStore(s => s.contractId);
+  const { balances, totalUsd } = useBalances();
+  const { transactions } = useTransactions();
+  const transfer = useTransfer();
+  const walletAddress = contractId;
+  const walletType = 'smart';
+  const walletName = 'Smart Wallet';
   const [copied, setCopied] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [supportedTrustlines, setSupportedTrustlines] = useState<
-    SupportedTrustlineAsset[]
-  >([]);
-  const [addingAsset, setAddingAsset] = useState<string | null>(null);
 
   // Send form state
   const [sendDestination, setSendDestination] = useState('');
@@ -215,45 +188,6 @@ export function WalletSheet({
     setSendErrorDetails([]);
   }, []);
 
-  const handleSync = useCallback(async () => {
-    setIsSyncing(true);
-    try {
-      await syncWallet();
-      toast.success('Wallet synced');
-    } catch {
-      toast.error('Sync failed. Try again.');
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [syncWallet]);
-
-  const handleAddTrustline = useCallback(
-    async (assetCode: string) => {
-      setAddingAsset(assetCode);
-      try {
-        await addTrustline(assetCode);
-        toast.success(`${assetCode} trustline added`);
-      } catch (err: unknown) {
-        const message =
-          err && typeof err === 'object' && 'message' in err
-            ? String((err as { message: string }).message)
-            : 'Could not add trustline. Wallet may need activation or more XLM.';
-        toast.error(message);
-      } finally {
-        setAddingAsset(null);
-      }
-    },
-    [addTrustline]
-  );
-
-  useEffect(() => {
-    if (open && walletAddress) {
-      getSupportedTrustlineAssets()
-        .then(setSupportedTrustlines)
-        .catch(() => setSupportedTrustlines([]));
-    }
-  }, [open, walletAddress, getSupportedTrustlineAssets]);
-
   useEffect(() => {
     if (open && initialView) {
       setView(initialView);
@@ -263,9 +197,7 @@ export function WalletSheet({
   useEffect(() => {
     if (view === 'send' && !sendCurrency && balances.length > 0) {
       const first = balances[0];
-      setSendCurrency(
-        first?.asset_type === 'native' ? 'XLM' : (first?.asset_code ?? '')
-      );
+      setSendCurrency(first?.code ?? '');
     }
   }, [view, sendCurrency, balances]);
 
@@ -288,19 +220,9 @@ export function WalletSheet({
     setValidateError('');
     setValidateResult('idle');
     try {
-      const result = await validateSendDestination(dest, currency);
-
       if (sendDestination.trim() !== dest) return;
-
-      if (result.valid) {
-        setValidateResult('valid');
-        setValidateError('');
-      } else {
-        setValidateResult('invalid');
-        setValidateError(
-          'Destination not valid: may be unactivated or missing trustline for this asset.'
-        );
-      }
+      setValidateResult('valid');
+      setValidateError('');
     } catch (err: unknown) {
       if (sendDestination.trim() !== dest) return;
 
@@ -356,12 +278,10 @@ export function WalletSheet({
       setSendError('Enter a valid amount');
       return;
     }
-    const selectedBalance = balances.find(
-      b =>
-        (b.asset_type === 'native' && currency === 'XLM') ||
-        b.asset_code === currency
-    );
-    const maxAmount = selectedBalance ? parseFloat(selectedBalance.balance) : 0;
+    const selectedBalance = balances.find(b => b.code === currency);
+    const maxAmount = selectedBalance
+      ? parseFloat(selectedBalance.formatted)
+      : 0;
     if (amount > maxAmount) {
       setSendError(
         `Amount exceeds balance (max ${formatBalance(String(maxAmount))} ${currency})`
@@ -371,30 +291,13 @@ export function WalletSheet({
     setSendLoading(true);
     setSendError('');
     try {
-      const result = await sendFunds({
-        destinationPublicKey: dest,
+      await transfer.mutateAsync({
+        asset: currency as AssetSymbol,
+        recipient: dest,
         amount,
-        currency,
-        idempotencyKey: crypto.randomUUID(),
       });
 
-      // Smart wallet: two-step flow — sign unsigned XDR, then confirm
-      if (
-        result &&
-        'step' in result &&
-        result.step === 'sign_transfer' &&
-        typeof result.unsignedXdr === 'string'
-      ) {
-        toast.info('Please approve with your passkey…');
-        const signedXdr = await signTransaction({
-          unsignedTransaction: result.unsignedXdr,
-          address: walletAddress!,
-        });
-        await confirmSend(signedXdr);
-      }
-
       toast.success('Send submitted successfully');
-      refreshWallet();
       resetSendForm();
       setView('main');
     } catch (err: unknown) {
@@ -411,7 +314,7 @@ export function WalletSheet({
     validateResult,
     balances,
     walletAddress,
-    refreshWallet,
+
     resetSendForm,
     getErrorDisplay,
   ]);
@@ -435,16 +338,6 @@ export function WalletSheet({
     }
   };
 
-  const handleDisconnectClick = async () => {
-    try {
-      await handleDisconnect();
-      handleOpenChange(false);
-      toast.success('Wallet disconnected');
-    } catch {
-      toast.error('Failed to disconnect');
-    }
-  };
-
   const formatBalance = (amount: string) => {
     const value = parseFloat(amount);
     if (isNaN(value)) return '0.00';
@@ -461,9 +354,9 @@ export function WalletSheet({
     }).format(amount);
   };
 
-  if (!walletAddress && !hasWalletFromSession) return null;
+  if (!walletAddress && !isRestoring) return null;
 
-  if (!walletAddress && hasWalletFromSession) {
+  if (!walletAddress && isRestoring) {
     return (
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent className='flex h-full w-full flex-col gap-0 p-0 sm:max-w-md'>
@@ -495,48 +388,19 @@ export function WalletSheet({
                 <SheetHeader className='border-border/50 border-b p-6 pb-2'>
                   <div className='flex items-center justify-between'>
                     <SheetTitle className='flex items-center gap-2 text-lg font-semibold'>
-                      {walletType === 'smart' ? (
-                        <Fingerprint className='text-primary h-5 w-5' />
-                      ) : (
-                        <Wallet className='text-primary h-5 w-5' />
-                      )}
+                      <Wallet className='text-primary h-5 w-5' />
                       {walletName || 'My Wallet'}
                     </SheetTitle>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='text-muted-foreground hover:text-destructive h-8 w-8'
-                      onClick={handleDisconnectClick}
-                      title='Disconnect Wallet'
-                    >
-                      <LogOut className='h-4 w-4' />
-                    </Button>
                   </div>
 
                   <div className='bg-card border-border mt-4 rounded-xl border p-4 shadow-sm'>
-                    <div className='flex items-start justify-between gap-2'>
-                      <div>
-                        <div className='text-muted-foreground mb-1 text-sm'>
-                          Portfolio Value
-                        </div>
-                        <div className='text-3xl font-bold tracking-tight'>
-                          {formatUSD(totalPortfolioValue)}
-                        </div>
+                    <div>
+                      <div className='text-muted-foreground mb-1 text-sm'>
+                        Portfolio Value
                       </div>
-                      <Button
-                        variant='ghost'
-                        size='icon'
-                        onClick={handleSync}
-                        disabled={isSyncing}
-                        title='Sync wallet'
-                        aria-label='Sync wallet'
-                      >
-                        {isSyncing ? (
-                          <Loader2 className='h-4 w-4 animate-spin' />
-                        ) : (
-                          <RefreshCw className='h-4 w-4' />
-                        )}
-                      </Button>
+                      <div className='text-3xl font-bold tracking-tight'>
+                        {formatUSD(parseFloat(totalUsd))}
+                      </div>
                     </div>
                     <div className='bg-muted/50 mt-3 flex items-center gap-2 rounded-lg p-2'>
                       <code className='text-foreground/80 flex-1 truncate font-mono text-xs'>
@@ -613,94 +477,36 @@ export function WalletSheet({
                             </div>
                           ) : (
                             balances.map((asset, index) => {
-                              const isNative = asset.asset_type === 'native';
-                              const code = isNative ? 'XLM' : asset.asset_code;
-                              const name =
-                                asset.asset_name ??
-                                (isNative
-                                  ? 'Stellar Lumens'
-                                  : asset.asset_code);
+                              const isNative = asset.code === 'XLM';
+                              const code = asset.code;
+                              const name = asset.name;
 
                               return (
                                 <div
                                   key={index}
-                                  className='hover:bg-muted/50 hover:border-border/50 flex items-center justify-between rounded-xl border border-transparent p-3 transition-colors'
+                                  className='hover:border-border/50 hover:bg-muted/50 flex items-center justify-between rounded-xl border border-transparent p-3 transition-colors'
                                 >
                                   <div className='flex items-center gap-3'>
                                     <AssetIcon
                                       assetCode={
-                                        isNative
-                                          ? 'native'
-                                          : (asset.asset_code ?? '')
+                                        isNative ? 'native' : asset.code
                                       }
                                       size={40}
                                     />
                                     <div>
                                       <div className='font-medium'>{name}</div>
                                       <div className='text-muted-foreground text-xs'>
-                                        {formatBalance(asset.balance)} {code}
+                                        {formatBalance(asset.formatted)} {code}
                                       </div>
                                     </div>
                                   </div>
                                   <div className='font-medium'>
-                                    {asset.usdValue != null
-                                      ? formatUSD(asset.usdValue)
-                                      : formatBalance(asset.balance)}
+                                    {formatBalance(asset.formatted)}
                                   </div>
                                 </div>
                               );
                             })
                           )}
-
-                          {walletType !== 'smart' &&
-                            supportedTrustlines.length > 0 && (
-                              <div className='mt-4 space-y-2'>
-                                <span className='text-muted-foreground text-xs font-medium'>
-                                  Add trustline
-                                </span>
-                                <div className='space-y-1'>
-                                  {supportedTrustlines.map(asset => {
-                                    const hasTrustline = balances.some(
-                                      b =>
-                                        (b.asset_type === 'native' &&
-                                          asset.assetCode === 'XLM') ||
-                                        (b.asset_type !== 'native' &&
-                                          b.asset_code === asset.assetCode)
-                                    );
-                                    return (
-                                      <Button
-                                        key={asset.assetCode}
-                                        variant='outline'
-                                        size='sm'
-                                        className='w-full justify-start gap-2 border-dashed'
-                                        onClick={() =>
-                                          handleAddTrustline(asset.assetCode)
-                                        }
-                                        disabled={
-                                          hasTrustline ||
-                                          addingAsset === asset.assetCode
-                                        }
-                                      >
-                                        {addingAsset === asset.assetCode ? (
-                                          <Loader2 className='h-3.5 w-3.5 shrink-0 animate-spin' />
-                                        ) : hasTrustline ? (
-                                          <CheckCircle2 className='text-muted-foreground h-3.5 w-3.5 shrink-0' />
-                                        ) : (
-                                          <AssetIcon
-                                            assetCode={asset.assetCode}
-                                            size={20}
-                                            className='shrink-0'
-                                          />
-                                        )}
-                                        {hasTrustline
-                                          ? `${asset.assetCode} trustline added`
-                                          : `Enable ${asset.assetCode}${asset.name ? ` (${asset.name})` : ''}`}
-                                      </Button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
                         </div>
                       </ScrollArea>
                     </TabsContent>
@@ -717,15 +523,10 @@ export function WalletSheet({
                             </div>
                           ) : (
                             transactions.map((tx, index) => {
-                              const txMeta = getTxDisplay(tx.type, tx.note);
-                              const txHash =
-                                tx.metadata?.txHash ||
-                                tx.metadata?.hash ||
-                                tx.externalTxId;
-                              const hasTxHash =
-                                txHash &&
-                                typeof txHash === 'string' &&
-                                /^[a-f0-9]{64}$/i.test(txHash);
+                              const isReceive = tx.to === walletAddress;
+                              const txMeta = getTxDisplay(tx.type, isReceive);
+                              const txHash = tx.hash;
+                              const hasTxHash = !!txHash;
                               const explorerUrl = hasTxHash
                                 ? getTransactionExplorerUrl(txHash)
                                 : walletAddress
@@ -760,11 +561,6 @@ export function WalletSheet({
                                           <ExternalLink className='h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60' />
                                         )}
                                       </div>
-                                      {tx.note && (
-                                        <div className='text-muted-foreground max-w-[180px] truncate text-[11px]'>
-                                          {tx.note}
-                                        </div>
-                                      )}
                                       <div className='text-muted-foreground text-xs'>
                                         {new Date(
                                           tx.createdAt
@@ -777,10 +573,10 @@ export function WalletSheet({
                                       className={`text-sm font-medium ${txMeta.amountColor}`}
                                     >
                                       {txMeta.sign}
-                                      {tx.amount} {tx.currency}
+                                      {tx.amountFormatted} {tx.asset}
                                     </div>
                                     <div className='text-muted-foreground text-xs'>
-                                      {tx.state}
+                                      {tx.successful ? 'success' : 'failed'}
                                     </div>
                                   </div>
                                 </Wrapper>
@@ -985,24 +781,20 @@ export function WalletSheet({
                       </SelectTrigger>
                       <SelectContent className='z-100'>
                         {balances.map((asset, index) => {
-                          const isNative = asset.asset_type === 'native';
-                          const code = isNative ? 'XLM' : asset.asset_code;
+                          const isNative = asset.code === 'XLM';
+                          const code = asset.code;
                           return (
                             <SelectItem
                               key={index}
-                              value={code ?? ''}
+                              value={code}
                               disabled={!code}
                             >
                               <span className='flex items-center gap-2'>
                                 <AssetIcon
-                                  assetCode={
-                                    isNative
-                                      ? 'native'
-                                      : (asset.asset_code ?? '')
-                                  }
+                                  assetCode={isNative ? 'native' : asset.code}
                                   size={20}
                                 />
-                                {code} — {formatBalance(asset.balance)}
+                                {code} — {formatBalance(asset.formatted)}
                               </span>
                             </SelectItem>
                           );
@@ -1024,13 +816,8 @@ export function WalletSheet({
                     />
                     {sendCurrency &&
                       (() => {
-                        const sel = balances.find(
-                          b =>
-                            (b.asset_type === 'native' &&
-                              sendCurrency === 'XLM') ||
-                            b.asset_code === sendCurrency
-                        );
-                        const max = sel ? parseFloat(sel.balance) : 0;
+                        const sel = balances.find(b => b.code === sendCurrency);
+                        const max = sel ? parseFloat(sel.formatted) : 0;
                         return (
                           <p className='text-muted-foreground text-xs'>
                             Max: {formatBalance(String(max))} {sendCurrency}

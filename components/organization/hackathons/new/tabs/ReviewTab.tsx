@@ -5,7 +5,7 @@ import { ParticipantFormData } from './schemas/participantSchema';
 import { RewardsFormData } from './schemas/rewardsSchema';
 import { JudgingFormData } from './schemas/judgingSchema';
 import { CollaborationFormData } from './schemas/collaborationSchema';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useWalletStore } from '@/lib/stores/walletStore';
 import {
   Accordion,
   AccordionContent,
@@ -51,7 +51,7 @@ export default function ReviewTab({
   draftId,
 }: ReviewTabProps) {
   const [showDraftModal, setShowDraftModal] = useState(false);
-  const { walletAddress } = useWalletContext();
+  const walletAddress = useWalletStore(s => s.contractId);
 
   const { totalPrizePool, platformFee, totalFunding } =
     usePrizePoolCalculations(allData.rewards);

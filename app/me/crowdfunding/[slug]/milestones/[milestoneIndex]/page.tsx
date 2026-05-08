@@ -14,8 +14,6 @@ import { MilestoneDetailInfo } from '@/components/crowdfunding/milestone-detail-
 import { MilestoneDetailDescription } from '@/components/crowdfunding/milestone-detail-description';
 import { MilestoneDetailLinks } from '@/components/crowdfunding/milestone-detail-links';
 import { SubmitEvidenceModal } from '@/components/crowdfunding/submit-evidence-modal';
-import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
-import { useProtectedAction } from '@/hooks/use-protected-action';
 import { toast } from 'sonner';
 
 interface PageProps {
@@ -50,16 +48,6 @@ export default function MilestoneDetailPage({ params }: PageProps) {
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const milestoneIndex = use(params).milestoneIndex;
-
-  const {
-    executeProtectedAction,
-    showWalletModal,
-    closeWalletModal,
-    handleWalletConnected,
-  } = useProtectedAction({
-    actionName: 'submit evidence',
-    onSuccess: () => setShowEvidenceModal(true),
-  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -255,9 +243,7 @@ export default function MilestoneDetailPage({ params }: PageProps) {
         milestone={milestone}
         campaignSlug={campaign.slug}
         backLink={`/me/crowdfunding/${campaign.slug}/milestones`}
-        onSubmitEvidence={() =>
-          executeProtectedAction(() => setShowEvidenceModal(true))
-        }
+        onSubmitEvidence={() => setShowEvidenceModal(true)}
       />
 
       <MilestoneDetailInfo milestone={milestone} campaign={campaign} />
@@ -277,14 +263,6 @@ export default function MilestoneDetailPage({ params }: PageProps) {
         milestoneName={milestone.title}
         onSubmit={handleSubmitEvidence}
         isSubmitting={isSubmitting}
-      />
-
-      {/* Wallet Required Modal */}
-      <WalletRequiredModal
-        open={showWalletModal}
-        onOpenChange={closeWalletModal}
-        actionName='submit evidence'
-        onWalletConnected={handleWalletConnected}
       />
     </div>
   );

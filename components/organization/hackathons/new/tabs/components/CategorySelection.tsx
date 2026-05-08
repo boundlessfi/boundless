@@ -5,7 +5,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Control } from 'react-hook-form';
+import { Control, FieldValues, Path } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 
@@ -24,16 +24,16 @@ const categories = [
   'Other',
 ];
 
-interface CategorySelectionProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  control: Control<any>;
-  name: string;
+interface CategorySelectionProps<
+  TFieldValues extends FieldValues = FieldValues,
+> {
+  control: Control<TFieldValues>;
+  name: Path<TFieldValues>;
 }
 
-export default function CategorySelection({
-  control,
-  name,
-}: CategorySelectionProps) {
+export default function CategorySelection<
+  TFieldValues extends FieldValues = FieldValues,
+>({ control, name }: CategorySelectionProps<TFieldValues>) {
   return (
     <FormField
       control={control}

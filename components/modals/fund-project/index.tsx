@@ -9,7 +9,7 @@ import Confirm, { ConfirmHandle, ConfirmFormData } from './Confirm';
 import Success from '../Success';
 import Loading from '../Loading';
 import { fundCrowdfundingProject } from '@/features/projects/api';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useWalletStore } from '@/lib/stores/walletStore';
 import { useWalletProtection } from '@/hooks/use-wallet-protection';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 import WalletNotReadyModal from '@/components/wallet/WalletNotReadyModal';
@@ -65,7 +65,7 @@ const FundProject = ({ open, setOpen, project }: FundProjectProps) => {
   const [isFetchingEscrow, setIsFetchingEscrow] = useState(false);
 
   // Wallet hooks
-  const { walletAddress } = useWalletContext();
+  const walletAddress = useWalletStore(s => s.contractId);
   const {
     requireWallet,
     showWalletModal,

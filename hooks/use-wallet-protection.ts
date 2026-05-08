@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useWalletStore } from '@/lib/stores/walletStore';
 import {
   useWalletReadiness,
   WalletNotReadyReason,
@@ -13,7 +13,10 @@ interface UseWalletProtectionOptions {
 
 export function useWalletProtection(options: UseWalletProtectionOptions = {}) {
   const { actionName = 'perform this action', showModal = true } = options;
-  const { walletAddress, walletType } = useWalletContext();
+  const walletAddress = useWalletStore(s => s.contractId);
+  const walletType: 'smart' | 'custodial' | null = walletAddress
+    ? 'smart'
+    : null;
   const { checkReadiness } = useWalletReadiness();
 
   const [showWalletModal, setShowWalletModal] = useState(false);

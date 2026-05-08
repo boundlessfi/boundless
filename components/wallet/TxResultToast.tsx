@@ -3,7 +3,6 @@
 import React from 'react';
 import { CheckCircle, XCircle, ExternalLink, Copy } from 'lucide-react';
 import { Button } from '../ui/button';
-import { useWalletStore } from '@/hooks/use-wallet';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { getTransactionExplorerUrl } from '@/lib/wallet-utils';
@@ -21,30 +20,25 @@ const TxResultToast: React.FC<TxResultToastProps> = ({
   message,
   onClose,
 }) => {
-  const { network } = useWalletStore();
+  const network: 'public' | 'testnet' =
+    process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ||
+    process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'public'
+      ? 'public'
+      : 'testnet';
 
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(hash);
       toast.success('Transaction hash copied to clipboard');
-    } catch (error) {
+    } catch (err) {
       toast.error('Failed to copy hash', {
-        description: (error as Error)?.message || 'Please try again',
-        action: {
-          label: 'Dismiss',
-          onClick: () => {},
-        },
+        description: (err as Error)?.message,
       });
     }
   };
 
-  const getExplorerUrl = () => {
-    return getTransactionExplorerUrl(hash, network as any);
-  };
-
-  const formatHash = (txHash: string) => {
-    return `${txHash.slice(0, 8)}...${txHash.slice(-8)}`;
-  };
+  const explorerUrl = getTransactionExplorerUrl(hash, network);
+  const shortHash = `${hash.slice(0, 8)}...${hash.slice(-8)}`;
 
   return (
     <div
@@ -102,9 +96,8 @@ const TxResultToast: React.FC<TxResultToastProps> = ({
 
         <div className='flex items-center gap-2'>
           <code className='rounded bg-gray-100 px-2 py-1 text-xs dark:bg-gray-800'>
-            {formatHash(hash)}
+            {shortHash}
           </code>
-
           <div className='flex items-center gap-1'>
             <Button
               variant='ghost'
@@ -115,7 +108,6 @@ const TxResultToast: React.FC<TxResultToastProps> = ({
             >
               <Copy className='h-3 w-3' />
             </Button>
-
             <Button
               variant='ghost'
               size='sm'
@@ -123,11 +115,7 @@ const TxResultToast: React.FC<TxResultToastProps> = ({
               className='h-6 w-6 p-0 text-gray-500 hover:text-gray-700'
               title='View on StellarExpert'
             >
-              <a
-                href={getExplorerUrl()}
-                target='_blank'
-                rel='noopener noreferrer'
-              >
+              <a href={explorerUrl} target='_blank' rel='noopener noreferrer'>
                 <ExternalLink className='h-3 w-3' />
               </a>
             </Button>

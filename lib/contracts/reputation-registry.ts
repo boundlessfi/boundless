@@ -1,24 +1,6 @@
-/**
- * Reputation Registry contract client with passkey signing.
- *
- * Uses the generated TypeScript bindings and smart-account-kit
- * to build, sign, and submit transactions via the user's passkey.
- */
-import * as ReputationClient from 'reputation-registry';
-import { getConnectedKit } from '@/lib/smart-wallet/client';
-import { smartWalletConfig } from '@/lib/smart-wallet/config';
-
-const REPUTATION_REGISTRY_ADDRESS =
-  process.env.NEXT_PUBLIC_REPUTATION_REGISTRY_ADDRESS ||
-  'CBVQEDH4T5KOJQSESL2HEFI2YZWXPSZQ5TASKRNWAVZFIWAKEU74RFF4';
-
-function getClient() {
-  return new ReputationClient.Client({
-    contractId: REPUTATION_REGISTRY_ADDRESS,
-    networkPassphrase: smartWalletConfig.networkPassphrase,
-    rpcUrl: smartWalletConfig.rpcUrl,
-  });
-}
+import { getKit } from '@/lib/smartwallet/client';
+import { walletConfig } from '@/lib/smartwallet/config';
+import reputationRegistry from '../stellar/clients/reputationRegistry';
 
 /**
  * Initialize an on-chain reputation profile for a smart wallet.
@@ -30,14 +12,9 @@ function getClient() {
  * @returns The signed & submitted transaction result
  */
 export async function initReputationProfile(walletAddress: string) {
-  const client = getClient();
-
-  // Build and simulate the transaction
-  const tx = await client.init_profile({ contributor: walletAddress });
-
-  // Sign and submit via passkey
-  const kit = await getConnectedKit();
-  const result = await kit.signAndSubmit(tx);
-
+  const tx = await reputationRegistry.init_profile({
+    contributor: walletAddress,
+  });
+  const result = await getKit().signAndSubmit(tx as any);
   return result;
 }

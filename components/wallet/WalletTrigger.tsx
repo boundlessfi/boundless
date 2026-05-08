@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useWalletStore } from '@/lib/stores/walletStore';
 import { Button } from '@/components/ui/button';
 import { WalletSheet } from './WalletSheet';
 import { FamilyWalletDrawer } from './FamilyWalletDrawer';
-import { Wallet, ChevronDown, WalletCards, Fingerprint } from 'lucide-react';
+import { Wallet, ChevronDown, WalletCards } from 'lucide-react';
 import { formatAddress } from '@/lib/wallet-utils';
 import { cn } from '@/lib/utils';
 import { GlowingEffect } from '../ui/glowing-effect';
@@ -21,41 +21,30 @@ export function WalletTrigger({
   className,
   drawerType = 'sheet',
 }: WalletTriggerProps) {
-  const { walletAddress, walletType, hasWalletFromSession, isLoading } =
-    useWalletContext();
+  const contractId = useWalletStore(s => s.contractId);
+  const isRestoring = useWalletStore(s => s.isRestoring);
   const [open, setOpen] = useState(false);
 
-  // Wallet is managed by backend; no "Connect Wallet" flow. Show trigger only when
-  // we have a wallet (from API) or session says user has a wallet (e.g. while loading).
-  const showWalletEntry = !!walletAddress || hasWalletFromSession;
-  if (!showWalletEntry) return null;
+  if (!contractId && !isRestoring) return null;
 
-  // While loading and no address yet, show a minimal trigger that opens the drawer (loading state inside)
-  if (!walletAddress && hasWalletFromSession) {
-    const triggerButton = (
-      <Button
-        onClick={() => setOpen(true)}
-        size='icon'
-        className={cn(
-          variant === 'floating' || variant === 'family-button'
-            ? 'fixed right-6 bottom-6 z-50 h-14 w-14 rounded-full shadow-lg'
-            : '',
-          'bg-muted text-muted-foreground',
-          className
-        )}
-        disabled={isLoading}
-        aria-label='Wallet'
-      >
-        {walletType === 'smart' ? (
-          <Fingerprint className='h-5 w-5' />
-        ) : (
-          <Wallet className='h-5 w-5' />
-        )}
-      </Button>
-    );
+  if (!contractId && isRestoring) {
     return (
       <>
-        {triggerButton}
+        <Button
+          onClick={() => setOpen(true)}
+          size='icon'
+          className={cn(
+            variant === 'floating' || variant === 'family-button'
+              ? 'fixed right-6 bottom-6 z-50 h-14 w-14 rounded-full shadow-lg'
+              : '',
+            'bg-muted text-muted-foreground',
+            className
+          )}
+          disabled
+          aria-label='Wallet loading'
+        >
+          <Wallet className='h-5 w-5' />
+        </Button>
         {drawerType === 'family' ? (
           <FamilyWalletDrawer open={open} onOpenChange={setOpen} />
         ) : (
@@ -64,8 +53,6 @@ export function WalletTrigger({
       </>
     );
   }
-
-  const address = walletAddress as string;
 
   return (
     <>
@@ -98,11 +85,7 @@ export function WalletTrigger({
             proximity={64}
             inactiveZone={0.01}
           />
-          {walletType === 'smart' ? (
-            <Fingerprint className='h-5 w-5' />
-          ) : (
-            <Wallet className='h-5 w-5' />
-          )}
+          <Wallet className='h-5 w-5' />
         </Button>
       )}
 
@@ -115,7 +98,7 @@ export function WalletTrigger({
           <div className='flex items-center gap-2'>
             <div className='h-2 w-2 animate-pulse rounded-full bg-green-500' />
             <span className='hidden font-medium sm:inline-block'>
-              {formatAddress(address, 4)}
+              {formatAddress(contractId!, 4)}
             </span>
             <ChevronDown className='text-muted-foreground h-3 w-3' />
           </div>

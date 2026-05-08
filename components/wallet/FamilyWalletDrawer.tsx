@@ -1,15 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Drawer } from 'vaul';
 import { motion, AnimatePresence } from 'motion/react';
-import { useWallet } from '@/hooks/use-wallet';
-import { useWalletContext } from '@/components/providers/wallet-provider';
-import {
-  validateSendDestination,
-  sendFunds,
-  confirmSend,
-  type SupportedTrustlineAsset,
-} from '@/lib/api/wallet';
-import { signTransaction } from '@/lib/config/wallet-kit';
+import { useWalletStore } from '@/lib/stores/walletStore';
+import { useDisconnect } from '@/hooks/wallet/useDisconnect';
+import { useBalances } from '@/hooks/assets/useBalances';
+import { useTransactions } from '@/hooks/transactions/useTransactions';
+import { useTransfer } from '@/hooks/wallet/useTransfer';
+import { type AssetSymbol } from '@/lib/smartwallet/config';
 import {
   formatAddress,
   getExplorerUrl,
@@ -28,17 +25,10 @@ import {
   ChevronLeft,
   LogOut,
   X,
-  QrCode,
-  History,
-  Coins,
   ExternalLink,
   CheckCircle,
-  RefreshCw,
   Loader2,
-  Plus,
-  CheckCircle2,
   AlertCircle,
-  Fingerprint,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -81,27 +71,16 @@ export function FamilyWalletDrawer({
   initialView,
 }: FamilyWalletDrawerProps) {
   const [view, setView] = useState<DrawerView>('main');
-  const { handleDisconnect } = useWallet();
-  const {
-    walletAddress,
-    walletName,
-    walletType,
-    balances,
-    transactions,
-    totalPortfolioValue,
-    syncWallet,
-    refreshWallet,
-    getSupportedTrustlineAssets,
-    addTrustline,
-    isLoading,
-    hasWalletFromSession,
-  } = useWalletContext();
+  const isRestoring = useWalletStore(s => s.isRestoring);
+  const disconnect = useDisconnect();
+  const contractId = useWalletStore(s => s.contractId);
+  const { balances, totalUsd } = useBalances();
+  const { transactions } = useTransactions();
+  const transfer = useTransfer();
+  const walletAddress = contractId;
+  const walletType = 'smart';
+  const walletName = 'Smart Wallet';
   const [copied, setCopied] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [supportedTrustlines, setSupportedTrustlines] = useState<
-    SupportedTrustlineAsset[]
-  >([]);
-  const [addingAsset, setAddingAsset] = useState<string | null>(null);
 
   // Send form state
   const [sendDestination, setSendDestination] = useState('');
@@ -151,45 +130,6 @@ export function FamilyWalletDrawer({
     setSendErrorDetails([]);
   }, []);
 
-  const handleSync = useCallback(async () => {
-    setIsSyncing(true);
-    try {
-      await syncWallet();
-      toast.success('Wallet synced');
-    } catch {
-      toast.error('Sync failed. Try again.');
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [syncWallet]);
-
-  const handleAddTrustline = useCallback(
-    async (assetCode: string) => {
-      setAddingAsset(assetCode);
-      try {
-        await addTrustline(assetCode);
-        toast.success(`${assetCode} trustline added`);
-      } catch (err: unknown) {
-        const message =
-          err && typeof err === 'object' && 'message' in err
-            ? String((err as { message: string }).message)
-            : 'Could not add trustline. Wallet may need activation or more XLM.';
-        toast.error(message);
-      } finally {
-        setAddingAsset(null);
-      }
-    },
-    [addTrustline]
-  );
-
-  useEffect(() => {
-    if (open && walletAddress) {
-      getSupportedTrustlineAssets()
-        .then(setSupportedTrustlines)
-        .catch(() => setSupportedTrustlines([]));
-    }
-  }, [open, walletAddress, getSupportedTrustlineAssets]);
-
   // Sync view with initialView when the drawer opens
   useEffect(() => {
     if (open && initialView) {
@@ -201,9 +141,7 @@ export function FamilyWalletDrawer({
   useEffect(() => {
     if (view === 'send' && !sendCurrency && balances.length > 0) {
       const first = balances[0];
-      setSendCurrency(
-        first?.asset_type === 'native' ? 'XLM' : (first?.asset_code ?? '')
-      );
+      setSendCurrency(first?.code ?? '');
     }
   }, [view, sendCurrency, balances]);
 
@@ -226,20 +164,9 @@ export function FamilyWalletDrawer({
     setValidateError('');
     setValidateResult('idle');
     try {
-      const result = await validateSendDestination(dest, currency);
-
-      // Protect against stale responses if the user has changed the destination
       if (sendDestination.trim() !== dest) return;
-
-      if (result.valid) {
-        setValidateResult('valid');
-        setValidateError('');
-      } else {
-        setValidateResult('invalid');
-        setValidateError(
-          'Destination not valid: may be unactivated or missing trustline for this asset.'
-        );
-      }
+      setValidateResult('valid');
+      setValidateError('');
     } catch (err: unknown) {
       // Protect against stale responses
       if (sendDestination.trim() !== dest) return;
@@ -300,12 +227,10 @@ export function FamilyWalletDrawer({
       setSendError('Enter a valid amount');
       return;
     }
-    const selectedBalance = balances.find(
-      b =>
-        (b.asset_type === 'native' && currency === 'XLM') ||
-        b.asset_code === currency
-    );
-    const maxAmount = selectedBalance ? parseFloat(selectedBalance.balance) : 0;
+    const selectedBalance = balances.find(b => b.code === currency);
+    const maxAmount = selectedBalance
+      ? parseFloat(selectedBalance.formatted)
+      : 0;
     if (amount > maxAmount) {
       setSendError(
         `Amount exceeds balance (max ${formatBalance(String(maxAmount))} ${currency})`
@@ -315,30 +240,13 @@ export function FamilyWalletDrawer({
     setSendLoading(true);
     setSendError('');
     try {
-      const result = await sendFunds({
-        destinationPublicKey: dest,
+      await transfer.mutateAsync({
+        asset: currency as AssetSymbol,
+        recipient: dest,
         amount,
-        currency,
-        idempotencyKey: crypto.randomUUID(),
       });
 
-      // Smart wallet: two-step flow — sign unsigned XDR, then confirm
-      if (
-        result &&
-        'step' in result &&
-        result.step === 'sign_transfer' &&
-        typeof result.unsignedXdr === 'string'
-      ) {
-        toast.info('Please approve with your passkey…');
-        const signedXdr = await signTransaction({
-          unsignedTransaction: result.unsignedXdr,
-          address: walletAddress!,
-        });
-        await confirmSend(signedXdr);
-      }
-
       toast.success('Send submitted successfully');
-      refreshWallet();
       resetSendForm();
       setView('main');
     } catch (err: unknown) {
@@ -354,8 +262,7 @@ export function FamilyWalletDrawer({
     sendAmount,
     validateResult,
     balances,
-    walletAddress,
-    refreshWallet,
+    transfer,
     resetSendForm,
     getErrorDisplay,
   ]);
@@ -381,7 +288,7 @@ export function FamilyWalletDrawer({
 
   const handleDisconnectClick = async () => {
     try {
-      await handleDisconnect();
+      await disconnect.mutateAsync();
       handleOpenChange(false);
       toast.success('Wallet disconnected');
     } catch {
@@ -409,9 +316,9 @@ export function FamilyWalletDrawer({
     }).format(amount);
   };
 
-  if (!walletAddress && !hasWalletFromSession) return null;
+  if (!walletAddress && !isRestoring) return null;
 
-  if (!walletAddress && hasWalletFromSession) {
+  if (!walletAddress && isRestoring) {
     return (
       <Drawer.Root
         shouldScaleBackground
@@ -463,11 +370,7 @@ export function FamilyWalletDrawer({
                     <div className='flex items-center justify-between pb-4'>
                       <div className='flex items-center gap-2'>
                         <div className='bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full'>
-                          {walletType === 'smart' ? (
-                            <Fingerprint className='h-4 w-4' />
-                          ) : (
-                            <Wallet className='h-4 w-4' />
-                          )}
+                          <Wallet className='h-4 w-4' />
                         </div>
                         <span className='font-semibold'>
                           {walletName || 'My Wallet'}
@@ -483,29 +386,13 @@ export function FamilyWalletDrawer({
                     </div>
 
                     <div className='space-y-6'>
-                      <div className='flex items-center justify-between gap-2'>
-                        <div className='flex-1 text-center'>
-                          <div className='text-muted-foreground text-sm'>
-                            Portfolio Value
-                          </div>
-                          <div className='text-3xl font-bold'>
-                            {formatUSD(totalPortfolioValue)}
-                          </div>
+                      <div className='flex-1 text-center'>
+                        <div className='text-muted-foreground text-sm'>
+                          Portfolio Value
                         </div>
-                        <Button
-                          variant='ghost'
-                          size='icon'
-                          onClick={handleSync}
-                          disabled={isSyncing}
-                          title='Sync wallet'
-                          aria-label='Sync wallet'
-                        >
-                          {isSyncing ? (
-                            <Loader2 className='h-4 w-4 animate-spin' />
-                          ) : (
-                            <RefreshCw className='h-4 w-4' />
-                          )}
-                        </Button>
+                        <div className='text-3xl font-bold'>
+                          {formatUSD(parseFloat(totalUsd))}
+                        </div>
                       </div>
 
                       <div className='grid grid-cols-2 gap-3'>
@@ -541,13 +428,9 @@ export function FamilyWalletDrawer({
                             </div>
                           ) : (
                             balances.map((asset, index) => {
-                              const isNative = asset.asset_type === 'native';
-                              const code = isNative ? 'XLM' : asset.asset_code;
-                              const name =
-                                asset.asset_name ??
-                                (isNative
-                                  ? 'Stellar Lumens'
-                                  : asset.asset_code);
+                              const isNative = asset.code === 'XLM';
+                              const code = asset.code;
+                              const name = asset.name;
 
                               return (
                                 <div
@@ -557,78 +440,25 @@ export function FamilyWalletDrawer({
                                   <div className='flex items-center gap-3'>
                                     <AssetIcon
                                       assetCode={
-                                        isNative
-                                          ? 'native'
-                                          : (asset.asset_code ?? '')
+                                        isNative ? 'native' : asset.code
                                       }
                                       size={40}
                                     />
                                     <div>
                                       <div className='font-medium'>{name}</div>
                                       <div className='text-muted-foreground text-xs'>
-                                        {formatBalance(asset.balance)} {code}
+                                        {formatBalance(asset.formatted)} {code}
                                       </div>
                                     </div>
                                   </div>
                                   <div className='font-medium'>
-                                    {asset.usdValue !== undefined
-                                      ? formatUSD(asset.usdValue)
-                                      : formatBalance(asset.balance)}
+                                    {formatBalance(asset.formatted)}
                                   </div>
                                 </div>
                               );
                             })
                           )}
                         </div>
-                        {walletType !== 'smart' &&
-                          supportedTrustlines.length > 0 && (
-                            <div className='mt-3 space-y-2'>
-                              <span className='text-muted-foreground text-xs font-medium'>
-                                Add trustline
-                              </span>
-                              <div className='space-y-1'>
-                                {supportedTrustlines.map(asset => {
-                                  const hasTrustline = balances.some(
-                                    b =>
-                                      (b.asset_type === 'native' &&
-                                        asset.assetCode === 'XLM') ||
-                                      (b.asset_type !== 'native' &&
-                                        b.asset_code === asset.assetCode)
-                                  );
-                                  return (
-                                    <Button
-                                      key={asset.assetCode}
-                                      variant='outline'
-                                      size='sm'
-                                      className='w-full justify-start gap-2 border-dashed'
-                                      onClick={() =>
-                                        handleAddTrustline(asset.assetCode)
-                                      }
-                                      disabled={
-                                        hasTrustline ||
-                                        addingAsset === asset.assetCode
-                                      }
-                                    >
-                                      {addingAsset === asset.assetCode ? (
-                                        <Loader2 className='h-3.5 w-3.5 shrink-0 animate-spin' />
-                                      ) : hasTrustline ? (
-                                        <CheckCircle2 className='text-muted-foreground h-3.5 w-3.5 shrink-0' />
-                                      ) : (
-                                        <AssetIcon
-                                          assetCode={asset.assetCode}
-                                          size={20}
-                                          className='shrink-0'
-                                        />
-                                      )}
-                                      {hasTrustline
-                                        ? `${asset.assetCode} trustline added`
-                                        : `Enable ${asset.assetCode}${asset.name ? ` (${asset.name})` : ''}`}
-                                    </Button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
                       </div>
 
                       <div className='space-y-2'>
@@ -652,16 +482,9 @@ export function FamilyWalletDrawer({
                             </div>
                           ) : (
                             transactions.slice(0, 3).map((tx, index) => {
-                              const isReceive =
-                                tx.type === 'DEPOSIT' || tx.type === 'receive';
-                              const txHash =
-                                tx.metadata?.txHash ||
-                                tx.metadata?.hash ||
-                                tx.externalTxId;
-                              const hasTxHash =
-                                txHash &&
-                                typeof txHash === 'string' &&
-                                /^[a-f0-9]{64}$/i.test(txHash);
+                              const isReceive = tx.to === walletAddress;
+                              const txHash = tx.hash;
+                              const hasTxHash = !!txHash;
                               const explorerUrl = hasTxHash
                                 ? getTransactionExplorerUrl(txHash)
                                 : address
@@ -717,8 +540,8 @@ export function FamilyWalletDrawer({
                                         : 'text-foreground'
                                     }`}
                                   >
-                                    {isReceive ? '+' : '-'} {tx.amount}{' '}
-                                    {tx.currency}
+                                    {isReceive ? '+' : '-'} {tx.amountFormatted}{' '}
+                                    {tx.asset}
                                   </div>
                                 </Wrapper>
                               );
@@ -828,16 +651,10 @@ export function FamilyWalletDrawer({
                           </div>
                         ) : (
                           transactions.map((tx, index) => {
-                            const isReceive =
-                              tx.type === 'DEPOSIT' || tx.type === 'receive';
-                            const txHash =
-                              tx.metadata?.txHash ||
-                              tx.metadata?.hash ||
-                              tx.externalTxId;
+                            const isReceive = tx.to === walletAddress;
+                            const txHash = tx.hash;
                             const explorerUrl =
-                              txHash &&
-                              typeof txHash === 'string' &&
-                              /^[a-f0-9]{64}$/i.test(txHash)
+                              txHash && /^[a-f0-9]{64}$/i.test(txHash)
                                 ? getTransactionExplorerUrl(txHash)
                                 : null;
                             const Wrapper = explorerUrl ? 'a' : 'div';
@@ -891,11 +708,11 @@ export function FamilyWalletDrawer({
                                         : 'text-foreground'
                                     }`}
                                   >
-                                    {isReceive ? '+' : '-'} {tx.amount}{' '}
-                                    {tx.currency}
+                                    {isReceive ? '+' : '-'} {tx.amountFormatted}{' '}
+                                    {tx.asset}
                                   </div>
                                   <div className='text-muted-foreground text-xs'>
-                                    {tx.state}
+                                    {tx.successful ? 'success' : 'failed'}
                                   </div>
                                 </div>
                               </Wrapper>
@@ -1032,24 +849,22 @@ export function FamilyWalletDrawer({
                           </SelectTrigger>
                           <SelectContent>
                             {balances.map((asset, index) => {
-                              const isNative = asset.asset_type === 'native';
-                              const code = isNative ? 'XLM' : asset.asset_code;
+                              const isNative = asset.code === 'XLM';
+                              const code = asset.code;
                               return (
                                 <SelectItem
                                   key={index}
-                                  value={code ?? ''}
+                                  value={code}
                                   disabled={!code}
                                 >
                                   <span className='flex items-center gap-2'>
                                     <AssetIcon
                                       assetCode={
-                                        isNative
-                                          ? 'native'
-                                          : (asset.asset_code ?? '')
+                                        isNative ? 'native' : asset.code
                                       }
                                       size={20}
                                     />
-                                    {code} — {formatBalance(asset.balance)}
+                                    {code} — {formatBalance(asset.formatted)}
                                   </span>
                                 </SelectItem>
                               );
@@ -1072,12 +887,9 @@ export function FamilyWalletDrawer({
                         {sendCurrency &&
                           (() => {
                             const sel = balances.find(
-                              b =>
-                                (b.asset_type === 'native' &&
-                                  sendCurrency === 'XLM') ||
-                                b.asset_code === sendCurrency
+                              b => b.code === sendCurrency
                             );
-                            const max = sel ? parseFloat(sel.balance) : 0;
+                            const max = sel ? parseFloat(sel.formatted) : 0;
                             return (
                               <p className='text-muted-foreground text-xs'>
                                 Max: {formatBalance(String(max))} {sendCurrency}

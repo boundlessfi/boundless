@@ -5,7 +5,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Control } from 'react-hook-form';
+import { Control, FieldValues, Path } from 'react-hook-form';
 import { useRef, useState } from 'react';
 import React from 'react';
 import Image from 'next/image';
@@ -14,19 +14,16 @@ import { toast } from 'sonner';
 import { uploadService } from '@/lib/api/upload';
 import { Upload, Loader2, AlertCircle, Image as ImageIcon } from 'lucide-react';
 
-interface BannerUploadProps {
+interface BannerUploadProps<TFieldValues extends FieldValues = FieldValues> {
+  control: Control<TFieldValues>;
+  name: Path<TFieldValues>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  control: Control<any>;
-  name: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setValue?: (name: any, value: any) => void;
+  setValue?: (name: Path<TFieldValues>, value: any) => void;
 }
 
-export default function BannerUpload({
-  control,
-  name,
-  setValue,
-}: BannerUploadProps) {
+export default function BannerUpload<
+  TFieldValues extends FieldValues = FieldValues,
+>({ control, name, setValue }: BannerUploadProps<TFieldValues>) {
   const [bannerPreview, setBannerPreview] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);

@@ -18,7 +18,7 @@ function Stepper({ steps }: StepperProps) {
     switch (state) {
       case 'completed':
         return {
-          title: 'text-card',
+          title: 'text-card text-white',
           description: 'text-white/60',
           line: 'border-primary',
         };

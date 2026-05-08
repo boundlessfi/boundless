@@ -8,7 +8,7 @@ import {
   confirmReputationInit,
 } from '@/lib/api/onboarding';
 import { initReputationProfile } from '@/lib/contracts/reputation-registry';
-import { useSmartWallet } from '@/components/providers/smart-wallet-provider';
+import { useSmartWallet } from '@/hooks/use-smart-wallet';
 import { Star, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const ReputationInitCard = () => {

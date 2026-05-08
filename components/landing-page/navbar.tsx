@@ -28,12 +28,9 @@ import { cn } from '@/lib/utils';
 import { getKycImageAndAlt } from '@/lib/kyc-status';
 import type { GetMeResponse } from '@/lib/api/types';
 import { BoundlessButton } from '../buttons';
-import { useProtectedAction } from '@/hooks/use-protected-action';
-import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 import { WalletTrigger } from '../wallet/WalletTrigger';
 import { NotificationBell } from '../notifications/NotificationBell';
-import WalletNotReadyModal from '@/components/wallet/WalletNotReadyModal';
-import { useWalletContext } from '../providers/wallet-provider';
+import { ThemeToggle } from '../ThemeToggle';
 
 const BRAND_COLOR = '#2EEDAA';
 const ACTIONS = {
@@ -75,7 +72,7 @@ export function Navbar() {
   }
 
   return (
-    <nav className='bg-background-main-bg/95 sticky top-0 z-50 border-b border-white/10 shadow-lg shadow-black/20 backdrop-blur-xl'>
+    <nav className='bg-canvas/95 border-border-subtle sticky top-0 z-50 border-b shadow-sm backdrop-blur-xl'>
       <div className='mx-auto px-5 md:px-[50px]'>
         <div className='flex h-16 items-center justify-between gap-4'>
           {/* Logo */}
@@ -173,7 +170,7 @@ function DesktopMenu({
                 'rounded-lg px-3 py-2 text-sm font-medium transition-all duration-100',
                 isActive
                   ? 'navbar-link-active'
-                  : 'text-white/60 hover:bg-white/5 hover:text-white/90'
+                  : 'text-secondary-text hover:bg-stage hover:text-foreground'
               )}
             >
               {item.label}
@@ -197,20 +194,6 @@ function LoadingSkeleton() {
 
 function AuthenticatedActions() {
   const [isHovered, setIsHovered] = useState(false);
-
-  const {
-    executeProtectedAction,
-    showWalletModal,
-    showNotReadyModal,
-    notReadyReasons,
-    closeWalletModal,
-    closeNotReadyModal,
-    handleWalletConnected,
-  } = useProtectedAction({
-    actionName: ACTIONS.CREATE_PROJECT,
-    onSuccess: () => {}, // Handled by Link
-  });
-  const { onOpenWallet } = useWalletContext();
 
   return (
     <>
@@ -297,68 +280,28 @@ function AuthenticatedActions() {
           contentClassName='w-64 rounded-xl border border-white/10 bg-background-main-bg/98 p-0 shadow-xl shadow-black/40 backdrop-blur-xl'
         />
       </div>
-
-      <WalletRequiredModal
-        open={showWalletModal}
-        onOpenChange={closeWalletModal}
-        actionName={ACTIONS.CREATE_PROJECT}
-        onWalletConnected={handleWalletConnected}
-      />
-      <WalletNotReadyModal
-        open={showNotReadyModal}
-        onOpenChange={closeNotReadyModal}
-        reasons={notReadyReasons}
-        actionName={ACTIONS.CREATE_PROJECT}
-        onOpenWallet={onOpenWallet}
-      />
     </>
   );
 }
 
 function UnauthenticatedActions() {
-  const {
-    showWalletModal,
-    showNotReadyModal,
-    notReadyReasons,
-    closeWalletModal,
-    closeNotReadyModal,
-    handleWalletConnected,
-  } = useProtectedAction({
-    actionName: ACTIONS.CREATE_PROJECT,
-    onSuccess: () => {}, // Handled by Link
-  });
-  const { onOpenWallet } = useWalletContext();
-
   return (
     <>
       <div className='flex items-center gap-2'>
+        <ThemeToggle />
         <Link
           href='/auth?mode=signin'
-          className='inline-flex h-9 min-h-[44px] items-center justify-center rounded-[10px] border border-white/30 px-4 text-sm font-medium text-white transition-colors hover:border-white/40 hover:bg-white/10'
+          className='border-border-strong text-foreground hover:border-foreground/50 hover:bg-stage inline-flex h-9 min-h-[44px] items-center justify-center rounded-[10px] border px-4 text-sm font-medium transition-colors'
         >
           Sign In
         </Link>
         <Link
           href='/auth?mode=signup'
-          className='bg-primary shadow-primary/20 hover:bg-primary/90 inline-flex h-9 min-h-[44px] items-center justify-center rounded-[10px] px-4 text-sm font-medium text-black shadow-sm transition-colors'
+          className='bg-mint text-on-mint hover:bg-mint/90 inline-flex h-9 min-h-[44px] items-center justify-center rounded-[10px] px-4 text-sm font-medium shadow-sm transition-colors'
         >
           Get Started
         </Link>
       </div>
-
-      <WalletRequiredModal
-        open={showWalletModal}
-        onOpenChange={closeWalletModal}
-        actionName={ACTIONS.CREATE_PROJECT}
-        onWalletConnected={handleWalletConnected}
-      />
-      <WalletNotReadyModal
-        open={showNotReadyModal}
-        onOpenChange={closeNotReadyModal}
-        reasons={notReadyReasons}
-        actionName={ACTIONS.CREATE_PROJECT}
-        onOpenWallet={onOpenWallet}
-      />
     </>
   );
 }

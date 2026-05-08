@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useWalletStore } from '@/lib/stores/walletStore';
 import { useEscrowContext } from '@/lib/providers/EscrowProvider';
 import { initializeEscrow, getPool } from '@/lib/api/escrow';
 import { toast } from 'sonner';
@@ -13,7 +13,7 @@ import { reportError } from '@/lib/error-reporting';
  * Component to initialize a multi-release escrow via the backend CoreEscrow contract.
  */
 export const InitializeEscrowButton = () => {
-  const { walletAddress } = useWalletContext();
+  const walletAddress = useWalletStore(s => s.contractId);
   const { setPoolData } = useEscrowContext();
   const [isLoading, setIsLoading] = useState(false);
 

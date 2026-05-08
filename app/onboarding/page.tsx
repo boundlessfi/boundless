@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuthContext } from '@/components/providers/AuthProvider';
-import { useSmartWallet } from '@/components/providers/smart-wallet-provider';
-import { getSmartWallet } from '@/lib/api/wallet';
+import { useWalletStore } from '@/lib/stores/walletStore';
+import { fetchOrThrow, parseWalletError } from '@/lib/smartwallet/errors';
 import {
   completeOnboarding,
   confirmReputationInit,
@@ -17,17 +17,10 @@ import RoleSelectionStep from '@/components/onboarding/RoleSelectionStep';
 import SkillsStep from '@/components/onboarding/SkillsStep';
 import WelcomeStep from '@/components/onboarding/WelcomeStep';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 const STEP_COUNT = 4;
-
 type StepState = 'pending' | 'active' | 'completed';
-
-function getStepStates(current: number): StepState[] {
-  return Array.from({ length: STEP_COUNT }, (_, i) => {
-    if (i < current) return 'completed';
-    if (i === current) return 'active';
-    return 'pending';
-  });
-}
 
 const STEP_META = [
   {
@@ -46,39 +39,55 @@ const STEP_META = [
     title: 'Get started',
     description: "You're ready to explore Boundless",
   },
-];
+] as const;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getStepStates(current: number): StepState[] {
+  return Array.from({ length: STEP_COUNT }, (_, i) => {
+    if (i < current) return 'completed';
+    if (i === current) return 'active';
+    return 'pending';
+  });
+}
+
+type SmartWalletResponse = { contractId: string | null };
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { session: authSession } = useAuthContext();
-  const smartWallet = useSmartWallet();
-  const userName = authSession.data?.user?.name || '';
+  const email = authSession.data?.user?.email ?? '';
+  const userName = authSession.data?.user?.name ?? '';
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Collected data
   const [smartWalletAddress, setSmartWalletAddress] = useState<string | null>(
     null
   );
   const [roles, setRoles] = useState<string[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
 
-  // On mount only: if user already has a smart wallet (local or backend), skip passkey step.
-  // Captures smartWallet.contractId at mount time — does NOT react to later changes
-  // (e.g. after the user registers a new passkey during this session).
-  const initialContractId = useRef(smartWallet.contractId);
+  // contractId from our Zustand store — set by useCreateWallet / useConnect
+  const contractId = useWalletStore(s => s.contractId);
+
+  // ── On mount: skip step 0 if wallet already exists ──────────────────────
+  // Checks local Zustand state first (same device, same session),
+  // then falls back to the backend (different device scenario).
+
   useEffect(() => {
-    // Check local state first (same device)
-    if (initialContractId.current) {
-      setSmartWalletAddress(initialContractId.current);
+    // Same device — already in store from WalletBootstrap session restore
+    if (contractId) {
+      setSmartWalletAddress(contractId);
       setCurrentStep(1);
       return;
     }
 
-    // Check backend (different device scenario)
+    // Different device — ask the backend if this user already has a wallet
     let cancelled = false;
-    getSmartWallet()
+
+    fetchOrThrow<SmartWalletResponse>('/api/wallet/me')
       .then(result => {
         if (cancelled) return;
         if (result?.contractId) {
@@ -87,7 +96,7 @@ export default function OnboardingPage() {
         }
       })
       .catch(() => {
-        // If the API fails, let the user proceed with passkey setup normally
+        // API failure is non-fatal — let the user go through passkey setup normally
       });
 
     return () => {
@@ -96,11 +105,15 @@ export default function OnboardingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Navigation ────────────────────────────────────────────────────────────
+
   const next = useCallback(() => {
     setCurrentStep(prev => Math.min(prev + 1, STEP_COUNT - 1));
   }, []);
 
-  // Step 1: Secure account
+  // ── Step handlers ─────────────────────────────────────────────────────────
+
+  // Step 0: SecureAccountStep calls this once the wallet is created/connected
   const handleSecureComplete = useCallback(
     (contractId: string | null) => {
       setSmartWalletAddress(contractId);
@@ -109,7 +122,6 @@ export default function OnboardingPage() {
     [next]
   );
 
-  // Step 2: Role selection
   const handleRolesComplete = useCallback(
     (selectedRoles: string[]) => {
       setRoles(selectedRoles);
@@ -118,7 +130,6 @@ export default function OnboardingPage() {
     [next]
   );
 
-  // Step 3: Skills
   const handleSkillsComplete = useCallback(
     (selectedSkills: string[]) => {
       setSkills(selectedSkills);
@@ -132,7 +143,7 @@ export default function OnboardingPage() {
     next();
   }, [next]);
 
-  // Step 4: Finish — save onboarding, then sign reputation init on-chain
+  // Step 3: Save onboarding data + init reputation on-chain
   const handleFinish = useCallback(async () => {
     setIsSubmitting(true);
     try {
@@ -142,7 +153,8 @@ export default function OnboardingPage() {
         smartWalletAddress: smartWalletAddress ?? undefined,
       });
 
-      // Initialize on-chain reputation profile via passkey signing
+      // Reputation profile is on-chain — requires passkey signing.
+      // Non-fatal: user can retry from settings if this fails.
       if (smartWalletAddress) {
         try {
           await initReputationProfile(smartWalletAddress);
@@ -157,12 +169,15 @@ export default function OnboardingPage() {
 
       toast.success('Welcome to Boundless!');
       router.push('/');
-    } catch {
-      toast.error('Something went wrong. Please try again.');
+    } catch (err) {
+      // parseWalletError handles both AppError and generic Error
+      toast.error(parseWalletError(err));
     } finally {
       setIsSubmitting(false);
     }
   }, [roles, skills, smartWalletAddress, router]);
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   const stepStates = getStepStates(currentStep);
   const steps = STEP_META.map((meta, i) => ({
@@ -172,21 +187,18 @@ export default function OnboardingPage() {
 
   return (
     <div className='relative flex min-h-screen items-center justify-center bg-black p-4'>
-      {/* Subtle gradient background */}
       <div className='pointer-events-none fixed inset-0 overflow-hidden'>
         <div className='bg-primary/3 absolute -top-40 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full blur-[120px]' />
       </div>
 
       <div className='relative z-10 flex w-full max-w-4xl flex-col items-start gap-10 md:flex-row'>
-        {/* Stepper sidebar */}
         <Stepper steps={steps} />
 
-        {/* Step content */}
         <div className='w-full flex-1'>
-          <div className='rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 via-transparent to-transparent p-8 backdrop-blur-sm sm:p-10'>
+          <div className='rounded-2xl border border-white/10 bg-linear-to-br from-white/5 via-transparent to-transparent p-8 backdrop-blur-sm sm:p-10'>
             {currentStep === 0 && (
               <SecureAccountStep
-                userName={userName}
+                email={email}
                 onComplete={handleSecureComplete}
               />
             )}

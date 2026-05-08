@@ -17,7 +17,7 @@ export const signTransaction = async (
   props: SignTransactionProps
 ): Promise<string> => {
   try {
-    const { getConnectedKit } = await import('@/lib/smart-wallet/client');
+    const { getConnectedKit } = await import('@/lib/smartwallet/client');
     const kit = await getConnectedKit();
 
     // Parse the XDR into a transaction, sign auth entries, and return

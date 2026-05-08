@@ -181,6 +181,19 @@ body {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-stage: var(--stage);
+  --color-elevated: var(--elevated);
+  --color-secondary-text: var(--secondary-text);
+  --color-muted-text: var(--muted-text);
+  --color-subtle-text: var(--subtle-text);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-mint: var(--mint);
+  --color-mint-bg: var(--mint-bg);
+  --color-mint-border: var(--mint-border);
+  --color-on-mint: var(--on-mint);
   --color-stepper-text-inactive: var(--stepper-text-inactive);
   --color-stepper-foreground: var(--stepper-foreground);
   --color-stepper-border-active: var(--stepper-border-active);
@@ -237,15 +250,31 @@ body {
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #2eedaa;
-  --primary-foreground: #1c1e13;
-  --primary-shadow: 0 2px 8px rgba(46, 237, 170, 0.2);
+
+  /* Landing-page semantic surfaces (light mode defaults) */
+  --canvas: #fafafa;
+  --surface: #ffffff;
+  --stage: #f4f4f4;
+  --elevated: #ffffff;
+  --secondary-text: #525252;
+  --muted-text: #737373;
+  --subtle-text: #a3a3a3;
+  --border-subtle: #e5e5e5;
+  --border-strong: #d4d4d4;
+  --mint: #15b981;
+  --mint-bg: rgba(21, 185, 129, 0.08);
+  --mint-border: rgba(21, 185, 129, 0.3);
+  --on-mint: #ffffff;
+
+  --background: #fafafa;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #15b981;
+  --primary-foreground: #ffffff;
+  --primary-shadow: 0 2px 8px rgba(21, 185, 129, 0.2);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -291,15 +320,30 @@ body {
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --primary-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  /* Landing-page semantic surfaces (dark mode) */
+  --canvas: #000000;
+  --surface: #0e1411;
+  --stage: #08100d;
+  --elevated: #0f1614;
+  --secondary-text: rgba(255, 255, 255, 0.7);
+  --muted-text: rgba(255, 255, 255, 0.55);
+  --subtle-text: rgba(255, 255, 255, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --mint: #2eedaa;
+  --mint-bg: rgba(46, 237, 170, 0.1);
+  --mint-border: rgba(46, 237, 170, 0.3);
+  --on-mint: #0a0f0d;
+
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #0e1411;
+  --card-foreground: #ffffff;
+  --popover: #0e1411;
+  --popover-foreground: #ffffff;
+  --primary: #2eedaa;
+  --primary-foreground: #0a0f0d;
+  --primary-shadow: 0 2px 8px rgba(46, 237, 170, 0.2);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);

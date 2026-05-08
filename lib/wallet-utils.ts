@@ -4,7 +4,9 @@
  */
 
 import { StrKey } from '@stellar/stellar-sdk';
-import { StellarNetwork } from '@/hooks/use-wallet';
+
+/** Stellar network identifier used across the app. */
+export type StellarNetwork = 'testnet' | 'public';
 
 // Environment variables
 const rawNetwork = process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'testnet';

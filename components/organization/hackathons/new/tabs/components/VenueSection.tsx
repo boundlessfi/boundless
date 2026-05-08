@@ -5,7 +5,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Control } from 'react-hook-form';
+import { Control, FieldValues, Path } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -14,9 +14,8 @@ import LocationFields from './LocationFields';
 import MapPreview from './MapPreview';
 import { MapPin, Globe, Info } from 'lucide-react';
 
-interface VenueSectionProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  control: Control<any>;
+interface VenueSectionProps<TFieldValues extends FieldValues = FieldValues> {
+  control: Control<TFieldValues>;
   watch: (name: string) => unknown;
   countries: Country[];
   states: State[];
@@ -28,7 +27,9 @@ interface VenueSectionProps {
   onStateChange: (value: string) => void;
 }
 
-export default function VenueSection({
+export default function VenueSection<
+  TFieldValues extends FieldValues = FieldValues,
+>({
   control,
   watch,
   countries,
@@ -39,7 +40,7 @@ export default function VenueSection({
   mapLocation,
   onCountryChange,
   onStateChange,
-}: VenueSectionProps) {
+}: VenueSectionProps<TFieldValues>) {
   const venueType = watch('venueType');
   const venueAddress = watch('venueAddress');
   const city = watch('city');
@@ -60,7 +61,7 @@ export default function VenueSection({
         {/* Venue Type Selection */}
         <FormField
           control={control}
-          name='venueType'
+          name={'venueType' as Path<TFieldValues>}
           render={({ field }) => (
             <FormItem>
               <FormLabel className='text-sm font-medium text-white'>
@@ -166,7 +167,7 @@ export default function VenueSection({
 
               <FormField
                 control={control}
-                name='venueName'
+                name={'venueName' as Path<TFieldValues>}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className='text-sm font-medium text-zinc-400'>
@@ -187,7 +188,7 @@ export default function VenueSection({
 
               <FormField
                 control={control}
-                name='venueAddress'
+                name={'venueAddress' as Path<TFieldValues>}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className='text-sm font-medium text-zinc-400'>

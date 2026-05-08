@@ -37,14 +37,9 @@ const WalletNotReadyModal: React.FC<WalletNotReadyModalProps> = ({
   actionName,
   isSmartWallet = false,
 }) => {
-  // Smart wallets don't need activation or trustlines — filter those out
+  // Smart wallets don't need activation
   const filteredReasons = isSmartWallet
-    ? reasons.filter(
-        r =>
-          r !== 'not_activated' &&
-          r !== 'no_usdc_trustline' &&
-          r !== 'insufficient_xlm'
-      )
+    ? reasons.filter(r => r !== 'not_activated' && r !== 'insufficient_xlm')
     : reasons;
   const handleOpenWallet = () => {
     onOpenChange(false);
@@ -95,13 +90,7 @@ const WalletNotReadyModal: React.FC<WalletNotReadyModalProps> = ({
                 description="Your account isn't on-chain. Send at least 2 XLM to this address to activate it."
               />
             )}
-            {filteredReasons.includes('no_usdc_trustline') && (
-              <StepItem
-                icon={<ShieldCheck className='text-primary h-5 w-5' />}
-                title='Add USDC Trustline'
-                description='Required to hold USDC on Stellar. Open your wallet to add the trustline.'
-              />
-            )}
+
             {filteredReasons.includes('insufficient_xlm') &&
               !filteredReasons.includes('not_activated') && (
                 <StepItem

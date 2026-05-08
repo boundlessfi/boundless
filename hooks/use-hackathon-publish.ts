@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useWalletStore } from '@/lib/stores/walletStore';
 import { getTotalPrizePoolForFunding } from '@/lib/utils/hackathon-escrow';
 import type { Hackathon } from '@/lib/api/hackathons';
 import type { RewardsFormData } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
@@ -46,7 +46,7 @@ export const useHackathonPublish = ({
   publishDraftAction,
 }: UseHackathonPublishProps) => {
   const router = useRouter();
-  const { walletAddress } = useWalletContext();
+  const walletAddress = useWalletStore(s => s.contractId);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishResponse, setPublishResponse] =
     useState<PublishResponseData | null>(null);

@@ -24,8 +24,8 @@ import { usePathname } from 'next/navigation';
 import { useOrganization } from '@/lib/providers/OrganizationProvider';
 import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
-import { useWallet } from '@/hooks/use-wallet';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useWalletStore } from '@/lib/stores/walletStore';
+import { useSmartWallet } from '@/hooks/use-smart-wallet';
 import { formatAddress } from '@/lib/wallet-utils';
 import { toast } from 'sonner';
 import { UserMenu } from '@/components/user/UserMenu';
@@ -37,8 +37,10 @@ export default function OrganizationHeader() {
   const pathname = usePathname();
   const isOnOrganizationsPage = pathname === '/organizations';
   const { organizations, activeOrg, isLoadingActiveOrg } = useOrganization();
-  const { handleConnect, handleDisconnect } = useWallet();
-  const { walletAddress, walletName } = useWalletContext();
+  const { connect: handleConnect } = useSmartWallet();
+  const walletAddress = useWalletStore(s => s.contractId);
+  const handleDisconnect = useWalletStore(s => s.disconnect);
+  const walletName = 'Smart Wallet';
   const [copied, setCopied] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 

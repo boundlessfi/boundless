@@ -5,7 +5,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Control } from 'react-hook-form';
+import { Control, FieldValues, Path } from 'react-hook-form';
 import {
   Select,
   SelectContent,
@@ -15,9 +15,8 @@ import {
 } from '@/components/ui/select';
 import { Country, State, City } from '@/lib/country-utils';
 
-interface LocationFieldsProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  control: Control<any>;
+interface LocationFieldsProps<TFieldValues extends FieldValues = FieldValues> {
+  control: Control<TFieldValues>;
   countries: Country[];
   states: State[];
   cities: City[];
@@ -27,7 +26,9 @@ interface LocationFieldsProps {
   onStateChange: (value: string) => void;
 }
 
-export default function LocationFields({
+export default function LocationFields<
+  TFieldValues extends FieldValues = FieldValues,
+>({
   control,
   countries,
   states,
@@ -36,13 +37,13 @@ export default function LocationFields({
   selectedState,
   onCountryChange,
   onStateChange,
-}: LocationFieldsProps) {
+}: LocationFieldsProps<TFieldValues>) {
   return (
     <div className='grid gap-4 md:grid-cols-3'>
       {/* Country */}
       <FormField
         control={control}
-        name='country'
+        name={'country' as Path<TFieldValues>}
         render={({ field }) => (
           <FormItem>
             <FormLabel className='text-sm font-medium text-zinc-400'>
@@ -80,7 +81,7 @@ export default function LocationFields({
       {/* State */}
       <FormField
         control={control}
-        name='state'
+        name={'state' as Path<TFieldValues>}
         render={({ field }) => (
           <FormItem>
             <FormLabel className='text-sm font-medium text-zinc-400'>
@@ -132,7 +133,7 @@ export default function LocationFields({
       {/* City */}
       <FormField
         control={control}
-        name='city'
+        name={'city' as Path<TFieldValues>}
         render={({ field }) => (
           <FormItem>
             <FormLabel className='text-sm font-medium text-zinc-400'>

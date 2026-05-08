@@ -62,19 +62,21 @@ export function truncateDescription(
 // Page-specific metadata
 export const pageMetadata: Record<string, PageMetadata> = {
   home: {
-    title: 'Boundless - Ideas Made Boundless',
+    title: 'Boundless — Funding Programs on Stellar',
     description:
-      'Validate, fund, and grow your project with milestone-based support on Stellar.',
+      "Run hackathons, grants, and bounties — or launch a crowdfunding campaign on Boundless. Funds sit in on-chain escrow until the program's release rule is met.",
     keywords: [
+      'hackathons',
+      'grants',
+      'bounties',
       'crowdfunding',
       'stellar',
-      'blockchain',
-      'projects',
-      'funding',
-      'milestones',
+      'soroban',
+      'on-chain escrow',
+      'funding programs',
       'boundless',
-      'stellar blockchain',
     ],
+    canonical: 'https://www.boundlessfi.xyz',
     ogImage:
       'https://res.cloudinary.com/danuy5rqb/image/upload/q_auto/f_auto/v1775418401/Frame_1_tfvjva.png',
   },

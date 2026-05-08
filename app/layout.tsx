@@ -12,6 +12,7 @@ import {
 import NextTopLoader from 'nextjs-toploader';
 import DevelopmentStatusModal from '@/components/DevelopmentStatusModal';
 import localFont from 'next/font/local';
+import { WalletBootstrap } from '@/components/WalletBootstrap';
 
 const gilroy = localFont({
   src: [
@@ -142,6 +143,8 @@ export default function RootLayout({
       </head>
       <body className='antialiased'>
         <NextTopLoader color='#2EEDAA' />
+        <WalletBootstrap />
+
         <Providers>
           {children}
           <Toaster
@@ -161,7 +164,7 @@ export default function RootLayout({
             }}
           />
           <CookieConsent />
-          <DevelopmentStatusModal />
+          {/* <DevelopmentStatusModal /> */}
         </Providers>
         <AnalyticsWrapper />
       </body>

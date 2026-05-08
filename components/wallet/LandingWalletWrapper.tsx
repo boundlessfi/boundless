@@ -1,32 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import { FamilyWalletButton } from './FamilyWalletButton';
-import { FamilyWalletDrawer, DrawerView } from './FamilyWalletDrawer';
+import { useWalletStore } from '@/lib/stores/walletStore';
 import { useAuthStatus } from '@/hooks/use-auth';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { FamilyWalletButton } from './FamilyWalletButton';
+import { FamilyWalletDrawer, type DrawerView } from './FamilyWalletDrawer';
 
 export function LandingWalletWrapper() {
-  const [drawerView, setDrawerView] = useState<DrawerView>('main');
   const { isAuthenticated, isLoading } = useAuthStatus();
-  const { isWalletOpen, onOpenWallet, onCloseWallet } = useWalletContext();
+  const isConnected = useWalletStore(s => s.isConnected);
+  const [open, setOpen] = useState(false);
+  const [drawerView, setDrawerView] = useState<DrawerView>('main');
 
-  if (isLoading || !isAuthenticated) {
-    return null;
-  }
+  if (isLoading || !isAuthenticated || !isConnected) return null;
 
   return (
     <>
       <FamilyWalletButton
         onOpenDrawer={view => {
           if (view) setDrawerView(view);
-          onOpenWallet();
+          setOpen(true);
         }}
       />
       <FamilyWalletDrawer
-        open={isWalletOpen}
+        open={open}
         initialView={drawerView}
-        onOpenChange={onCloseWallet}
+        onOpenChange={setOpen}
       />
     </>
   );

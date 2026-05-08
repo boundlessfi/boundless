@@ -10,7 +10,7 @@ import {
 import { XIcon } from 'lucide-react';
 import { WalletButton } from './WalletButton';
 import Image from 'next/image';
-import { useWalletContext } from '@/components/providers/wallet-provider';
+import { useWalletStore } from '@/lib/stores/walletStore';
 
 interface WalletRequiredModalProps {
   open: boolean;
@@ -25,16 +25,15 @@ const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
   actionName,
   onWalletConnected,
 }) => {
-  const { walletAddress } = useWalletContext();
+  const contractId = useWalletStore(s => s.contractId);
 
-  // Call onWalletConnected when wallet is connected while modal is open
   useEffect(() => {
-    if (open && walletAddress && onWalletConnected) {
+    if (open && contractId && onWalletConnected) {
       onWalletConnected();
-      // Close the modal after wallet is connected
       onOpenChange(false);
     }
-  }, [open, walletAddress, onWalletConnected, onOpenChange]);
+  }, [open, contractId, onWalletConnected, onOpenChange]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -52,11 +51,11 @@ const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
 
         <div className='flex flex-col items-center space-y-4'>
           <Image
-            src={'/warning.svg'}
+            src='/warning.svg'
             alt='wallet-required'
             width={100}
             height={100}
-            unoptimized={true}
+            unoptimized
           />
           <DialogTitle className='flex items-center justify-center gap-2 text-center'>
             <DialogDescription className='text-center text-white/80'>
@@ -66,9 +65,7 @@ const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
               using your passkey.
             </DialogDescription>
           </DialogTitle>
-          <div className='flex flex-col gap-3'>
-            <WalletButton />
-          </div>
+          <WalletButton />
         </div>
       </DialogContent>
     </Dialog>

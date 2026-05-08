@@ -8,13 +8,10 @@ import {
   CursorBody,
   CursorMessage,
 } from '../ui/shadcn-io/cursor';
-import Image from 'next/image';
 import { BoundlessButton } from '../buttons';
 import { HackathonCard } from '@/components/landing-page/hackathon/HackathonCard';
 import ProjectCard from '@/features/projects/components/ProjectCard';
 import { Crowdfunding } from '@/features/projects/types';
-import { Button } from '../ui/button';
-import { toast } from 'sonner';
 
 const BRAND_COLOR = '#2EEDAA';
 
@@ -38,61 +35,30 @@ export default function Hero2() {
           <CursorMessage>Community Validation</CursorMessage>
         </CursorBody>
       </Cursor>
-      <Button onClick={() => toast.success('Toast')}>Toast</Button>
-
       <div className='relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
         <div className='mb-8 flex justify-center md:mb-12'>
-          <div className='inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 backdrop-blur-sm'>
-            <div
-              className='flex h-4 w-4 items-center justify-center rounded-full'
-              style={{ backgroundColor: `${BRAND_COLOR}40` }}
-            >
-              <CheckCircle2
-                className='h-3 w-3'
-                style={{ color: BRAND_COLOR }}
-              />
+          <div className='border-border-subtle bg-stage inline-flex items-center gap-2 rounded-full border px-5 py-2 backdrop-blur-sm'>
+            <div className='bg-mint-bg flex h-4 w-4 items-center justify-center rounded-full'>
+              <CheckCircle2 className='text-mint h-3 w-3' />
             </div>
-            <span className='text-xs font-medium tracking-wide text-white/80 uppercase'>
-              The #1 milestone-based funding platform on Stellar
+            <span className='text-secondary-text text-xs font-medium tracking-wide uppercase'>
+              Funding programs on Stellar
             </span>
           </div>
         </div>
 
         <div className='mx-auto mb-12 max-w-4xl space-y-8 text-center md:mb-16'>
           <div className='space-y-4'>
-            <h1 className='text-4xl leading-none font-bold tracking-tight md:text-6xl lg:text-7xl'>
-              <span
-                className='from-primary bg-linear-to-r to-[#8ae63a] bg-clip-text text-transparent'
-                style={{ color: BRAND_COLOR }}
-              >
-                Launch Projects
-              </span>
-              <br />
-              <span className='relative inline-block text-white'>
-                Manage Hackathons.
-                <div className='mx-auto mt-2 w-fit'>
-                  <Image
-                    src='/lines.svg'
-                    alt=''
-                    width={100}
-                    height={12}
-                    className='h-[12px] w-auto'
-                  />
-                </div>
-              </span>
+            <h1 className='text-foreground mx-auto max-w-4xl text-4xl leading-[1.05] font-semibold tracking-tight text-balance md:text-6xl'>
+              Drive Progress. <span className='text-mint'>Reward Talent.</span>{' '}
+              Grow Communities.
             </h1>
 
-            <p className='mx-auto max-w-2xl text-lg leading-relaxed text-white/70 md:text-xl'>
-              Turn your ideas into reality with{' '}
-              <span
-                className='font-medium underline decoration-2 underline-offset-2'
-                style={{
-                  color: BRAND_COLOR,
-                  textDecorationColor: `${BRAND_COLOR}60`,
-                }}
-              >
-                milestone-based funding
-              </span>
+            <p className='text-secondary-text mx-auto max-w-2xl text-lg leading-relaxed md:text-xl'>
+              Boundless is where ecosystems, foundations, and projects run
+              funding programs — and where builders launch crowdfunding
+              campaigns. Funds sit in on-chain escrow until the program&apos;s
+              release rule is met.
             </p>
           </div>
 
@@ -100,20 +66,20 @@ export default function Hero2() {
             <BoundlessButton
               variant='default'
               size='xl'
-              onClick={() => router.push('/auth?mode=signup')}
+              onClick={() => router.push('/auth/signup')}
               className='group'
             >
-              Get Started for Free
+              Get started
               <ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-1' />
             </BoundlessButton>
 
             <BoundlessButton
               variant='outline'
               size='xl'
-              onClick={() => router.push('/organizations/new')}
+              onClick={() => router.push('/how-it-works')}
               className='group'
             >
-              Host a Hackathon
+              See how it works
               <ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-1' />
             </BoundlessButton>
           </div>
@@ -124,11 +90,11 @@ export default function Hero2() {
             <HackathonCard
               {...{
                 id: 'hackathon-1',
-                name: 'Boundless Innovation Hackathon',
+                name: 'Boundless Builders Hackathon',
                 slug: 'boundless-hackathon-2024',
-                tagline: 'Build the future of boundless',
+                tagline: 'Ship something real on Stellar',
                 description:
-                  'Join the biggest hackathon on Stellar blockchain. Build innovative solutions and compete for $50,000 in prizes.',
+                  'A hackathon on Stellar with $50,000 in prizes. Build, submit, and win when judging completes.',
                 banner: '/banner.png',
                 organizationId: '1',
                 organization: {
@@ -232,7 +198,7 @@ export default function Hero2() {
                   project: {
                     title: 'Solar Power Initiative',
                     vision:
-                      'Revolutionary solar energy solution for rural communities',
+                      'Solar energy for rural communities, funded on milestones',
                     banner: '/banner.png',
                     logo: '/bitmed.png',
                     category: 'Sustainability',
@@ -261,7 +227,7 @@ export default function Hero2() {
                   project: {
                     title: 'AI Learning Platform',
                     vision:
-                      'Democratizing AI education through interactive learning',
+                      'Open AI education with hands-on, milestone-funded modules',
                     banner: '/banner.png',
                     logo: '/bitmed.png',
                     category: 'Education',
@@ -280,11 +246,11 @@ export default function Hero2() {
             <HackathonCard
               {...{
                 id: 'hackathon-2',
-                name: 'AI Innovation Challenge',
-                slug: 'ai-innovation-challenge',
-                tagline: 'Build the future of boundless',
+                name: 'AI Builders Challenge',
+                slug: 'ai-builders-challenge',
+                tagline: 'Build practical AI tools, on-chain rewards',
                 description:
-                  'Build the next generation of AI-powered applications',
+                  'Build AI-powered applications. Prizes release on-chain when judging completes.',
                 banner: '/banner.png',
                 organizationId: '1',
                 organization: {

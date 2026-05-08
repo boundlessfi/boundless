@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useWalletInfo } from '@/hooks/use-wallet';
+import { useWalletStore } from '@/lib/stores/walletStore';
 import crowdfundRegistry from '@/lib/stellar/clients/crowdfundRegistry';
 import { parseCrowdfundError } from '@/lib/stellar/errors';
 
@@ -11,12 +11,11 @@ interface TxResult {
 }
 
 export function useCrowdfundContract() {
-  const walletInfo = useWalletInfo();
-  const address = walletInfo?.address || '';
+  const address = useWalletStore(s => s.contractId) || '';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const signAndSubmit = useCallback(async <T>(tx: any): Promise<TxResult> => {
-    const { getConnectedKit } = await import('@/lib/smart-wallet/client');
+    const { getConnectedKit } = await import('@/lib/smartwallet/client');
     const kit = await getConnectedKit();
     const result = await kit.signAndSubmit(tx);
 

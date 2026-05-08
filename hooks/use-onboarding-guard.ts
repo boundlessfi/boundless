@@ -41,7 +41,7 @@ export function useOnboardingGuard() {
 
         if (status.completed && pathname.startsWith('/onboarding')) {
           // Already completed — don't let them redo onboarding
-          router.replace('/');
+          // router.replace('/');
         } else if (!status.completed && !pathname.startsWith('/onboarding')) {
           // Not completed — force them to onboarding
           router.replace('/onboarding');
