@@ -13,7 +13,7 @@ interface ProgramCardProps {
   title: string;
   body: string;
   ctaLabel: string;
-  ctaHref: string;
+  ctaHref?: string;
   layout: 'wide' | 'narrow';
 }
 
@@ -28,12 +28,14 @@ const ProgramCard = ({
 }: ProgramCardProps) => {
   const router = useRouter();
   const isWide = layout === 'wide';
+  const disabled = !ctaHref;
 
   return (
     <button
       type='button'
-      onClick={() => router.push(ctaHref)}
-      className='group bg-background-card hover:border-border-strong focus-visible:ring-mint/40 relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/10 text-left transition-colors focus:outline-none focus-visible:ring-2'
+      onClick={() => ctaHref && router.push(ctaHref)}
+      disabled={disabled}
+      className='group bg-background-card hover:border-border-strong focus-visible:ring-mint/40 relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/10 text-left transition-colors focus:outline-none focus-visible:ring-2 disabled:cursor-default'
     >
       <div
         className={
@@ -85,7 +87,11 @@ const ProgramCard = ({
 
 export default function FourPrograms() {
   return (
-    <section className='relative w-full' aria-labelledby='programs-heading'>
+    <section
+      id='programs'
+      className='relative w-full scroll-mt-24'
+      aria-labelledby='programs-heading'
+    >
       <header className='mx-auto max-w-3xl text-center'>
         <h2
           id='programs-heading'
@@ -110,7 +116,7 @@ export default function FourPrograms() {
             title='Hackathons: Discover Breakthroughs.'
             body='Attract top talent and unearth novel solutions. Define your challenge, set the stakes, and let Boundless manage the secure prize distribution upon successful judging.'
             ctaLabel='Run a hackathon'
-            ctaHref='/hackathons'
+            ctaHref='/organizations'
           />
         </div>
 
@@ -122,7 +128,6 @@ export default function FourPrograms() {
             title='Grants: Fuel Progress.'
             body='Support vital projects with confidence. Structure your grant program with clear milestones or single approvals, knowing every disbursement is transparently recorded and released on-chain.'
             ctaLabel='Run a grant program'
-            ctaHref='/grants'
           />
         </div>
 
@@ -134,7 +139,6 @@ export default function FourPrograms() {
             title='Bounties: Get Work Done.'
             body='Accelerate your project by rewarding specific tasks. Post your challenge, define the reward, and Boundless ensures contributors are paid instantly upon verified work acceptance.'
             ctaLabel='Post a bounty'
-            ctaHref='/bounties'
           />
         </div>
 
@@ -146,7 +150,7 @@ export default function FourPrograms() {
             title='Crowdfunding: Bring Ideas to Life.'
             body='Rally your community and fund your vision. Launch milestone-driven campaigns where backers contribute securely, and funds are released as you achieve verified progress.'
             ctaLabel='Launch a campaign'
-            ctaHref='/campaigns'
+            ctaHref='/organizations'
           />
         </div>
       </div>

@@ -13,7 +13,8 @@ const NewsLetter = () => {
 
   return (
     <section
-      className='relative my-[98px] h-full w-full'
+      id='newsletter'
+      className='relative my-[98px] h-full w-full scroll-mt-24'
       aria-labelledby='newsletter-heading'
     >
       <div

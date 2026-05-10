@@ -34,6 +34,19 @@ const AudienceCard = ({
 }: AudienceCardProps) => {
   const router = useRouter();
 
+  const isExternal = /^https?:\/\//.test(secondaryHref);
+  const isAnchor = secondaryHref.startsWith('#');
+  const secondaryClassName =
+    'text-sm text-white/50 underline-offset-4 transition-colors hover:text-white hover:underline';
+
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isAnchor) return;
+    e.preventDefault();
+    document
+      .getElementById(secondaryHref.slice(1))
+      ?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className='bg-background-card relative flex h-full flex-col gap-6 rounded-2xl border border-white/10 p-5 md:gap-8 md:p-6'>
       {/* Stage panel with mock illustration */}
@@ -69,12 +82,28 @@ const AudienceCard = ({
             <ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-1' />
           </BoundlessButton>
 
-          <Link
-            href={secondaryHref}
-            className='text-sm text-white/50 underline-offset-4 transition-colors hover:text-white hover:underline'
-          >
-            {secondaryLabel}
-          </Link>
+          {isExternal ? (
+            <a
+              href={secondaryHref}
+              target='_blank'
+              rel='noopener noreferrer'
+              className={secondaryClassName}
+            >
+              {secondaryLabel}
+            </a>
+          ) : isAnchor ? (
+            <a
+              href={secondaryHref}
+              onClick={handleAnchorClick}
+              className={secondaryClassName}
+            >
+              {secondaryLabel}
+            </a>
+          ) : (
+            <Link href={secondaryHref} className={secondaryClassName}>
+              {secondaryLabel}
+            </Link>
+          )}
         </div>
       </div>
     </div>
@@ -104,9 +133,9 @@ export default function AudienceSplit() {
           headline='Drive impactful initiatives with confidence.'
           body='Boundless offers a unified platform to launch hackathons, grants, and bounties, ensuring every disbursement is transparent and verifiable on Stellar. Focus on fostering innovation — we handle the precision.'
           ctaLabel='Run your first program'
-          ctaHref='/auth/signup?role=organizer'
+          ctaHref='/organizations'
           secondaryLabel='Or talk to our team'
-          secondaryHref='/contact?topic=organizer'
+          secondaryHref='https://discord.gg/k6eaFZ2vr'
           accent
         />
 
@@ -117,9 +146,9 @@ export default function AudienceSplit() {
           headline='Fund your next big idea and get rewarded for your progress.'
           body="Whether it's a crowdfunding campaign, a grant application, or a bounty, Boundless connects you directly with your backers and ensures you get paid for verified work."
           ctaLabel='Get started'
-          ctaHref='/auth/signup?role=builder'
+          ctaHref='/organizations'
           secondaryLabel='Or browse open programs'
-          secondaryHref='/programs'
+          secondaryHref='#explore'
         />
       </div>
     </section>

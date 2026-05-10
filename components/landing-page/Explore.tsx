@@ -3,8 +3,8 @@
 import { cn } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { HackathonCard } from './hackathon/HackathonCard';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import HackathonCard from './hackathon/HackathonCard';
 import Link from 'next/link';
 import { getPublicHackathonsList } from '@/lib/api/hackathons';
 import type { Hackathon } from '@/lib/api/hackathons';
@@ -73,15 +73,7 @@ const HackathonCardSkeleton = () => (
   </div>
 );
 
-const tabs = [
-  { name: 'Featured Projects', value: 'featured-projects' },
-  { name: 'Ongoing Hackathons', value: 'ongoing-hackathons' },
-  { name: 'Open Grants', value: 'open-grants' },
-  { name: 'Bounties', value: 'live-grants' },
-];
-
 export default function Explore() {
-  const [activeTab, setActiveTab] = useState(tabs[0].value);
   const [underlineStyle, setUnderlineStyle] = useState({});
   const tabRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
 
@@ -98,49 +90,48 @@ export default function Explore() {
   });
 
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
-  const [hackathonsLoading, setHackathonsLoading] = useState(false);
+  const [hackathonsLoading, setHackathonsLoading] = useState(true);
   const [hackathonsError, setHackathonsError] = useState<string | null>(null);
-  const [hackathonsFetched, setHackathonsFetched] = useState(false);
 
-  const fetchHackathons = useCallback(async () => {
-    if (hackathonsFetched) return;
-
-    try {
-      setHackathonsLoading(true);
-      setHackathonsError(null);
-
-      const response = await getPublicHackathonsList({
-        status: 'active',
-        limit: 6,
-        page: 1,
+  useEffect(() => {
+    let cancelled = false;
+    setHackathonsLoading(true);
+    getPublicHackathonsList({ limit: 6, page: 1 })
+      .then(response => {
+        if (cancelled) return;
+        setHackathons(response.hackathons || []);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHackathonsError('Failed to fetch hackathons');
+      })
+      .finally(() => {
+        if (!cancelled) setHackathonsLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-      const hackathonsList = response.hackathons || [];
-      setHackathons(hackathonsList);
-      setHackathonsFetched(true);
-    } catch {
-      setHackathonsError('Failed to fetch hackathons');
-      setHackathonsFetched(true);
-    } finally {
-      setHackathonsLoading(false);
-    }
-  }, [hackathonsFetched]);
+  const visibleTabs = useMemo(() => {
+    const all: { name: string; value: string }[] = [];
+    if (hackathons.length > 0 || projects.length > 0)
+      all.push({ name: 'All', value: 'all' });
+    if (projects.length > 0)
+      all.push({ name: 'Featured Projects', value: 'featured-projects' });
+    if (hackathons.length > 0)
+      all.push({ name: 'Ongoing Hackathons', value: 'ongoing-hackathons' });
+    return all;
+  }, [hackathons.length, projects.length]);
+
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
-    if (activeTab === 'ongoing-hackathons') {
-      setHackathonsFetched(false);
+    if (visibleTabs.length === 0) return;
+    if (!visibleTabs.some(t => t.value === activeTab)) {
+      setActiveTab(visibleTabs[0].value);
     }
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (
-      activeTab === 'ongoing-hackathons' &&
-      !hackathonsFetched &&
-      !hackathonsLoading
-    ) {
-      fetchHackathons();
-    }
-  }, [activeTab, fetchHackathons, hackathonsFetched, hackathonsLoading]);
+  }, [visibleTabs, activeTab]);
 
   useEffect(() => {
     const currentTab = tabRefs.current[activeTab];
@@ -150,10 +141,16 @@ export default function Explore() {
         left: currentTab.offsetLeft,
       });
     }
-  }, [activeTab]);
+  }, [activeTab, visibleTabs]);
+
+  const isInitialLoading = projectsLoading || hackathonsLoading;
+  if (!isInitialLoading && visibleTabs.length === 0) return null;
 
   return (
-    <section className='relative flex flex-col items-center justify-center text-white'>
+    <section
+      id='explore'
+      className='relative -mt-12 flex scroll-mt-24 flex-col items-center justify-center text-white md:-mt-24'
+    >
       <div className='flex flex-col items-center gap-6 text-center'>
         <p className='to-primary bg-gradient-to-r from-[#3AE6B2] bg-clip-text text-transparent'>
           Active Opportunities
@@ -161,7 +158,7 @@ export default function Explore() {
         <h2 className='text-5xl max-sm:text-3xl'>Explore What's Happening</h2>
 
         <div className='relative flex gap-8 overflow-auto border-b border-gray-700 px-4 md:px-0'>
-          {tabs.map(tab => (
+          {visibleTabs.map(tab => (
             <p
               key={tab.value}
               ref={el => {
@@ -187,6 +184,39 @@ export default function Explore() {
       </div>
 
       <div className='mt-10 grid w-full grid-cols-1 gap-6 md:grid-cols-2 md:px-6 lg:grid-cols-3 xl:max-w-7xl xl:px-0'>
+        {activeTab === 'all' && (
+          <>
+            {projectsLoading || hackathonsLoading ? (
+              <>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <ProjectCardSkeleton key={index} />
+                ))}
+              </>
+            ) : projects.length === 0 && hackathons.length === 0 ? (
+              <div className='col-span-full py-12 text-center text-gray-400'>
+                No opportunities available at the moment.
+              </div>
+            ) : (
+              <>
+                {hackathons.map(hackathon => (
+                  <HackathonCard
+                    key={`hackathon-${hackathon.id}`}
+                    isFullWidth={true}
+                    {...hackathon}
+                  />
+                ))}
+                {projects.map(project => (
+                  <ProjectCard
+                    isFullWidth={true}
+                    key={`project-${project.id}`}
+                    data={project}
+                  />
+                ))}
+              </>
+            )}
+          </>
+        )}
+
         {activeTab === 'featured-projects' && (
           <>
             {projectsLoading ? (
@@ -242,24 +272,10 @@ export default function Explore() {
             )}
           </>
         )}
-
-        {activeTab === 'open-grants' && (
-          <div className='col-span-full py-12 text-center text-gray-400'>
-            <p className='mb-2 text-lg font-medium text-white'>Coming Soon</p>
-            <p>Open Grants feature will be available soon.</p>
-          </div>
-        )}
-
-        {activeTab === 'live-grants' && (
-          <div className='col-span-full py-12 text-center text-gray-400'>
-            <p className='mb-2 text-lg font-medium text-white'>Coming Soon</p>
-            <p>Bounties feature will be available soon.</p>
-          </div>
-        )}
       </div>
 
       <div className='mt-20 flex cursor-pointer items-center gap-1'>
-        <Link href='/projects'>
+        <Link href='/hackathons'>
           <p className='font-medium underline'>View More Opportunities</p>
         </Link>
         <ArrowRight className='h-3 w-3' />

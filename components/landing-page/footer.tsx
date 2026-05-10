@@ -48,6 +48,12 @@ export function Footer() {
                 Docs
               </Link>
               <Link
+                href='/newsletter'
+                className='hover:text-primary rounded text-sm text-[#B5B5B5] transition-colors focus:ring-2 focus:ring-white/50 focus:outline-none'
+              >
+                Newsletter
+              </Link>
+              <Link
                 href='/terms'
                 className='hover:text-primary rounded text-sm text-[#B5B5B5] transition-colors focus:ring-2 focus:ring-white/50 focus:outline-none'
               >
@@ -130,6 +136,12 @@ export function Footer() {
               rel='noopener noreferrer'
             >
               Docs
+            </Link>
+            <Link
+              href='/newsletter'
+              className='hover:text-primary rounded text-sm text-[#B5B5B5] transition-colors focus:ring-2 focus:ring-white/50 focus:outline-none'
+            >
+              Newsletter
             </Link>
             <Link
               href='/terms'

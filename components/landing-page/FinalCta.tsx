@@ -34,7 +34,7 @@ export default function FinalCta() {
             <BoundlessButton
               variant='default'
               size='xl'
-              onClick={() => router.push('/auth/signup?role=organizer')}
+              onClick={() => router.push('/organizations')}
               className='group'
             >
               Run a program
@@ -44,7 +44,7 @@ export default function FinalCta() {
             <BoundlessButton
               variant='outline'
               size='xl'
-              onClick={() => router.push('/auth/signup?role=builder')}
+              onClick={() => router.push('/organizations')}
               className='group'
             >
               Launch a campaign
@@ -55,18 +55,20 @@ export default function FinalCta() {
           <p className='text-sm leading-[170%] text-white/50'>
             Already on Boundless?{' '}
             <Link
-              href='/auth/signin'
+              href='/auth?mode=signin'
               className='hover:text-primary text-white underline underline-offset-4 transition-colors'
             >
               Sign in
             </Link>
             . Looking for a partnership?{' '}
-            <Link
-              href='/contact'
+            <a
+              href='https://discord.gg/k6eaFZ2vr'
+              target='_blank'
+              rel='noopener noreferrer'
               className='hover:text-primary text-white underline underline-offset-4 transition-colors'
             >
               Talk to our team
-            </Link>
+            </a>
             .
           </p>
         </div>

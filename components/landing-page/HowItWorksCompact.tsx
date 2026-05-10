@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 interface StepProps {
@@ -57,13 +56,15 @@ export default function HowItWorksCompact() {
       </div>
 
       <div className='mt-10 flex justify-center'>
-        <Link
-          href='/how-it-works'
+        <a
+          href='https://docs.boundlessfi.xyz/'
+          target='_blank'
+          rel='noopener noreferrer'
           className='text-primary group inline-flex items-center gap-2 text-sm font-medium underline-offset-4 hover:underline'
         >
           Dive Deeper into Our Mechanism
           <ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-1' />
-        </Link>
+        </a>
       </div>
     </section>
   );
