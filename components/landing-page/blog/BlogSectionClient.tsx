@@ -45,7 +45,7 @@ const BlogSectionClient = ({ posts }: BlogSectionClientProps) => {
               id='blog-heading'
               className='mt-3 text-left text-[32px] leading-[140%] tracking-[0.48px] text-white md:text-[48px]'
             >
-              Ideas that shape the future
+              Insights &amp; Stories.
             </h2>
             <p className='gradient-text-2 mt-3 max-w-[550px] text-left text-base leading-[160%] tracking-[-0.48px]'>
               Discover stories, tips, and updates on crowdfunding, grants, and
