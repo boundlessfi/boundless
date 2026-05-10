@@ -189,7 +189,7 @@ export function Navbar() {
 
   return (
     <nav ref={navbarRef} className='sticky top-0 left-0 z-50 w-full'>
-      <div className='mx-auto max-w-[92vw] rounded-[12px] border-[0.5px] border-[rgba(167,249,80,0.24)] p-4 md:max-w-[820px]'>
+      <div className='border-[rgba(46, 237, 170,0.24)] mx-auto max-w-[92vw] rounded-[12px] border-[0.5px] p-4 md:max-w-[820px]'>
         <div className='flex items-center justify-between gap-10'>
           <div className='flex-shrink-0'>
             <Link ref={logoRef} href='/' className='flex items-center'>

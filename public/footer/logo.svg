@@ -3,11 +3,11 @@
 <path d="M36.3722 2.77231L59.2768 16.5138V27.9661L36.3722 44L24.9199 37.1292L47.8245 23.3877L36.3722 16.5138V2.77231Z" fill="url(#paint1_linear_2175_7968)"/>
 <defs>
 <linearGradient id="paint0_linear_2175_7968" x1="27.7598" y1="83.9936" x2="6.43591" y2="83.1826" gradientUnits="userSpaceOnUse">
-<stop stop-color="#A7F950" stopOpacity="0.5"/>
+<stop stop-color="#2EEDAA" stopOpacity="0.5"/>
 <stop offset="1" stop-color="#3AE6B2"/>
 </linearGradient>
 <linearGradient id="paint1_linear_2175_7968" x1="52.6798" y1="86.766" x2="31.3558" y2="85.955" gradientUnits="userSpaceOnUse">
-<stop stop-color="#A7F950" stopOpacity="0.5"/>
+<stop stop-color="#2EEDAA" stopOpacity="0.5"/>
 <stop offset="1" stop-color="#3AE6B2"/>
 </linearGradient>
 </defs>

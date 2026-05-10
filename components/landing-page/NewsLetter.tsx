@@ -18,10 +18,10 @@ const NewsLetter = () => {
       aria-labelledby='newsletter-heading'
     >
       <div
-        className='flex flex-col items-center justify-between gap-4 rounded-[10px] p-8 shadow-[0_1px_4px_0_rgba(167,249,80,0.14)] transition-shadow hover:shadow-[0_4px_12px_0_rgba(167,249,80,0.25)] lg:flex-row'
+        className='shadow-[0_1px_4px_0_rgba(46, 237, 170,0.14)] hover:shadow-[0_4px_12px_0_rgba(46, 237, 170,0.25)] flex flex-col items-center justify-between gap-4 rounded-[10px] p-8 transition-shadow lg:flex-row'
         style={{
           background:
-            'linear-gradient(315deg, rgba(147,229,60,0.14) 3.33%, rgba(117,199,30,0.00) 21.54%, rgba(107,185,20,0.14) 87.82%), #A7F950',
+            'linear-gradient(315deg, rgba(147,229,60,0.14) 3.33%, rgba(117,199,30,0.00) 21.54%, rgba(107,185,20,0.14) 87.82%), #2EEDAA',
           backgroundBlendMode: 'soft-light,normal',
         }}
       >

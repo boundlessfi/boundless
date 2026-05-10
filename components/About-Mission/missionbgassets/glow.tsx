@@ -16,7 +16,7 @@ export default function GlowBackground() {
         className='absolute top-[-30%] left-[-30%] h-[733px] w-[862px] rounded-full'
         style={{
           background:
-            'linear-gradient(273deg, rgba(167, 249, 80, 0.25) 13.84%, rgba(58, 230, 178, 0.50) 73.28%)',
+            'linear-gradient(273deg, rgba(46, 237, 170, 0.25) 13.84%, rgba(58, 230, 178, 0.50) 73.28%)',
           padding: '146px 527px 555px 303px',
           filter: 'blur(150px)',
         }}
@@ -25,7 +25,7 @@ export default function GlowBackground() {
         className='absolute right-[-30%] bottom-[-30%] h-[733px] w-[862px] rounded-full'
         style={{
           background:
-            'linear-gradient(273deg, rgba(167, 249, 80, 0.25) 13.84%, rgba(58, 230, 178, 0.50) 73.28%)',
+            'linear-gradient(273deg, rgba(46, 237, 170, 0.25) 13.84%, rgba(58, 230, 178, 0.50) 73.28%)',
           padding: '146px 527px 555px 303px',
           filter: 'blur(150px)',
         }}

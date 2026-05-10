@@ -58,7 +58,7 @@ const WalletNotReadyModal: React.FC<WalletNotReadyModalProps> = ({
           {/* Header Icon with Glow */}
           <div className='relative pt-4'>
             <div className='bg-primary/10 absolute -inset-4 animate-pulse rounded-full blur-xl' />
-            <div className='border-primary/20 bg-primary/5 relative flex h-20 w-20 items-center justify-center rounded-full border shadow-[0_0_20px_rgba(167,249,80,0.1)]'>
+            <div className='border-primary/20 bg-primary/5 shadow-[0_0_20px_rgba(46, 237, 170,0.1)] relative flex h-20 w-20 items-center justify-center rounded-full border'>
               <Wallet className='text-primary h-10 w-10' />
             </div>
           </div>

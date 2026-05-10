@@ -27,7 +27,7 @@ export default function TimelineCard({
         className='absolute -inset-0.5 z-0 rounded-[12px] mix-blend-hard-light blur-[15px]'
         style={{
           background:
-            'linear-gradient(273deg, rgba(167, 249, 80, 0.10) 93.84%, rgba(58, 230, 178, 0.4) 3.28%)',
+            'linear-gradient(273deg, rgba(46, 237, 170, 0.10) 93.84%, rgba(58, 230, 178, 0.4) 3.28%)',
         }}
         aria-hidden='true'
       />

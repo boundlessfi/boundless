@@ -38,7 +38,7 @@ function Progress({
             ? {}
             : {
                 backgroundImage:
-                  'linear-gradient(to right, rgba(167, 249, 80, 0.5) 0%, rgba(167, 249, 80, 0.6) 20%, rgba(167, 249, 80, 0.7) 40%, rgba(167, 249, 80, 0.8) 60%, rgba(167, 249, 80, 0.9) 80%, rgba(167, 249, 80, 1) 100%)',
+                  'linear-gradient(to right, rgba(46, 237, 170, 0.5) 0%, rgba(46, 237, 170, 0.6) 20%, rgba(46, 237, 170, 0.7) 40%, rgba(46, 237, 170, 0.8) 60%, rgba(46, 237, 170, 0.9) 80%, rgba(46, 237, 170, 1) 100%)',
               }),
         }}
       />

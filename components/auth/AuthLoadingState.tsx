@@ -32,9 +32,9 @@ const AuthLoadingState = ({
             animate={{
               height: ['8px', '32px', '8px', '40px', '8px'],
               backgroundColor: [
-                'rgba(167, 249, 80, 0.08)',
-                '#a7f950',
-                'rgba(167, 249, 80, 0.08)',
+                'rgba(46, 237, 170, 0.08)',
+                '#2eedaa',
+                'rgba(46, 237, 170, 0.08)',
               ],
               alignSelf: ['center', 'end', 'center', 'end', 'center'],
             }}
@@ -51,9 +51,9 @@ const AuthLoadingState = ({
             animate={{
               height: ['8px', '32px', '8px', '40px', '8px'],
               backgroundColor: [
-                'rgba(167, 249, 80, 0.08)',
-                '#a7f950',
-                'rgba(167, 249, 80, 0.08)',
+                'rgba(46, 237, 170, 0.08)',
+                '#2eedaa',
+                'rgba(46, 237, 170, 0.08)',
               ],
               alignSelf: ['center', 'end', 'center', 'end', 'center'],
             }}
@@ -70,9 +70,9 @@ const AuthLoadingState = ({
             animate={{
               height: ['8px', '32px', '8px', '40px', '8px'],
               backgroundColor: [
-                'rgba(167, 249, 80, 0.08)',
-                '#a7f950',
-                'rgba(167, 249, 80, 0.08)',
+                'rgba(46, 237, 170, 0.08)',
+                '#2eedaa',
+                'rgba(46, 237, 170, 0.08)',
               ],
               alignSelf: ['center', 'end', 'center', 'end', 'center'],
             }}

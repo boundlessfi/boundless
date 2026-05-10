@@ -211,7 +211,7 @@ export function useMarkdown(
           
           /* Links */
           .markdown-content a {
-            color: #A7F950;
+            color: #2EEDAA;
             text-decoration: none;
             border-bottom: 1px solid transparent;
             transition: all 0.2s ease;
@@ -220,11 +220,11 @@ export function useMarkdown(
           
           .markdown-content a:hover {
             color: #7ED321;
-            border-bottom-color: #A7F950;
+            border-bottom-color: #2EEDAA;
           }
           
           .markdown-content a:focus {
-            outline: 2px solid #A7F950;
+            outline: 2px solid #2EEDAA;
             outline-offset: 2px;
             border-radius: 2px;
           }
@@ -283,12 +283,12 @@ export function useMarkdown(
           
           /* Blockquotes */
           .markdown-content blockquote {
-            border-left: 4px solid #A7F950;
+            border-left: 4px solid #2EEDAA;
             padding: 1rem 1.25rem;
             margin: 1.5rem 0;
             font-style: italic;
             color: #D1D5DB;
-            background: rgba(167, 249, 80, 0.05);
+            background: rgba(46, 237, 170, 0.05);
             border-radius: 0.375rem;
           }
           
@@ -316,7 +316,7 @@ export function useMarkdown(
           /* Inline Code */
           .markdown-content code {
             background: #1F2937;
-            color: #A7F950;
+            color: #2EEDAA;
             padding: 0.125rem 0.375rem;
             border-radius: 0.25rem;
             font-size: 0.875rem;
@@ -448,7 +448,7 @@ export function useMarkdown(
           
           /* Mark/Highlight */
           .markdown-content mark {
-            background: rgba(167, 249, 80, 0.25);
+            background: rgba(46, 237, 170, 0.25);
             color: #FFFFFF;
             padding: 0.125rem 0.25rem;
             border-radius: 0.25rem;
@@ -497,7 +497,7 @@ export function useMarkdown(
           /* Task Lists */
           .markdown-content input[type="checkbox"] {
             margin-right: 0.5rem;
-            accent-color: #A7F950;
+            accent-color: #2EEDAA;
             cursor: pointer;
             width: 1rem;
             height: 1rem;
@@ -524,7 +524,7 @@ export function useMarkdown(
           }
           
           .markdown-content summary:hover {
-            color: #A7F950;
+            color: #2EEDAA;
           }
           
           .markdown-content details[open] summary {
@@ -546,7 +546,7 @@ export function useMarkdown(
           
           /* Footnotes */
           .markdown-content .footnote-ref {
-            color: #A7F950;
+            color: #2EEDAA;
             font-size: 0.75rem;
             vertical-align: super;
           }

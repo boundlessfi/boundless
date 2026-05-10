@@ -94,7 +94,7 @@ export function InviteUserModal({
           <Button
             onClick={handleInvite}
             disabled={isInviting}
-            style={{ backgroundColor: '#a7f950', color: '#000000' }}
+            style={{ backgroundColor: '#2eedaa', color: '#000000' }}
             className='hover:bg-[#8ae63a]'
           >
             {isInviting ? (

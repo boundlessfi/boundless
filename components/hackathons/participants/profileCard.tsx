@@ -29,7 +29,7 @@ import { reportError } from '@/lib/error-reporting';
 import type { PublicUserProfile } from '@/features/projects/types';
 import { toast } from 'sonner';
 
-const BRAND_COLOR = '#a7f950';
+const BRAND_COLOR = '#2eedaa';
 
 interface ProfileCardProps {
   participant: ParticipantDisplay;

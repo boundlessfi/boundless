@@ -165,7 +165,7 @@ const Overview = () => {
                   className={cn(
                     'relative z-10 mt-1.5 h-[10px] w-[10px] shrink-0 rounded-full border-2 transition-all duration-500',
                     status === 'active'
-                      ? 'ring-primary/10 bg-primary/40 shadow-[0_0_20px_rgba(167,249,80,0.5)] ring'
+                      ? 'ring-primary/10 bg-primary/40 shadow-[0_0_20px_rgba(46, 237, 170,0.5)] ring'
                       : status === 'completed'
                         ? 'bg-primary ring-primary/10 ring-8'
                         : 'border-[#262626] bg-[#262626]'

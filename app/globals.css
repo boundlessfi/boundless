@@ -10,15 +10,15 @@
     --tw-prose-body: #d1d5db;
     --tw-prose-headings: #ffffff;
     --tw-prose-lead: #d1d5db;
-    --tw-prose-links: #a7f950;
+    --tw-prose-links: #2eedaa;
     --tw-prose-bold: #ffffff;
     --tw-prose-counters: #b5b5b5;
     --tw-prose-bullets: #b5b5b5;
     --tw-prose-hr: #374151;
     --tw-prose-quotes: #d1d5db;
-    --tw-prose-quote-borders: #a7f950;
+    --tw-prose-quote-borders: #2eedaa;
     --tw-prose-captions: #9ca3af;
-    --tw-prose-code: #a7f950;
+    --tw-prose-code: #2eedaa;
     --tw-prose-pre-code: #e5e7eb;
     --tw-prose-pre-bg: var(--color-background-card);
     --tw-prose-th-borders: #374151;
@@ -92,8 +92,8 @@
   --color-error-800: #800501;
   --color-error-900: #591000;
 
-  --color-active-bg: rgba(167, 249, 80, 0.08);
-  --color-active-bg2: rgba(167, 249, 80, 0.32);
+  --color-active-bg: rgba(46, 237, 170, 0.08);
+  --color-active-bg2: rgba(46, 237, 170, 0.32);
 
   --color-background-main-bg: #030303;
 
@@ -235,9 +235,9 @@ body {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #a7f950;
+  --primary: #2eedaa;
   --primary-foreground: oklch(0.205 0 0);
-  --primary-shadow: 0 2px 8px rgba(167, 249, 80, 0.2);
+  --primary-shadow: 0 2px 8px rgba(46, 237, 170, 0.2);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -414,10 +414,10 @@ input[type='number'] {
 
 /* Navbar active state – brand color via CSS variables (Tailwind-safe) */
 :root {
-  --nav-active-bg: rgba(167, 249, 80, 0.1);
-  --nav-active-color: #a7f950;
-  --nav-active-border: rgba(167, 249, 80, 0.2);
-  --nav-active-shadow: 0 1px 2px rgba(167, 249, 80, 0.05);
+  --nav-active-bg: rgba(46, 237, 170, 0.1);
+  --nav-active-color: #2eedaa;
+  --nav-active-border: rgba(46, 237, 170, 0.2);
+  --nav-active-shadow: 0 1px 2px rgba(46, 237, 170, 0.05);
 }
 
 .navbar-link-active {
@@ -476,7 +476,7 @@ input[type='number'] {
 
 /* Enhanced gradient text effects */
 .gradient-text-3d {
-  background: linear-gradient(45deg, #a7f950, #3ae6b2, #69726d);
+  background: linear-gradient(45deg, #2eedaa, #3ae6b2, #69726d);
   background-size: 200% 200%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -497,12 +497,12 @@ input[type='number'] {
 
 /* Enhanced text glow effects */
 .text-glow {
-  filter: drop-shadow(0 0 20px rgba(167, 249, 80, 0.4));
+  filter: drop-shadow(0 0 20px rgba(46, 237, 170, 0.4));
   transition: filter 0.3s ease;
 }
 
 .text-glow:hover {
-  filter: drop-shadow(0 0 30px rgba(167, 249, 80, 0.6));
+  filter: drop-shadow(0 0 30px rgba(46, 237, 170, 0.6));
 }
 
 /* Particle trail effect */
@@ -519,7 +519,7 @@ input[type='number'] {
   bottom: 0;
   background: radial-gradient(
     circle,
-    rgba(167, 249, 80, 0.1) 0%,
+    rgba(46, 237, 170, 0.1) 0%,
     transparent 70%
   );
   opacity: 0;
@@ -550,7 +550,7 @@ input[type='number'] {
 .gradient-text {
   background-image: linear-gradient(
     273deg,
-    rgba(167, 249, 80, 0.5) 13.84%,
+    rgba(46, 237, 170, 0.5) 13.84%,
     #3ae6b2 73.28%
   );
   -webkit-background-clip: text;
@@ -568,7 +568,7 @@ input[type='number'] {
 .gradient-text-3 {
   background: linear-gradient(
     273deg,
-    rgba(167, 249, 80, 0.5) 13.84%,
+    rgba(46, 237, 170, 0.5) 13.84%,
     #3ae6b2 73.28%
   );
   background-clip: text;

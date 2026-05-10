@@ -37,7 +37,7 @@ import CreateProjectModal from '@/features/projects/components/CreateProjectModa
 import WalletNotReadyModal from '@/components/wallet/WalletNotReadyModal';
 import { useWalletContext } from '../providers/wallet-provider';
 
-const BRAND_COLOR = '#a7f950';
+const BRAND_COLOR = '#2eedaa';
 const ACTIONS = {
   CREATE_PROJECT: 'create project',
 } as const;

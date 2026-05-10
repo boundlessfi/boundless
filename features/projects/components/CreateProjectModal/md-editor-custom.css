@@ -33,7 +33,7 @@
 }
 
 .w-md-editor-toolbar button.active {
-  background-color: #a7f950 !important;
+  background-color: #2eedaa !important;
   color: #000000 !important;
 }
 
@@ -78,12 +78,12 @@
 }
 
 .w-md-editor-preview a {
-  color: #a7f950 !important;
+  color: #2eedaa !important;
 }
 
 .w-md-editor-preview code {
   background-color: #2a2a2a !important;
-  color: #a7f950 !important;
+  color: #2eedaa !important;
   padding: 2px 4px !important;
   border-radius: 3px !important;
 }
@@ -95,7 +95,7 @@
 }
 
 .w-md-editor-preview blockquote {
-  border-left: 4px solid #a7f950 !important;
+  border-left: 4px solid #2eedaa !important;
   background-color: #2a2a2a !important;
   color: #b5b5b5 !important;
 }
@@ -184,7 +184,7 @@ textarea.w-md-editor-text-input {
 }
 
 .w-md-editor-content:has(.w-md-editor-text:focus-within) {
-  border-color: #a7f950 !important;
+  border-color: #2eedaa !important;
 }
 
 .w-md-editor-toolbar button[data-name='help'],

@@ -46,7 +46,7 @@ export default function GlobalError({
             onClick={reset}
             style={{
               padding: '10px 20px',
-              background: '#a7f950',
+              background: '#2eedaa',
               color: '#000',
               border: 'none',
               borderRadius: 8,
@@ -57,7 +57,7 @@ export default function GlobalError({
             Try again
           </button>
           <p style={{ marginTop: 24, fontSize: 12, color: '#666' }}>
-            <a href='/' style={{ color: '#a7f950' }}>
+            <a href='/' style={{ color: '#2eedaa' }}>
               Go to home
             </a>
           </p>

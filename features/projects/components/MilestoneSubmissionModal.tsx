@@ -316,7 +316,7 @@ const MilestoneSubmissionModal: React.FC<MilestoneSubmissionModalProps> = ({
                         borderWidth: '1px',
                         borderStyle: 'solid',
                         borderColor:
-                          focusedInput === index ? '#A7F950' : '#2B2B2B',
+                          focusedInput === index ? '#2EEDAA' : '#2B2B2B',
                         backgroundColor: '#1C1C1C',
                         color: '#FFFFFF',
                         paddingLeft: '40px',

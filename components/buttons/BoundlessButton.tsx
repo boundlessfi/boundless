@@ -13,7 +13,7 @@ const boundlessButtonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 shadow-[0_1px_4px_0_rgba(167,249,80,0.14)]',
+          'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 shadow-[0_1px_4px_0_rgba(46, 237, 170,0.14)]',
         destructive:
           'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
         outline:

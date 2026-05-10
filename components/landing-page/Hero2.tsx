@@ -10,7 +10,7 @@ import {
 } from '../ui/shadcn-io/cursor';
 import { BoundlessButton } from '../buttons';
 
-const BRAND_COLOR = '#a7f950';
+const BRAND_COLOR = '#2eedaa';
 
 export default function Hero2() {
   const router = useRouter();

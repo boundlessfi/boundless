@@ -57,7 +57,7 @@ const OrganizationAnalytics = () => {
   const chartConfig = {
     hackathons: {
       label: 'Hackathons',
-      color: '#a7f950',
+      color: '#2eedaa',
     },
   } satisfies ChartConfig;
 
@@ -281,7 +281,7 @@ const OrganizationAnalytics = () => {
                   type='monotone'
                   stroke='var(--color-hackathons)'
                   strokeWidth={2}
-                  dot={{ fill: '#a7f950', r: 4 }}
+                  dot={{ fill: '#2eedaa', r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
