@@ -40,6 +40,7 @@ interface HackathonDataContextType {
   currentHackathon: Hackathon | null;
   submissions: SubmissionCardProps[];
   exploreSubmissions: SubmissionCardProps[];
+  exploreSubmissionsTotal: number;
   winners: HackathonWinner[];
 
   // Loading / error
@@ -115,6 +116,9 @@ export function HackathonDataProvider({
     status: mapSubmissionStatus(s.status),
   }));
 
+  const exploreSubmissionsTotal =
+    exploreSubmissionsData?.pagination?.total ?? 0;
+
   const {
     data: winners = [],
     isLoading: winnersLoading,
@@ -135,6 +139,7 @@ export function HackathonDataProvider({
     currentHackathon,
     submissions,
     exploreSubmissions,
+    exploreSubmissionsTotal,
     winners,
     loading,
     error,

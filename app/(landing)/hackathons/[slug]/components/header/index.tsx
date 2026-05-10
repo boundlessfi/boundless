@@ -12,7 +12,10 @@ const Header = ({ hackathon }: HeaderProps) => {
   return (
     <div className='flex w-full flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:justify-between md:px-16 md:py-10'>
       <div className='flex flex-col gap-4 md:flex-row md:items-center md:gap-6'>
-        <Logo logo={hackathon.banner || ''} title={hackathon.name} />
+        <Logo
+          logo={hackathon.organization?.logo || ''}
+          title={hackathon.organization?.name || hackathon.name}
+        />
         <TitleAndInfo
           title={hackathon.name}
           status={hackathon.status}

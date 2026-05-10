@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +26,6 @@ import {
 import BoundlessSheet from '@/components/sheet/boundless-sheet';
 import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import { useTeamPosts } from '@/hooks/hackathon/use-team-posts';
-import { toast } from 'sonner';
 import { Loader2, Plus, X, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type TeamRecruitmentPost } from '@/lib/api/hackathons/teams';
@@ -37,33 +35,17 @@ const roleSchema = z.object({
   skills: z.array(z.string()).optional(),
 });
 
-const teamPostSchema = z.object({
-  teamName: z
-    .string()
-    .min(3, 'Team name must be at least 3 characters')
-    .max(100, 'Team name cannot exceed 100 characters'),
-  description: z
-    .string()
-    .min(10, 'Description must be at least 10 characters')
-    .max(500, 'Description cannot exceed 500 characters'),
-  lookingFor: z
-    .array(roleSchema)
-    .min(1, 'At least one role is required')
-    .max(10, 'Maximum 10 roles allowed'),
-  maxSize: z
-    .number()
-    .min(2, 'Max team size must be at least 2')
-    .max(50, 'Max team size cannot exceed 50'),
-  contactMethod: z.enum(['email', 'telegram', 'discord', 'github', 'other']),
-  contactInfo: z.string().min(1, 'Contact info is required'),
-});
-
-type TeamPostFormData = z.infer<typeof teamPostSchema>;
+// Fallbacks match the backend's default when a hackathon hasn't pinned team size.
+const DEFAULT_TEAM_MIN = 1;
+const DEFAULT_TEAM_MAX = 10;
 
 interface CreateTeamPostModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hackathonSlugOrId: string;
+  /** Roles needed = teamMin - 1 (leader counts as one member). */
+  teamMin?: number;
+  teamMax?: number;
   organizationId?: string;
   initialData?: TeamRecruitmentPost;
   onSuccess?: () => void;
@@ -75,6 +57,8 @@ export function CreateTeamPostModal({
   open,
   onOpenChange,
   hackathonSlugOrId,
+  teamMin,
+  teamMax,
   organizationId,
   initialData,
   onSuccess,
@@ -83,6 +67,48 @@ export function CreateTeamPostModal({
     hackathonSlugOrId,
     autoFetch: false,
   });
+
+  const effectiveTeamMin = teamMin ?? DEFAULT_TEAM_MIN;
+  const effectiveTeamMax = teamMax ?? DEFAULT_TEAM_MAX;
+  const minRoles = Math.max(0, effectiveTeamMin - 1);
+  const maxRoles = Math.max(1, effectiveTeamMax - 1);
+
+  const teamPostSchema = useMemo(
+    () =>
+      z.object({
+        teamName: z
+          .string()
+          .min(3, 'Team name must be at least 3 characters')
+          .max(100, 'Team name cannot exceed 100 characters'),
+        description: z
+          .string()
+          .min(10, 'Description must be at least 10 characters')
+          .max(500, 'Description cannot exceed 500 characters'),
+        lookingFor: z
+          .array(roleSchema)
+          .min(
+            minRoles,
+            minRoles === 0
+              ? 'You can leave this empty to keep the team closed'
+              : `Add at least ${minRoles} role${minRoles === 1 ? '' : 's'} (the team needs ${effectiveTeamMin} member${effectiveTeamMin === 1 ? '' : 's'} including you)`
+          )
+          .max(
+            maxRoles,
+            `You can add at most ${maxRoles} role${maxRoles === 1 ? '' : 's'} (the team is capped at ${effectiveTeamMax} member${effectiveTeamMax === 1 ? '' : 's'} including you)`
+          ),
+        contactMethod: z.enum([
+          'email',
+          'telegram',
+          'discord',
+          'github',
+          'other',
+        ]),
+        contactInfo: z.string().min(1, 'Contact info is required'),
+      }),
+    [minRoles, maxRoles, effectiveTeamMin, effectiveTeamMax]
+  );
+
+  type TeamPostFormData = z.infer<typeof teamPostSchema>;
 
   const [step, setStep] = useState<Step>('IDENTITY');
   const [skillInputs, setSkillInputs] = useState<Record<number, string>>({});
@@ -94,11 +120,11 @@ export function CreateTeamPostModal({
     defaultValues: {
       teamName: initialData?.teamName || '',
       description: initialData?.description || '',
-      lookingFor: initialData?.lookingFor.map(roleObj => ({
-        role: typeof roleObj === 'string' ? roleObj : roleObj.role,
-        skills: typeof roleObj === 'string' ? [] : roleObj.skills || [],
-      })) || [{ role: '', skills: [] }],
-      maxSize: initialData?.maxSize || 5,
+      lookingFor:
+        initialData?.lookingFor.map(roleObj => ({
+          role: typeof roleObj === 'string' ? roleObj : roleObj.role,
+          skills: typeof roleObj === 'string' ? [] : roleObj.skills || [],
+        })) || (minRoles > 0 ? [{ role: '', skills: [] }] : []),
       contactMethod: initialData?.contactMethod || 'email',
       contactInfo: initialData?.contactInfo || '',
     },
@@ -116,7 +142,6 @@ export function CreateTeamPostModal({
           role: typeof roleObj === 'string' ? roleObj : roleObj.role,
           skills: typeof roleObj === 'string' ? [] : roleObj.skills || [],
         })),
-        maxSize: initialData.maxSize,
         contactMethod: initialData.contactMethod || 'email',
         contactInfo: initialData.contactInfo,
       });
@@ -174,7 +199,7 @@ export function CreateTeamPostModal({
   const handleNext = async () => {
     let fieldsToValidate: (keyof TeamPostFormData)[] = [];
     if (step === 'IDENTITY') {
-      fieldsToValidate = ['teamName', 'description', 'maxSize'];
+      fieldsToValidate = ['teamName', 'description'];
     } else if (step === 'ROLES') {
       fieldsToValidate = ['lookingFor'];
     }
@@ -194,39 +219,26 @@ export function CreateTeamPostModal({
   const onSubmit = async (data: TeamPostFormData) => {
     try {
       if (isEditMode && initialData) {
-        const updatePayload = {
+        await updatePost(initialData.id, {
           teamName: data.teamName,
           description: data.description,
-          maxSize: data.maxSize,
           lookingFor: data.lookingFor,
           isOpen: data.lookingFor.length > 0,
           contactMethod: data.contactMethod,
           contactInfo: data.contactInfo,
-        };
-        await updatePost(initialData.id, updatePayload);
+        });
       } else {
-        const createPayload = {
-          ...data,
-          lookingFor: data.lookingFor,
-        };
-        await createPost(createPayload);
+        await createPost(data);
       }
 
       onOpenChange(false);
       form.reset();
       setStep('IDENTITY');
       onSuccess?.();
-    } catch (err: unknown) {
+    } catch (err) {
+      // useTeamPosts already toasts on every error path; we keep the form
+      // open for retry without a duplicate toast.
       console.error('Failed to save team post:', err);
-      let errorMessage = 'Failed to save team post. Please try again.';
-      if (err && typeof err === 'object') {
-        if ('response' in err && (err as any).response?.data?.message) {
-          errorMessage = (err as any).response.data.message;
-        } else if (err instanceof Error) {
-          errorMessage = err.message;
-        }
-      }
-      toast.error(errorMessage);
     }
   };
 
@@ -331,34 +343,6 @@ export function CreateTeamPostModal({
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name='maxSize'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className='text-xs font-bold tracking-[0.2em] text-gray-400 uppercase'>
-                          Max Team Size
-                        </FormLabel>
-                        <FormControl>
-                          <div className='flex items-center gap-4'>
-                            <Input
-                              type='number'
-                              className='focus:border-primary/20 h-12 w-24 border-white/5 bg-white/5 text-center text-white'
-                              {...field}
-                              onChange={e =>
-                                field.onChange(parseInt(e.target.value) || 2)
-                              }
-                            />
-                            <p className='text-sm text-gray-500'>
-                              Maximum number of members (including yourself)
-                            </p>
-                          </div>
-                        </FormControl>
-                        <FormMessage className='text-xs font-bold text-red-500/80' />
-                      </FormItem>
-                    )}
-                  />
                 </div>
               )}
 
@@ -366,20 +350,39 @@ export function CreateTeamPostModal({
                 <div className='animate-in fade-in slide-in-from-right-4 space-y-8 duration-300'>
                   <div className='space-y-4'>
                     <div className='flex items-center justify-between'>
-                      <FormLabel className='text-xs font-bold tracking-[0.2em] text-gray-400 uppercase'>
-                        Roles Needed
-                      </FormLabel>
+                      <div>
+                        <FormLabel className='text-xs font-bold tracking-[0.2em] text-gray-400 uppercase'>
+                          Roles Needed
+                        </FormLabel>
+                        <p className='mt-1 text-xs text-gray-500'>
+                          {minRoles === maxRoles
+                            ? `Add exactly ${minRoles} role${minRoles === 1 ? '' : 's'} — this hackathon's teams must have ${effectiveTeamMin} member${effectiveTeamMin === 1 ? '' : 's'} (you + ${minRoles}).`
+                            : minRoles === 0
+                              ? `Add up to ${maxRoles} role${maxRoles === 1 ? '' : 's'} — leave empty to keep the team closed. This hackathon caps teams at ${effectiveTeamMax} member${effectiveTeamMax === 1 ? '' : 's'} (you + ${maxRoles}).`
+                              : `Add ${minRoles}–${maxRoles} roles — this hackathon's teams have ${effectiveTeamMin}–${effectiveTeamMax} members (you + ${minRoles}–${maxRoles} others).`}
+                        </p>
+                      </div>
                       <BoundlessButton
                         type='button'
                         variant='outline'
                         size='sm'
                         onClick={addRole}
-                        className='hover:bg-primary h-8 rounded-lg border-white/5 bg-white/5 px-3 text-[10px] font-bold text-white hover:text-black'
+                        disabled={lookingFor.length >= maxRoles}
+                        className='hover:bg-primary h-8 rounded-lg border-white/5 bg-white/5 px-3 text-[10px] font-bold text-white hover:text-black disabled:cursor-not-allowed disabled:opacity-40'
                       >
                         <Plus className='h-3.1 w-3.1 mr-2' />
                         Add Role
                       </BoundlessButton>
                     </div>
+
+                    {lookingFor.length === 0 && (
+                      <div className='rounded-2xl border border-dashed border-white/10 bg-white/2 p-8 text-center text-sm text-gray-500'>
+                        No roles added. Click{' '}
+                        <span className='font-bold text-white'>Add Role</span>{' '}
+                        if you want to open the team to joiners — otherwise
+                        leave it empty to keep the team closed.
+                      </div>
+                    )}
 
                     <div className='grid gap-4'>
                       {lookingFor.map((role, roleIndex) => (
@@ -387,7 +390,7 @@ export function CreateTeamPostModal({
                           key={roleIndex}
                           className='relative rounded-2xl border border-white/5 bg-white/2 p-6 transition-all hover:bg-white/4'
                         >
-                          {lookingFor.length > 1 && (
+                          {lookingFor.length > minRoles && (
                             <button
                               type='button'
                               onClick={() => removeRole(roleIndex)}

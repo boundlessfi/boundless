@@ -32,6 +32,7 @@ import { useProtectedAction } from '@/hooks/use-protected-action';
 import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
 import { WalletTrigger } from '../wallet/WalletTrigger';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { MessagesTrigger } from '@/components/messages/MessagesTrigger';
 import CreateProjectModal from '@/features/projects/components/CreateProjectModal';
 import WalletNotReadyModal from '@/components/wallet/WalletNotReadyModal';
 import { useWalletContext } from '../providers/wallet-provider';
@@ -101,10 +102,12 @@ export function Navbar() {
               <div className='flex items-center gap-2' aria-hidden>
                 <span className='h-11 w-11 shrink-0 animate-pulse rounded-lg border border-white/10 bg-white/5' />
                 <span className='h-11 w-11 shrink-0 animate-pulse rounded-lg border border-white/10 bg-white/5' />
+                <span className='h-11 w-11 shrink-0 animate-pulse rounded-lg border border-white/10 bg-white/5' />
               </div>
             )}
             {isAuthenticated && !isLoading && (
               <>
+                <MessagesTrigger className='flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-white/20 p-2.5 text-white/70 transition-colors hover:border-white/30 hover:bg-white/5 hover:text-white' />
                 <NotificationBell
                   className='flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-white/20 p-2.5 text-white/70 transition-colors hover:border-white/30 hover:bg-white/5 hover:text-white'
                   limit={10}
@@ -216,6 +219,7 @@ function AuthenticatedActions() {
   return (
     <>
       <div className='flex items-center gap-2'>
+        <MessagesTrigger className='rounded-lg border border-white/20 p-2 text-white/70 transition-colors hover:border-white/30 hover:bg-white/5 hover:text-white' />
         <WalletTrigger variant='icon' drawerType='sheet' />
         <NotificationBell
           className='rounded-lg border border-white/20 p-2 text-white/70 transition-colors hover:border-white/30 hover:bg-white/5 hover:text-white'

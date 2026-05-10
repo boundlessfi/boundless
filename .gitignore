@@ -19,6 +19,7 @@
 
 # production
 /build
+/bindings
 
 # misc
 .DS_Store

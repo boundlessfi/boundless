@@ -137,8 +137,22 @@ const FindTeam = () => {
                 variant='default'
                 icon={<Plus className='h-4 w-4' />}
                 iconPosition='left'
-                className='h-11 rounded-xl px-6 font-bold'
-                onClick={() => setIsCreateModalOpen(true)}
+                className='h-11 rounded-xl px-6 font-bold disabled:cursor-not-allowed disabled:opacity-50'
+                onClick={() => {
+                  if (!hackathon.isParticipant) {
+                    toast.error(
+                      'Join the hackathon before creating a team post.'
+                    );
+                    return;
+                  }
+                  setIsCreateModalOpen(true);
+                }}
+                disabled={!hackathon.isParticipant}
+                title={
+                  !hackathon.isParticipant
+                    ? 'Register for the hackathon first to create a team post'
+                    : undefined
+                }
               >
                 Create Team
               </BoundlessButton>
@@ -272,6 +286,8 @@ const FindTeam = () => {
 
           <CreateTeamPostModal
             hackathonSlugOrId={slug}
+            teamMin={hackathon.teamMin}
+            teamMax={hackathon.teamMax}
             open={isCreateModalOpen}
             onOpenChange={setIsCreateModalOpen}
           />

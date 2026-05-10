@@ -6,6 +6,7 @@
  * client-side loading state on first render.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   getHackathon,
   getHackathonSubmissions,
@@ -124,8 +125,12 @@ export function useHackathon(slug: string, initialData?: Hackathon) {
       return response.data;
     },
     initialData,
+    // SSR runs anonymously, so the seeded payload's user-scoped fields
+    // (isParticipant, etc.) are stale on arrival — refetch on mount with
+    // the user's cookies attached.
+    initialDataUpdatedAt: initialData ? 0 : undefined,
     enabled: !!slug,
-    staleTime: 60 * 1000, // treat server-fetched data as fresh for 1 min
+    staleTime: 60 * 1000,
   });
 }
 
@@ -356,7 +361,9 @@ export function useJoinHackathon(slug: string) {
 }
 
 /**
- * Mutation to leave a hackathon.
+ * Mutation to leave a hackathon. Backend cascades: removes the user from
+ * their team (auto-promoting a remaining member if they were the leader,
+ * or deleting the team if they were solo) and invalidates their submission.
  */
 export function useLeaveHackathon(slug: string) {
   const queryClient = useQueryClient();
@@ -368,6 +375,15 @@ export function useLeaveHackathon(slug: string) {
         queryKey: hackathonKeys.participants(slug),
       });
       queryClient.invalidateQueries({ queryKey: hackathonKeys.myTeam(slug) });
+      queryClient.invalidateQueries({
+        queryKey: ['hackathon', 'teams', slug],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['hackathon', 'submissions', slug],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['hackathon', 'exploreSubmissions'],
+      });
     },
   });
 }
@@ -484,6 +500,9 @@ export function useInviteToTeam(slug: string) {
       queryClient.invalidateQueries({
         queryKey: hackathonKeys.teamInvitations(slug, variables.teamId),
       });
+      toast.success(
+        `Invitation sent to ${variables.inviteeIdentifier.replace(/^@/, '')}`
+      );
     },
   });
 }

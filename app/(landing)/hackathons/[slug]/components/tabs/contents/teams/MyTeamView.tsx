@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Team, TeamMember } from '@/lib/api/hackathons/teams';
 import {
+  useHackathon,
   useLeaveTeam,
   useInviteToTeam,
   useInvitationActions,
@@ -43,6 +44,7 @@ interface MyTeamViewProps {
 const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
   const { user } = useOptionalAuth();
   const isLeader = team.leader.id === user?.id;
+  const { data: hackathon } = useHackathon(hackathonSlug);
 
   const leaveMutation = useLeaveTeam(hackathonSlug);
   const inviteMutation = useInviteToTeam(hackathonSlug);
@@ -169,7 +171,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
         </div>
 
         <div className='flex shrink-0 gap-3'>
-          {isLeader ? (
+          {isLeader && (
             <BoundlessButton
               variant='outline'
               className='h-12 rounded-xl border-white/10 px-6 font-bold hover:bg-white/5'
@@ -177,16 +179,15 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
             >
               <Settings className='mr-2 h-4 w-4' /> Edit Team
             </BoundlessButton>
-          ) : (
-            <BoundlessButton
-              variant='outline'
-              className='h-12 rounded-xl border-red-500/20 px-6 font-bold text-red-500 hover:bg-red-500/10'
-              onClick={() => setIsLeaveDialogOpen(true)}
-              loading={leaveMutation.isPending}
-            >
-              <LogOut className='mr-2 h-4 w-4' /> Leave Team
-            </BoundlessButton>
           )}
+          <BoundlessButton
+            variant='outline'
+            className='h-12 rounded-xl border-red-500/20 px-6 font-bold text-red-500 hover:bg-red-500/10'
+            onClick={() => setIsLeaveDialogOpen(true)}
+            loading={leaveMutation.isPending}
+          >
+            <LogOut className='mr-2 h-4 w-4' /> Leave Team
+          </BoundlessButton>
         </div>
       </div>
 
@@ -332,6 +333,8 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         hackathonSlugOrId={hackathonSlug}
+        teamMin={hackathon?.teamMin}
+        teamMax={hackathon?.teamMax}
         initialData={team}
       />
 
@@ -340,8 +343,19 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Leave Team</AlertDialogTitle>
             <AlertDialogDescription className='text-gray-400'>
-              Are you sure you want to leave this team? This action cannot be
-              undone.
+              {(() => {
+                const otherMemberCount = Math.max(
+                  0,
+                  (team.members?.length ?? 0) - 1
+                );
+                if (isLeader && otherMemberCount > 0) {
+                  return `Are you sure? You're the leader. Leadership will be reassigned to one of the remaining ${otherMemberCount} member${otherMemberCount === 1 ? '' : 's'} automatically. If you'd rather pick the next leader yourself, cancel and use "Transfer Lead" first. This action cannot be undone.`;
+                }
+                if (isLeader) {
+                  return "Are you sure you want to leave this team? You're the only member, so the team will be deleted. This action cannot be undone.";
+                }
+                return 'Are you sure you want to leave this team? This action cannot be undone.';
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

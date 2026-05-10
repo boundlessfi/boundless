@@ -213,6 +213,13 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   const requireDemoVideo = currentHackathon?.requireDemoVideo ?? false;
   const requireOtherLinks = currentHackathon?.requireOtherLinks ?? false;
 
+  // participantType reaches us in mixed case across endpoints; normalize once.
+  const rawParticipantType = currentHackathon?.participantType;
+  const hackathonParticipantType = (rawParticipantType ?? '')
+    .toString()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_');
+
   const submissionSchema = useMemo(
     () => createSubmissionSchema(requireDemoVideo),
     [requireDemoVideo]
@@ -297,7 +304,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     if (!open || !currentHackathon) return;
     if (hasAutoAdvanced.current) return;
 
-    const hackathonType = currentHackathon.participantType;
+    const hackathonType = hackathonParticipantType;
 
     if (hackathonType === 'INDIVIDUAL') {
       form.setValue('participationType', 'INDIVIDUAL');
@@ -328,7 +335,15 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         }
       }
     }
-  }, [open, currentHackathon, myTeam, submissionId, form, updateStepState]);
+  }, [
+    open,
+    currentHackathon,
+    hackathonParticipantType,
+    myTeam,
+    submissionId,
+    form,
+    updateStepState,
+  ]);
 
   // Reset everything when modal closes
   useEffect(() => {
@@ -798,7 +813,8 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       case 0:
         return (
           <div key='step-0' className='space-y-6'>
-            {currentHackathon?.participantType === 'TEAM_OR_INDIVIDUAL' ? (
+            {!rawParticipantType ||
+            hackathonParticipantType === 'TEAM_OR_INDIVIDUAL' ? (
               <FormField
                 control={form.control}
                 name='participationType'
@@ -863,7 +879,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                 <p className='text-sm text-blue-200'>
                   This hackathon is set for{' '}
                   <span className='text-primary font-bold'>
-                    {currentHackathon?.participantType === 'TEAM'
+                    {hackathonParticipantType === 'TEAM'
                       ? 'Team'
                       : 'Individual'}
                   </span>{' '}

@@ -38,6 +38,8 @@ const AcceptTeamInvitationPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successTeamName, setSuccessTeamName] = useState<string>('');
+  const [successHackathonName, setSuccessHackathonName] = useState<string>('');
+  const [autoEnrolled, setAutoEnrolled] = useState(false);
   const [showAcceptButton, setShowAcceptButton] = useState(false);
 
   useEffect(() => {
@@ -77,9 +79,15 @@ const AcceptTeamInvitationPage = () => {
 
       if (response.success) {
         setSuccessTeamName(response.data?.teamId || 'the team');
+        setSuccessHackathonName(response.data?.hackathon?.name || '');
+        setAutoEnrolled(!!response.data?.autoEnrolled);
         // Use the slug from the response if available, otherwise go to hackathons list
         const finalSlug = response.data?.invitation?.hackathon?.slug;
-        toast.success('Successfully joined the team!');
+        toast.success(
+          response.data?.autoEnrolled
+            ? `Joined ${response.data?.hackathon?.name ?? 'the hackathon'} and the team!`
+            : 'Successfully joined the team!'
+        );
         setTimeout(() => {
           if (finalSlug) {
             router.push(`/hackathons/${finalSlug}?tab=team-formation`);
@@ -263,7 +271,9 @@ const AcceptTeamInvitationPage = () => {
             </div>
             <CardTitle className='text-2xl'>Welcome!</CardTitle>
             <CardDescription>
-              You've successfully joined {successTeamName}. Redirecting...
+              {autoEnrolled && successHackathonName
+                ? `You've joined ${successHackathonName} and ${successTeamName}. Redirecting...`
+                : `You've successfully joined ${successTeamName}. Redirecting...`}
             </CardDescription>
           </CardHeader>
           <CardContent>

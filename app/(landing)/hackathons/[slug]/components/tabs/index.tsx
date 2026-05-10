@@ -11,6 +11,7 @@ import Announcements from './contents/AnnouncementsTab';
 import Winners from './contents/Winners';
 import ResourcesTab from './contents/ResourcesTab';
 import FindTeam from './contents/FindTeam';
+import SponsorsTab from './contents/SponsorsTab';
 import { useEffect, useState, useMemo } from 'react';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useHackathonAnnouncements } from '@/hooks/hackathon/use-hackathon-queries';
@@ -31,7 +32,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
   const {
     currentHackathon,
     winners,
-    submissions,
+    exploreSubmissionsTotal,
     loading: generalLoading,
   } = useHackathonData();
   const { data: announcements = [], isLoading: announcementsLoading } =
@@ -51,8 +52,8 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
     if (!currentHackathon) return [];
     const hasParticipants = currentHackathon._count?.participants > 0;
     const hasResources = currentHackathon.resources?.length > 0;
-    const hasWinners = (winners && winners.length > 0) || generalLoading;
-    const hasAnnouncements = announcements.length > 0 || announcementsLoading;
+    const hasWinners = !!(winners && winners.length > 0);
+    const hasAnnouncements = announcements.length > 0;
 
     const participantType = currentHackathon.participantType;
     const isTeamHackathon =
@@ -91,7 +92,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
       {
         id: 'submissions',
         label: 'Submissions',
-        badge: submissions.filter(p => p.status === 'Approved').length,
+        badge: exploreSubmissionsTotal,
       },
       {
         id: 'discussions',
@@ -115,6 +116,18 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
       });
     }
 
+    // Skip sponsor records that have no name or logo (placeholders).
+    const hasSponsors = (currentHackathon.sponsorsPartners ?? []).some(
+      sp => (sp?.name ?? sp?.sponsorName) || (sp?.logo ?? sp?.sponsorLogo)
+    );
+    if (hasSponsors) {
+      tabs.push({
+        id: 'sponsors',
+        label: 'Sponsors',
+        badge: currentHackathon.sponsorsPartners.length,
+      });
+    }
+
     const tabIdToEnabledKey: Record<string, string> = {
       'team-formation': 'joinATeamTab',
       winners: 'winnersTab',
@@ -123,6 +136,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
       announcements: 'announcementsTab',
       submissions: 'submissionTab',
       discussions: 'discussionTab',
+      sponsors: 'sponsorsTab',
     };
 
     const enabledTabs = currentHackathon.enabledTabs;
@@ -140,7 +154,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
   }, [
     currentHackathon,
     winners,
-    submissions,
+    exploreSubmissionsTotal,
     discussionComments.pagination.totalItems,
     announcements,
     announcementsLoading,
@@ -190,6 +204,9 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
   const isTabVisible = (tabId: string) =>
     hackathonTabs.some(t => t.id === tabId);
 
+  const isLoadingTabs =
+    !currentHackathon || generalLoading || announcementsLoading;
+
   return (
     <Tabs
       value={activeTab}
@@ -197,7 +214,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
       className='mb-10 w-full'
       id='hackathon-tabs'
     >
-      <Lists tabs={hackathonTabs} />
+      <Lists tabs={hackathonTabs} isLoading={isLoadingTabs} />
       <div className='mx-auto w-full max-w-[1440px] px-6'>
         <div className='flex flex-col gap-8 lg:flex-row'>
           <div className='min-w-0 flex-1'>
@@ -209,6 +226,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
             {isTabVisible('winners') && <Winners />}
             {isTabVisible('resources') && <ResourcesTab />}
             {isTabVisible('team-formation') && <FindTeam />}
+            {isTabVisible('sponsors') && <SponsorsTab />}
           </div>
           <div className='sticky top-20 hidden max-w-[411px] shrink-0 lg:block'>
             {sidebar}

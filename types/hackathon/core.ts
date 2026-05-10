@@ -129,9 +129,16 @@ export interface HackathonJudging {
 }
 
 export interface SponsorPartner {
-  sponsorName: string;
-  sponsorLogo: string;
-  partnerLink: string;
+  id?: string;
+  name?: string;
+  logo?: string;
+  link?: string;
+  /** @deprecated legacy field name retained for read-side compatibility. */
+  sponsorName?: string;
+  /** @deprecated legacy field name retained for read-side compatibility. */
+  sponsorLogo?: string;
+  /** @deprecated legacy field name retained for read-side compatibility. */
+  partnerLink?: string;
 }
 
 export interface HackathonCollaboration {
@@ -270,7 +277,7 @@ export type Hackathon = {
     description: string;
   }>;
 
-  sponsorsPartners: any[];
+  sponsorsPartners: SponsorPartner[];
   submissions: any[];
   followers: any[];
   participants: any[]; // Array of participant objects

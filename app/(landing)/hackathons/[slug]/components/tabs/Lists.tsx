@@ -12,9 +12,32 @@ interface TabItem {
 
 interface ListsProps {
   tabs: TabItem[];
+  isLoading?: boolean;
 }
 
-export default function Lists({ tabs }: ListsProps) {
+const SKELETON_TAB_WIDTHS = ['w-20', 'w-24', 'w-28', 'w-20', 'w-24'] as const;
+
+export default function Lists({ tabs, isLoading = false }: ListsProps) {
+  if (isLoading) {
+    return (
+      <div className='scrollbar-hide bg-background sticky top-14 z-50 w-full overflow-hidden overflow-x-auto border-b border-gray-900'>
+        <div
+          className='flex w-max min-w-full justify-start gap-6 rounded-none bg-transparent px-4 py-0 md:px-16'
+          aria-busy='true'
+          aria-label='Loading hackathon tabs'
+        >
+          {SKELETON_TAB_WIDTHS.map((width, i) => (
+            <div key={i} className='flex h-14 shrink-0 items-center'>
+              <div
+                className={`h-4 ${width} animate-pulse rounded bg-white/10`}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     // Outer wrapper handles the bottom border + horizontal scroll on mobile
     <div className='scrollbar-hide bg-background sticky top-14 z-50 w-full overflow-hidden overflow-x-auto border-b border-gray-900'>
