@@ -121,6 +121,7 @@ export interface PrizeTier {
 
 export interface HackathonRewards {
   prizeTiers: PrizeTier[];
+  winnerOverrides?: Record<string, number>; // submissionId -> rank
 }
 
 // Judging Tab Types
@@ -324,6 +325,7 @@ export type Hackathon = {
     id: string;
     name: string;
     logo: string;
+    slug?: string;
   };
 
   status:
@@ -438,6 +440,7 @@ export type Hackathon = {
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
+  winnerOverrides?: Record<string, number>; // Added for manual rank overrides
   participants: Participant[];
 
   _count: {
@@ -481,7 +484,9 @@ export interface PublishHackathonRequest extends Hackathon {
   escrowDetails?: object;
 }
 
-export type UpdateHackathonRequest = Partial<Hackathon>;
+export type UpdateHackathonRequest = Partial<Hackathon> & {
+  rewards?: HackathonRewards;
+};
 
 // Response Types
 export interface CreateDraftResponse extends ApiResponse<HackathonDraft> {
@@ -1233,10 +1238,12 @@ export const updateDraftStep = async (
  */
 export const publishDraft = async (
   draftId: string,
-  organizationId: string
+  organizationId: string,
+  options?: { skipAnnouncement?: boolean; announcementSubject?: string }
 ): Promise<PublishHackathonResponse> => {
   const res = await api.put<ApiResponse<PublishHackathonResponse>>(
-    `/organizations/${organizationId}/hackathons/draft/${draftId}/publish`
+    `/organizations/${organizationId}/hackathons/draft/${draftId}/publish`,
+    options ?? {}
   );
 
   return res.data as unknown as PublishHackathonResponse;
@@ -1613,7 +1620,7 @@ export const getHackathonEscrow = async (
   hackathonId: string
 ): Promise<GetHackathonEscrowResponse> => {
   const res = await api.get(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/escrow`
+    `/organizations/${organizationId}/hackathons/${hackathonId}/rewards/escrow`
   );
   return res.data;
 };
@@ -2929,6 +2936,7 @@ export const toggleRoleHired = async (
 export interface HackathonWinner {
   rank: number;
   projectName: string;
+  logo: string;
   projectId?: string;
   teamName: string | null;
   participants: Array<{

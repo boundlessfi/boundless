@@ -14,12 +14,14 @@ interface ProfileOverviewProps {
   user: User;
   isAuthenticated?: boolean;
   isOwnProfile?: boolean;
+  reputation?: number;
 }
 
 export default function ProfileOverview({
   user,
   isAuthenticated,
   isOwnProfile,
+  reputation,
 }: ProfileOverviewProps) {
   const nameParts = user.name?.split(' ') || [];
   const profileData: UserProfile = {
@@ -54,6 +56,7 @@ export default function ProfileOverview({
         user={user}
         isAuthenticated={isAuthenticated}
         isOwnProfile={isOwnProfile}
+        reputation={reputation}
       />
 
       {isAuthenticated && isOwnProfile && (

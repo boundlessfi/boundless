@@ -35,6 +35,46 @@ export interface ApiError {
   errors?: ApiErrorField[];
 }
 
+/**
+ * Extract a user-facing error message from any error thrown by the api client
+ * or by callers' own try/catch logic.
+ *
+ * The response interceptor flattens backend errors into `ApiError` with the
+ * backend message on `.message` directly. Plain `Error` instances and raw
+ * axios errors are also handled as fallbacks.
+ */
+export const extractApiErrorMessage = (
+  err: unknown,
+  fallback = 'Something went wrong. Please try again.'
+): string => {
+  if (!err) return fallback;
+
+  // ApiError or any object with a non-empty `message` string (most common path)
+  if (
+    typeof err === 'object' &&
+    'message' in err &&
+    typeof (err as { message: unknown }).message === 'string' &&
+    (err as { message: string }).message.trim().length > 0
+  ) {
+    return (err as { message: string }).message;
+  }
+
+  // Raw axios error fallback (in case it ever bypasses the interceptor)
+  if (
+    typeof err === 'object' &&
+    'response' in err &&
+    (err as { response?: { data?: { message?: string } } }).response?.data
+      ?.message
+  ) {
+    return (err as { response: { data: { message: string } } }).response.data
+      .message;
+  }
+
+  if (typeof err === 'string' && err.trim().length > 0) return err;
+
+  return fallback;
+};
+
 export interface RequestConfig {
   headers?: Record<string, string>;
   timeout?: number;

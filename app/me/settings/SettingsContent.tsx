@@ -3,6 +3,7 @@ import Profile from '@/components/profile/update/Profile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { VerificationSubmittedModal } from '@/components/didit/VerificationSubmittedModal';
 import { User } from '@/types/user';
 import { getMe } from '@/lib/api/auth';
 import { GetMeResponse } from '@/lib/api/types';
@@ -11,7 +12,6 @@ import Settings from '@/components/profile/update/Settings';
 import TwoFactorTab from '@/components/profile/update/TwoFactorTab';
 import SecurityTab from '@/components/profile/update/SecurityTab';
 import { IdentityVerificationSection } from '@/components/didit/IdentityVerificationSection';
-import { invalidateAuthProfileCache } from '@/hooks/use-auth';
 import { useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 
@@ -20,6 +20,8 @@ const SettingsContent = () => {
   const fromVerification = searchParams.get('verification') === 'complete';
   const [userData, setUserData] = useState<GetMeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showVerificationModal, setShowVerificationModal] =
+    useState(fromVerification);
   // Prevent unmounting tabs on background refetches (e.g. after 2FA enable)
   const hasLoadedOnce = useRef(false);
 
@@ -43,11 +45,6 @@ const SettingsContent = () => {
     fetchUserData();
   }, [fetchUserData]);
 
-  const handleVerificationComplete = useCallback(async () => {
-    await fetchUserData();
-    invalidateAuthProfileCache();
-  }, [fetchUserData]);
-
   // Only show skeleton on first load — not on background refetches
   if (isLoading && !hasLoadedOnce.current) {
     return (
@@ -58,6 +55,10 @@ const SettingsContent = () => {
   }
   return (
     <div className='p-10'>
+      <VerificationSubmittedModal
+        open={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+      />
       <div className=''>
         {/* Header */}
         <div className='mb-8'>
@@ -170,10 +171,7 @@ const SettingsContent = () => {
             )}
           </TabsContent>
           <TabsContent value='identity' className='space-y-6'>
-            <IdentityVerificationSection
-              user={userData}
-              onVerificationComplete={handleVerificationComplete}
-            />
+            <IdentityVerificationSection user={userData} />
           </TabsContent>
         </Tabs>
       </div>

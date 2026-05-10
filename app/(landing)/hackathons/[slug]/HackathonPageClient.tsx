@@ -132,7 +132,7 @@ export default function HackathonPageClient({
       {
         id: 'submission',
         label: 'Submissions',
-        badge: submissions.filter(p => p.status === 'Approved').length,
+        badge: submissions.filter(p => p.status === 'SHORTLISTED').length,
       },
       {
         id: 'discussions',

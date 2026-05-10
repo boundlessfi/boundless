@@ -16,6 +16,8 @@ export default function RewardsSettingsTab({
   initialData,
   onSave,
   isLoading = false,
+  organizationId,
+  hackathonId,
 }: RewardsSettingsTabProps) {
   return (
     <div className='bg-background-card rounded-xl border border-gray-900 p-6'>
@@ -30,6 +32,8 @@ export default function RewardsSettingsTab({
         initialData={initialData}
         onSave={onSave}
         isLoading={isLoading}
+        organizationId={organizationId}
+        hackathonId={hackathonId}
       />
     </div>
   );

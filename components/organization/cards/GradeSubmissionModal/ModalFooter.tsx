@@ -67,10 +67,10 @@ export const ModalFooter = ({
             isLoading || isFetching || isFetchingCriteria || !hasCriteria
           }
           className={cn(
-            'rounded-lg px-6 py-2.5 font-medium text-white transition-all',
-            'from-success-500 to-success-600 hover:from-success-600 hover:to-success-700 bg-gradient-to-r',
+            'text-background rounded-lg px-6 py-2.5 font-medium transition-all',
+            'hover:bg-primary/95 bg-primary',
             'disabled:cursor-not-allowed disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500',
-            'shadow-success-500/20 hover:shadow-success-500/30 shadow-lg'
+            'shadow-primary/20 hover:shadow-primary/70 shadow-lg'
           )}
         >
           {isLoading ? (

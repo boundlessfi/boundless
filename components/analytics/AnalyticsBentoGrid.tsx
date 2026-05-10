@@ -18,6 +18,7 @@ import {
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { GetMeResponse } from '@/lib/api/types';
 import { calculateChartTrend, TrendResult } from '@/lib/utils/calculateTrend';
+import { ReputationTierBadge } from '@/components/ui/ReputationTierBadge';
 
 interface Props {
   stats: GetMeResponse['stats'];
@@ -220,6 +221,14 @@ export function AnalyticsBentoGrid({ stats, chart }: Props) {
                 <p className='text-muted-foreground mt-1 text-sm'>
                   {tile.label}
                 </p>
+                {tile.large && (
+                  <div className='mt-3'>
+                    <ReputationTierBadge
+                      reputation={stats.reputation}
+                      showScore
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>

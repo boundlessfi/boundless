@@ -95,13 +95,14 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
           resolvedParams.orgId,
           resolvedParams.draftId
         );
-        let organizationData = { name: '', logo: '' };
+        let organizationData = { name: '', logo: '', slug: '' };
         try {
           const orgRes = await getOrganization(resolvedParams.orgId);
           if (orgRes) {
             organizationData = {
               name: orgRes.name,
               logo: orgRes.logo || '',
+              slug: orgRes.slug || '',
             };
           }
         } catch (orgErr) {
@@ -130,6 +131,7 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
               id: resolvedParams.orgId,
               name: organizationData.name,
               logo: organizationData.logo,
+              slug: organizationData.slug,
             },
 
             status: 'DRAFT',

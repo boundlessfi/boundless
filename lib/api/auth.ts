@@ -108,6 +108,7 @@ export const updateUserProfile = async (
 export interface UserNotifications {
   emailNotifications?: boolean;
   pushNotifications?: boolean;
+  hackathonAnnouncements?: boolean;
 }
 
 export interface UpdateUserNotificationsResponse {

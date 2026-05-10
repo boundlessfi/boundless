@@ -42,6 +42,7 @@ const settingsSchema = z.object({
   notifications: z.object({
     emailNotifications: z.boolean(),
     pushNotifications: z.boolean(),
+    hackathonAnnouncements: z.boolean(),
   }),
   privacy: z.object({
     publicProfile: z.boolean(),
@@ -80,6 +81,7 @@ const Settings = ({ visibleSections }: SettingsProps) => {
     notifications: {
       emailNotifications: true,
       pushNotifications: true,
+      hackathonAnnouncements: true,
     },
     privacy: {
       publicProfile: true,
@@ -115,6 +117,8 @@ const Settings = ({ visibleSections }: SettingsProps) => {
       notifications: {
         emailNotifications: settings.notifications?.emailNotifications ?? true,
         pushNotifications: settings.notifications?.pushNotifications ?? true,
+        hackathonAnnouncements:
+          settings.notifications?.hackathonAnnouncements ?? true,
       },
       privacy: {
         publicProfile: settings.privacy?.publicProfile ?? true,
@@ -144,6 +148,8 @@ const Settings = ({ visibleSections }: SettingsProps) => {
       notifications: {
         emailNotifications: settings.notifications?.emailNotifications ?? true,
         pushNotifications: settings.notifications?.pushNotifications ?? true,
+        hackathonAnnouncements:
+          settings.notifications?.hackathonAnnouncements ?? true,
       },
       privacy: {
         publicProfile: settings.privacy?.publicProfile ?? true,
@@ -300,6 +306,9 @@ const Settings = ({ visibleSections }: SettingsProps) => {
                               pushNotifications: form.getValues(
                                 'notifications.pushNotifications'
                               ),
+                              hackathonAnnouncements: form.getValues(
+                                'notifications.hackathonAnnouncements'
+                              ),
                             });
                           }}
                         />
@@ -330,6 +339,44 @@ const Settings = ({ visibleSections }: SettingsProps) => {
                               pushNotifications: checked,
                               emailNotifications: form.getValues(
                                 'notifications.emailNotifications'
+                              ),
+                              hackathonAnnouncements: form.getValues(
+                                'notifications.hackathonAnnouncements'
+                              ),
+                            });
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='notifications.hackathonAnnouncements'
+                  render={({ field }) => (
+                    <FormItem className='flex items-center justify-between'>
+                      <div className='space-y-0.5'>
+                        <FormLabel className='text-zinc-300'>
+                          Hackathon Announcements
+                        </FormLabel>
+                        <FormDescription className='text-zinc-500'>
+                          Marketing emails when new hackathons launch on
+                          Boundless. Independent of transactional emails.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={async (checked: boolean) => {
+                            field.onChange(checked);
+                            await onSubmitNotifications({
+                              hackathonAnnouncements: checked,
+                              emailNotifications: form.getValues(
+                                'notifications.emailNotifications'
+                              ),
+                              pushNotifications: form.getValues(
+                                'notifications.pushNotifications'
                               ),
                             });
                           }}

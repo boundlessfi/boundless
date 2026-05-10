@@ -12,10 +12,19 @@ import { ExtendedBadge } from '@/components/hackathons/ExtendedBadge';
 
 type HackathonStatus = Hackathon['status'];
 
-function getStatusLabel(status: HackathonStatus) {
+function getStatusLabel(
+  status: HackathonStatus,
+  startDate?: string,
+  submissionDeadline?: string
+) {
   switch (status) {
-    case 'ACTIVE':
+    case 'ACTIVE': {
+      const now = Date.now();
+      if (startDate && now < new Date(startDate).getTime()) return 'Upcoming';
+      if (submissionDeadline && now > new Date(submissionDeadline).getTime())
+        return 'Submissions Closed';
       return 'Submissions Open';
+    }
     case 'JUDGING':
       return 'Judging';
     case 'UPCOMING':
@@ -31,8 +40,17 @@ function getStatusLabel(status: HackathonStatus) {
   }
 }
 
-function isActiveStatus(status: HackathonStatus) {
-  return status === 'ACTIVE';
+function isSubmissionsOpen(
+  status: HackathonStatus,
+  startDate?: string,
+  submissionDeadline?: string
+) {
+  if (status !== 'ACTIVE') return false;
+  const now = Date.now();
+  if (startDate && now < new Date(startDate).getTime()) return false;
+  if (submissionDeadline && now > new Date(submissionDeadline).getTime())
+    return false;
+  return true;
 }
 
 interface TitleAndInfoProps {
@@ -42,6 +60,7 @@ interface TitleAndInfoProps {
   participantCount?: number;
   venueType?: 'VIRTUAL' | 'PHYSICAL';
   participants?: Participant[];
+  startDate?: string;
   submissionDeadline?: string;
   submissionDeadlineOriginal?: string;
 }
@@ -53,11 +72,12 @@ const TitleAndInfo = ({
   participantCount = 0,
   venueType = 'VIRTUAL',
   participants = [],
+  startDate,
   submissionDeadline,
   submissionDeadlineOriginal,
 }: TitleAndInfoProps) => {
-  const statusLabel = getStatusLabel(status);
-  const isActive = isActiveStatus(status);
+  const statusLabel = getStatusLabel(status, startDate, submissionDeadline);
+  const isActive = isSubmissionsOpen(status, startDate, submissionDeadline);
   const venueLabel = venueType === 'PHYSICAL' ? 'Physical' : 'Virtual';
   const typeLabel =
     participantType === 'TEAM'

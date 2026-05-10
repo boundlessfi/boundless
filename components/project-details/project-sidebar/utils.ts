@@ -11,6 +11,15 @@ export function getProjectStatus(
   if (project.status === 'IDEA' || project.status === 'idea') {
     return 'Validation';
   }
+  if (project.status === 'REVIEWING') {
+    return 'Validation';
+  }
+  if (project.status === 'VALIDATED') {
+    return 'Validated';
+  }
+  if (project.status === 'REJECTED') {
+    return 'Rejected';
+  }
   if (
     project.status === 'funded' ||
     (crowdfund?.fundingRaised &&

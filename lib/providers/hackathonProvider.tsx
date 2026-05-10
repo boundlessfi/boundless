@@ -28,9 +28,9 @@ import {
 
 function mapSubmissionStatus(raw?: string): SubmissionCardProps['status'] {
   const status = raw?.toUpperCase();
-  if (status === 'SHORTLISTED') return 'Approved';
-  if (status === 'DISQUALIFIED') return 'Rejected';
-  return 'Pending';
+  if (status === 'SHORTLISTED') return 'SHORTLISTED';
+  if (status === 'DISQUALIFIED') return 'DISQUALIFIED';
+  return 'SUBMITTED';
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────

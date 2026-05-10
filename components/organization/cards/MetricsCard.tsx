@@ -7,8 +7,9 @@ interface MetricsCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
-  icon?: string;
+  icon?: string | React.ReactNode;
   showTrend?: boolean;
+  className?: string;
 }
 
 const MetricsCard = ({
@@ -17,6 +18,7 @@ const MetricsCard = ({
   subtitle,
   icon = '/user-border.svg',
   showTrend = false,
+  className,
 }: MetricsCardProps) => {
   const formattedValue =
     typeof value === 'number' ? value.toLocaleString() : value;
@@ -27,13 +29,17 @@ const MetricsCard = ({
       style={{ backgroundImage: 'url("/metric-image.svg")' }}
     >
       <CardHeader className='h-10 w-10 p-0'>
-        <Image
-          src={icon}
-          alt='Metrics'
-          width={40}
-          height={40}
-          className='h-10 w-10'
-        />
+        {typeof icon === 'string' ? (
+          <Image
+            src={icon}
+            alt='Metrics'
+            width={40}
+            height={40}
+            className='h-10 w-10'
+          />
+        ) : (
+          icon
+        )}
       </CardHeader>
       <CardContent className='p-0'>
         <h5 className='text-xs text-gray-400'>{title}</h5>

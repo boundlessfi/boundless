@@ -80,7 +80,8 @@ export interface UseHackathonsReturn {
   ) => Promise<HackathonDraft>;
   publishDraftAction: (
     draftId: string,
-    organizationId: string
+    organizationId: string,
+    options?: { skipAnnouncement?: boolean; announcementSubject?: string }
   ) => Promise<Hackathon>;
   fetchDraft: (draftId: string) => Promise<void>;
   fetchDrafts: (page?: number, limit?: number) => Promise<void>;
@@ -446,12 +447,16 @@ export function useHackathons(
 
   // Publish Draft (New API)
   const publishDraftAction = useCallback(
-    async (draftId: string, organizationId: string): Promise<Hackathon> => {
+    async (
+      draftId: string,
+      organizationId: string,
+      options?: { skipAnnouncement?: boolean; announcementSubject?: string }
+    ): Promise<Hackathon> => {
       setHackathonsLoading(true);
       setHackathonsError(null);
 
       try {
-        const response = await publishDraft(draftId, organizationId);
+        const response = await publishDraft(draftId, organizationId, options);
 
         // Extract data from API response wrapper if it exists
         const hackathon = response?.data || response;

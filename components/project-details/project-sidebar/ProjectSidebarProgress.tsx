@@ -40,25 +40,59 @@ export function ProjectSidebarProgress({
         );
 
       case 'Validation': {
-        const validationProgress = Math.min(
-          ((voteCounts?.upvotes || 0) / voteGoal) * 100,
+        const quorumProgress = Math.min(
+          ((voteCounts?.totalVotes || 0) / voteGoal) * 100,
           100
         );
+        const totalWeighted = voteCounts?.totalWeightedVotes ?? 0;
+        const weightedUp =
+          voteCounts?.weightedUpvotes ?? voteCounts?.upvotes ?? 0;
+        const weightedApprovalPct =
+          totalWeighted > 0
+            ? Math.round((weightedUp / totalWeighted) * 100)
+            : 0;
         return (
-          <div className='space-y-3'>
-            <div className='flex items-center justify-between text-sm'>
-              <span className='font-medium text-white'>
-                {voteCounts?.upvotes || 0}/{voteGoal}{' '}
-                <span className='font-normal text-zinc-400'>Upvotes</span>
-              </span>
-              <span className='font-medium text-zinc-400'>
-                {voteCounts?.totalVotes || 0} Total
-              </span>
+          <div className='space-y-4'>
+            <div className='space-y-2'>
+              <div className='flex items-center justify-between text-sm'>
+                <span className='font-medium text-white'>
+                  {voteCounts?.totalVotes || 0}/{voteGoal}{' '}
+                  <span className='font-normal text-zinc-400'>
+                    Voters (quorum)
+                  </span>
+                </span>
+              </div>
+              <Progress value={quorumProgress} className='h-2 bg-zinc-800' />
             </div>
-            <Progress value={validationProgress} className='h-2 bg-zinc-800' />
+            <div className='space-y-1'>
+              <div className='flex items-center justify-between text-xs text-zinc-400'>
+                <span>Weighted approval</span>
+                <span className='font-medium tabular-nums'>
+                  {weightedApprovalPct}%
+                </span>
+              </div>
+              <Progress
+                value={weightedApprovalPct}
+                className='h-1.5 bg-zinc-800'
+              />
+            </div>
           </div>
         );
       }
+
+      case 'Validated':
+        return (
+          <div className='rounded-lg border border-green-600/30 bg-green-900/10 p-3 text-sm text-green-400'>
+            Community validation passed. Project is approved for the next stage.
+          </div>
+        );
+
+      case 'Rejected':
+        return (
+          <div className='rounded-lg border border-red-600/30 bg-red-900/10 p-3 text-sm text-red-400'>
+            Community validation did not meet the required approval threshold.
+          </div>
+        );
 
       case 'Completed':
       case 'Funded': {

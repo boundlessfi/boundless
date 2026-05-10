@@ -31,6 +31,7 @@ interface SubmissionData {
   votes: number;
   comments: number;
   logo?: string;
+  videoUrl?: string;
 }
 
 interface GradeSubmissionModalProps {
@@ -38,6 +39,7 @@ interface GradeSubmissionModalProps {
   onOpenChange: (open: boolean) => void;
   organizationId: string;
   hackathonId: string;
+  submissionId: string;
   participantId: string;
   judgingCriteria?: JudgingCriterion[];
   submission: SubmissionData;
@@ -51,6 +53,7 @@ interface GradeSubmissionModalProps {
     image?: string;
     role?: string;
   }>;
+  initialScore?: any;
   onSuccess?: () => void;
 }
 
@@ -59,12 +62,14 @@ export default function GradeSubmissionModal({
   onOpenChange,
   organizationId,
   hackathonId,
+  submissionId,
   participantId,
   judgingCriteria,
   submission,
   mode = 'judge',
   overrideJudgeId,
   judges = [],
+  initialScore,
   onSuccess,
 }: GradeSubmissionModalProps) {
   const isOverride = mode === 'organizer-override';
@@ -118,8 +123,11 @@ export default function GradeSubmissionModal({
     open,
     organizationId,
     hackathonId,
-    participantId: submission.id,
+    submissionId,
+    participantId,
     criteria,
+    targetJudgeId: creditJudge ? selectedJudgeId : undefined,
+    initialScore,
   });
 
   const {
@@ -143,7 +151,8 @@ export default function GradeSubmissionModal({
     criteria,
     organizationId,
     hackathonId,
-    participantId: submission.id,
+    submissionId,
+    participantId,
     existingScore,
     mode,
     overrideJudgeId: creditJudge ? selectedJudgeId : undefined,
@@ -175,10 +184,21 @@ export default function GradeSubmissionModal({
             <div className='mx-auto max-w-6xl'>
               <ProjectHeader submission={submission} />
               {isOverride && (
-                <div className='mb-6 space-y-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-300'>
-                  <div>
-                    Organizer override: this action directly assigns scores and
-                    bypasses judge assignment checks.
+                <div className='mb-6 space-y-4 rounded-xl border border-amber-500/30 bg-amber-500/5 px-5 py-4 text-xs text-amber-200/90 shadow-sm'>
+                  <div className='flex items-start gap-3'>
+                    <div className='mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-500'>
+                      <span className='text-[10px] font-bold'>!</span>
+                    </div>
+                    <div className='leading-relaxed'>
+                      <strong className='text-amber-400'>
+                        Organizer scoring override
+                      </strong>
+                      <p className='mt-1 text-amber-200/60'>
+                        Directly assign results to this submission. These values
+                        will bypass standard judge assignment and
+                        conflict-of-interest checks.
+                      </p>
+                    </div>
                   </div>
                   <div className='flex flex-wrap items-center gap-3 text-[11px] text-amber-200'>
                     <div className='flex items-center gap-2'>
@@ -260,7 +280,7 @@ export default function GradeSubmissionModal({
                     getScoreColor={getScoreColor}
                     overallComment={overallComment}
                     onOverallCommentChange={setOverallComment}
-                    showComments={!isOverride}
+                    showComments={true}
                   />
                 </div>
 
@@ -288,23 +308,28 @@ export default function GradeSubmissionModal({
                             / {criteria.length}
                           </span>
                         </div>
-                        <div className='flex justify-between text-sm'>
-                          <span className='text-gray-400'>Comments Added</span>
-                          <span className='font-medium text-white'>
+                        <div className='flex items-center justify-between'>
+                          <span className='font-sans text-xs font-semibold text-gray-400'>
+                            Insights
+                          </span>
+                          <span className='rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-bold text-gray-300'>
                             {
                               Object.values(comments).filter(
                                 c => c.trim().length > 0
                               ).length
-                            }
+                            }{' '}
+                            Comments
                           </span>
                         </div>
 
-                        <div className='border-t border-gray-800 pt-4'>
-                          <p className='text-[11px] leading-relaxed text-gray-500 italic'>
-                            Your scores and comments are saved automatically
-                            when you submit. You can return later to update
-                            them.
-                          </p>
+                        <div className='mt-6 border-t border-gray-800/60 pt-6'>
+                          <div className='flex items-start gap-2'>
+                            <div className='bg-primary mt-1.5 h-1 w-1 rounded-full' />
+                            <p className='font-sans text-[10px] leading-relaxed font-medium text-gray-500'>
+                              Changes are staged in real-time. Finalize by
+                              clicking the primary action below.
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -315,7 +340,7 @@ export default function GradeSubmissionModal({
           )}
         </div>
 
-        <div className='bg-background-main-bg/80 fixed right-0 bottom-0 left-0 z-50 border-t border-white/5 p-4 backdrop-blur-md'>
+        <div className='fixed right-0 bottom-0 left-0 z-50 border-t border-gray-900 bg-black/80 p-4 backdrop-blur-xl'>
           <div className='mx-auto max-w-6xl'>
             <ModalFooter
               isLoading={isSubmitting}

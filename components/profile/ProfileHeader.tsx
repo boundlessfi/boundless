@@ -8,6 +8,7 @@ import { BoundlessButton } from '@/components/buttons';
 import { BellPlus, Settings } from 'lucide-react';
 import UserStats from './UserStats';
 import { toast } from 'sonner';
+import { ReputationTierBadge } from '@/components/ui/ReputationTierBadge';
 
 interface ProfileHeaderProps {
   profile: UserProfile;
@@ -15,6 +16,7 @@ interface ProfileHeaderProps {
   user: User;
   isAuthenticated?: boolean;
   isOwnProfile?: boolean;
+  reputation?: number;
 }
 
 export default function ProfileHeader({
@@ -23,6 +25,7 @@ export default function ProfileHeader({
   user,
   isAuthenticated,
   isOwnProfile,
+  reputation,
 }: ProfileHeaderProps) {
   const profileUrl = `${process.env.NEXT_PUBLIC_APP_URL}/profile/${profile.username}`;
   const handleShare = async () => {
@@ -57,7 +60,12 @@ export default function ProfileHeader({
           />
         </div>
         <div className='flex flex-col gap-3 py-3'>
-          <h3 className='text-2xl font-medium'>{profile.displayName}</h3>
+          <div className='flex items-center gap-3'>
+            <h3 className='text-2xl font-medium'>{profile.displayName}</h3>
+            {reputation !== undefined && (
+              <ReputationTierBadge reputation={reputation} />
+            )}
+          </div>
           <p className='text-base font-normal'>@{profile.username}</p>
         </div>
       </header>

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 import { useMarkdown } from '@/hooks/use-markdown';
+import SponsorsSection from '../../SponsorsSection';
 
 const Overview = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -267,6 +268,11 @@ const Overview = () => {
           ))}
         </div>
       </section>
+
+      <SponsorsSection
+        slug={slug}
+        marketingPartners={hackathon.sponsorsPartners}
+      />
     </TabsContent>
   );
 };

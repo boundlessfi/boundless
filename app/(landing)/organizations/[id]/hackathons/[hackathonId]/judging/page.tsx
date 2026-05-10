@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import MetricsCard from '@/components/organization/cards/MetricsCard';
 import JudgingParticipant from '@/components/organization/cards/JudgingParticipant';
 import EmptyState from '@/components/EmptyState';
 import { useParams } from 'next/navigation';
 import {
-  getJudgingSubmissions,
+  getJudgingSubmissionsForJudge,
   getJudgingCriteria,
   addJudge,
   removeJudge,
@@ -24,7 +24,25 @@ import { getOrganizationMembers } from '@/lib/api/organization';
 import { getCrowdfundingProject } from '@/features/projects/api';
 import { authClient } from '@/lib/auth-client';
 import { useOrganization } from '@/lib/providers/OrganizationProvider';
-import { Loader2, Trophy, CheckCircle2 } from 'lucide-react';
+import {
+  Loader2,
+  Trophy,
+  CheckCircle2,
+  Search,
+  ArrowUpRight,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Mail,
+  Users,
+  Star,
+  Zap,
+  LayoutGrid,
+  List,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -33,6 +51,24 @@ import { reportError, reportMessage } from '@/lib/error-reporting';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JudgingCriteriaList } from '@/components/organization/hackathons/judging/JudgingCriteriaList';
 import JudgingResultsTable from '@/components/organization/hackathons/judging/JudgingResultsTable';
+import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function JudgingPage() {
   const params = useParams();
@@ -60,11 +96,38 @@ export default function JudgingPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isCurrentUserJudge, setIsCurrentUserJudge] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [memberSearchTerm, setMemberSearchTerm] = useState('');
+  const [submissionSearchTerm, setSubmissionSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'score' | 'rank'>(
+    'date'
+  );
+  const [viewMode, setViewMode] = useState<'detailed' | 'compact'>('detailed');
+  const [submissionsPage, setSubmissionsPage] = useState(1);
+  const [submissionsTotalPages, setSubmissionsTotalPages] = useState(1);
+  const [resultsPage, setResultsPage] = useState(1);
+  const [resultsTotalPages, setResultsTotalPages] = useState(1);
+  const [isFetchingSubmissions, setIsFetchingSubmissions] = useState(false);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSubmissionSearchTerm(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Cache using useRef to prevent redundant fetches on tab switch without triggering re-renders
+  const lastFetchedRef = useRef<{ [key: string]: number }>({});
+  const CACHE_TIMEOUT = 30000; // 30 seconds
+
+  const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [judgeToRemove, setJudgeToRemove] = useState<string | null>(null);
 
   const canManageJudges =
     currentUserRole === 'owner' || currentUserRole === 'admin';
-  const canPublishResults = canManageJudges && isCurrentUserJudge;
-  const resultsPublished = winners.length > 0;
+  const canPublishResults = canManageJudges; // Admins can always publish
+  const resultsPublished = !!judgingSummary?.resultsPublished;
 
   const fetchJudges = useCallback(async () => {
     // Priority: activeOrgId from context, then params.id
@@ -155,164 +218,155 @@ export default function JudgingPage() {
     }
   }, [organizationId, hackathonId, activeOrgId]);
 
-  const fetchResults = useCallback(async () => {
-    if (!organizationId || !hackathonId) return;
+  const fetchResults = useCallback(
+    async (force = false) => {
+      if (!organizationId || !hackathonId) return;
 
-    setIsFetchingResults(true);
-    try {
-      const res = await getJudgingResults(organizationId, hackathonId);
+      // Check cache
+      const now = Date.now();
+      if (
+        !force &&
+        lastFetchedRef.current['results'] &&
+        now - lastFetchedRef.current['results'] < CACHE_TIMEOUT
+      ) {
+        return;
+      }
 
-      if (res.success && res.data) {
-        setJudgingResults(res.data.results || []);
-        setJudgingSummary(res.data);
-      } else {
+      setIsFetchingResults(true);
+      try {
+        const res = await getJudgingResults(
+          organizationId,
+          hackathonId,
+          resultsPage,
+          10,
+          submissionSearchTerm,
+          sortBy,
+          'desc'
+        );
+
+        if (res.success && res.data) {
+          setJudgingResults(res.data.results || []);
+          setJudgingSummary(res.data);
+
+          if (res.data.pagination?.totalPages) {
+            setResultsTotalPages(res.data.pagination.totalPages);
+          }
+
+          lastFetchedRef.current['results'] = now;
+        } else {
+          setJudgingResults([]);
+          setJudgingSummary(null);
+          if (!res.success) {
+            toast.error(
+              (res as any).message || 'Failed to load judging results'
+            );
+          }
+        }
+      } catch (error: any) {
+        reportError(error, {
+          context: 'judging-fetchResults',
+          organizationId,
+          hackathonId,
+        });
         setJudgingResults([]);
         setJudgingSummary(null);
-        if (!res.success) {
-          toast.error((res as any).message || 'Failed to load judging results');
-        }
+        toast.error(
+          error.response?.data?.message ||
+            error.message ||
+            'Failed to load judging results'
+        );
+      } finally {
+        setIsFetchingResults(false);
       }
-    } catch (error: any) {
-      reportError(error, {
-        context: 'judging-fetchResults',
-        organizationId,
-        hackathonId,
-      });
-      setJudgingResults([]);
-      setJudgingSummary(null);
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to load judging results'
-      );
-    } finally {
-      setIsFetchingResults(false);
-    }
-  }, [organizationId, hackathonId]);
+    },
+    [organizationId, hackathonId, resultsPage, submissionSearchTerm, sortBy]
+  );
 
-  const fetchWinners = useCallback(async () => {
-    if (!organizationId || !hackathonId) return;
-    setIsFetchingWinners(true);
-    try {
-      const res = await getJudgingWinners(organizationId, hackathonId);
-      if (res.success && res.data) {
-        setWinners(Array.isArray(res.data) ? res.data : []);
+  const fetchWinners = useCallback(
+    async (force = false) => {
+      if (!organizationId || !hackathonId) return;
+
+      // Check cache
+      const now = Date.now();
+      if (
+        !force &&
+        lastFetchedRef.current['winners'] &&
+        now - lastFetchedRef.current['winners'] < CACHE_TIMEOUT
+      ) {
+        return;
       }
-    } catch (error) {
-      reportError(error, {
-        context: 'judging-fetchWinners',
-        organizationId,
-        hackathonId,
-      });
-    } finally {
-      setIsFetchingWinners(false);
-    }
-  }, [organizationId, hackathonId]);
+
+      setIsFetchingWinners(true);
+      try {
+        const res = await getJudgingWinners(
+          organizationId,
+          hackathonId,
+          1,
+          50,
+          submissionSearchTerm,
+          'score',
+          'desc'
+        );
+        if (res.success && res.data) {
+          setWinners(Array.isArray(res.data) ? res.data : []);
+          lastFetchedRef.current['winners'] = now;
+        }
+      } catch (error) {
+        reportError(error, {
+          context: 'judging-fetchWinners',
+          organizationId,
+          hackathonId,
+        });
+      } finally {
+        setIsFetchingWinners(false);
+      }
+    },
+    [organizationId, hackathonId, submissionSearchTerm]
+  );
 
   const fetchData = useCallback(async () => {
     if (!organizationId || !hackathonId) return;
 
-    setIsLoading(true);
+    // Only show global loading on initial fetch
+    if (submissions.length === 0) {
+      setIsLoading(true);
+    }
+    setIsFetchingSubmissions(true);
     try {
-      // Fetch submissions, criteria, and judges/members
-      const [submissionsRes, criteriaRes] = await Promise.all([
-        getJudgingSubmissions(organizationId, hackathonId, 1, 50),
-        getJudgingCriteria(hackathonId),
-      ]);
+      // Use the new optimized endpoint that returns submissions, criteria and myScore in one go
+      const submissionsRes = await getJudgingSubmissionsForJudge(
+        hackathonId,
+        submissionsPage,
+        12,
+        submissionSearchTerm,
+        sortBy,
+        'desc'
+      );
 
-      // Trigger judges, results, and winners fetch in parallel (winners => results published state)
+      // Trigger other data fetches in parallel
       fetchJudges();
       fetchResults();
       fetchWinners();
 
-      let enrichedSubmissions: JudgingSubmission[] = [];
+      if (submissionsRes.success && submissionsRes.data) {
+        const {
+          submissions: subData,
+          criteria: critData,
+          pagination,
+        } = submissionsRes.data;
 
-      if (submissionsRes.success) {
-        // Standard submissions endpoint returns { data: { submissions: [], pagination: {} } }
-        const submissionData =
-          (submissionsRes.data as any)?.submissions ||
-          submissionsRes.data ||
-          [];
-        const basicSubmissions = Array.isArray(submissionData)
-          ? submissionData
-          : [];
+        setSubmissions(subData || []);
+        setCriteria(critData || []);
 
-        // 2. Fetch full details for each submission to get user info
-        // We do this by fetching the project details, as submission endpoints lack user data
-        const detailsPromises = basicSubmissions.map(async (sub: any) => {
-          try {
-            // Check if we already have sufficient user data
-            if (
-              sub.participant?.user?.profile?.firstName ||
-              sub.participant?.name
-            )
-              return sub;
-
-            // Try fetch project details if we have projectId
-            if (sub.projectId) {
-              const project = await getCrowdfundingProject(sub.projectId);
-              if (project && project.project && project.project.creator) {
-                const creator = project.project.creator;
-                return {
-                  ...sub,
-                  participant: {
-                    ...sub.participant,
-                    // Use creator info for participant
-                    name: creator.name,
-                    username: creator.username,
-                    image: creator.image,
-                    email: creator.email,
-                    user: {
-                      ...sub.participant?.user,
-                      name: creator.name,
-                      username: creator.username,
-                      image: creator.image,
-                      email: creator.email,
-                      profile: {
-                        ...sub.participant?.user?.profile,
-                        firstName: creator.name?.split(' ')[0] || '',
-                        lastName:
-                          creator.name?.split(' ').slice(1).join(' ') || '',
-                        username: creator.username,
-                        avatar: creator.image,
-                      },
-                    },
-                  },
-                };
-              }
-            }
-
-            // Fallback to submission details check if project fail or no projectId
-            const detailsRes = await getSubmissionDetails(sub.id);
-            if (detailsRes.success && detailsRes.data) {
-              const details = detailsRes.data as any;
-              return {
-                ...sub,
-                participant: {
-                  ...sub.participant,
-                  ...details.participant,
-                  user: details.participant?.user || sub.participant?.user,
-                },
-              };
-            }
-            return sub;
-          } catch (err) {
-            reportError(err, {
-              context: 'judging-fetchSubmissionDetails',
-              submissionId: sub.id,
-            });
-            return sub;
-          }
-        });
-
-        enrichedSubmissions = await Promise.all(detailsPromises);
-        setSubmissions(enrichedSubmissions);
+        if (pagination?.totalPages) {
+          setSubmissionsTotalPages(pagination.totalPages);
+        } else if (pagination?.total) {
+          setSubmissionsTotalPages(Math.ceil(pagination.total / 12));
+        }
       } else {
         setSubmissions([]);
+        setCriteria([]);
       }
-
-      // Handle criteria response safely
-      setCriteria(Array.isArray(criteriaRes) ? criteriaRes : []);
     } catch (error) {
       reportError(error, {
         context: 'judging-fetchData',
@@ -322,8 +376,18 @@ export default function JudgingPage() {
       toast.error('Failed to load judging data');
     } finally {
       setIsLoading(false);
+      setIsFetchingSubmissions(false);
     }
-  }, [organizationId, hackathonId, fetchJudges, fetchResults, fetchWinners]);
+  }, [
+    organizationId,
+    hackathonId,
+    submissionsPage,
+    submissionSearchTerm,
+    fetchJudges,
+    fetchResults,
+    fetchWinners,
+    sortBy,
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -377,12 +441,24 @@ export default function JudgingPage() {
         context: 'judging-removeJudge',
         organizationId,
         hackathonId,
+        userId,
       });
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to remove judge'
-      );
+      toast.error(error.message || 'Failed to remove judge');
+    }
+  };
+
+  // Use submissions directly as they are now filtered/sorted by the backend
+  const filteredAndSortedSubmissions = submissions;
+
+  const handlePageChange = (newPage: number) => {
+    if (activeTab === 'overview') {
+      if (newPage >= 1 && newPage <= submissionsTotalPages) {
+        setSubmissionsPage(newPage);
+      }
+    } else if (activeTab === 'results') {
+      if (newPage >= 1 && newPage <= resultsTotalPages) {
+        setResultsPage(newPage);
+      }
     }
   };
 
@@ -392,8 +468,8 @@ export default function JudgingPage() {
       const res = await publishJudgingResults(organizationId, hackathonId);
       if (res.success) {
         toast.success('Results published successfully!');
-        fetchResults();
-        fetchWinners();
+        fetchResults(true);
+        fetchWinners(true);
       } else {
         toast.error(res.message || 'Failed to publish results');
       }
@@ -430,28 +506,54 @@ export default function JudgingPage() {
     <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
       <div className='bg-background min-h-screen space-y-6 p-8 text-white'>
         <div className='flex flex-col gap-6'>
-          <div>
-            <h1 className='text-2xl font-bold'>Judging Dashboard</h1>
-            <p className='text-gray-400'>
-              Manage and grade shortlisted submissions
-            </p>
+          <div className='flex flex-col justify-between gap-4 border-b border-gray-900 pb-6 md:flex-row md:items-end'>
+            <div>
+              <h1 className='text-3xl font-bold tracking-tight'>
+                Judging Dashboard
+              </h1>
+              <p className='text-gray-400'>
+                Manage and grade shortlisted submissions
+              </p>
+            </div>
+
+            <div className='flex items-center gap-3'>
+              {/* Optional: Add a refresh button here for premium feel */}
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => fetchData()}
+                className='border-gray-800 bg-black text-gray-400 hover:text-white'
+              >
+                Refresh Data
+              </Button>
+            </div>
           </div>
 
-          <div className='flex gap-4'>
+          <div className='custom-scrollbar flex gap-4 overflow-x-auto pb-2'>
             <MetricsCard
-              title='Graded Projects'
+              title='Total Submissions'
+              value={totalPossibleSubmissions}
+              // icon={<Zap className='h-4 w-4 text-blue-400' />}
+              className='min-w-[200px] border-gray-900 bg-white/5'
+            />
+            <MetricsCard
+              title='Graded / Shortlisted'
               value={`${gradedCount} / ${totalPossibleSubmissions}`}
               subtitle={`${totalPossibleSubmissions > 0 ? Math.round((gradedCount / totalPossibleSubmissions) * 100) : 0}% Completion`}
+              // icon={<Star className='h-4 w-4 text-amber-400' />}
+              className='min-w-[200px] border-gray-900 bg-white/5'
             />
             <MetricsCard
-              title='Avg. Hackathon Score'
-              value={averageHackathonScore.toFixed(2)}
-              subtitle='Out of 10.00'
+              title='Average Score'
+              value={Number(averageHackathonScore).toFixed(1)}
+              // icon={<Trophy className='h-4 w-4 text-yellow-500' />}
+              className='min-w-[200px] border-gray-900 bg-white/5'
             />
             <MetricsCard
-              title='Assigned Judges'
+              title='Active Judges'
               value={assignedJudgesCount}
-              subtitle='on this hackathon'
+              // icon={<Users className='text-primary h-4 w-4' />}
+              className='min-w-[200px] border-gray-900 bg-white/5'
             />
           </div>
 
@@ -461,68 +563,190 @@ export default function JudgingPage() {
             onValueChange={value => {
               setActiveTab(value);
               if (value === 'results') {
-                fetchResults();
-                fetchWinners();
+                setSortBy('score'); // Show auto-rank by default
+                fetchResults(false);
+                fetchWinners(false);
               }
             }}
             className='w-full'
           >
-            <TabsList className='bg-background/8 border-gray-900'>
-              <TabsTrigger
-                value='overview'
-                className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
-              >
-                Overview
-              </TabsTrigger>
-              <TabsTrigger
-                value='criteria'
-                className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
-              >
-                Criteria
-              </TabsTrigger>
-              <TabsTrigger
-                value='judges'
-                className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
-              >
-                Judges
-              </TabsTrigger>
-              <TabsTrigger
-                value='results'
-                className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
-              >
-                Results
-              </TabsTrigger>
-            </TabsList>
+            <div className='flex flex-col gap-6'>
+              <div className='flex flex-col items-center justify-between gap-4 md:flex-row'>
+                <TabsList className='bg-background/8 border-gray-900'>
+                  <TabsTrigger
+                    value='overview'
+                    className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
+                  >
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value='criteria'
+                    className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
+                  >
+                    Criteria
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value='judges'
+                    className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
+                  >
+                    Judges
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value='results'
+                    className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
+                  >
+                    Results
+                  </TabsTrigger>
+                </TabsList>
 
-            <TabsContent value='overview' className='mt-6'>
-              {isLoading ? (
+                {/* Global Filters & Search */}
+                <div className='flex w-full flex-col flex-wrap justify-end gap-4 md:w-auto md:flex-row md:items-center'>
+                  <div className='relative max-w-md flex-1 md:min-w-[350px]'>
+                    {isFetchingSubmissions || isFetchingResults ? (
+                      <Loader2 className='text-primary absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 animate-spin' />
+                    ) : (
+                      <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500' />
+                    )}
+                    <Input
+                      placeholder='Search projects, participants, or categories...'
+                      className='focus:ring-primary border-gray-900 bg-black pl-10 text-sm'
+                      value={searchQuery}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setSearchQuery(e.target.value);
+                        if (activeTab === 'overview') setSubmissionsPage(1);
+                        if (activeTab === 'results') setResultsPage(1);
+                      }}
+                    />
+                  </div>
+
+                  <div className='flex items-center gap-3'>
+                    <div className='flex items-center gap-2'>
+                      <span className='text-xs text-gray-500'>Sort:</span>
+                      <Select
+                        value={sortBy}
+                        onValueChange={(value: any) => {
+                          setSortBy(value);
+                          if (activeTab === 'overview') setSubmissionsPage(1);
+                          if (activeTab === 'results') setResultsPage(1);
+                        }}
+                      >
+                        <SelectTrigger className='h-9 w-[130px] border-gray-900 bg-black text-xs'>
+                          <SelectValue placeholder='Sort by' />
+                        </SelectTrigger>
+                        <SelectContent className='border-gray-900 bg-zinc-950 text-white'>
+                          <SelectItem value='date'>Recently Added</SelectItem>
+                          <SelectItem value='score'>Highest Score</SelectItem>
+                          <SelectItem value='rank'>Top Ranked</SelectItem>
+                          <SelectItem value='name'>Project Name</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className='mx-2 h-8 w-px bg-gray-900' />
+
+                    <div className='flex items-center rounded-md border border-gray-900 p-1'>
+                      <Button
+                        variant={
+                          viewMode === 'detailed' ? 'secondary' : 'ghost'
+                        }
+                        size='icon'
+                        className='h-7 w-7 rounded-sm'
+                        onClick={() => setViewMode('detailed')}
+                      >
+                        <LayoutGrid className='h-3.5 w-3.5' />
+                      </Button>
+                      <Button
+                        variant={viewMode === 'compact' ? 'secondary' : 'ghost'}
+                        size='icon'
+                        className='h-7 w-7 rounded-sm'
+                        onClick={() => setViewMode('compact')}
+                      >
+                        <List className='h-3.5 w-3.5' />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className='h-px w-full bg-gray-900/50' />
+            </div>
+
+            <TabsContent value='overview' className='mt-6 space-y-6'>
+              {isLoading && submissions.length === 0 ? (
                 <div className='flex items-center justify-center py-12'>
                   <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
                 </div>
-              ) : submissions.length > 0 ? (
-                <div className='flex flex-col gap-4'>
-                  {submissions.map(submission => (
-                    <JudgingParticipant
-                      key={
-                        (submission as any).id ||
-                        (submission as any).participant?.id
-                      }
-                      submission={submission}
-                      organizationId={organizationId}
-                      hackathonId={hackathonId}
-                      hasCriteria={criteria.length > 0}
-                      judges={currentJudges}
-                      isJudgesLoading={isRefreshingJudges}
-                      currentUserId={currentUserId || undefined}
-                      canOverrideScores={canManageJudges}
-                      onSuccess={handleSuccess}
-                    />
-                  ))}
+              ) : filteredAndSortedSubmissions.length > 0 ? (
+                <div className='space-y-4'>
+                  <div
+                    className={
+                      viewMode === 'detailed'
+                        ? 'flex flex-col gap-4'
+                        : 'grid grid-cols-1 gap-2'
+                    }
+                  >
+                    {filteredAndSortedSubmissions.map(submission => (
+                      <JudgingParticipant
+                        key={
+                          (submission as any).id ||
+                          (submission as any).participant?.id
+                        }
+                        submission={submission}
+                        organizationId={organizationId}
+                        hackathonId={hackathonId}
+                        hasCriteria={criteria.length > 0}
+                        criteria={criteria}
+                        judges={currentJudges}
+                        isJudgesLoading={isRefreshingJudges}
+                        currentUserId={currentUserId || undefined}
+                        canOverrideScores={canManageJudges}
+                        onSuccess={handleSuccess}
+                        variant={
+                          viewMode === 'compact' ? 'compact' : 'detailed'
+                        }
+                      />
+                    ))}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {submissionsTotalPages > 1 && (
+                    <div className='mt-8 flex items-center justify-center gap-4'>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        disabled={submissionsPage === 1 || isLoading}
+                        onClick={() => handlePageChange(submissionsPage - 1)}
+                        className='border-gray-900 bg-black hover:bg-white/5'
+                      >
+                        <ChevronLeft className='mr-1 h-4 w-4' />
+                        Previous
+                      </Button>
+                      <span className='text-sm text-gray-500'>
+                        Page {submissionsPage} of {submissionsTotalPages}
+                      </span>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        disabled={
+                          submissionsPage === submissionsTotalPages || isLoading
+                        }
+                        onClick={() => handlePageChange(submissionsPage + 1)}
+                        className='border-gray-900 bg-black hover:bg-white/5'
+                      >
+                        Next
+                        <ChevronRight className='ml-1 h-4 w-4' />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <EmptyState
-                  title='No Submissions Yet'
-                  description='There are currently no submissions to judge.'
+                  title='No Submissions Found'
+                  description={
+                    submissionSearchTerm
+                      ? `No submissions matching "${submissionSearchTerm}"`
+                      : 'There are currently no submissions to judge.'
+                  }
                 />
               )}
             </TabsContent>
@@ -584,7 +808,7 @@ export default function JudgingPage() {
                               size='sm'
                               className='text-red-400 hover:bg-red-400/10 hover:text-red-300'
                               onClick={() =>
-                                handleRemoveJudge(judge.userId || judge.id)
+                                setJudgeToRemove(judge.userId || judge.id)
                               }
                             >
                               Remove
@@ -599,68 +823,90 @@ export default function JudgingPage() {
                 {/* Org Members List - Only visible to admin/owner */}
                 {canManageJudges && (
                   <div className='bg-background/8 h-fit rounded-lg border border-gray-900 p-6'>
-                    <h3 className='mb-4 text-lg font-medium'>
-                      Add from Organization Members
-                    </h3>
-                    <p className='mb-6 text-sm text-gray-400'>
-                      Select members from your organization to assign them as
-                      judges.
-                    </p>
-                    <div className='custom-scrollbar max-h-[500px] space-y-3 overflow-y-auto pr-2'>
-                      {orgMembers.map((member: any) => {
-                        const isAlreadyJudge = currentJudges.some(
-                          j => j.id === member.id || j.userId === member.id
-                        );
-                        return (
-                          <div
-                            key={member.id}
-                            className='flex items-center justify-between rounded-md border border-white/5 bg-white/5 p-3 transition-colors hover:bg-white/10'
-                          >
-                            <div className='flex items-center gap-3'>
-                              <div className='h-8 w-8 overflow-hidden rounded-full bg-gray-800'>
-                                {member.image ? (
-                                  <img
-                                    src={member.image}
-                                    alt=''
-                                    className='h-full w-full object-cover'
-                                  />
-                                ) : (
-                                  <div className='flex h-full w-full items-center justify-center text-xs font-bold text-gray-500'>
-                                    {member.name?.[0] ||
-                                      member.username?.[0] ||
-                                      '?'}
-                                  </div>
-                                )}
-                              </div>
-                              <div>
-                                <p className='text-sm font-medium'>
-                                  {member.name || member.username}
-                                </p>
-                                <p className='text-xs text-gray-500'>
-                                  {member.email}
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              size='sm'
-                              variant={isAlreadyJudge ? 'outline' : 'default'}
-                              className={
-                                isAlreadyJudge
-                                  ? 'cursor-not-allowed border-gray-800 opacity-50'
-                                  : ''
-                              }
-                              disabled={isAddingJudge || isAlreadyJudge}
-                              onClick={() =>
-                                handleAddJudge(member.id, member.email)
-                              }
+                    <div className='flex flex-col gap-4'>
+                      <h3 className='text-lg font-medium'>
+                        Add from Organization Members
+                      </h3>
+                      <div className='relative'>
+                        <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500' />
+                        <Input
+                          placeholder='Search members by name or email...'
+                          className='focus:ring-primary border-gray-900 bg-black pl-10 text-sm'
+                          value={memberSearchTerm}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setMemberSearchTerm(e.target.value)
+                          }
+                        />
+                      </div>
+                      <p className='text-xs text-gray-500'>
+                        Select members from your organization to assign them as
+                        judges.
+                      </p>
+                    </div>
+                    <div className='custom-scrollbar mt-6 max-h-[400px] space-y-3 overflow-y-auto pr-2'>
+                      {orgMembers
+                        .filter(m => {
+                          const search = memberSearchTerm.toLowerCase();
+                          return (
+                            m.name?.toLowerCase().includes(search) ||
+                            m.email?.toLowerCase().includes(search) ||
+                            m.username?.toLowerCase().includes(search)
+                          );
+                        })
+                        .map((member: any) => {
+                          const isAlreadyJudge = currentJudges.some(
+                            j => j.id === member.id || j.userId === member.id
+                          );
+                          return (
+                            <div
+                              key={member.id}
+                              className='flex items-center justify-between rounded-md border border-white/5 bg-white/5 p-3 transition-colors hover:bg-white/10'
                             >
-                              {isAlreadyJudge
-                                ? 'Already Judge'
-                                : 'Add as Judge'}
-                            </Button>
-                          </div>
-                        );
-                      })}
+                              <div className='flex items-center gap-3'>
+                                <div className='h-8 w-8 overflow-hidden rounded-full bg-gray-800'>
+                                  {member.image ? (
+                                    <img
+                                      src={member.image}
+                                      alt=''
+                                      className='h-full w-full object-cover'
+                                    />
+                                  ) : (
+                                    <div className='flex h-full w-full items-center justify-center text-xs font-bold text-gray-500'>
+                                      {member.name?.[0] ||
+                                        member.username?.[0] ||
+                                        '?'}
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className='text-sm font-medium'>
+                                    {member.name || member.username}
+                                  </p>
+                                  <p className='text-xs text-gray-500'>
+                                    {member.email}
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                size='sm'
+                                variant={isAlreadyJudge ? 'outline' : 'default'}
+                                className={
+                                  isAlreadyJudge
+                                    ? 'cursor-not-allowed border-gray-800 opacity-50'
+                                    : ''
+                                }
+                                disabled={isAddingJudge || isAlreadyJudge}
+                                onClick={() =>
+                                  handleAddJudge(member.id, member.email)
+                                }
+                              >
+                                {isAlreadyJudge
+                                  ? 'Already Judge'
+                                  : 'Add as Judge'}
+                              </Button>
+                            </div>
+                          );
+                        })}
                       {orgMembers.length === 0 && !isRefreshingJudges && (
                         <EmptyState
                           title='No Members Found'
@@ -695,19 +941,24 @@ export default function JudgingPage() {
                 {!resultsPublished &&
                   canPublishResults &&
                   judgingResults.length > 0 && (
-                    <div className='bg-primary/5 border-primary/10 flex items-center justify-between rounded-lg border p-4'>
-                      <div>
-                        <h3 className='text-primary text-sm font-semibold'>
-                          Finalize Competition
-                        </h3>
-                        <p className='text-xs text-gray-400'>
-                          Publish the current rankings to name the winners.
-                        </p>
+                    <div className='bg-primary/5 border-primary/10 flex items-center justify-between rounded-lg border p-4 shadow-sm'>
+                      <div className='flex items-center gap-4'>
+                        <div className='bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full'>
+                          <Trophy className='text-primary h-5 w-5' />
+                        </div>
+                        <div>
+                          <h3 className='text-primary text-sm font-semibold'>
+                            Finalize Competition
+                          </h3>
+                          <p className='text-xs text-gray-400'>
+                            Publish the current rankings to name the winners.
+                          </p>
+                        </div>
                       </div>
                       <Button
-                        onClick={handlePublishResults}
+                        onClick={() => setIsPublishDialogOpen(true)}
                         disabled={isPublishing}
-                        className='bg-primary text-primary-foreground hover:bg-primary/90 px-8 font-bold'
+                        className='bg-primary text-primary-foreground hover:bg-primary/90 px-8 font-bold shadow-lg'
                       >
                         {isPublishing ? 'Publishing...' : 'Publish Results'}
                       </Button>
@@ -726,6 +977,8 @@ export default function JudgingPage() {
                       hackathonId={hackathonId}
                       totalJudges={currentJudges.length}
                       criteria={criteria}
+                      canManage={canManageJudges}
+                      winnerOverrides={judgingSummary?.winnerOverrides}
                     />
                   </div>
                 )}
@@ -734,18 +987,54 @@ export default function JudgingPage() {
                   <h2 className='text-lg font-bold text-gray-200'>
                     Current Standings
                   </h2>
-                  {isFetchingResults ? (
+                  {isFetchingResults && judgingResults.length === 0 ? (
                     <div className='flex items-center justify-center py-12'>
                       <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
                     </div>
                   ) : judgingResults.length > 0 ? (
-                    <JudgingResultsTable
-                      results={judgingResults}
-                      organizationId={organizationId}
-                      hackathonId={hackathonId}
-                      totalJudges={currentJudges.length}
-                      criteria={criteria}
-                    />
+                    <>
+                      <JudgingResultsTable
+                        results={judgingResults}
+                        organizationId={organizationId}
+                        hackathonId={hackathonId}
+                        totalJudges={currentJudges.length}
+                        criteria={criteria}
+                        canManage={canManageJudges}
+                        winnerOverrides={judgingSummary?.winnerOverrides}
+                      />
+
+                      {/* Pagination Controls for Results */}
+                      {resultsTotalPages > 1 && (
+                        <div className='mt-8 flex items-center justify-center gap-4'>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            disabled={resultsPage === 1 || isFetchingResults}
+                            onClick={() => handlePageChange(resultsPage - 1)}
+                            className='border-gray-900 bg-black hover:bg-white/5'
+                          >
+                            <ChevronLeft className='mr-1 h-4 w-4' />
+                            Previous
+                          </Button>
+                          <span className='text-sm text-gray-500'>
+                            Page {resultsPage} of {resultsTotalPages}
+                          </span>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            disabled={
+                              resultsPage === resultsTotalPages ||
+                              isFetchingResults
+                            }
+                            onClick={() => handlePageChange(resultsPage + 1)}
+                            className='border-gray-900 bg-black hover:bg-white/5'
+                          >
+                            Next
+                            <ChevronRight className='ml-1 h-4 w-4' />
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <EmptyState
                       title='No Results Yet'
@@ -757,6 +1046,62 @@ export default function JudgingPage() {
             </TabsContent>
           </Tabs>
         </div>
+        {/* Global Dialogs */}
+        <AlertDialog
+          open={isPublishDialogOpen}
+          onOpenChange={setIsPublishDialogOpen}
+        >
+          <AlertDialogContent className='border-gray-900 bg-zinc-950 text-white'>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Publish Judging Results?</AlertDialogTitle>
+              <AlertDialogDescription className='text-gray-400'>
+                This will finalize the rankings and announce the winners. This
+                action is irreversible.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className='border-gray-800 bg-zinc-900 text-gray-300 hover:bg-zinc-800 hover:text-white'>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handlePublishResults}
+                className='bg-primary text-primary-foreground hover:bg-primary/90'
+              >
+                Yes, Publish Results
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={!!judgeToRemove}
+          onOpenChange={open => !open && setJudgeToRemove(null)}
+        >
+          <AlertDialogContent className='border-gray-900 bg-zinc-950 text-white'>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Judge?</AlertDialogTitle>
+              <AlertDialogDescription className='text-gray-400'>
+                Are you sure you want to remove this judge? Their existing
+                scores will be preserved but they will no longer have access to
+                the judging panel.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className='border-gray-800 bg-zinc-900 text-gray-300 hover:bg-zinc-800 hover:text-white'>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (judgeToRemove) handleRemoveJudge(judgeToRemove);
+                  setJudgeToRemove(null);
+                }}
+                className='bg-red-600 text-white hover:bg-red-700'
+              >
+                Remove Judge
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AuthGuard>
   );

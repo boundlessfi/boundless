@@ -1,14 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import pLimit from 'p-limit';
-import { useGetEscrowFromIndexerByContractIds } from '@trustless-work/escrow/hooks';
-import type {
-  GetEscrowFromIndexerByContractIdsParams,
-  MultiReleaseEscrow,
-} from '@trustless-work/escrow';
 // Import Hackathon types
 import {
   getJudgingSubmissions,
   getHackathon,
+  getHackathonEscrow,
   type Hackathon,
   type HackathonEscrowData,
 } from '@/lib/api/hackathons';
@@ -23,37 +19,6 @@ import { Submission } from '@/components/organization/hackathons/rewards/types';
 import { PrizeTier } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
 import { toast } from 'sonner';
 import { reportError } from '@/lib/error-reporting';
-
-const mapEscrowToHackathonEscrowData = (
-  escrowData: MultiReleaseEscrow
-): HackathonEscrowData => {
-  const isFunded = (escrowData.balance || 0) > 0;
-  const canUpdate = isFunded;
-
-  return {
-    contractId: escrowData.contractId || '',
-    escrowAddress: escrowData.contractId || '',
-    balance: escrowData.balance || 0,
-    milestones:
-      escrowData.milestones?.map(milestone => ({
-        description: milestone.description || '',
-        amount: milestone.amount || 0,
-        receiver: milestone.receiver || '',
-        status: milestone.status || 'pending',
-        evidence: milestone.evidence || '',
-        flags: milestone.flags
-          ? {
-              approved: milestone.flags.approved || false,
-              disputed: milestone.flags.disputed || false,
-              released: milestone.flags.released || false,
-              resolved: milestone.flags.resolved || false,
-            }
-          : undefined,
-      })) || [],
-    isFunded,
-    canUpdate,
-  };
-};
 
 const getOrdinalSuffix = (i: number) => {
   const j = i % 10,
@@ -117,8 +82,6 @@ export const useHackathonRewards = (
   organizationId: string,
   hackathonId: string
 ): UseHackathonRewardsReturn => {
-  const { getEscrowByContractIds } = useGetEscrowFromIndexerByContractIds();
-
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [escrow, setEscrow] = useState<HackathonEscrowData | null>(null);
   const [prizeTiers, setPrizeTiers] = useState<PrizeTier[]>([]);
@@ -146,29 +109,10 @@ export const useHackathonRewards = (
       setIsLoadingEscrow(true);
 
       try {
-        const params: GetEscrowFromIndexerByContractIdsParams = {
-          contractIds: [contractIdToFetch],
-        };
+        const response = await getHackathonEscrow(organizationId, hackathonId);
 
-        const response = await getEscrowByContractIds(params);
-
-        let escrows: MultiReleaseEscrow[] = [];
-
-        if (Array.isArray(response)) {
-          escrows = response as MultiReleaseEscrow[];
-        } else if (
-          response &&
-          typeof response === 'object' &&
-          'escrows' in response
-        ) {
-          escrows =
-            (response as { escrows: MultiReleaseEscrow[] }).escrows || [];
-        }
-
-        if (escrows.length > 0) {
-          const escrowData = escrows[0] as MultiReleaseEscrow;
-          const mappedEscrow = mapEscrowToHackathonEscrowData(escrowData);
-          setEscrow(mappedEscrow);
+        if (response.success && response.data) {
+          setEscrow(response.data);
         } else {
           setEscrow(null);
         }
@@ -180,7 +124,7 @@ export const useHackathonRewards = (
         isFetchingEscrowRef.current = false;
       }
     },
-    [getEscrowByContractIds]
+    [organizationId, hackathonId]
   );
 
   const refreshEscrow = useCallback(async () => {

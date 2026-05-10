@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "skills": {
+    "didit-aml-screening": {
+      "source": "didit-protocol/skills",
+      "sourceType": "github",
+      "computedHash": "e32e08024b5c32a5d4c4d8671e6ce360ce654da187ca2d8f2bf904adcf4cadaf"
+    },
+    "didit-biometric-age-estimation": {
+      "source": "didit-protocol/skills",
+      "sourceType": "github",
+      "computedHash": "61935085c4aedb93ac0c2fdfd6ed71bf709a9e720a0614685f117b4576e3a7d9"
+    },
+    "didit-face-match": {
+      "source": "didit-protocol/skills",
+      "sourceType": "github",
+      "computedHash": "06c431934c35d70339581dfc5b5492dcc5c7244fde5f62b14613c10a920d6a4c"
+    },
+    "didit-face-search": {
+      "source": "didit-protocol/skills",
+      "sourceType": "github",
+      "computedHash": "6c94203fcd53399d14666fbde1b130eac6b508f7304cc423ffab770834d3f763"
+    },
+    "didit-id-document-verification": {
+      "source": "didit-protocol/skills",
+      "sourceType": "github",
+      "computedHash": "304124df77847a9941f2e5d518ea1a930ed299fcf6ddf27b49ca0b985d6ea1b9"
+    },
+    "didit-liveness-detection": {
+      "source": "didit-protocol/skills",
+      "sourceType": "github",
+      "computedHash": "df7424454c67a2e19835782a81ad3572b8f8370e75bfa6c66c531a8269020695"
+    },
+    "didit-verification-management": {
+      "source": "didit-protocol/skills",
+      "sourceType": "github",
+      "computedHash": "ea63a4e88eacfbe3f7c9bfcde14ac56e12fea6463c6e639f6ab23c4ca27d6cea"
+    }
+  }
+}

@@ -26,7 +26,8 @@ interface UseHackathonPublishProps {
   draftId?: string | null;
   publishDraftAction: (
     draftId: string,
-    organizationId: string
+    organizationId: string,
+    options?: { skipAnnouncement?: boolean; announcementSubject?: string }
   ) => Promise<Hackathon>;
 }
 
@@ -51,7 +52,10 @@ export const useHackathonPublish = ({
   const [publishResponse, setPublishResponse] =
     useState<PublishResponseData | null>(null);
 
-  const publish = async (): Promise<PublishResponseData | null> => {
+  const publish = async (publishOptions?: {
+    skipAnnouncement?: boolean;
+    announcementSubject?: string;
+  }): Promise<PublishResponseData | null> => {
     if (!organizationId) {
       toast.error('Organization ID is required');
       return null;
@@ -98,7 +102,11 @@ export const useHackathonPublish = ({
     try {
       toast.info('Publishing hackathon...');
       // The backend now handles the custodial wallet and escrow logic
-      const response = await publishDraftAction(draftId, organizationId);
+      const response = await publishDraftAction(
+        draftId,
+        organizationId,
+        publishOptions
+      );
 
       // Handle different response formats
       // Could be: { success, message, data: {...} } or direct Hackathon object

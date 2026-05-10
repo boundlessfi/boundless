@@ -21,6 +21,10 @@ import { cn } from '@/lib/utils';
 import IndividualScoresBreakdown from '@/components/organization/cards/JudgingParticipant/IndividualScoresBreakdown';
 import AggregatedCriteriaBreakdown from './AggregatedCriteriaBreakdown';
 import { JudgingCriterion } from '@/lib/api/hackathons/judging';
+import { updateHackathon, getHackathon } from '@/lib/api/hackathons';
+import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Loader2 } from 'lucide-react';
 
 interface JudgingResultsTableProps {
   results: JudgingResult[];
@@ -28,6 +32,8 @@ interface JudgingResultsTableProps {
   hackathonId: string;
   totalJudges?: number;
   criteria?: JudgingCriterion[];
+  canManage?: boolean;
+  winnerOverrides?: Record<string, number>;
 }
 
 // Helper function to safely extract score from JudgingResult
@@ -41,10 +47,31 @@ const JudgingResultsTable = ({
   hackathonId,
   totalJudges,
   criteria = [],
+  canManage = false,
+  winnerOverrides: initialWinnerOverrides = {},
 }: JudgingResultsTableProps) => {
   const [expandedRows, setExpandedRows] = React.useState<
     Record<string, boolean>
   >({});
+  const [winnerOverrides, setWinnerOverrides] = React.useState<
+    Record<string, number | null>
+  >({});
+  const [isUpdating, setIsUpdating] = React.useState<string | null>(null);
+
+  // Initialize overrides from props or results
+  React.useEffect(() => {
+    const overrides: Record<string, number | null> = {
+      ...initialWinnerOverrides,
+    };
+
+    // Fallback to results[].rank if not in overrides (for published results)
+    results.forEach(res => {
+      if (res.rank && !overrides[res.submissionId]) {
+        overrides[res.submissionId] = res.rank;
+      }
+    });
+    setWinnerOverrides(overrides);
+  }, [results, initialWinnerOverrides]);
 
   const toggleRow = (id: string) => {
     setExpandedRows(prev => ({
@@ -53,11 +80,46 @@ const JudgingResultsTable = ({
     }));
   };
 
-  const sortedResults = React.useMemo(() => {
-    return [...results].sort((a, b) => {
-      return getScore(b) - getScore(a);
-    });
-  }, [results]);
+  const sortedResults = results;
+
+  const handleOverrideRank = async (
+    submissionId: string,
+    rank: number | null
+  ) => {
+    try {
+      setIsUpdating(submissionId);
+      setWinnerOverrides(prev => ({ ...prev, [submissionId]: rank }));
+
+      // Fetch current hackathon to get latest state
+      const hackathonRes = await getHackathon(hackathonId);
+      const hackathonData = hackathonRes.data;
+
+      // Update overrides record
+      const updatedOverrides = {
+        ...(hackathonData.winnerOverrides || {}),
+      };
+
+      if (rank === null || isNaN(rank)) {
+        delete updatedOverrides[submissionId];
+      } else {
+        updatedOverrides[submissionId] = rank;
+      }
+
+      await updateHackathon(hackathonId, {
+        rewards: {
+          prizeTiers: (hackathonData.prizeTiers as any) || [],
+          winnerOverrides: updatedOverrides,
+        },
+      });
+
+      toast.success('Manual rank updated');
+    } catch (error: any) {
+      console.error('Failed to update rank override:', error);
+      toast.error('Failed to update manual rank');
+    } finally {
+      setIsUpdating(null);
+    }
+  };
 
   const getRankIcon = (index: number) => {
     switch (index) {
@@ -85,6 +147,11 @@ const JudgingResultsTable = ({
             <TableHead className='text-right text-gray-400'>
               Participation
             </TableHead>
+            {canManage && (
+              <TableHead className='w-32 text-right text-gray-400'>
+                Manual Rank
+              </TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -102,8 +169,21 @@ const JudgingResultsTable = ({
                 >
                   <TableCell className='font-medium text-white'>
                     <div className='flex items-center gap-2'>
-                      {getRankIcon(index)}
-                      <span>#{result.rank ?? index + 1}</span>
+                      {getRankIcon(result.rank ? result.rank - 1 : index)}
+                      <div className='flex flex-col'>
+                        {result.rank ? (
+                          <span className='text-[10px] tracking-wider text-amber-500/70 uppercase'>
+                            Final
+                          </span>
+                        ) : (
+                          <span className='text-[10px] tracking-wider text-gray-500 uppercase'>
+                            Auto
+                          </span>
+                        )}
+                        <span className='text-sm font-bold'>
+                          #{result.rank ?? result.computedRank ?? index + 1}
+                        </span>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className='font-medium text-white'>
@@ -200,10 +280,36 @@ const JudgingResultsTable = ({
                       </Badge>
                     </div>
                   </TableCell>
+                  {canManage && (
+                    <TableCell
+                      className='text-right'
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div className='flex items-center justify-end gap-2'>
+                        {isUpdating === result.submissionId ? (
+                          <Loader2 className='text-primary h-4 w-4 animate-spin' />
+                        ) : (
+                          <Input
+                            type='number'
+                            min='1'
+                            placeholder='Rank'
+                            className='h-8 w-20 border-gray-800 bg-black/40 text-right text-xs'
+                            value={winnerOverrides[result.submissionId] || ''}
+                            onChange={e => {
+                              const val = e.target.value
+                                ? parseInt(e.target.value)
+                                : null;
+                              handleOverrideRank(result.submissionId, val);
+                            }}
+                          />
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
                 {expandedRows[result.submissionId] && (
                   <TableRow className='border-gray-900 bg-black/20'>
-                    <TableCell colSpan={4} className='p-0'>
+                    <TableCell colSpan={canManage ? 5 : 4} className='p-0'>
                       <div className='p-6 pt-2'>
                         {/* Aggregated Criteria Breakdown */}
                         {result.criteriaBreakdown &&
@@ -218,7 +324,7 @@ const JudgingResultsTable = ({
                         <IndividualScoresBreakdown
                           organizationId={organizationId}
                           hackathonId={hackathonId}
-                          participantId={result.submissionId}
+                          submissionId={result.submissionId}
                           initialScores={result.individualScores}
                         />
                       </div>
@@ -231,7 +337,7 @@ const JudgingResultsTable = ({
           {results.length === 0 && (
             <TableRow>
               <TableCell
-                colSpan={4}
+                colSpan={canManage ? 5 : 4}
                 className='h-48 text-center text-gray-500 italic'
               >
                 No judging results available yet. Results appear once judges

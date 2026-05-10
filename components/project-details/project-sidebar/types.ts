@@ -55,6 +55,8 @@ export type ProjectStatus =
   | 'Funded'
   | 'Completed'
   | 'Validation'
+  | 'Validated'
+  | 'Rejected'
   | 'Funding'
   | 'idea'
   | 'pending'

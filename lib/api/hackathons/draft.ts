@@ -78,18 +78,44 @@ export const updateDraftStep = async (
   return res.data;
 };
 
+export interface PublishDraftOptions {
+  /** Skip the launch announcement email entirely. */
+  skipAnnouncement?: boolean;
+  /** Override the default email subject (max 120 chars). */
+  announcementSubject?: string;
+}
+
 /**
  * Publish a hackathon draft
  */
 export const publishDraft = async (
   draftId: string,
-  organizationId: string
+  organizationId: string,
+  options?: PublishDraftOptions
 ): Promise<PublishHackathonResponse> => {
   const res = await api.put<ApiResponse<PublishHackathonResponse>>(
-    `/organizations/${organizationId}/hackathons/draft/${draftId}/publish`
+    `/organizations/${organizationId}/hackathons/draft/${draftId}/publish`,
+    options ?? {}
   );
 
   return res.data.data as PublishHackathonResponse;
+};
+
+export interface AnnouncementAudiencePreview {
+  audienceSize: number;
+}
+
+/**
+ * Preview how many subscribers would receive the launch announcement email.
+ */
+export const previewAnnouncementAudience = async (
+  draftIdOrHackathonId: string,
+  organizationId: string
+): Promise<AnnouncementAudiencePreview> => {
+  const res = await api.get<ApiResponse<AnnouncementAudiencePreview>>(
+    `/organizations/${organizationId}/hackathons/hackathons/${draftIdOrHackathonId}/announcement-preview`
+  );
+  return (res.data.data as AnnouncementAudiencePreview) || { audienceSize: 0 };
 };
 
 /**

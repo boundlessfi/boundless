@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback, useRef, useEffect } from 'react';
+import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useHackathons } from '@/hooks/use-hackathons';
 import { useHackathonSteps } from '@/hooks/use-hackathon-steps';
@@ -16,6 +16,7 @@ import ResourcesTab from './tabs/ResourcesTab';
 import JudgingTab from './tabs/JudgingTab';
 import CollaborationTab from './tabs/CollaborationTab';
 import ReviewTab from './tabs/ReviewTab';
+import PrePublishAnnounceDialog from './PrePublishAnnounceDialog';
 import type { StepKey } from './constants';
 import { isStepDataValid } from '@/lib/utils/hackathon-step-validation';
 
@@ -169,10 +170,20 @@ export default function NewHackathonTab({
     }
   };
 
+  const [announceDialogOpen, setAnnounceDialogOpen] = useState(false);
+
   const handlePublish = async () => {
+    setAnnounceDialogOpen(true);
+  };
+
+  const handleConfirmPublish = async (options: {
+    skipAnnouncement: boolean;
+    announcementSubject?: string;
+  }) => {
     try {
-      await publish();
+      await publish(options);
       updateStepCompletion('review', true);
+      setAnnounceDialogOpen(false);
     } catch (error) {
       throw error;
     }
@@ -294,6 +305,18 @@ export default function NewHackathonTab({
           </TabsContent>
         </div>
       </Tabs>
+
+      {draftId && derivedOrgId && (
+        <PrePublishAnnounceDialog
+          open={announceDialogOpen}
+          onOpenChange={setAnnounceDialogOpen}
+          draftId={draftId}
+          organizationId={derivedOrgId}
+          hackathonName={stepData.information?.name || 'Your hackathon'}
+          onConfirm={handleConfirmPublish}
+          isPublishing={isPublishing}
+        />
+      )}
     </div>
   );
 }

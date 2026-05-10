@@ -13,6 +13,7 @@ export interface Organization {
   id: string;
   name: string;
   logo: string;
+  slug: string;
   tagline: string;
   about: string;
   links: OrganizationLinks;

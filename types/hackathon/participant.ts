@@ -184,7 +184,7 @@ export interface SubmissionCardProps {
   submitterAvatar?: string | null;
   category?: string;
   categories?: string[];
-  status?: 'Pending' | 'Approved' | 'Rejected';
+  status?: 'SUBMITTED' | 'SHORTLISTED' | 'DISQUALIFIED';
   upvotes?: number;
   votes?: { current: number; total: number };
   comments?: number;

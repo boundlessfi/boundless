@@ -44,7 +44,7 @@ export function TrustlessWorkProvider({
 
   // Get API key from environment variable
   useEffect(() => {
-    const key = process.env.NEXT_PUBLIC_TRUSTLESS_WORK_API_KEY || '';
+    const key = process.env.TRUSTLESS_WORK_API_KEY || '';
     setApiKey(key);
   }, []);
 

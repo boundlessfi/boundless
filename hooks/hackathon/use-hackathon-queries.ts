@@ -97,13 +97,13 @@ function mapSubmissionStatus(apiStatus: string): SubmissionCardProps['status'] {
   const normalized = apiStatus?.toUpperCase();
   switch (normalized) {
     case 'SHORTLISTED':
-      return 'Approved';
+      return 'SHORTLISTED';
     case 'DISQUALIFIED':
     case 'WITHDRAWN':
-      return 'Rejected';
+      return 'DISQUALIFIED';
     case 'SUBMITTED':
     default:
-      return 'Pending';
+      return 'SUBMITTED';
   }
 }
 

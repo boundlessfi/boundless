@@ -13,6 +13,7 @@ import {
   Handshake,
   Sliders,
   Eye,
+  HandCoins,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api/api';
@@ -25,6 +26,7 @@ import RewardsSettingsTab from '@/components/organization/hackathons/settings/Re
 import CollaborationSettingsTab from '@/components/organization/hackathons/settings/CollaborationSettingsTab';
 import AdvancedSettingsTab from '@/components/organization/hackathons/settings/AdvancedSettingsTab';
 import SubmissionVisibilitySettingsTab from '@/components/organization/hackathons/settings/SubmissionVisibilitySettingsTab';
+import PartnersSettingsTab from '@/components/organization/hackathons/settings/PartnersSettingsTab';
 import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
 
@@ -238,6 +240,13 @@ export default function SettingsPage() {
                       Collaboration
                     </TabsTrigger>
                     <TabsTrigger
+                      value='partners'
+                      className={tabTriggerClassName}
+                    >
+                      <HandCoins className='h-4 w-4' />
+                      Partners
+                    </TabsTrigger>
+                    <TabsTrigger
                       value='advanced'
                       className={tabTriggerClassName}
                     >
@@ -330,6 +339,13 @@ export default function SettingsPage() {
                   await handleSave('Collaboration', data);
                 }}
                 isLoading={isSaving}
+              />
+            </TabsContent>
+
+            <TabsContent value='partners' className='mt-0'>
+              <PartnersSettingsTab
+                organizationId={organizationId}
+                hackathonId={hackathonId}
               />
             </TabsContent>
 

@@ -49,6 +49,9 @@ export interface VoteCountResponse {
   upvotes: number;
   downvotes: number;
   totalVotes: number;
+  weightedUpvotes?: number;
+  weightedDownvotes?: number;
+  totalWeightedVotes?: number;
   userVote?: VoteType | null;
 }
 

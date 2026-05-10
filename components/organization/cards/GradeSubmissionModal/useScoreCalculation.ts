@@ -30,10 +30,10 @@ export const useScoreCalculation = ({
   const percentage = useMemo(() => Math.round(totalScore), [totalScore]);
 
   const getScoreColor = (percentage: number): string => {
-    if (percentage >= 80) return 'bg-success-500';
-    if (percentage >= 60) return 'bg-primary';
-    if (percentage >= 40) return 'bg-warning-500';
-    return 'bg-error-500';
+    if (percentage >= 80) return 'bg-primary text-background';
+    if (percentage >= 60) return 'bg-chart-2 text-white';
+    if (percentage >= 40) return 'bg-warning-500 text-background';
+    return 'bg-error-500 text-white';
   };
 
   return {

@@ -10,7 +10,7 @@ import {
 } from '../ui/shadcn-io/cursor';
 import Image from 'next/image';
 import { BoundlessButton } from '../buttons';
-import HackathonCard from '@/components/landing-page/hackathon/HackathonCard';
+import { HackathonCard } from '@/components/landing-page/hackathon/HackathonCard';
 import ProjectCard from '@/features/projects/components/ProjectCard';
 import { Crowdfunding } from '@/features/projects/types';
 

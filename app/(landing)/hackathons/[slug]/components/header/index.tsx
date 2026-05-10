@@ -23,6 +23,7 @@ const Header = ({ hackathon }: HeaderProps) => {
           participantCount={hackathon._count.participants ?? 0}
           venueType={hackathon.venueType}
           participants={hackathon.participants}
+          startDate={hackathon.startDate}
           submissionDeadline={hackathon.submissionDeadline}
           submissionDeadlineOriginal={hackathon.submissionDeadlineOriginal}
         />

@@ -61,6 +61,7 @@ const ProfileDataClient: React.FC<ProfileDataClientProps> = ({ user }) => {
         user={userData}
         isAuthenticated={!!currentUser}
         isOwnProfile={isOwnProfile}
+        reputation={user.stats?.reputation}
       />
 
       <div className='flex-1'>

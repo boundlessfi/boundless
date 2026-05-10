@@ -48,6 +48,37 @@ export default function SubmitProjectPage({
     }
   }, [isAuthenticated, isLoading, router, hackathonSlug]);
 
+  // Submission window guard — block direct URL access outside the open window
+  useEffect(() => {
+    if (hackathonLoading || !currentHackathon) return;
+
+    const status = currentHackathon.status;
+    if (['ARCHIVED', 'CANCELLED'].includes(status)) {
+      toast.error('This hackathon is no longer accepting submissions');
+      router.push(`/hackathons/${hackathonSlug}`);
+      return;
+    }
+
+    const now = Date.now();
+    const start = currentHackathon.startDate
+      ? new Date(currentHackathon.startDate).getTime()
+      : null;
+    const deadline = currentHackathon.submissionDeadline
+      ? new Date(currentHackathon.submissionDeadline).getTime()
+      : null;
+
+    if (start && now < start) {
+      toast.error('Submissions are not open until the hackathon starts');
+      router.push(`/hackathons/${hackathonSlug}`);
+      return;
+    }
+
+    if (deadline && now > deadline) {
+      toast.error('Submission deadline has passed');
+      router.push(`/hackathons/${hackathonSlug}`);
+    }
+  }, [currentHackathon, hackathonLoading, router, hackathonSlug]);
+
   const handleClose = () => {
     router.push(`/hackathons/${hackathonSlug}`);
   };

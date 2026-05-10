@@ -77,3 +77,4 @@ export * from './rewards';
 export * from './teams';
 export * from './resources';
 export * from './announcements';
+export * from './partners';

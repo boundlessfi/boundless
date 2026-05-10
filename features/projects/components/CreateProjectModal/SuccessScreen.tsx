@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 
 const SuccessScreen = ({ onContinue }: { onContinue: () => void }) => {
   return (
-    <div className='flex h-[70vh] w-screen items-center justify-center bg-[#030303] px-10'>
+    <div className='bg-background-main-bg flex h-[70vh] w-screen items-center justify-center px-10'>
       <div className='mx-auto flex max-w-[400px] flex-col items-center gap-10'>
         {/* <Image
           src='/Success@4x.png'

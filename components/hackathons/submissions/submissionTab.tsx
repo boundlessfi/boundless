@@ -155,7 +155,7 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
               submissions.filter(
                 p =>
                   p.status?.toLowerCase() === 'shortlisted' ||
-                  p.status === 'Approved'
+                  p.status === 'SHORTLISTED'
               ).length
             }
           </span>{' '}

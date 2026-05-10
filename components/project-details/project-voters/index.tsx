@@ -27,6 +27,9 @@ interface VoteStats {
   upvotes: number;
   downvotes: number;
   totalVotes: number;
+  weightedUpvotes?: number;
+  weightedDownvotes?: number;
+  totalWeightedVotes?: number;
   userVote?: VoteType | null;
 }
 
@@ -70,6 +73,9 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
           upvotes: data.voteCounts.upvotes,
           downvotes: data.voteCounts.downvotes,
           totalVotes: data.voteCounts.totalVotes,
+          weightedUpvotes: data.voteCounts.weightedUpvotes,
+          weightedDownvotes: data.voteCounts.weightedDownvotes,
+          totalWeightedVotes: data.voteCounts.totalWeightedVotes,
           userVote: data.voteCounts.userVote || null,
         });
         setVoters(data.voters);
@@ -79,6 +85,9 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
           upvotes: data.voteCounts.upvotes,
           downvotes: data.voteCounts.downvotes,
           totalVotes: data.voteCounts.totalVotes,
+          weightedUpvotes: data.voteCounts.weightedUpvotes,
+          weightedDownvotes: data.voteCounts.weightedDownvotes,
+          totalWeightedVotes: data.voteCounts.totalWeightedVotes,
           userVote: data.voteCounts.userVote || null,
         });
         setVoters(data.voters);
@@ -88,6 +97,9 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
           upvotes: data.voteCounts.upvotes,
           downvotes: data.voteCounts.downvotes,
           totalVotes: data.voteCounts.totalVotes,
+          weightedUpvotes: data.voteCounts.weightedUpvotes,
+          weightedDownvotes: data.voteCounts.weightedDownvotes,
+          totalWeightedVotes: data.voteCounts.totalWeightedVotes,
           userVote: data.voteCounts.userVote || null,
         });
         setVoters(data.voters);
@@ -118,6 +130,9 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
             upvotes: response.data.voteCounts.upvotes,
             downvotes: response.data.voteCounts.downvotes,
             totalVotes: response.data.voteCounts.totalVotes,
+            weightedUpvotes: response.data.voteCounts.weightedUpvotes,
+            weightedDownvotes: response.data.voteCounts.weightedDownvotes,
+            totalWeightedVotes: response.data.voteCounts.totalWeightedVotes,
             userVote: null,
           });
           setVoters(response.data.voters);
@@ -130,6 +145,9 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
             upvotes: countsResponse.upvotes,
             downvotes: countsResponse.downvotes,
             totalVotes: countsResponse.totalVotes,
+            weightedUpvotes: countsResponse.weightedUpvotes,
+            weightedDownvotes: countsResponse.weightedDownvotes,
+            totalWeightedVotes: countsResponse.totalWeightedVotes,
             userVote: countsResponse.userVote || null,
           });
           setVoters([]);
@@ -175,10 +193,19 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
     }
   };
 
-  const voteRatio =
+  const rawApprovalPct =
     voteStats.totalVotes > 0
       ? Math.round((voteStats.upvotes / voteStats.totalVotes) * 100)
       : 0;
+
+  const weightedApprovalPct =
+    (voteStats.totalWeightedVotes ?? 0) > 0
+      ? Math.round(
+          ((voteStats.weightedUpvotes ?? voteStats.upvotes) /
+            (voteStats.totalWeightedVotes ?? voteStats.totalVotes)) *
+            100
+        )
+      : rawApprovalPct;
 
   if (loading) {
     return (
@@ -224,20 +251,27 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
           </div>
 
           {voteStats.totalVotes > 0 && (
-            <div className='space-y-2'>
-              <div className='flex items-center justify-between text-xs text-zinc-400'>
-                <span className='flex items-center gap-1'>
-                  <TrendingUp className='h-3 w-3' />
-                  Approval Rating
-                </span>
-                <span className='font-medium tabular-nums'>{voteRatio}%</span>
+            <div className='space-y-3'>
+              <div className='space-y-2'>
+                <div className='flex items-center justify-between text-xs text-zinc-400'>
+                  <span className='flex items-center gap-1'>
+                    <TrendingUp className='h-3 w-3' />
+                    Weighted Approval
+                  </span>
+                  <span className='font-medium tabular-nums'>
+                    {weightedApprovalPct}%
+                  </span>
+                </div>
+                <div className='relative h-2 w-full overflow-hidden rounded-full bg-zinc-800'>
+                  <div
+                    className='from-primary to-primary/50 absolute top-0 left-0 h-full rounded-full bg-linear-to-r transition-all duration-500'
+                    style={{ width: `${weightedApprovalPct}%` }}
+                  />
+                </div>
               </div>
-              <div className='relative h-2 w-full overflow-hidden rounded-full bg-zinc-800'>
-                <div
-                  className='from-primary to-primary/50 absolute top-0 left-0 h-full rounded-full bg-gradient-to-r transition-all duration-500'
-                  style={{ width: `${voteRatio}%` }}
-                />
-              </div>
+              <p className='text-right text-xs text-zinc-500 tabular-nums'>
+                {rawApprovalPct}% raw · {voteStats.totalVotes} voters
+              </p>
             </div>
           )}
 

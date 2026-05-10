@@ -9,12 +9,14 @@ interface ProfileOverviewProps {
   user: PublicUserProfile;
   isAuthenticated?: boolean;
   isOwnProfile?: boolean;
+  reputation?: number;
 }
 
 export default function ProfileOverviewPublic({
   user,
   isAuthenticated,
   isOwnProfile,
+  reputation,
 }: ProfileOverviewProps) {
   // Create profile data structure for existing components
   const profileData = {
@@ -46,6 +48,7 @@ export default function ProfileOverviewPublic({
         user={user}
         isAuthenticated={isAuthenticated}
         isOwnProfile={isOwnProfile}
+        reputation={reputation}
       />
 
       {isAuthenticated && isOwnProfile && (

@@ -70,6 +70,7 @@ export default function PoolAndAction() {
   const isDataLoading = loading || !hackathon;
   const participants = hackathon?.participants || [];
   const deadline = hackathon?.submissionDeadline;
+  const startDate = hackathon?.startDate;
   const timeLeft = useCountdown(deadline);
 
   const totalPool =
@@ -79,12 +80,14 @@ export default function PoolAndAction() {
     ) ?? 0;
 
   const now = new Date();
+  const isNotStarted = startDate ? now < new Date(startDate) : false;
   const isSubmissionClosed =
     ['COMPLETED', 'JUDGING', 'ARCHIVED', 'CANCELLED'].includes(
       hackathon?.status || ''
     ) || (deadline ? now > new Date(deadline) : false);
 
-  const isLive = hackathon?.status === 'ACTIVE' && !isSubmissionClosed;
+  const isLive =
+    hackathon?.status === 'ACTIVE' && !isSubmissionClosed && !isNotStarted;
   const isEnded =
     ['COMPLETED', 'JUDGING', 'ARCHIVED', 'CANCELLED'].includes(
       hackathon?.status || ''
@@ -142,12 +145,14 @@ export default function PoolAndAction() {
     if (hackathon?.status === 'ARCHIVED') return 'Hackathon Archived';
     if (hackathon?.status === 'CANCELLED') return 'Hackathon Cancelled';
     if (isEnded) return 'Submissions Closed';
+    if (isNotStarted) return 'Hackathon Not Started';
     if (!isParticipant) return 'Register to Submit';
     return 'Submit Now';
   };
 
   const isButtonDisabled =
     isEnded ||
+    isNotStarted ||
     !isParticipant ||
     ['ARCHIVED', 'CANCELLED'].includes(hackathon?.status || '');
 

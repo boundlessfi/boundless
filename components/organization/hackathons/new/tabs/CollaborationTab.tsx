@@ -228,7 +228,18 @@ export default function CollaborationTab({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+      <form
+        onSubmit={form.handleSubmit(onSubmit, errors => {
+          const first = Object.values(errors)[0] as
+            | { message?: string }
+            | undefined;
+          toast.error(
+            first?.message ||
+              'Please fix the highlighted fields before continuing.'
+          );
+        })}
+        className='space-y-8'
+      >
         {/* Contact Section */}
         <div>
           <h3 className='text-sm'>

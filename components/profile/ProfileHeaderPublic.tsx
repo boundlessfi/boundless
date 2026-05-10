@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { User } from '@/types/user';
 import { TeamMember } from '@/components/ui/TeamList';
 import { UserProfile, UserStats as UserStatsType } from '@/types/profile';
+import { ReputationTierBadge } from '@/components/ui/ReputationTierBadge';
 
 interface ProfileHeaderProps {
   profile: UserProfile;
@@ -19,6 +20,7 @@ interface ProfileHeaderProps {
   user: PublicUserProfile;
   isAuthenticated?: boolean;
   isOwnProfile?: boolean;
+  reputation?: number;
 }
 
 export default function ProfileHeaderPublic({
@@ -27,6 +29,7 @@ export default function ProfileHeaderPublic({
   user,
   isAuthenticated,
   isOwnProfile,
+  reputation,
 }: ProfileHeaderProps) {
   const [followersModalOpen, setFollowersModalOpen] = useState(false);
   const [followingModalOpen, setFollowingModalOpen] = useState(false);
@@ -77,7 +80,12 @@ export default function ProfileHeaderPublic({
           />
         </div>
         <div className='flex flex-col gap-3 py-3'>
-          <h3 className='text-2xl font-medium'>{profile.displayName}</h3>
+          <div className='flex items-center gap-3'>
+            <h3 className='text-2xl font-medium'>{profile.displayName}</h3>
+            {reputation !== undefined && (
+              <ReputationTierBadge reputation={reputation} />
+            )}
+          </div>
           <p className='text-base font-normal'>@{profile.username}</p>
         </div>
       </header>

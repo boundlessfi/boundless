@@ -44,6 +44,17 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import type { ApiError } from '@/lib/api/api';
 import { AssetIcon } from './AssetIcon';
 import { cn } from '@/lib/utils';
@@ -88,8 +99,6 @@ export function FamilyWalletDrawer({
   const [sendDestination, setSendDestination] = useState('');
   const [sendCurrency, setSendCurrency] = useState('');
   const [sendAmount, setSendAmount] = useState('');
-  const [sendMemo, setSendMemo] = useState('');
-  const [sendMemoRequired, setSendMemoRequired] = useState(false);
   const [validateLoading, setValidateLoading] = useState(false);
   const [validateResult, setValidateResult] = useState<
     'idle' | 'valid' | 'invalid'
@@ -127,8 +136,6 @@ export function FamilyWalletDrawer({
   const resetSendForm = useCallback(() => {
     setSendDestination('');
     setSendAmount('');
-    setSendMemo('');
-    setSendMemoRequired(false);
     setValidateResult('idle');
     setValidateError('');
     setValidateErrorDetails([]);
@@ -297,15 +304,6 @@ export function FamilyWalletDrawer({
       );
       return;
     }
-    if (sendMemoRequired && !sendMemo.trim()) {
-      setSendError('Memo is required by the recipient');
-      return;
-    }
-    const memoBytes = new TextEncoder().encode(sendMemo).length;
-    if (sendMemo && memoBytes > 28) {
-      setSendError('Memo must be 28 bytes or less (UTF-8)');
-      return;
-    }
     setSendLoading(true);
     setSendError('');
     try {
@@ -313,8 +311,6 @@ export function FamilyWalletDrawer({
         destinationPublicKey: dest,
         amount,
         currency,
-        memo: sendMemo.trim() || undefined,
-        memoRequired: sendMemoRequired || undefined,
         idempotencyKey: crypto.randomUUID(),
       });
       toast.success('Send submitted successfully');
@@ -332,8 +328,6 @@ export function FamilyWalletDrawer({
     sendDestination,
     sendCurrency,
     sendAmount,
-    sendMemo,
-    sendMemoRequired,
     validateResult,
     balances,
     refreshWallet,
@@ -863,6 +857,30 @@ export function FamilyWalletDrawer({
                     </div>
 
                     <div className='space-y-4'>
+                      <Alert className='mx-1 border-orange-500/20 bg-orange-500/10 text-orange-600'>
+                        <AlertCircle className='h-4 w-4 text-orange-600' />
+                        <AlertTitle>Important Withdrawal Notice</AlertTitle>
+                        <AlertDescription className='text-xs leading-relaxed'>
+                          <p className='mt-1 text-orange-700 dark:text-orange-400'>
+                            Do not withdraw directly to a Centralized Exchange
+                            (e.g., Binance, Coinbase) wallet. This wallet does
+                            not support memos, and your funds will be lost if
+                            you use one. You must use a self-custodial wallet
+                            that does not require a memo.
+                          </p>
+                          <p className='mt-2'>
+                            <a
+                              href='https://docs.boundlessfi.xyz/how-to-guides/withdraw-funds'
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='font-semibold underline underline-offset-2 hover:text-orange-800 dark:hover:text-orange-300'
+                            >
+                              Read our withdrawal guide here.
+                            </a>
+                          </p>
+                        </AlertDescription>
+                      </Alert>
+
                       <div className='space-y-2'>
                         <Label htmlFor='send-destination'>
                           Destination (Stellar G...)
@@ -983,33 +1001,6 @@ export function FamilyWalletDrawer({
                           })()}
                       </div>
 
-                      <div className='space-y-2'>
-                        <Label htmlFor='send-memo'>
-                          Memo (optional, max 28 bytes)
-                        </Label>
-                        <Input
-                          id='send-memo'
-                          placeholder='Memo for exchange/deposit'
-                          value={sendMemo}
-                          onChange={e => setSendMemo(e.target.value)}
-                        />
-                        <div className='flex items-center gap-2'>
-                          <Checkbox
-                            id='send-memo-required'
-                            checked={sendMemoRequired}
-                            onCheckedChange={c =>
-                              setSendMemoRequired(c === true)
-                            }
-                          />
-                          <Label
-                            htmlFor='send-memo-required'
-                            className='text-muted-foreground cursor-pointer text-sm font-normal'
-                          >
-                            Memo required by recipient (e.g. exchange)
-                          </Label>
-                        </div>
-                      </div>
-
                       {sendError && (
                         <Alert variant='destructive' className='mt-2'>
                           <AlertCircle className='h-4 w-4' />
@@ -1029,28 +1020,69 @@ export function FamilyWalletDrawer({
                         </Alert>
                       )}
 
-                      <Button
-                        className='w-full'
-                        onClick={handleSendSubmit}
-                        disabled={
-                          sendLoading ||
-                          validateResult !== 'valid' ||
-                          !sendAmount ||
-                          parseFloat(sendAmount) <= 0
-                        }
-                      >
-                        {sendLoading ? (
-                          <>
-                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                            Sending…
-                          </>
-                        ) : (
-                          <>
-                            <ArrowUpRight className='mr-2 h-4 w-4' />
-                            Send
-                          </>
-                        )}
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            className='w-full'
+                            disabled={
+                              sendLoading ||
+                              validateResult !== 'valid' ||
+                              !sendAmount ||
+                              parseFloat(sendAmount) <= 0
+                            }
+                          >
+                            {sendLoading ? (
+                              <>
+                                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                Sending…
+                              </>
+                            ) : (
+                              <>
+                                <ArrowUpRight className='mr-2 h-4 w-4' />
+                                Send
+                              </>
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className='z-100 max-w-[90vw] sm:max-w-md'>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Confirm Withdrawal
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className='space-y-3 text-left'>
+                              <span className='block text-sm'>
+                                You are about to send{' '}
+                                <strong className='text-foreground'>
+                                  {sendAmount} {sendCurrency}
+                                </strong>{' '}
+                                to{' '}
+                                <strong className='text-foreground font-mono break-all'>
+                                  {sendDestination}
+                                </strong>
+                                .
+                              </span>
+                              <span className='text-destructive mt-4 block text-sm font-semibold'>
+                                ⚠️ WARNING: Do not withdraw to Centralized
+                                Exchanges (e.g. Binance, Coinbase).
+                              </span>
+                              <span className='block text-sm'>
+                                Exchanges require a memo, which this wallet does
+                                NOT support. Doing so will result in permanent
+                                loss of your funds.
+                              </span>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className='mt-4 gap-2 sm:gap-0'>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleSendSubmit}
+                              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                            >
+                              Yes, I confirm this is a self-custodial wallet
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </motion.div>
                 )}

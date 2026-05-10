@@ -408,6 +408,7 @@ const ParticipantsPage: React.FC = () => {
               onOpenChange={setIsJudgeModalOpen}
               organizationId={organizationId}
               hackathonId={hackathonId}
+              submissionId={selectedParticipant.submission.id}
               participantId={selectedParticipant.id}
               judgingCriteria={criteria}
               submission={{

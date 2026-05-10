@@ -108,6 +108,7 @@ export const ProfileData = ({
         user={userData}
         isAuthenticated={isAuthenticated}
         isOwnProfile={isOwnProfile}
+        reputation={userData.stats?.reputation}
       />
 
       <div className='flex-1'>
