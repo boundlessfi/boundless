@@ -1,7 +1,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['smart-account-kit'],
+  // Both vendored as tgz now (see vendor/); npm extracts them into node_modules
+  // as real directories, so Turbopack resolves them normally — no alias needed.
+  transpilePackages: ['smart-account-kit', 'smart-account-kit-bindings'],
   outputFileTracingRoot: __dirname,
   async redirects() {
     return [

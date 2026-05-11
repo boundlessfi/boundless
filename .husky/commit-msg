@@ -1,36 +1,57 @@
+#!/usr/bin/env sh
 
+# Conventional Commits validator
+# Spec: https://www.conventionalcommits.org/en/v1.0.0/
+# Format: <type>(<scope>)?(!)?: <description>
+# Types from @commitlint/config-conventional
 
-# Conventional commit message format
-# Format: <type>(<scope>): <description>
-# Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert, merge
-# Also allows Git's standard merge commit format: "Merge branch '...' of ... into ..."
+commit_msg_file="$1"
+first_line=$(head -n1 "$commit_msg_file")
 
-# Regex for conventional commits
-conventional_regex='^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert|merge)(\(.+\))?: .{1,50}'
-
-# Regex for Git merge commits
-merge_regex='^Merge branch .* of .* into .*'
-merge_regex='^Merge branch .* of .*'
-
-# Combined regex - either conventional or merge format
-commit_regex="($conventional_regex|$merge_regex)"
-
-if ! grep -qE "$commit_regex" "$1"; then
-    echo "❌ Invalid commit message format."
-    echo "✅ Please use either:"
-    echo "   1. Conventional commit format: <type>(<scope>): <description>"
-    echo "   2. Git's standard merge format: Merge branch '...' of ... into ..."
-    echo ""
-    echo "📝 Examples:"
-    echo "   feat: add new wallet connection feature"
-    echo "   fix(wallet): resolve persistence issue"
-    echo "   docs: update README with setup instructions"
-    echo "   style: format code with prettier"
-    echo "   refactor(components): improve wallet button"
-    echo "   Merge branch 'main' of https://github.com/user/repo into feature/branch"
-    echo ""
-    echo "🔧 Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert, merge"
-    exit 1
+# Ignore comment lines and empty messages
+if [ -z "$first_line" ] || echo "$first_line" | grep -qE '^#'; then
+    exit 0
 fi
 
-echo "✅ Commit message format is valid!" 
+# Conventional commits regex (types from @commitlint/config-conventional)
+conventional_regex='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9._\-]+\))?!?: .+'
+
+# Git auto-generated merge/revert commits
+merge_regex='^Merge (branch|remote-tracking branch|tag|pull request) '
+revert_regex='^Revert ".+"'
+
+# Fixup/squash commits (used with `git commit --fixup` / `--squash`, resolved on rebase)
+fixup_regex='^(fixup|squash)! '
+
+if echo "$first_line" | grep -qE "$conventional_regex"; then
+    exit 0
+fi
+
+if echo "$first_line" | grep -qE "$merge_regex"; then
+    exit 0
+fi
+
+if echo "$first_line" | grep -qE "$revert_regex"; then
+    exit 0
+fi
+
+if echo "$first_line" | grep -qE "$fixup_regex"; then
+    exit 0
+fi
+
+echo "❌ Invalid commit message format."
+echo ""
+echo "Expected Conventional Commits format:"
+echo "   <type>(<scope>)?: <description>"
+echo ""
+echo "Allowed types:"
+echo "   build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test"
+echo ""
+echo "Examples:"
+echo "   feat: add new wallet connection feature"
+echo "   fix(wallet): resolve persistence issue"
+echo "   chore(deps): bump smart-account-kit to 0.4.2"
+echo "   refactor(components)!: drop legacy wallet button props"
+echo ""
+echo "Tip: for dependency bumps use 'chore(deps):' or 'build(deps):'."
+exit 1
