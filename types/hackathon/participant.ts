@@ -136,6 +136,7 @@ export interface ParticipantsData {
     hasNext: boolean;
     hasPrev: boolean;
   };
+  availableSkills?: string[];
 }
 
 export interface CreateSubmissionRequest {

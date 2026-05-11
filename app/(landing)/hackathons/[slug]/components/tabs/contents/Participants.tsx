@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   useHackathon,
@@ -99,30 +99,7 @@ const Participants = () => {
     }
   }, [participantsData?.participants, page]);
 
-  // Dynamically derive unique skills from participants
-  const availableSkills = useMemo(() => {
-    const skillsSet = new Set<string>();
-    // Try to get skills from all participants fetchable (if we had them all)
-    // For now, we derive from what we have in the current view or mock if empty
-    accumulatedParticipants.forEach((p: Participant) => {
-      p.user.profile.skills?.forEach((s: string) => {
-        skillsSet.add(s);
-      });
-    });
-
-    if (skillsSet.size === 0) {
-      return [
-        'Solidity',
-        'Rust',
-        'React',
-        'TypeScript',
-        'Python',
-        'Go',
-        'Design',
-      ];
-    }
-    return Array.from(skillsSet).sort();
-  }, [accumulatedParticipants]);
+  const availableSkills = participantsData?.availableSkills ?? [];
 
   if (!hackathon) return null;
 
@@ -166,23 +143,23 @@ const Participants = () => {
           </div>
         </div>
 
-        <div className='flex items-center gap-3'>
+        <div className='grid grid-cols-1 gap-2 sm:grid-cols-3 md:flex md:items-center md:gap-3'>
           {/* Skills Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className='hover:border-primary/20 flex min-w-[140px] items-center justify-between gap-2 rounded-xl border border-white/5 bg-[#141517] px-4 py-2.5 text-sm font-medium text-gray-400 transition-all hover:text-white'>
-                <div className='flex items-center gap-2'>
-                  <Filter className='h-3.5 w-3.5' />
-                  <span>
+              <button className='hover:border-primary/20 flex w-full items-center justify-between gap-2 rounded-xl border border-white/5 bg-[#141517] px-4 py-2.5 text-sm font-medium text-gray-400 transition-all hover:text-white md:w-auto md:min-w-[140px]'>
+                <div className='flex min-w-0 items-center gap-2'>
+                  <Filter className='h-3.5 w-3.5 shrink-0' />
+                  <span className='truncate'>
                     {skillFilter === 'all' ? 'All Skills' : skillFilter}
                   </span>
                 </div>
-                <ChevronDown className='h-4 w-4 opacity-50' />
+                <ChevronDown className='h-4 w-4 shrink-0 opacity-50' />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align='end'
-              className='w-48 border-white/10 bg-[#141517] text-gray-300'
+              className='max-h-[60vh] w-48 overflow-y-auto border-white/10 bg-[#141517] text-gray-300'
             >
               <DropdownMenuItem onClick={() => setSkillFilter('all')}>
                 All Skills
@@ -201,15 +178,15 @@ const Participants = () => {
           {/* Type Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className='hover:border-primary/20 flex min-w-[140px] items-center justify-between gap-2 rounded-xl border border-white/5 bg-[#141517] px-4 py-2.5 text-sm font-medium text-gray-400 transition-all hover:text-white'>
-                <span>
+              <button className='hover:border-primary/20 flex w-full items-center justify-between gap-2 rounded-xl border border-white/5 bg-[#141517] px-4 py-2.5 text-sm font-medium text-gray-400 transition-all hover:text-white md:w-auto md:min-w-[140px]'>
+                <span className='truncate'>
                   {participationType === 'all'
                     ? 'Type: All'
                     : participationType === 'individual'
                       ? 'Type: Individual'
                       : 'Type: Team'}
                 </span>
-                <ChevronDown className='h-4 w-4 opacity-50' />
+                <ChevronDown className='h-4 w-4 shrink-0 opacity-50' />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -233,15 +210,15 @@ const Participants = () => {
           {/* Status Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className='hover:border-primary/20 flex min-w-[140px] items-center justify-between gap-2 rounded-xl border border-white/5 bg-[#141517] px-4 py-2.5 text-sm font-medium text-gray-400 transition-all hover:text-white'>
-                <span>
+              <button className='hover:border-primary/20 flex w-full items-center justify-between gap-2 rounded-xl border border-white/5 bg-[#141517] px-4 py-2.5 text-sm font-medium text-gray-400 transition-all hover:text-white md:w-auto md:min-w-[140px]'>
+                <span className='truncate'>
                   {statusFilter === 'all'
                     ? 'Status: All'
                     : statusFilter === 'submitted'
                       ? 'Status: Submitted'
                       : 'Status: In Progress'}
                 </span>
-                <ChevronDown className='h-4 w-4 opacity-50' />
+                <ChevronDown className='h-4 w-4 shrink-0 opacity-50' />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent

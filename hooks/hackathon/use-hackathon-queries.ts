@@ -159,11 +159,13 @@ export function useHackathonParticipants(
             hasNext: false,
             hasPrev: false,
           },
+          availableSkills: [],
         };
       }
       return {
         participants: response.data.participants,
         pagination: response.data.pagination,
+        availableSkills: response.data.availableSkills ?? [],
       };
     },
     enabled: !!slug,
