@@ -129,7 +129,7 @@ export default function TestimonialsSection({
         </h2>
 
         <div className='relative max-h-[470px] overflow-hidden shadow-2xl backdrop-blur-sm md:max-h-[600px]'>
-          <div className='absolute inset-0 bg-[#CCFF95] opacity-95'></div>
+          <div className='absolute inset-0 bg-[#95FFD2] opacity-95'></div>
 
           <Image
             src='/fade.png'
@@ -199,7 +199,7 @@ export default function TestimonialsSection({
                               size={16}
                               className={
                                 colIdx % 2 === 0
-                                  ? 'text-[#CCFF95]'
+                                  ? 'text-[#95FFD2]'
                                   : 'text-primary'
                               }
                             />

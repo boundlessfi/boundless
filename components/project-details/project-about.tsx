@@ -53,7 +53,7 @@ export function ProjectAbout({ project }: ProjectAboutProps) {
                 src={project.additionalCreator?.avatar || '/placeholder.svg'}
                 alt={project.additionalCreator?.name}
               />
-              <AvatarFallback className='from-primary bg-gradient-to-br to-[#8fd93f] text-sm font-semibold text-black'>
+              <AvatarFallback className='from-primary bg-gradient-to-br to-[#1ec78d] text-sm font-semibold text-black'>
                 {(project.additionalCreator?.name || project.creator.name)
                   .split(' ')
                   .map(n => n[0])

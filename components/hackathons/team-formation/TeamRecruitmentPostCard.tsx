@@ -470,7 +470,7 @@ export function TeamRecruitmentPostCard({
           onClick={handleContactClick}
           variant='ghost'
           size='icon'
-          className='text-primary hover:bg-primary/10 hover:text-[#8fd93f]'
+          className='text-primary hover:bg-primary/10 hover:text-[#1ec78d]'
         >
           <ContactIcon className='h-6 w-6' />
         </Button>

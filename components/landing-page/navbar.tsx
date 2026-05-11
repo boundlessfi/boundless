@@ -135,14 +135,14 @@ export function Logo() {
       aria-label='Go to homepage'
     >
       <Image
-        src='/logo-icon.png'
+        src='/logos/SVG_Coloured/BNDLSS__Colored_icon.svg'
         alt='Logo'
         width={32}
         height={32}
         className='md:hidden'
       />
       <Image
-        src='/logo.png'
+        src='/logos/SVG_Inverse/logo.svg'
         alt='Logo'
         width={140}
         height={28}

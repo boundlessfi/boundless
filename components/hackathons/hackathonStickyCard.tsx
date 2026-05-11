@@ -211,7 +211,7 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
                   onClick={
                     !isAuthenticated ? handleRedirectToAuth : onJoinClick
                   }
-                  className='bg-primary w-full py-4 text-sm font-bold text-black hover:bg-[#8fd93f]'
+                  className='bg-primary w-full py-4 text-sm font-bold text-black hover:bg-[#1ec78d]'
                 >
                   <Calendar className='mr-1.5 h-3.5 w-3.5' />
                   {getRegisterButtonText || 'Join'}
@@ -240,7 +240,7 @@ export function HackathonStickyCard(props: HackathonStickyCardProps) {
             {status === 'ongoing' && isRegistered && !hasSubmitted && (
               <Button
                 onClick={onSubmitClick}
-                className='bg-primary w-full py-4 text-sm text-black hover:bg-[#8fd93f]'
+                className='bg-primary w-full py-4 text-sm text-black hover:bg-[#1ec78d]'
               >
                 <Plus className='mr-1.5 h-3.5 w-3.5' />
                 Submit Project

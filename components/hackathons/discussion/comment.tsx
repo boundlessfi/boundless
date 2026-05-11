@@ -169,7 +169,7 @@ export function HackathonDiscussions({
         </p>
         <button
           onClick={() => commentsHook.refetch()}
-          className='bg-primary rounded-md px-4 py-2 text-black hover:bg-[#8fd93f]'
+          className='bg-primary rounded-md px-4 py-2 text-black hover:bg-[#1ec78d]'
         >
           Retry
         </button>

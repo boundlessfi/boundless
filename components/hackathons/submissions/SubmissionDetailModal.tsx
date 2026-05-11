@@ -190,7 +190,7 @@ export function SubmissionDetailModal({
                   className={`${
                     hasUserVoted
                       ? 'border-primary/20 bg-primary/10 text-primary border'
-                      : 'bg-primary text-black hover:bg-[#8fd93f]'
+                      : 'bg-primary text-black hover:bg-[#1ec78d]'
                   }`}
                 >
                   {isVoting ? (

@@ -1574,7 +1574,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                       myTeam?.leader?.id !== user?.id
                     )
                   }
-                  className='bg-primary text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
+                  className='bg-primary text-black hover:bg-[#1ec78d] disabled:cursor-not-allowed disabled:opacity-50'
                 >
                   Next
                 </Button>
@@ -1589,7 +1589,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                         myTeam?.leader?.id !== user?.id)
                     )
                   }
-                  className='bg-primary text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
+                  className='bg-primary text-black hover:bg-[#1ec78d] disabled:cursor-not-allowed disabled:opacity-50'
                 >
                   {isSubmitting ? (
                     <>

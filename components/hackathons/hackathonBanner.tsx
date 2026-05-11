@@ -174,7 +174,7 @@ export function HackathonBanner({
     return (
       <Button
         onClick={!isAuthenticated ? handleRedirectToAuthScreen : onJoinClick}
-        className='bg-primary w-full py-5 text-base font-bold text-black hover:bg-[#8fd93f]'
+        className='bg-primary w-full py-5 text-base font-bold text-black hover:bg-[#1ec78d]'
       >
         <Calendar className='mr-2 h-4 w-4' />
         {buttonText}
@@ -313,7 +313,7 @@ export function HackathonBanner({
               onSubmitClick && (
                 <Button
                   onClick={onSubmitClick}
-                  className='bg-primary w-full py-5 font-bold text-black hover:bg-[#8fd93f]'
+                  className='bg-primary w-full py-5 font-bold text-black hover:bg-[#1ec78d]'
                 >
                   <FileText className='mr-2 h-4 w-4' />
                   Submit Project

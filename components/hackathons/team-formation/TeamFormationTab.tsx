@@ -175,7 +175,7 @@ export function TeamFormationTab({
         <p className='mb-4 text-red-400'>{error}</p>
         <Button
           onClick={() => fetchPosts()}
-          className='bg-primary text-black hover:bg-[#8fd93f]'
+          className='bg-primary text-black hover:bg-[#1ec78d]'
         >
           Retry
         </Button>
@@ -209,7 +209,7 @@ export function TeamFormationTab({
               setEditingPost(null);
               setShowCreateModal(true);
             }}
-            className='bg-primary text-black hover:bg-[#8fd93f]'
+            className='bg-primary text-black hover:bg-[#1ec78d]'
           >
             <Plus className='mr-2 h-4 w-4' />
             Create Post
@@ -372,7 +372,7 @@ export function TeamFormationTab({
                     setEditingPost(null);
                     setShowCreateModal(true);
                   }}
-                  className='bg-primary mt-4 text-black hover:bg-[#8fd93f]'
+                  className='bg-primary mt-4 text-black hover:bg-[#1ec78d]'
                 >
                   <Plus className='mr-2 h-4 w-4' />
                   Create First Post

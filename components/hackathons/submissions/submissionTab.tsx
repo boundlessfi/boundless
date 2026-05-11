@@ -289,7 +289,7 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
             <Button
               onClick={() => router.push(`/hackathons/${hackathonSlug}/submit`)}
               disabled={isDeadlinePassed}
-              className='bg-primary text-black hover:bg-[#8fd93f] disabled:cursor-not-allowed disabled:opacity-50'
+              className='bg-primary text-black hover:bg-[#1ec78d] disabled:cursor-not-allowed disabled:opacity-50'
             >
               <Plus className='mr-2 h-4 w-4' />
               {isDeadlinePassed

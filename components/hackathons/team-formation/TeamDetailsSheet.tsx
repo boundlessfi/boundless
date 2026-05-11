@@ -481,7 +481,7 @@ export function TeamDetailsSheet({
         <div className='border-t border-gray-800 p-6'>
           <Button
             onClick={handleContactClick}
-            className='bg-primary text-lg font-semibold text-black hover:bg-[#8fd93f]'
+            className='bg-primary text-lg font-semibold text-black hover:bg-[#1ec78d]'
           >
             <ContactIcon className='mr-2 h-5 w-5' />
             Contact Team

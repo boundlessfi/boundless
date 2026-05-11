@@ -48,7 +48,7 @@ export function JoinHackathonBanner({
 
   return (
     <div className='relative w-full overflow-hidden'>
-      <div className='border-primary/30 from-primary/20 to-primary/20 relative border-y bg-gradient-to-r via-[#8fd93f]/20 backdrop-blur-sm'>
+      <div className='border-primary/30 from-primary/20 to-primary/20 relative border-y bg-gradient-to-r via-[#1ec78d]/20 backdrop-blur-sm'>
         {/* Animated gradient background */}
         <div className='via-primary/10 absolute inset-0 animate-pulse bg-gradient-to-r from-transparent to-transparent' />
 
@@ -68,7 +68,7 @@ export function JoinHackathonBanner({
           <Button
             onClick={onJoinClick}
             disabled={isEnded}
-            className='border-primary/50 from-primary shadow-primary/30 hover:shadow-primary/50 relative cursor-pointer rounded-lg border-2 bg-gradient-to-r to-[#8fd93f] px-8 py-5 text-base font-bold whitespace-nowrap text-black shadow-lg transition-all duration-300 ease-in-out hover:scale-105 hover:from-[#8fd93f] hover:to-[#7bc92d] hover:shadow-xl active:scale-95 disabled:cursor-not-allowed disabled:from-gray-500 disabled:to-gray-600 disabled:opacity-50 disabled:hover:scale-100 md:text-lg'
+            className='border-primary/50 from-primary shadow-primary/30 hover:shadow-primary/50 relative cursor-pointer rounded-lg border-2 bg-gradient-to-r to-[#1ec78d] px-8 py-5 text-base font-bold whitespace-nowrap text-black shadow-lg transition-all duration-300 ease-in-out hover:scale-105 hover:from-[#1ec78d] hover:to-[#16a875] hover:shadow-xl active:scale-95 disabled:cursor-not-allowed disabled:from-gray-500 disabled:to-gray-600 disabled:opacity-50 disabled:hover:scale-100 md:text-lg'
           >
             <span className='relative z-10 flex items-center gap-2'>
               {isEnded ? 'Hackathon Ended' : 'Join Now'}
