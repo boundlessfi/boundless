@@ -19,9 +19,9 @@ const HackathonNavigationLoader = ({
       )}
     >
       <div className='absolute inset-0 overflow-hidden'>
-        <div className='absolute top-0 right-0 h-96 w-96 rounded-full bg-green-500/5 blur-3xl' />
-        <div className='absolute bottom-0 left-0 h-80 w-80 rounded-full bg-green-400/5 blur-3xl' />
-        <div className='absolute right-1/3 bottom-1/3 h-64 w-64 rounded-full bg-green-600/5 blur-3xl' />
+        <div className='bg-primary/5 absolute top-0 right-0 h-96 w-96 rounded-full blur-3xl' />
+        <div className='bg-primary/5 absolute bottom-0 left-0 h-80 w-80 rounded-full blur-3xl' />
+        <div className='bg-primary/5 absolute right-1/3 bottom-1/3 h-64 w-64 rounded-full blur-3xl' />
       </div>
 
       <div className='relative z-10 flex flex-col items-center'>
