@@ -251,7 +251,7 @@ export function CreateTeamPostModal({
               <p className='mt-1 text-sm text-gray-500'>
                 {isEditMode
                   ? 'Update your team details'
-                  : 'Form a team — invite people you know, or open roles to recruit'}
+                  : 'Form a team. Invite people you know, or open roles to recruit.'}
               </p>
             </div>
           </div>
@@ -348,7 +348,7 @@ export function CreateTeamPostModal({
                           Want others to find and join you? Add up to {maxRoles}{' '}
                           open role{maxRoles === 1 ? '' : 's'} and your team
                           will be visible to potential teammates. Already have
-                          your team? Skip this step — you can invite them
+                          your team? Skip this step. You can invite them
                           directly after creating. This hackathon caps teams at{' '}
                           {effectiveTeamMax} member
                           {effectiveTeamMax === 1 ? '' : 's'} including you.
@@ -370,8 +370,8 @@ export function CreateTeamPostModal({
                     {lookingFor.length === 0 && (
                       <div className='rounded-2xl border border-dashed border-white/10 bg-white/2 p-8 text-center text-sm text-gray-500'>
                         No open roles. Your team will be created as{' '}
-                        <span className='font-bold text-white'>private</span> —
-                        not listed for joiners. Click{' '}
+                        <span className='font-bold text-white'>private</span>{' '}
+                        and won't be listed for joiners. Click{' '}
                         <span className='font-bold text-white'>Add Role</span>{' '}
                         if you'd like to recruit teammates instead.
                       </div>
