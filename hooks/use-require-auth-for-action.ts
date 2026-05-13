@@ -6,6 +6,17 @@ import { useAuthModal } from '@/components/auth/AuthModalProvider';
 
 interface RequireAuthOptions {
   redirectTo?: string;
+  /**
+   * Run after the user successfully authenticates via the modal, INSTEAD
+   * of the modal's default hard redirect to `redirectTo`. The modal closes
+   * automatically after this fires. Use this when you'd rather keep the
+   * current page interactive (e.g. open a different route in a new tab)
+   * than reload onto `redirectTo`.
+   *
+   * `redirectTo` is still passed through as the underlying callbackUrl so
+   * provider-redirect flows (Google sign-in) land somewhere sensible.
+   */
+  onAuthSuccess?: () => void | Promise<void>;
 }
 
 export const useRequireAuthForAction = () => {
@@ -27,7 +38,10 @@ export const useRequireAuthForAction = () => {
               ? `${window.location.pathname}${window.location.search}`
               : undefined);
 
-          openAuthModal({ redirectTo });
+          openAuthModal({
+            redirectTo,
+            onAuthSuccess: options?.onAuthSuccess,
+          });
           return;
         }
 

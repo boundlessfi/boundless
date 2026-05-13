@@ -19,6 +19,15 @@ import LoginWrapper from '@/components/auth/LoginWrapper';
 
 interface AuthModalOptions {
   redirectTo?: string;
+  /**
+   * Override the default post-auth navigation. When provided, the modal
+   * closes and `onAuthSuccess` runs instead of the LoginWrapper's hard
+   * `window.location.href = callbackUrl` reload — useful when the caller
+   * wants to keep the current page interactive (e.g. open a different
+   * route in a new tab). Only applies to email/password and 2FA paths;
+   * Google sign-in still uses the provider redirect via callbackUrl.
+   */
+  onAuthSuccess?: () => void | Promise<void>;
 }
 
 interface AuthModalContextValue {
@@ -40,16 +49,34 @@ export const AuthModalProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [redirectTo, setRedirectTo] = useState<string | undefined>();
+  const [onAuthSuccess, setOnAuthSuccess] = useState<
+    (() => void | Promise<void>) | undefined
+  >();
 
   const openAuthModal = useCallback((options?: AuthModalOptions) => {
     setRedirectTo(options?.redirectTo ?? getDefaultRedirect());
+    // Wrap in an arrow when calling setState because functional setState
+    // signature `setX(prev => next)` would invoke the callback as an updater
+    // — we want to STORE the function, not call it.
+    setOnAuthSuccess(() => options?.onAuthSuccess);
     setIsOpen(true);
   }, []);
 
   const closeAuthModal = useCallback(() => {
     if (isSubmitting) return;
     setIsOpen(false);
+    setOnAuthSuccess(() => undefined);
   }, [isSubmitting]);
+
+  const handleAuthSuccess = useCallback(async () => {
+    if (!onAuthSuccess) return;
+    try {
+      await onAuthSuccess();
+    } finally {
+      setIsOpen(false);
+      setOnAuthSuccess(() => undefined);
+    }
+  }, [onAuthSuccess]);
 
   const value: AuthModalContextValue = useMemo(
     () => ({
@@ -87,6 +114,7 @@ export const AuthModalProvider = ({ children }: { children: ReactNode }) => {
             <LoginWrapper
               setLoadingState={isLoading => setIsSubmitting(isLoading)}
               callbackUrl={redirectTo}
+              onAuthSuccess={onAuthSuccess ? handleAuthSuccess : undefined}
             />
           </div>
           {redirectTo && (

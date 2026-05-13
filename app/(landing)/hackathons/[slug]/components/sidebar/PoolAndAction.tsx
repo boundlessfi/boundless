@@ -112,17 +112,30 @@ export default function PoolAndAction() {
 
   const { withAuth } = useRequireAuthForAction();
 
-  // For unauth users we open the auth modal in place. Pass the submit URL as
-  // redirectTo so after sign-in they land directly on the form instead of
-  // back on the hackathon page (where they'd otherwise have to click "Submit
-  // Now" a second time and pay the rendering delay all over again).
+  // For unauth users we open the auth modal in place. After they sign in
+  // we want to match the authenticated path's UX: keep the hackathon page
+  // interactive and open the submit form in a new tab. `onAuthSuccess`
+  // fires inside LoginWrapper's success handler (gesture context is still
+  // fresh from the sign-in click, so most browsers allow window.open). If
+  // the popup IS blocked we fall back to a same-tab navigation.
+  //
+  // `redirectTo` is still set so Google sign-in (a full provider redirect
+  // that bypasses onAuthSuccess) lands somewhere sensible.
   const submitUrl = `/hackathons/${slug}/submit`;
   const handleSubmit = withAuth(
     () => {
       if (isButtonDisabled) return;
       router.push(submitUrl);
     },
-    { redirectTo: submitUrl }
+    {
+      redirectTo: submitUrl,
+      onAuthSuccess: () => {
+        const popup = window.open(submitUrl, '_blank', 'noopener,noreferrer');
+        if (!popup) {
+          router.push(submitUrl);
+        }
+      },
+    }
   );
 
   if (isDataLoading) {
