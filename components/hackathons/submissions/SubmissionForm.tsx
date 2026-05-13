@@ -7,7 +7,6 @@ import React, {
   useMemo,
 } from 'react';
 import { useForm } from 'react-hook-form';
-import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -55,7 +54,6 @@ import {
   ShieldAlert,
   Check,
 } from 'lucide-react';
-import Image from 'next/image';
 import { useTeamPosts } from '@/hooks/hackathon/use-team-posts';
 import { useTeamInvite } from '@/hooks/hackathon/use-team-invite';
 import { CreateTeamPostModal } from '@/components/hackathons/team-formation/CreateTeamPostModal';
@@ -164,23 +162,6 @@ const LINK_TYPES = [
 
 const OTHER_LINK_TYPES = ['demo', 'website', 'documentation', 'other'];
 
-// Used when a hackathon has no configured categories (legacy data). Mirrors
-// the wizard's CategorySelection list so the dropdown stays usable.
-const FALLBACK_CATEGORIES = [
-  'DeFi',
-  'NFTs',
-  'DAOs',
-  'Layer 2',
-  'Cross-chain',
-  'Web3 Gaming',
-  'Social Tokens',
-  'Infrastructure',
-  'Privacy',
-  'Sustainability',
-  'Real World Assets',
-  'Other',
-];
-
 const isValidUrl = (url: string | undefined): boolean => {
   if (!url || String(url).trim() === '') return false;
   try {
@@ -221,14 +202,16 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   const requireDemoVideo = currentHackathon?.requireDemoVideo ?? false;
   const requireOtherLinks = currentHackathon?.requireOtherLinks ?? false;
 
-  // Source the dropdown from the categories the organizer picked when creating
-  // this hackathon. If a hackathon has none configured (legacy data or empty
-  // save), fall back to the platform's standard category list so the dropdown
-  // is still usable.
-  const categoryOptions = useMemo(() => {
-    const list = currentHackathon?.categories ?? [];
-    return list.length > 0 ? list : FALLBACK_CATEGORIES;
-  }, [currentHackathon?.categories]);
+  // Source the dropdown ONLY from the categories the organizer picked. We
+  // intentionally do not fall back to a platform-wide list — submitting a
+  // category the organizer didn't enable causes the backend to reject the
+  // submission with "Invalid category. Must be one of: ...", which is exactly
+  // the bug we're avoiding here.
+  const categoryOptions = useMemo(
+    () => currentHackathon?.categories ?? [],
+    [currentHackathon?.categories]
+  );
+  const hasConfiguredCategories = categoryOptions.length > 0;
 
   // participantType reaches us in mixed case across endpoints; normalize once.
   const rawParticipantType = currentHackathon?.participantType;
@@ -248,6 +231,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [bannerPreview, setBannerPreview] = useState<string>('');
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [hasCheckedMyTeam, setHasCheckedMyTeam] = useState(false);
   const hasAutoAdvanced = useRef(false);
 
   const { create, update, isSubmitting } = useSubmission({
@@ -320,10 +304,31 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     }
   }, [open, initialData, form]);
 
+  // Track when the team-membership check has completed at least once. The
+  // hook starts with `isLoadingMyTeam = false` and only flips to true once the
+  // mounted effect runs, so we can't rely on it alone — wait for the first
+  // false-after-true transition (or immediately mark complete if the user is
+  // not authenticated and the fetch will never run).
+  useEffect(() => {
+    if (!user?.id) {
+      setHasCheckedMyTeam(true);
+      return;
+    }
+    if (isLoadingMyTeam) {
+      setHasCheckedMyTeam(false);
+    } else if (myTeam !== undefined) {
+      setHasCheckedMyTeam(true);
+    }
+  }, [user?.id, isLoadingMyTeam, myTeam]);
+
   // Participation type enforcement
   useEffect(() => {
     if (!open || !currentHackathon) return;
     if (hasAutoAdvanced.current) return;
+    // Don't snap the participation type or auto-advance until we know whether
+    // the user is on a team — otherwise we can briefly land on INDIVIDUAL for
+    // a user who's actually on a team.
+    if (!hasCheckedMyTeam) return;
 
     const hackathonType = hackathonParticipantType;
 
@@ -364,6 +369,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     submissionId,
     form,
     updateStepState,
+    hasCheckedMyTeam,
   ]);
 
   // Reset everything when modal closes
@@ -385,10 +391,19 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         setCurrentStep(0);
         setSteps(INITIAL_STEPS);
         hasAutoAdvanced.current = false;
+        setHasCheckedMyTeam(false);
       }, 300);
       return () => clearTimeout(timer);
     }
   }, [open, form]);
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve((e.target?.result as string) || '');
+      reader.onerror = () => reject(reader.error ?? new Error('Read failed'));
+      reader.readAsDataURL(file);
+    });
 
   const handleLogoUpload = async (file: File) => {
     if (!file.type.match(/^image\/(jpeg|jpg|png|gif|webp)$/)) {
@@ -401,12 +416,15 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = e => {
-      const result = e.target?.result as string;
-      setLogoPreview(result);
-    };
-    reader.readAsDataURL(file);
+    // Show local preview immediately so the user sees their selection before
+    // the upload round-trip completes. We await the FileReader so the preview
+    // is guaranteed to be in state before we kick off the upload.
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setLogoPreview(dataUrl);
+    } catch {
+      // Non-fatal — we'll still attempt the upload and show the remote URL.
+    }
 
     setIsUploadingLogo(true);
     try {
@@ -422,19 +440,24 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         },
       });
 
-      if (uploadResult.success) {
-        form.setValue('logo', uploadResult.data.secure_url, {
+      const remoteUrl = uploadResult?.data?.secure_url;
+      if (uploadResult?.success && remoteUrl) {
+        form.setValue('logo', remoteUrl, {
           shouldValidate: true,
+          shouldDirty: true,
         });
+        // Switch the inline preview to the remote URL so the review step and
+        // the Cloudinary-served image stay in lockstep.
+        setLogoPreview(remoteUrl);
         toast.success('Logo uploaded successfully');
       } else {
-        throw new Error(uploadResult.message || 'Upload failed');
+        throw new Error(uploadResult?.message || 'Upload failed');
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Upload failed';
       toast.error(`Failed to upload logo: ${errorMessage}`);
-      setLogoPreview('');
+      // Keep the local preview so the user can retry without re-selecting.
     } finally {
       setIsUploadingLogo(false);
     }
@@ -451,12 +474,12 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = e => {
-      const result = e.target?.result as string;
-      setBannerPreview(result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setBannerPreview(dataUrl);
+    } catch {
+      // Non-fatal — we'll still attempt the upload and show the remote URL.
+    }
 
     setIsUploadingBanner(true);
     try {
@@ -472,19 +495,22 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         },
       });
 
-      if (uploadResult.success) {
-        form.setValue('banner', uploadResult.data.secure_url, {
+      const remoteUrl = uploadResult?.data?.secure_url;
+      if (uploadResult?.success && remoteUrl) {
+        form.setValue('banner', remoteUrl, {
           shouldValidate: true,
+          shouldDirty: true,
         });
+        setBannerPreview(remoteUrl);
         toast.success('Banner uploaded successfully');
       } else {
-        throw new Error(uploadResult.message || 'Upload failed');
+        throw new Error(uploadResult?.message || 'Upload failed');
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Upload failed';
       toast.error(`Failed to upload banner: ${errorMessage}`);
-      setBannerPreview('');
+      // Keep the local preview so the user can retry without re-selecting.
     } finally {
       setIsUploadingBanner(false);
     }
@@ -810,8 +836,30 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       case 0:
         return (
           <div key='step-0' className='space-y-6'>
-            {!rawParticipantType ||
-            hackathonParticipantType === 'TEAM_OR_INDIVIDUAL' ? (
+            {/* Wait for the team membership lookup to settle before showing the
+                participation selector. Otherwise a user who is already on a
+                team can briefly select Individual and trigger the backend's
+                "you're on a team" rejection. */}
+            {!hasCheckedMyTeam || isLoadingMyTeam ? (
+              <div className='flex items-center justify-center rounded-lg border border-gray-800 bg-gray-900/50 p-8'>
+                <Loader2 className='text-primary mr-2 h-5 w-5 animate-spin' />
+                <span className='text-sm text-gray-400'>
+                  Checking your team membership...
+                </span>
+              </div>
+            ) : myTeam ? (
+              <div className='rounded-lg border border-blue-900/50 bg-blue-900/20 p-4'>
+                <p className='text-sm text-blue-200'>
+                  You're on team{' '}
+                  <span className='text-primary font-bold'>
+                    {myTeam.teamName}
+                  </span>{' '}
+                  for this hackathon. This submission will be made on behalf of
+                  your team.
+                </p>
+              </div>
+            ) : !rawParticipantType ||
+              hackathonParticipantType === 'TEAM_OR_INDIVIDUAL' ? (
               <FormField
                 control={form.control}
                 name='participationType'
@@ -827,31 +875,15 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                         className='flex flex-col space-y-1'
                         disabled={false}
                       >
-                        <FormItem
-                          className={cn(
-                            'flex items-center space-y-0 space-x-3 rounded-md border border-gray-800 p-4 hover:border-gray-700',
-                            myTeam && 'cursor-not-allowed opacity-50'
-                          )}
-                        >
+                        <FormItem className='flex items-center space-y-0 space-x-3 rounded-md border border-gray-800 p-4 hover:border-gray-700'>
                           <FormControl>
-                            <RadioGroupItem
-                              value='INDIVIDUAL'
-                              disabled={!!myTeam}
-                            />
+                            <RadioGroupItem value='INDIVIDUAL' />
                           </FormControl>
                           <div className='flex items-center space-x-2'>
                             <User className='h-5 w-5 text-gray-400' />
-                            <div>
-                              <FormLabel className='font-normal text-white'>
-                                As an Individual
-                              </FormLabel>
-                              {myTeam && (
-                                <FormDescription className='text-xs text-yellow-500'>
-                                  You are already part of a team (
-                                  {myTeam.teamName})
-                                </FormDescription>
-                              )}
-                            </div>
+                            <FormLabel className='font-normal text-white'>
+                              As an Individual
+                            </FormLabel>
                           </div>
                         </FormItem>
                         <FormItem className='flex items-center space-y-0 space-x-3 rounded-md border border-gray-800 p-4 hover:border-gray-700'>
@@ -1043,10 +1075,20 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                   <FormLabel className='text-white'>
                     Category <span className='text-red-400'>*</span>
                   </FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={!hasConfiguredCategories}
+                  >
                     <FormControl>
                       <SelectTrigger className='border-gray-700 bg-gray-800/50 text-white'>
-                        <SelectValue placeholder='Select a category' />
+                        <SelectValue
+                          placeholder={
+                            hasConfiguredCategories
+                              ? 'Select a category'
+                              : 'No categories available'
+                          }
+                        />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className='border-gray-700 bg-gray-800 text-white'>
@@ -1057,6 +1099,12 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
+                  {!hasConfiguredCategories && (
+                    <FormDescription className='text-yellow-500'>
+                      The organizer hasn't set submission categories for this
+                      hackathon yet. Reach out to them before submitting.
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -1099,137 +1147,168 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
             <FormField
               control={form.control}
               name='logo'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-white'>Project Logo</FormLabel>
-                  <FormControl>
-                    <div className='space-y-4'>
-                      {logoPreview || isValidImageUrl(field.value) ? (
-                        <div className='relative inline-block'>
-                          <Image
-                            src={logoPreview || field.value || ''}
-                            alt='Logo preview'
-                            width={200}
-                            height={200}
-                            className='rounded-lg object-cover'
-                          />
-                          <Button
-                            type='button'
-                            variant='ghost'
-                            size='sm'
-                            onClick={() => {
-                              setLogoPreview('');
-                              form.setValue('logo', '', {
-                                shouldValidate: true,
-                              });
-                            }}
-                            className='absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 p-0 hover:bg-red-600'
-                          >
-                            <X className='h-4 w-4' />
-                          </Button>
-                        </div>
-                      ) : (
-                        <label className='flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-700 bg-gray-800/50 p-8 hover:border-gray-600'>
-                          <input
-                            type='file'
-                            className='hidden'
-                            accept='image/jpeg,image/jpg,image/png,image/gif,image/webp'
-                            onChange={e => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                handleLogoUpload(file);
-                              }
-                            }}
-                            disabled={isUploadingLogo}
-                          />
-                          {isUploadingLogo ? (
-                            <Loader2 className='mb-2 h-8 w-8 animate-spin text-gray-400' />
-                          ) : (
-                            <Upload className='mb-2 h-8 w-8 text-gray-400' />
-                          )}
-                          <span className='text-sm text-gray-400'>
-                            {isUploadingLogo
-                              ? 'Uploading...'
-                              : 'Click to upload or drag and drop'}
-                          </span>
-                          <span className='text-xs text-gray-500'>
-                            PNG, JPG, GIF up to 5MB
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                // Prefer the local preview (data URL or remote URL set after
+                // upload completes) so the user always sees the image they
+                // just selected. Fall back to the form value for previously
+                // saved submissions being edited.
+                const previewSrc =
+                  logoPreview ||
+                  (isValidImageUrl(field.value) ? field.value : '');
+                return (
+                  <FormItem>
+                    <FormLabel className='text-white'>Project Logo</FormLabel>
+                    <FormControl>
+                      <div className='space-y-4'>
+                        {previewSrc ? (
+                          <div className='relative inline-block'>
+                            {/* Plain <img> intentionally — previews use data
+                                URLs and freshly-uploaded Cloudinary URLs that
+                                Next.js Image's optimizer can stumble on. */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={previewSrc}
+                              alt='Logo preview'
+                              width={200}
+                              height={200}
+                              className='h-[200px] w-[200px] rounded-lg object-cover'
+                            />
+                            {isUploadingLogo && (
+                              <div className='absolute inset-0 flex items-center justify-center rounded-lg bg-black/60'>
+                                <Loader2 className='h-6 w-6 animate-spin text-white' />
+                              </div>
+                            )}
+                            <Button
+                              type='button'
+                              variant='ghost'
+                              size='sm'
+                              disabled={isUploadingLogo}
+                              onClick={() => {
+                                setLogoPreview('');
+                                form.setValue('logo', '', {
+                                  shouldValidate: true,
+                                  shouldDirty: true,
+                                });
+                              }}
+                              className='absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 p-0 hover:bg-red-600'
+                            >
+                              <X className='h-4 w-4' />
+                            </Button>
+                          </div>
+                        ) : (
+                          <label className='flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-700 bg-gray-800/50 p-8 hover:border-gray-600'>
+                            <input
+                              type='file'
+                              className='hidden'
+                              accept='image/jpeg,image/jpg,image/png,image/gif,image/webp'
+                              onChange={e => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleLogoUpload(file);
+                                }
+                              }}
+                              disabled={isUploadingLogo}
+                            />
+                            {isUploadingLogo ? (
+                              <Loader2 className='mb-2 h-8 w-8 animate-spin text-gray-400' />
+                            ) : (
+                              <Upload className='mb-2 h-8 w-8 text-gray-400' />
+                            )}
+                            <span className='text-sm text-gray-400'>
+                              {isUploadingLogo
+                                ? 'Uploading...'
+                                : 'Click to upload or drag and drop'}
+                            </span>
+                            <span className='text-xs text-gray-500'>
+                              PNG, JPG, GIF up to 5MB
+                            </span>
+                          </label>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
               control={form.control}
               name='banner'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-white'>Project Banner</FormLabel>
-                  <FormControl>
-                    <div className='space-y-4'>
-                      {bannerPreview || isValidImageUrl(field.value) ? (
-                        <div className='relative w-full overflow-hidden rounded-lg'>
-                          <Image
-                            src={bannerPreview || field.value || ''}
-                            alt='Banner preview'
-                            width={1600}
-                            height={900}
-                            className='aspect-video w-full object-cover'
-                          />
-                          <Button
-                            type='button'
-                            variant='ghost'
-                            size='sm'
-                            onClick={() => {
-                              setBannerPreview('');
-                              form.setValue('banner', '', {
-                                shouldValidate: true,
-                              });
-                            }}
-                            className='absolute top-2 right-2 h-6 w-6 rounded-full bg-red-500 p-0 hover:bg-red-600'
-                          >
-                            <X className='h-4 w-4' />
-                          </Button>
-                        </div>
-                      ) : (
-                        <label className='flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-700 bg-gray-800/50 hover:border-gray-600'>
-                          <input
-                            type='file'
-                            className='hidden'
-                            accept='image/jpeg,image/jpg,image/png,image/gif,image/webp'
-                            onChange={e => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                handleBannerUpload(file);
-                              }
-                            }}
-                            disabled={isUploadingBanner}
-                          />
-                          {isUploadingBanner ? (
-                            <Loader2 className='mb-2 h-8 w-8 animate-spin text-gray-400' />
-                          ) : (
-                            <Upload className='mb-2 h-8 w-8 text-gray-400' />
-                          )}
-                          <span className='text-sm text-gray-400'>
-                            {isUploadingBanner
-                              ? 'Uploading...'
-                              : 'Click to upload or drag and drop'}
-                          </span>
-                          <span className='text-xs text-gray-500'>
-                            16:9 hero image. PNG, JPG, GIF up to 5MB.
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const previewSrc =
+                  bannerPreview ||
+                  (isValidImageUrl(field.value) ? field.value : '');
+                return (
+                  <FormItem>
+                    <FormLabel className='text-white'>Project Banner</FormLabel>
+                    <FormControl>
+                      <div className='space-y-4'>
+                        {previewSrc ? (
+                          <div className='relative w-full overflow-hidden rounded-lg'>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={previewSrc}
+                              alt='Banner preview'
+                              className='aspect-video w-full object-cover'
+                            />
+                            {isUploadingBanner && (
+                              <div className='absolute inset-0 flex items-center justify-center bg-black/60'>
+                                <Loader2 className='h-6 w-6 animate-spin text-white' />
+                              </div>
+                            )}
+                            <Button
+                              type='button'
+                              variant='ghost'
+                              size='sm'
+                              disabled={isUploadingBanner}
+                              onClick={() => {
+                                setBannerPreview('');
+                                form.setValue('banner', '', {
+                                  shouldValidate: true,
+                                  shouldDirty: true,
+                                });
+                              }}
+                              className='absolute top-2 right-2 h-6 w-6 rounded-full bg-red-500 p-0 hover:bg-red-600'
+                            >
+                              <X className='h-4 w-4' />
+                            </Button>
+                          </div>
+                        ) : (
+                          <label className='flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-700 bg-gray-800/50 hover:border-gray-600'>
+                            <input
+                              type='file'
+                              className='hidden'
+                              accept='image/jpeg,image/jpg,image/png,image/gif,image/webp'
+                              onChange={e => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleBannerUpload(file);
+                                }
+                              }}
+                              disabled={isUploadingBanner}
+                            />
+                            {isUploadingBanner ? (
+                              <Loader2 className='mb-2 h-8 w-8 animate-spin text-gray-400' />
+                            ) : (
+                              <Upload className='mb-2 h-8 w-8 text-gray-400' />
+                            )}
+                            <span className='text-sm text-gray-400'>
+                              {isUploadingBanner
+                                ? 'Uploading...'
+                                : 'Click to upload or drag and drop'}
+                            </span>
+                            <span className='text-xs text-gray-500'>
+                              16:9 hero image. PNG, JPG, GIF up to 5MB.
+                            </span>
+                          </label>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
@@ -1403,34 +1482,46 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                   </p>
                   <p className='text-white'>{form.watch('description')}</p>
                 </div>
-                {isValidImageUrl(form.watch('logo')) && (
-                  <div>
-                    <p className='mb-2 text-sm font-medium text-gray-400'>
-                      Logo
-                    </p>
-                    <Image
-                      src={form.watch('logo') || ''}
-                      alt='Logo'
-                      width={100}
-                      height={100}
-                      className='rounded-lg object-cover'
-                    />
-                  </div>
-                )}
-                {isValidImageUrl(form.watch('banner')) && (
-                  <div>
-                    <p className='mb-2 text-sm font-medium text-gray-400'>
-                      Banner
-                    </p>
-                    <Image
-                      src={form.watch('banner') || ''}
-                      alt='Banner'
-                      width={400}
-                      height={225}
-                      className='aspect-video w-full max-w-sm rounded-lg object-cover'
-                    />
-                  </div>
-                )}
+                {(() => {
+                  const reviewLogo =
+                    (isValidImageUrl(form.watch('logo'))
+                      ? form.watch('logo')
+                      : '') || logoPreview;
+                  return reviewLogo ? (
+                    <div>
+                      <p className='mb-2 text-sm font-medium text-gray-400'>
+                        Logo
+                      </p>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={reviewLogo}
+                        alt='Logo'
+                        width={100}
+                        height={100}
+                        className='h-[100px] w-[100px] rounded-lg object-cover'
+                      />
+                    </div>
+                  ) : null;
+                })()}
+                {(() => {
+                  const reviewBanner =
+                    (isValidImageUrl(form.watch('banner'))
+                      ? form.watch('banner')
+                      : '') || bannerPreview;
+                  return reviewBanner ? (
+                    <div>
+                      <p className='mb-2 text-sm font-medium text-gray-400'>
+                        Banner
+                      </p>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={reviewBanner}
+                        alt='Banner'
+                        className='aspect-video w-full max-w-sm rounded-lg object-cover'
+                      />
+                    </div>
+                  ) : null;
+                })()}
                 {form.watch('videoUrl') && (
                   <div>
                     <p className='text-sm font-medium text-gray-400'>
