@@ -84,6 +84,10 @@ export const hackathonKeys = {
     ['hackathon', 'announcements', idOrSlug] as const,
   teams: (idOrSlug: string, params?: GetTeamOptions) =>
     ['hackathon', 'teams', idOrSlug, params] as const,
+  // Prefix-only form for invalidating every params-variant of `teams` in one
+  // call. `teams(slug)` returns ['hackathon','teams',slug,undefined] which is
+  // a 4-element key that does NOT prefix-match cached ['…',slug,{...params}].
+  teamsBase: (idOrSlug: string) => ['hackathon', 'teams', idOrSlug] as const,
   myTeam: (idOrSlug: string) => ['hackathon', 'myTeam', idOrSlug] as const,
   myInvitations: (idOrSlug: string, status?: string) =>
     ['hackathon', 'myInvitations', idOrSlug, status] as const,
@@ -400,7 +404,9 @@ export function useJoinTeam(slug: string) {
       joinTeam(slug, teamId, message),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: hackathonKeys.myTeam(slug) });
-      queryClient.invalidateQueries({ queryKey: hackathonKeys.teams(slug) });
+      queryClient.invalidateQueries({
+        queryKey: hackathonKeys.teamsBase(slug),
+      });
     },
   });
 }
@@ -414,7 +420,9 @@ export function useLeaveTeam(slug: string) {
     mutationFn: (teamId: string) => leaveTeam(slug, teamId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: hackathonKeys.myTeam(slug) });
-      queryClient.invalidateQueries({ queryKey: hackathonKeys.teams(slug) });
+      queryClient.invalidateQueries({
+        queryKey: hackathonKeys.teamsBase(slug),
+      });
     },
   });
 }
@@ -476,7 +484,9 @@ export function useTransferLeadership(slug: string) {
       ),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: hackathonKeys.myTeam(slug) });
-      queryClient.invalidateQueries({ queryKey: hackathonKeys.teams(slug) });
+      queryClient.invalidateQueries({
+        queryKey: hackathonKeys.teamsBase(slug),
+      });
     },
   });
 }

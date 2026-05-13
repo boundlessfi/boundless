@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import {
@@ -17,6 +18,7 @@ import {
   type UpdateTeamRequest as UpdateTeamPostRequest,
   type GetTeamOptions as GetTeamPostsOptions,
 } from '@/lib/api/hackathons/teams';
+import { hackathonKeys } from '@/hooks/hackathon/use-hackathon-queries';
 import { reportError } from '@/lib/error-reporting';
 
 function getErrorMessage(err: unknown, defaultMessage: string): string {
@@ -41,6 +43,18 @@ export function useTeamPosts({
   const { isAuthenticated } = useAuthStatus();
   const { user } = useAuthStore();
   const currentUserId = user?.id;
+  const queryClient = useQueryClient();
+  // After a team mutation, the React Query–backed pages (FindTeam,
+  // MyTeamView) need to refetch — this hook's internal setState only
+  // updates this hook's instance, not the cached queries those pages read.
+  const invalidateTeamQueries = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: hackathonKeys.teamsBase(hackathonSlugOrId),
+    });
+    queryClient.invalidateQueries({
+      queryKey: hackathonKeys.myTeam(hackathonSlugOrId),
+    });
+  }, [queryClient, hackathonSlugOrId]);
   const [posts, setPosts] = useState<TeamRecruitmentPost[]>([]);
   const [myTeam, setMyTeam] = useState<TeamRecruitmentPost | null>(null);
   const [myPosts, setMyPosts] = useState<TeamRecruitmentPost[]>([]);
@@ -168,6 +182,7 @@ export function useTeamPosts({
                   posts: [response.data!],
                 }
           );
+          invalidateTeamQueries();
           toast.success('Team post created successfully');
           return response.data;
         } else {
@@ -182,7 +197,7 @@ export function useTeamPosts({
         setIsCreating(false);
       }
     },
-    [hackathonSlugOrId, organizationId, isAuthenticated]
+    [hackathonSlugOrId, organizationId, isAuthenticated, invalidateTeamQueries]
   );
 
   const updatePost = useCallback(
@@ -215,6 +230,7 @@ export function useTeamPosts({
                 }
               : null
           );
+          invalidateTeamQueries();
           toast.success('Team post updated successfully');
           return response.data;
         } else {
@@ -229,7 +245,7 @@ export function useTeamPosts({
         setIsUpdating(false);
       }
     },
-    [hackathonSlugOrId, organizationId, isAuthenticated]
+    [hackathonSlugOrId, organizationId, isAuthenticated, invalidateTeamQueries]
   );
 
   const deletePost = useCallback(
@@ -252,6 +268,7 @@ export function useTeamPosts({
         if (response.success) {
           setPosts(prev => prev.filter(post => post.id !== postId));
           setMyPosts(prev => prev.filter(post => post.id !== postId));
+          invalidateTeamQueries();
           toast.success('Team post deleted successfully');
         } else {
           throw new Error(response.message || 'Failed to delete team post');
@@ -265,7 +282,7 @@ export function useTeamPosts({
         setIsDeleting(false);
       }
     },
-    [hackathonSlugOrId, organizationId, isAuthenticated]
+    [hackathonSlugOrId, organizationId, isAuthenticated, invalidateTeamQueries]
   );
 
   const trackContact = useCallback(
