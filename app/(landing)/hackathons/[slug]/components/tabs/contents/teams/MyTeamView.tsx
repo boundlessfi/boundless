@@ -189,11 +189,11 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
                 <div className='grid gap-4 sm:grid-cols-2'>
                   <div className='space-y-2'>
                     <label className='text-[10px] font-black tracking-[0.2em] text-[#555555] uppercase'>
-                      Email
+                      Email or Username
                     </label>
                     <input
-                      type='email'
-                      placeholder='teammate@example.com'
+                      type='text'
+                      placeholder='teammate@example.com or username'
                       value={inviteIdentifier}
                       onChange={e => {
                         setInviteIdentifier(e.target.value);
