@@ -12,6 +12,7 @@ import {
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useOptionalAuth } from '@/hooks/use-auth';
 import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
+import { useSubmission } from '@/hooks/hackathon/use-submission';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -57,8 +58,17 @@ function useCountdown(deadline?: string) {
 export default function PoolAndAction() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useOptionalAuth();
+  const { user, isAuthenticated } = useOptionalAuth();
   const slug = params.slug as string;
+
+  // React Query dedupes — MySubmissionPanel mounts the same query, so this
+  // doesn't fire a second network request. We only need it here to know
+  // whether to hide the Submit CTA.
+  const { submission: mySubmission } = useSubmission({
+    hackathonSlugOrId: slug,
+    autoFetch: isAuthenticated && !!slug,
+  });
+  const hasSubmitted = !!mySubmission;
 
   const {
     currentHackathon: hackathon,
@@ -262,25 +272,32 @@ export default function PoolAndAction() {
           </div>
         </div>
 
-        <BoundlessButton
-          className={cn(
-            'group h-12 w-full rounded-xl text-sm font-bold transition-all',
-            isButtonDisabled
-              ? 'cursor-not-allowed bg-gray-800 text-gray-500'
-              : 'bg-primary hover:bg-primary/90 text-black'
-          )}
-          onClick={handleSubmit}
-          disabled={isButtonDisabled}
-          iconPosition='right'
-          fullWidth
-          icon={
-            !isButtonDisabled && (
-              <ChevronRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
-            )
-          }
-        >
-          {getButtonText()}
-        </BoundlessButton>
+        {/* Once the user has a submission, the new "Your Submission" panel
+            above carries the View / Edit affordances. Showing "Submit Now"
+            here on top of that is redundant and confusing — we only keep the
+            button to communicate closed/ended states for participants who
+            haven't submitted. */}
+        {!hasSubmitted && (
+          <BoundlessButton
+            className={cn(
+              'group h-12 w-full rounded-xl text-sm font-bold transition-all',
+              isButtonDisabled
+                ? 'cursor-not-allowed bg-gray-800 text-gray-500'
+                : 'bg-primary hover:bg-primary/90 text-black'
+            )}
+            onClick={handleSubmit}
+            disabled={isButtonDisabled}
+            iconPosition='right'
+            fullWidth
+            icon={
+              !isButtonDisabled && (
+                <ChevronRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
+              )
+            }
+          >
+            {getButtonText()}
+          </BoundlessButton>
+        )}
       </div>
     </div>
   );
