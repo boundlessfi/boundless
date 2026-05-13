@@ -28,7 +28,7 @@ const Participant = ({
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isJudgeModalOpen, setIsJudgeModalOpen] = useState(false);
   const [criteria, setCriteria] = useState<
-    Array<{ title: string; weight: number; description?: string }>
+    Array<{ id: string; title: string; weight: number; description?: string }>
   >([]);
   const [isLoadingCriteria, setIsLoadingCriteria] = useState(false);
 
@@ -58,6 +58,7 @@ const Participant = ({
       if (response.success) {
         setCriteria(
           response.data?.judgingCriteria?.map(criterion => ({
+            id: criterion.id ?? criterion.name ?? '',
             title: criterion.name || '',
             weight: criterion.weight || 0,
             description: criterion.description || '',

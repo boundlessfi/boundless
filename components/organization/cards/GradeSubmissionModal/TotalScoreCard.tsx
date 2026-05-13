@@ -36,7 +36,7 @@ export const TotalScoreCard = ({
               <span className='text-4xl font-bold text-white'>
                 {totalScore.toFixed(1)}
               </span>
-              <span className='text-xl text-gray-500'>/ 100</span>
+              <span className='text-xl text-gray-500'>/ 10</span>
             </div>
           </div>
           <div

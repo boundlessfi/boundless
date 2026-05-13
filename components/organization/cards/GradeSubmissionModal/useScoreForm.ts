@@ -54,7 +54,7 @@ export const useScoreForm = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const getCriterionKey = (criterion: JudgingCriterion) => {
-    return criterion.id || criterion.name || criterion.title;
+    return criterion.id;
   };
 
   const handleScoreChange = (criterionKey: string, value: string | number) => {
@@ -151,7 +151,7 @@ export const useScoreForm = ({
           score: number;
           comment?: string;
         } = {
-          criterionId: criterion.id || criterion.name || criterion.title,
+          criterionId: criterion.id,
           score: typeof scores[key] === 'number' ? (scores[key] as number) : 0,
         };
         if (includeComments) {

@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 
+const POST_VERIFY_KEY = 'boundless:postVerifyCallbackUrl';
+
 const VerifyEmail = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -16,7 +18,21 @@ const VerifyEmail = () => {
       fetchOptions: {
         onSuccess: () => {
           toast.success('Email verified successfully');
-          router.push('/');
+          // Honor a post-verify destination stashed by the signup flow
+          // (e.g. a judge invitation page). Same-origin paths only.
+          let target = '/';
+          if (typeof window !== 'undefined') {
+            try {
+              const stashed = window.localStorage.getItem(POST_VERIFY_KEY);
+              if (stashed && stashed.startsWith('/')) {
+                target = stashed;
+              }
+              window.localStorage.removeItem(POST_VERIFY_KEY);
+            } catch {
+              // ignore storage errors
+            }
+          }
+          router.push(target);
         },
         onError: () => {
           toast.error('Failed to verify email');

@@ -3,7 +3,11 @@ import { ApiResponse, PaginatedResponse } from '../types';
 
 // Judging API Types
 export interface JudgingCriterion {
-  id?: string;
+  // Server guarantees a non-empty unique id (auto-generated on create
+  // if the client omits one). Frontend code should rely on this and
+  // not fall back to name/title — the fallback chain silently merges
+  // duplicate-named criteria.
+  id: string;
   name?: string;
   title: string;
   weight: number; // 0-100
@@ -623,14 +627,47 @@ export const getJudgingWinners = async (
 };
 
 /**
- * Publish judging results (finalize rankings)
+ * Judging completeness preview: what would block publishing right now.
+ */
+export interface JudgingCompletenessPreview {
+  complete: boolean;
+  expectedJudgeCount: number;
+  totalShortlisted: number;
+  incompleteSubmissionCount: number;
+  incompleteJudges: Array<{
+    id: string;
+    name: string;
+    missingCount: number;
+  }>;
+  sampleIncompleteSubmissions: Array<{
+    submissionId: string;
+    projectName: string;
+    missingJudges: Array<{ id: string; name: string }>;
+  }>;
+}
+
+export const getJudgingCompleteness = async (
+  organizationId: string,
+  hackathonId: string
+): Promise<ApiResponse<JudgingCompletenessPreview>> => {
+  const res = await api.get(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/completeness`
+  );
+  return res.data;
+};
+
+/**
+ * Publish judging results (finalize rankings). Pass `acceptPartial: true`
+ * to publish even when some active judges have outstanding work.
  */
 export const publishJudgingResults = async (
   organizationId: string,
-  hackathonId: string
+  hackathonId: string,
+  options: { acceptPartial?: boolean } = {}
 ): Promise<ApiResponse<null>> => {
   const res = await api.post(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/publish-results`
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/publish-results`,
+    options.acceptPartial ? { acceptPartial: true } : undefined
   );
   return res.data;
 };

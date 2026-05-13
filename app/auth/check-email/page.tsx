@@ -3,11 +3,29 @@
 import { MailIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { BoundlessButton } from '@/components/buttons';
+
+const POST_VERIFY_KEY = 'boundless:postVerifyCallbackUrl';
 
 const CheckEmail = () => {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
+  const callbackUrl = searchParams.get('callbackUrl');
+
+  // The verification email link Better Auth sends does not preserve query
+  // params, so stash the desired post-verify destination here. The
+  // /auth/verify-email page reads this back after the token is consumed.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (callbackUrl && callbackUrl.startsWith('/')) {
+      try {
+        window.localStorage.setItem(POST_VERIFY_KEY, callbackUrl);
+      } catch {
+        // ignore quota / private mode errors
+      }
+    }
+  }, [callbackUrl]);
 
   return (
     <div className='flex min-h-screen items-center justify-center p-4'>

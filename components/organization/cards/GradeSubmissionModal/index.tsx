@@ -160,10 +160,11 @@ export default function GradeSubmissionModal({
     onClose: () => onOpenChange(false),
   });
 
-  const { totalScore, percentage, getScoreColor } = useScoreCalculation({
-    criteria,
-    scores,
-  });
+  const { totalScore, percentage, getScoreColor, getWeightPercent } =
+    useScoreCalculation({
+      criteria,
+      scores,
+    });
 
   return (
     <BoundlessSheet
@@ -278,6 +279,7 @@ export default function GradeSubmissionModal({
                     onInputBlur={handleInputBlur}
                     onKeyDown={handleKeyDown}
                     getScoreColor={getScoreColor}
+                    getWeightPercent={getWeightPercent}
                     overallComment={overallComment}
                     onOverallCommentChange={setOverallComment}
                     showComments={true}

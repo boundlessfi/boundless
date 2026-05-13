@@ -43,6 +43,18 @@ const ActionButtons = () => {
       )
     : false;
 
+  // Server-derived role for the current viewer. Organizers and assigned
+  // judges cannot join their own hackathon; surfacing the role lets us
+  // show the right copy instead of a broken join button.
+  const viewerRole = (hackathon as any)?.viewerRole as
+    | 'organizer'
+    | 'judge'
+    | 'participant'
+    | 'guest'
+    | undefined;
+  const hasConflictingRole =
+    viewerRole === 'organizer' || viewerRole === 'judge';
+
   const handleJoin = withAuth(async () => {
     try {
       await joinMutation.mutateAsync();
@@ -86,7 +98,13 @@ const ActionButtons = () => {
 
   return (
     <div className='flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center'>
-      {!isParticipant ? (
+      {hasConflictingRole ? (
+        <div className='flex h-12 w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 px-8 text-sm font-medium text-gray-300 md:w-auto'>
+          {viewerRole === 'organizer'
+            ? 'You are managing this hackathon'
+            : 'You are judging this hackathon'}
+        </div>
+      ) : !isParticipant ? (
         <BoundlessButton
           className='s d bg-primary hover:bg-primary/90 h-12 w-full rounded-xl px-8 font-bold text-black disabled:bg-white/5 disabled:text-white/20 md:w-auto'
           icon={!isRegistrationClosed && <IconUserPlus size={20} />}

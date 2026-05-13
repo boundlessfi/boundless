@@ -117,7 +117,9 @@ export interface HackathonRewards {
 }
 
 export interface JudgingCriterion {
-  id?: string;
+  // Server-side guarantee: persisted criteria always have a non-empty
+  // unique id. Local drafts may briefly lack one before they're sent.
+  id: string;
   name?: string;
   title: string;
   weight: number; // 0-100

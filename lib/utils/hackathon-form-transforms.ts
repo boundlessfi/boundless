@@ -126,6 +126,9 @@ export const transformToApiFormat = (stepData: {
     judging: {
       criteria:
         judging?.criteria?.map(criterion => ({
+          // Preserve the server-issued id where present so the UI keys
+          // stay stable across edits.
+          id: criterion.id ?? criterion.name ?? '',
           title: criterion.name,
           weight: criterion.weight,
           description: criterion.description,

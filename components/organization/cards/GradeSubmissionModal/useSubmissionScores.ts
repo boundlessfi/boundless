@@ -47,7 +47,7 @@ export const useSubmissionScores = ({
   const loadedTargetJudgeIdRef = useRef<string | null>(null);
 
   const getCriterionKey = (criterion: JudgingCriterion) => {
-    return criterion.id || criterion.name || (criterion as any).title;
+    return criterion.id;
   };
 
   const initializeForm = (criteriaList: JudgingCriterion[]) => {

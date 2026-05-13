@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { LockIcon, MailIcon, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -50,12 +50,22 @@ const SignupForm = ({
   lastMethod,
 }: SignupFormProps) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isGoogleLastUsed = lastMethod === 'google';
+
+  // Allow other flows (e.g. judge invitations) to pre-fill the email and
+  // route the user back to where they came from after the signup +
+  // verify roundtrip. Only honors same-origin paths to avoid open
+  // redirects.
+  const prefilledEmail = searchParams.get('email') ?? '';
+  const rawCallbackUrl = searchParams.get('callbackUrl');
+  const safeCallbackUrl =
+    rawCallbackUrl && rawCallbackUrl.startsWith('/') ? rawCallbackUrl : null;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
+      email: prefilledEmail,
       firstName: '',
       lastName: '',
       password: '',
@@ -90,9 +100,9 @@ const SignupForm = ({
           toast.success(
             'Verification email sent! Please check your email to verify your account. You will be automatically logged in once verified.'
           );
-          router.push(
-            '/auth/check-email?email=' + encodeURIComponent(values.email)
-          );
+          const params = new URLSearchParams({ email: values.email });
+          if (safeCallbackUrl) params.set('callbackUrl', safeCallbackUrl);
+          router.push(`/auth/check-email?${params.toString()}`);
         },
         onError: ctx => {
           if (ctx.error.status === 409 || ctx.error.code === 'CONFLICT') {

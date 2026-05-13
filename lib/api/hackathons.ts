@@ -125,8 +125,13 @@ export interface HackathonRewards {
 }
 
 // Judging Tab Types
+//
+// Persisted criteria always carry a non-empty unique `id` (the server
+// auto-generates one on create). In-progress local drafts may not yet
+// have an id, but anything coming back from the API does. Consumers
+// should rely on `id` and never fall back to `name`/`title`.
 export interface JudgingCriterion {
-  id?: string;
+  id: string;
   name?: string;
   title: string;
   weight: number; // 0-100

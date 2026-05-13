@@ -21,6 +21,12 @@ interface ScoringSectionProps {
     criterionKey: string
   ) => void;
   getScoreColor: (percentage: number) => string;
+  /**
+   * Returns the relative weight of a criterion as a 0-100 percentage.
+   * Used so the "X% weight" badge stays honest regardless of how the
+   * organizer chose to scale weights.
+   */
+  getWeightPercent?: (criterion: JudgingCriterion) => number;
   overallComment: string;
   onOverallCommentChange: (value: string) => void;
   showComments?: boolean;
@@ -38,12 +44,13 @@ export const ScoringSection = ({
   onInputBlur,
   onKeyDown,
   getScoreColor,
+  getWeightPercent,
   overallComment,
   onOverallCommentChange,
   showComments = true,
 }: ScoringSectionProps) => {
   const getCriterionKey = (criterion: JudgingCriterion) => {
-    return criterion.id || criterion.name || criterion.title;
+    return criterion.id;
   };
 
   const scoredCount = criteria.filter(c => {
@@ -94,7 +101,10 @@ export const ScoringSection = ({
                       {criterionTitle}
                     </span>
                     <Badge className='rounded border border-gray-700 bg-gray-800 px-2 py-0.5 text-xs text-gray-400'>
-                      {criterion.weight}% weight
+                      {getWeightPercent
+                        ? getWeightPercent(criterion)
+                        : criterion.weight}
+                      % weight
                     </Badge>
                   </div>
                   {criterion.description && (

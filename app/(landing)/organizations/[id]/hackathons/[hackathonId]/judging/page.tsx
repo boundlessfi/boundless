@@ -14,10 +14,12 @@ import {
   getJudgingResults,
   getJudgingWinners,
   publishJudgingResults,
+  getJudgingCompleteness,
   type JudgingCriterion,
   type JudgingSubmission,
   type JudgingResult,
   type AggregatedJudgingResults,
+  type JudgingCompletenessPreview,
 } from '@/lib/api/hackathons/judging';
 import { getSubmissionDetails } from '@/lib/api/hackathons/participants';
 import { getOrganizationMembers } from '@/lib/api/organization';
@@ -51,6 +53,7 @@ import { reportError, reportMessage } from '@/lib/error-reporting';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JudgingCriteriaList } from '@/components/organization/hackathons/judging/JudgingCriteriaList';
 import JudgingResultsTable from '@/components/organization/hackathons/judging/JudgingResultsTable';
+import { OrganizerJudgesPanel } from '@/components/organization/hackathons/judging/OrganizerJudgesPanel';
 import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
@@ -122,6 +125,10 @@ export default function JudgingPage() {
   const CACHE_TIMEOUT = 30000; // 30 seconds
 
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [completeness, setCompleteness] =
+    useState<JudgingCompletenessPreview | null>(null);
+  const [completenessLoading, setCompletenessLoading] = useState(false);
+  const [acceptPartial, setAcceptPartial] = useState(false);
   const [judgeToRemove, setJudgeToRemove] = useState<string | null>(null);
 
   const canManageJudges =
@@ -465,20 +472,51 @@ export default function JudgingPage() {
   const handlePublishResults = async () => {
     setIsPublishing(true);
     try {
-      const res = await publishJudgingResults(organizationId, hackathonId);
+      const res = await publishJudgingResults(organizationId, hackathonId, {
+        acceptPartial,
+      });
       if (res.success) {
         toast.success('Results published successfully!');
+        setIsPublishDialogOpen(false);
+        setAcceptPartial(false);
         fetchResults(true);
         fetchWinners(true);
       } else {
         toast.error(res.message || 'Failed to publish results');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to publish results');
+      toast.error(error?.message || 'Failed to publish results');
     } finally {
       setIsPublishing(false);
     }
   };
+
+  // Pull the completeness snapshot every time the dialog opens so the
+  // organizer sees fresh numbers (a judge may have submitted scores
+  // since the page loaded).
+  useEffect(() => {
+    if (!isPublishDialogOpen) {
+      setAcceptPartial(false);
+      return;
+    }
+    let cancelled = false;
+    setCompletenessLoading(true);
+    getJudgingCompleteness(organizationId, hackathonId)
+      .then(res => {
+        if (cancelled) return;
+        if (res.success && res.data) setCompleteness(res.data);
+      })
+      .catch(() => {
+        // Non-fatal: the dialog still works, organizer just won't see
+        // the incompleteness summary.
+      })
+      .finally(() => {
+        if (!cancelled) setCompletenessLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isPublishDialogOpen, organizationId, hackathonId]);
 
   // Use pre-calculated statistics from the API if available, otherwise fallback to local calculation
   const gradedCount = judgingSummary
@@ -756,169 +794,185 @@ export default function JudgingPage() {
             </TabsContent>
 
             <TabsContent value='judges' className='mt-6'>
-              <div className='grid grid-cols-1 gap-8 lg:grid-cols-2'>
-                {/* Current Judges List */}
-                <div className='bg-background/8 h-fit rounded-lg border border-gray-900 p-6'>
-                  <h3 className='mb-4 flex items-center gap-2 text-lg font-medium'>
-                    Current Judges
-                    {isRefreshingJudges && (
-                      <Loader2 className='h-4 w-4 animate-spin text-gray-500' />
-                    )}
-                  </h3>
-                  <div className='space-y-4'>
-                    {currentJudges.length === 0 ? (
-                      <EmptyState
-                        title='No Judges Assigned'
-                        description='No judges assigned yet.'
-                        type='compact'
-                        className='py-8'
-                      />
-                    ) : (
-                      currentJudges.map((judge: any, index: number) => (
-                        <div
-                          key={judge.id}
-                          className='flex items-center justify-between rounded-md border border-white/10 bg-white/5 p-3'
-                        >
-                          <div className='flex items-center gap-3'>
-                            <div className='h-8 w-8 overflow-hidden rounded-full bg-gray-800'>
-                              {judge.image ? (
-                                <img
-                                  src={judge.image}
-                                  alt=''
-                                  className='h-full w-full object-cover'
-                                />
-                              ) : (
-                                <div className='flex h-full w-full items-center justify-center text-xs font-bold text-gray-500'>
-                                  {judge.name?.[0] || '?'}
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <p className='text-sm font-medium'>
-                                {judge.name}
-                              </p>
-                              <p className='text-xs text-gray-500'>
-                                Judge {index + 1}
-                              </p>
-                            </div>
-                          </div>
-                          {canManageJudges && (
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              className='text-red-400 hover:bg-red-400/10 hover:text-red-300'
-                              onClick={() =>
-                                setJudgeToRemove(judge.userId || judge.id)
-                              }
-                            >
-                              Remove
-                            </Button>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Org Members List - Only visible to admin/owner */}
-                {canManageJudges && (
+              <OrganizerJudgesPanel
+                organizationId={organizationId}
+                hackathonId={hackathonId}
+                currentJudges={currentJudges}
+                isRefreshingJudges={isRefreshingJudges}
+                canManage={canManageJudges}
+                onRemoveJudge={userId => setJudgeToRemove(userId)}
+                onJudgesChanged={fetchJudges}
+              />
+              {/* Legacy org-members picker — superseded by email invitations.
+                  Kept hidden behind a flag so we can re-surface it if a
+                  power-user organizer asks for the direct-add path. */}
+              {false && (
+                <div className='grid grid-cols-1 gap-8 lg:grid-cols-2'>
+                  {/* Current Judges List */}
                   <div className='bg-background/8 h-fit rounded-lg border border-gray-900 p-6'>
-                    <div className='flex flex-col gap-4'>
-                      <h3 className='text-lg font-medium'>
-                        Add from Organization Members
-                      </h3>
-                      <div className='relative'>
-                        <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500' />
-                        <Input
-                          placeholder='Search members by name or email...'
-                          className='focus:ring-primary border-gray-900 bg-black pl-10 text-sm'
-                          value={memberSearchTerm}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setMemberSearchTerm(e.target.value)
-                          }
-                        />
-                      </div>
-                      <p className='text-xs text-gray-500'>
-                        Select members from your organization to assign them as
-                        judges.
-                      </p>
-                    </div>
-                    <div className='custom-scrollbar mt-6 max-h-[400px] space-y-3 overflow-y-auto pr-2'>
-                      {orgMembers
-                        .filter(m => {
-                          const search = memberSearchTerm.toLowerCase();
-                          return (
-                            m.name?.toLowerCase().includes(search) ||
-                            m.email?.toLowerCase().includes(search) ||
-                            m.username?.toLowerCase().includes(search)
-                          );
-                        })
-                        .map((member: any) => {
-                          const isAlreadyJudge = currentJudges.some(
-                            j => j.id === member.id || j.userId === member.id
-                          );
-                          return (
-                            <div
-                              key={member.id}
-                              className='flex items-center justify-between rounded-md border border-white/5 bg-white/5 p-3 transition-colors hover:bg-white/10'
-                            >
-                              <div className='flex items-center gap-3'>
-                                <div className='h-8 w-8 overflow-hidden rounded-full bg-gray-800'>
-                                  {member.image ? (
-                                    <img
-                                      src={member.image}
-                                      alt=''
-                                      className='h-full w-full object-cover'
-                                    />
-                                  ) : (
-                                    <div className='flex h-full w-full items-center justify-center text-xs font-bold text-gray-500'>
-                                      {member.name?.[0] ||
-                                        member.username?.[0] ||
-                                        '?'}
-                                    </div>
-                                  )}
-                                </div>
-                                <div>
-                                  <p className='text-sm font-medium'>
-                                    {member.name || member.username}
-                                  </p>
-                                  <p className='text-xs text-gray-500'>
-                                    {member.email}
-                                  </p>
-                                </div>
-                              </div>
-                              <Button
-                                size='sm'
-                                variant={isAlreadyJudge ? 'outline' : 'default'}
-                                className={
-                                  isAlreadyJudge
-                                    ? 'cursor-not-allowed border-gray-800 opacity-50'
-                                    : ''
-                                }
-                                disabled={isAddingJudge || isAlreadyJudge}
-                                onClick={() =>
-                                  handleAddJudge(member.id, member.email)
-                                }
-                              >
-                                {isAlreadyJudge
-                                  ? 'Already Judge'
-                                  : 'Add as Judge'}
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      {orgMembers.length === 0 && !isRefreshingJudges && (
+                    <h3 className='mb-4 flex items-center gap-2 text-lg font-medium'>
+                      Current Judges
+                      {isRefreshingJudges && (
+                        <Loader2 className='h-4 w-4 animate-spin text-gray-500' />
+                      )}
+                    </h3>
+                    <div className='space-y-4'>
+                      {currentJudges.length === 0 ? (
                         <EmptyState
-                          title='No Members Found'
-                          description='No organization members found.'
+                          title='No Judges Assigned'
+                          description='No judges assigned yet.'
                           type='compact'
                           className='py-8'
                         />
+                      ) : (
+                        currentJudges.map((judge: any, index: number) => (
+                          <div
+                            key={judge.id}
+                            className='flex items-center justify-between rounded-md border border-white/10 bg-white/5 p-3'
+                          >
+                            <div className='flex items-center gap-3'>
+                              <div className='h-8 w-8 overflow-hidden rounded-full bg-gray-800'>
+                                {judge.image ? (
+                                  <img
+                                    src={judge.image}
+                                    alt=''
+                                    className='h-full w-full object-cover'
+                                  />
+                                ) : (
+                                  <div className='flex h-full w-full items-center justify-center text-xs font-bold text-gray-500'>
+                                    {judge.name?.[0] || '?'}
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <p className='text-sm font-medium'>
+                                  {judge.name}
+                                </p>
+                                <p className='text-xs text-gray-500'>
+                                  Judge {index + 1}
+                                </p>
+                              </div>
+                            </div>
+                            {canManageJudges && (
+                              <Button
+                                variant='ghost'
+                                size='sm'
+                                className='text-red-400 hover:bg-red-400/10 hover:text-red-300'
+                                onClick={() =>
+                                  setJudgeToRemove(judge.userId || judge.id)
+                                }
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
+                        ))
                       )}
                     </div>
                   </div>
-                )}
-              </div>
+
+                  {/* Org Members List - Only visible to admin/owner */}
+                  {canManageJudges && (
+                    <div className='bg-background/8 h-fit rounded-lg border border-gray-900 p-6'>
+                      <div className='flex flex-col gap-4'>
+                        <h3 className='text-lg font-medium'>
+                          Add from Organization Members
+                        </h3>
+                        <div className='relative'>
+                          <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500' />
+                          <Input
+                            placeholder='Search members by name or email...'
+                            className='focus:ring-primary border-gray-900 bg-black pl-10 text-sm'
+                            value={memberSearchTerm}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => setMemberSearchTerm(e.target.value)}
+                          />
+                        </div>
+                        <p className='text-xs text-gray-500'>
+                          Select members from your organization to assign them
+                          as judges.
+                        </p>
+                      </div>
+                      <div className='custom-scrollbar mt-6 max-h-[400px] space-y-3 overflow-y-auto pr-2'>
+                        {orgMembers
+                          .filter(m => {
+                            const search = memberSearchTerm.toLowerCase();
+                            return (
+                              m.name?.toLowerCase().includes(search) ||
+                              m.email?.toLowerCase().includes(search) ||
+                              m.username?.toLowerCase().includes(search)
+                            );
+                          })
+                          .map((member: any) => {
+                            const isAlreadyJudge = currentJudges.some(
+                              j => j.id === member.id || j.userId === member.id
+                            );
+                            return (
+                              <div
+                                key={member.id}
+                                className='flex items-center justify-between rounded-md border border-white/5 bg-white/5 p-3 transition-colors hover:bg-white/10'
+                              >
+                                <div className='flex items-center gap-3'>
+                                  <div className='h-8 w-8 overflow-hidden rounded-full bg-gray-800'>
+                                    {member.image ? (
+                                      <img
+                                        src={member.image}
+                                        alt=''
+                                        className='h-full w-full object-cover'
+                                      />
+                                    ) : (
+                                      <div className='flex h-full w-full items-center justify-center text-xs font-bold text-gray-500'>
+                                        {member.name?.[0] ||
+                                          member.username?.[0] ||
+                                          '?'}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className='text-sm font-medium'>
+                                      {member.name || member.username}
+                                    </p>
+                                    <p className='text-xs text-gray-500'>
+                                      {member.email}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Button
+                                  size='sm'
+                                  variant={
+                                    isAlreadyJudge ? 'outline' : 'default'
+                                  }
+                                  className={
+                                    isAlreadyJudge
+                                      ? 'cursor-not-allowed border-gray-800 opacity-50'
+                                      : ''
+                                  }
+                                  disabled={isAddingJudge || isAlreadyJudge}
+                                  onClick={() =>
+                                    handleAddJudge(member.id, member.email)
+                                  }
+                                >
+                                  {isAlreadyJudge
+                                    ? 'Already Judge'
+                                    : 'Add as Judge'}
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        {orgMembers.length === 0 && !isRefreshingJudges && (
+                          <EmptyState
+                            title='No Members Found'
+                            description='No organization members found.'
+                            type='compact'
+                            className='py-8'
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value='results' className='mt-6'>
@@ -1051,7 +1105,7 @@ export default function JudgingPage() {
           open={isPublishDialogOpen}
           onOpenChange={setIsPublishDialogOpen}
         >
-          <AlertDialogContent className='border-gray-900 bg-zinc-950 text-white'>
+          <AlertDialogContent className='border-white/5 bg-[#101010] text-white'>
             <AlertDialogHeader>
               <AlertDialogTitle>Publish Judging Results?</AlertDialogTitle>
               <AlertDialogDescription className='text-gray-400'>
@@ -1059,15 +1113,82 @@ export default function JudgingPage() {
                 action is irreversible.
               </AlertDialogDescription>
             </AlertDialogHeader>
+
+            {completenessLoading && (
+              <p className='text-xs text-gray-500'>
+                Checking judging progress…
+              </p>
+            )}
+
+            {completeness && completeness.complete && (
+              <p className='rounded-md border border-emerald-800/40 bg-emerald-900/20 p-3 text-xs text-emerald-200'>
+                All {completeness.expectedJudgeCount} active judges have scored
+                every shortlisted submission.
+              </p>
+            )}
+
+            {completeness && !completeness.complete && (
+              <div className='space-y-3'>
+                <div className='rounded-md border border-amber-800/40 bg-amber-950/30 p-3 text-xs text-amber-200'>
+                  <p className='font-medium'>Judging is incomplete.</p>
+                  <p className='mt-1'>
+                    {completeness.incompleteSubmissionCount} of{' '}
+                    {completeness.totalShortlisted} shortlisted submissions are
+                    missing scores from one or more active judges.
+                  </p>
+                </div>
+                {completeness.incompleteJudges.length > 0 && (
+                  <div className='rounded-md border border-white/10 bg-black/40 p-3 text-xs text-gray-300'>
+                    <p className='mb-1.5 text-[10px] tracking-wider text-gray-500 uppercase'>
+                      Judges with outstanding work
+                    </p>
+                    <ul className='space-y-1'>
+                      {completeness.incompleteJudges.map(j => (
+                        <li key={j.id} className='flex justify-between'>
+                          <span>{j.name}</span>
+                          <span className='text-gray-500'>
+                            {j.missingCount} left
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <label className='flex cursor-pointer items-start gap-2 rounded-md border border-amber-800/40 bg-amber-950/20 p-3 text-xs text-amber-200'>
+                  <input
+                    type='checkbox'
+                    checked={acceptPartial}
+                    onChange={e => setAcceptPartial(e.target.checked)}
+                    className='accent-primary mt-0.5 h-3.5 w-3.5'
+                  />
+                  <span>
+                    I understand the results will be published with incomplete
+                    judging.
+                  </span>
+                </label>
+              </div>
+            )}
+
             <AlertDialogFooter>
-              <AlertDialogCancel className='border-gray-800 bg-zinc-900 text-gray-300 hover:bg-zinc-800 hover:text-white'>
+              <AlertDialogCancel className='border-white/10 bg-transparent text-gray-300 hover:bg-white/5'>
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handlePublishResults}
-                className='bg-primary text-primary-foreground hover:bg-primary/90'
+                disabled={
+                  isPublishing ||
+                  completenessLoading ||
+                  Boolean(
+                    completeness && !completeness.complete && !acceptPartial
+                  )
+                }
+                className='bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50'
               >
-                Yes, Publish Results
+                {isPublishing
+                  ? 'Publishing…'
+                  : completeness && !completeness.complete && acceptPartial
+                    ? 'Publish anyway'
+                    : 'Publish results'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
