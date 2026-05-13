@@ -112,10 +112,18 @@ export default function PoolAndAction() {
 
   const { withAuth } = useRequireAuthForAction();
 
-  const handleSubmit = withAuth(() => {
-    if (isButtonDisabled) return;
-    router.push(`/hackathons/${slug}/submit`);
-  });
+  // For unauth users we open the auth modal in place. Pass the submit URL as
+  // redirectTo so after sign-in they land directly on the form instead of
+  // back on the hackathon page (where they'd otherwise have to click "Submit
+  // Now" a second time and pay the rendering delay all over again).
+  const submitUrl = `/hackathons/${slug}/submit`;
+  const handleSubmit = withAuth(
+    () => {
+      if (isButtonDisabled) return;
+      router.push(submitUrl);
+    },
+    { redirectTo: submitUrl }
+  );
 
   if (isDataLoading) {
     return (
