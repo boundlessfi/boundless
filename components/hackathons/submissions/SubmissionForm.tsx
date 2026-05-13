@@ -58,6 +58,7 @@ import {
 import Image from 'next/image';
 import { useTeamPosts } from '@/hooks/hackathon/use-team-posts';
 import { useTeamInvite } from '@/hooks/hackathon/use-team-invite';
+import { CreateTeamPostModal } from '@/components/hackathons/team-formation/CreateTeamPostModal';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
@@ -263,9 +264,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     autoFetch: open,
   });
 
-  const [currentInviteeName, setCurrentInviteeName] = useState('');
-  const [currentInviteeEmail, setCurrentInviteeEmail] = useState('');
-  const [currentInviteeRole, setCurrentInviteeRole] = useState('');
+  const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
 
   const form = useForm<SubmissionFormDataLocal>({
     resolver: zodResolver(submissionSchema),
@@ -284,7 +283,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     },
   });
 
-  const invitees = form.watch('teamMembers') || [];
   const formLinks = form.watch('links') || [];
 
   const updateStepState = useCallback((stepIndex: number, state: StepState) => {
@@ -504,94 +502,17 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     form.setValue('links', updatedLinks, { shouldValidate: true });
   };
 
-  // Team size configuration and computed state (only when hackathon defines limits)
-  const teamMin = currentHackathon?.teamMin;
-  const teamMax = currentHackathon?.teamMax;
-  const hasTeamLimits = teamMin !== undefined && teamMax !== undefined;
-  const watchedTeamMembers = form.watch('teamMembers');
-  const currentTeamSize = (watchedTeamMembers?.length ?? 0) + 1;
-  const isTeamAtCapacity = hasTeamLimits && currentTeamSize >= teamMax;
-  const isTeamBelowMinimum = hasTeamLimits && currentTeamSize < teamMin;
-  const membersNeededForMinimum = hasTeamLimits ? teamMin - currentTeamSize : 0;
-
-  function getTeamSizeBadgeStyle(): string {
-    if (isTeamAtCapacity) {
-      return 'border-yellow-500 bg-yellow-500/10 text-yellow-500';
-    }
-    if (isTeamBelowMinimum) {
-      return 'border-orange-500 bg-orange-500/10 text-orange-500';
-    }
-    return 'border-gray-600 text-gray-400';
-  }
-
-  const handleAddInvitee = () => {
-    // Guard: prevent adding members when team is at capacity
-    if (isTeamAtCapacity) {
-      toast.error(`Team is at maximum capacity (${teamMax} members)`);
-      return;
-    }
-
-    if (!currentInviteeName || !currentInviteeRole || !currentInviteeEmail) {
-      toast.error('Please fill in name, email and role');
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(currentInviteeEmail)) {
-      toast.error('Please enter a valid email');
-      return;
-    }
-
-    const currentMembers = form.getValues('teamMembers') || [];
-    form.setValue('teamMembers', [
-      ...currentMembers,
-      {
-        name: currentInviteeName,
-        email: currentInviteeEmail,
-        role: currentInviteeRole,
-      },
-    ]);
-
-    setCurrentInviteeName('');
-    setCurrentInviteeEmail('');
-    setCurrentInviteeRole('');
-  };
-
-  const handleRemoveInvitee = (index: number) => {
-    const currentMembers = form.getValues('teamMembers') || [];
-    form.setValue(
-      'teamMembers',
-      currentMembers.filter((_, i) => i !== index)
-    );
-  };
-
   const handleNext = async (e: React.MouseEvent) => {
     e.preventDefault();
     let isValid = false;
 
     if (currentStep === 0) {
       const participationType = form.getValues('participationType');
-      if (participationType === 'TEAM') {
-        if (myTeam) {
-          isValid = true;
-        } else {
-          const teamName = form.getValues('teamName');
-          if (!teamName) {
-            form.setError('teamName', { message: 'Team Name is required' });
-            return;
-          }
-
-          if (isTeamBelowMinimum) {
-            toast.error(
-              `Your team needs at least ${teamMin} members. Please invite ${membersNeededForMinimum} more member${membersNeededForMinimum > 1 ? 's' : ''} to continue.`
-            );
-            return;
-          }
-
-          isValid = true;
-        }
-      } else {
-        isValid = true;
+      if (participationType === 'TEAM' && !myTeam) {
+        toast.error('Please create your team before continuing');
+        return;
       }
+      isValid = true;
     } else if (currentStep === 1) {
       isValid = await form.trigger(['projectName', 'category', 'description']);
     } else if (currentStep === 2) {
@@ -791,17 +712,14 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       const participationType = safeData.participationType || 'INDIVIDUAL';
       const teamId = participationType === 'TEAM' ? myTeam?.id : undefined;
 
+      // Team submissions always go through a real team. handleNext blocks
+      // advancing past step 0 if participationType is TEAM but myTeam is
+      // empty, so we no longer stamp teamName/teamMembers from the form.
       const submissionData: SubmissionFormData = {
         ...safeData,
         teamId: teamId ?? undefined,
-        teamName:
-          !myTeam && participationType === 'TEAM'
-            ? safeData.teamName
-            : undefined,
-        teamMembers:
-          !myTeam && participationType === 'TEAM'
-            ? safeData.teamMembers
-            : undefined,
+        teamName: undefined,
+        teamMembers: undefined,
       };
 
       if (submissionId) {
@@ -982,142 +900,28 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                     </Alert>
                   </div>
                 ) : (
-                  // Create Team UI
+                  // No team yet. Route the user through the formation flow
+                  // so a real team is created (with invitations sent) instead
+                  // of just stamping teamName/teamMembers on the submission.
                   <div className='space-y-4'>
                     <div className='space-y-2'>
                       <h4 className='font-semibold text-white'>
-                        Create Your Team
+                        You don't have a team yet
                       </h4>
                       <p className='text-sm text-gray-400'>
-                        You'll be the team leader. Invite others to join you!
+                        Create your team first, then come back here to submit on
+                        its behalf. You'll be able to invite teammates after
+                        creating it.
                       </p>
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name='teamName'
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className='text-white'>
-                            Team Name <span className='text-red-400'>*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder='e.g. The Innovators'
-                              className='border-gray-700 bg-gray-800/50 text-white'
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className='space-y-3'>
-                      <div className='flex items-center justify-between'>
-                        <FormLabel className='text-white'>
-                          Invite Members
-                          {hasTeamLimits && teamMin > 1 && (
-                            <span className='ml-1 text-xs text-gray-400'>
-                              (min {teamMin} members)
-                            </span>
-                          )}
-                        </FormLabel>
-                        {hasTeamLimits && (
-                          <Badge
-                            variant='outline'
-                            className={cn(
-                              'transition-colors',
-                              getTeamSizeBadgeStyle()
-                            )}
-                          >
-                            <Users className='mr-1 h-3 w-3' />
-                            {currentTeamSize} / {teamMax} members
-                          </Badge>
-                        )}
-                      </div>
-                      {isTeamBelowMinimum && (
-                        <p className='text-xs text-orange-400'>
-                          You need at least {membersNeededForMinimum} more
-                          member{membersNeededForMinimum > 1 ? 's' : ''} to
-                          proceed.
-                        </p>
-                      )}
-                      <div className='flex flex-col gap-3'>
-                        <div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
-                          <Input
-                            placeholder='Name'
-                            value={currentInviteeName}
-                            onChange={e =>
-                              setCurrentInviteeName(e.target.value)
-                            }
-                            className='border-gray-700 bg-gray-800/50 text-white'
-                            disabled={isTeamAtCapacity}
-                          />
-                          <Input
-                            placeholder='Email'
-                            type='email'
-                            value={currentInviteeEmail}
-                            onChange={e =>
-                              setCurrentInviteeEmail(e.target.value)
-                            }
-                            className='border-gray-700 bg-gray-800/50 text-white'
-                            disabled={isTeamAtCapacity}
-                          />
-                          <Input
-                            placeholder='Role (e.g. Designer)'
-                            value={currentInviteeRole}
-                            onChange={e =>
-                              setCurrentInviteeRole(e.target.value)
-                            }
-                            className='border-gray-700 bg-gray-800/50 text-white'
-                            disabled={isTeamAtCapacity}
-                          />
-                        </div>
-                        <Button
-                          type='button'
-                          onClick={handleAddInvitee}
-                          disabled={isTeamAtCapacity}
-                          className={cn(
-                            'self-start',
-                            isTeamAtCapacity
-                              ? 'cursor-not-allowed bg-gray-700 text-gray-500 opacity-50'
-                              : 'bg-gray-800 text-white hover:bg-gray-700'
-                          )}
-                        >
-                          <Plus className='mr-2 h-4 w-4' />
-                          {isTeamAtCapacity ? 'Team Full' : 'Add Member'}
-                        </Button>
-                      </div>
-
-                      {invitees.length > 0 && (
-                        <div className='mt-4 flex flex-wrap gap-2'>
-                          {invitees.map((invitee, idx) => (
-                            <Badge
-                              key={idx}
-                              variant='secondary'
-                              className='gap-1 bg-gray-800 py-1 pr-1 pl-3 text-gray-300'
-                            >
-                              <div className='mr-2 flex flex-col text-left text-xs'>
-                                <span className='font-semibold'>
-                                  {invitee.name}
-                                </span>
-                                <span className='text-[10px] text-gray-500'>
-                                  {invitee.role} • {invitee.email}
-                                </span>
-                              </div>
-                              <button
-                                type='button'
-                                onClick={() => handleRemoveInvitee(idx)}
-                                className='ml-1 rounded-full p-1 hover:bg-gray-700'
-                              >
-                                <X className='h-3 w-3' />
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <Button
+                      type='button'
+                      onClick={() => setIsCreateTeamModalOpen(true)}
+                      className='bg-primary text-black hover:bg-[#1ec78d]'
+                    >
+                      <Plus className='mr-2 h-4 w-4' />
+                      Create Team
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1622,6 +1426,13 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
           </div>
         </form>
       </Form>
+      <CreateTeamPostModal
+        open={isCreateTeamModalOpen}
+        onOpenChange={setIsCreateTeamModalOpen}
+        hackathonSlugOrId={hackathonSlugOrId}
+        teamMax={currentHackathon?.teamMax}
+        organizationId={organizationId}
+      />
     </div>
   );
 };
