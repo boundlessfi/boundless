@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   Clock,
   Briefcase,
@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useOptionalAuth } from '@/hooks/use-auth';
-import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -56,7 +55,6 @@ function useCountdown(deadline?: string) {
 
 export default function PoolAndAction() {
   const params = useParams();
-  const router = useRouter();
   const { user } = useOptionalAuth();
   const slug = params.slug as string;
 
@@ -98,13 +96,6 @@ export default function PoolAndAction() {
   const isParticipant = user
     ? participants.some((p: Participant) => p.userId === user.id)
     : false;
-
-  const { withAuth } = useRequireAuthForAction();
-
-  const handleSubmit = withAuth(() => {
-    if (isButtonDisabled) return;
-    router.push(`/hackathons/${slug}/submit`);
-  });
 
   if (isDataLoading) {
     return (
@@ -262,25 +253,40 @@ export default function PoolAndAction() {
           </div>
         </div>
 
-        <BoundlessButton
-          className={cn(
-            'group h-12 w-full rounded-xl text-sm font-bold transition-all',
-            isButtonDisabled
-              ? 'cursor-not-allowed bg-gray-800 text-gray-500'
-              : 'bg-primary hover:bg-primary/90 text-black'
-          )}
-          onClick={handleSubmit}
-          disabled={isButtonDisabled}
-          iconPosition='right'
-          fullWidth
-          icon={
-            !isButtonDisabled && (
-              <ChevronRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
-            )
-          }
-        >
-          {getButtonText()}
-        </BoundlessButton>
+        {isButtonDisabled ? (
+          <BoundlessButton
+            className={cn(
+              'group h-12 w-full rounded-xl text-sm font-bold transition-all',
+              'cursor-not-allowed bg-gray-800 text-gray-500'
+            )}
+            disabled
+            iconPosition='right'
+            fullWidth
+          >
+            {getButtonText()}
+          </BoundlessButton>
+        ) : (
+          <a
+            href={`/hackathons/${slug}/submit`}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='block w-full'
+          >
+            <BoundlessButton
+              className={cn(
+                'group h-12 w-full rounded-xl text-sm font-bold transition-all',
+                'bg-primary hover:bg-primary/90 text-black'
+              )}
+              iconPosition='right'
+              fullWidth
+              icon={
+                <ChevronRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
+              }
+            >
+              {getButtonText()}
+            </BoundlessButton>
+          </a>
+        )}
       </div>
     </div>
   );
