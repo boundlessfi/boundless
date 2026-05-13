@@ -23,7 +23,6 @@ import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import BasicAvatar from '@/components/avatars/BasicAvatar';
 import { useOptionalAuth } from '@/hooks/use-auth';
 import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
-import { getUserProfileByUsername } from '@/lib/api/auth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,38 +72,22 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteIdentifier) return;
+    const identifier = inviteIdentifier.trim();
+    if (!identifier) return;
 
     setIsVerifying(true);
     setVerificationError(null);
 
-    // 1. Verify user exists first
-    try {
-      const profile = await getUserProfileByUsername(inviteIdentifier);
-      if (!profile) {
-        setVerificationError('User not found. Please check the username.');
-        setIsVerifying(false);
-        return;
-      }
-    } catch (err: any) {
-      setVerificationError(
-        err.response?.status === 404
-          ? 'User not found. Please check the username.'
-          : 'Failed to verify user. Please try again.'
-      );
-      setIsVerifying(false);
-      return;
-    }
-
-    // 2. Send invitation
+    // Backend resolves the identifier (email, username, or user id) and
+    // returns a clear error if the user isn't registered, so we no longer
+    // pre-check via getUserProfileByUsername (which only handled usernames).
     try {
       await inviteMutation.mutateAsync({
         teamId: team.id,
-        inviteeIdentifier: inviteIdentifier,
+        inviteeIdentifier: identifier,
         message: inviteMessage,
       });
 
-      // Only clear inputs and errors on successful invite
       setInviteIdentifier('');
       setInviteMessage('');
       setVerificationError(null);
@@ -206,11 +189,11 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
                 <div className='grid gap-4 sm:grid-cols-2'>
                   <div className='space-y-2'>
                     <label className='text-[10px] font-black tracking-[0.2em] text-[#555555] uppercase'>
-                      USERNAME
+                      Email
                     </label>
                     <input
-                      type='text'
-                      placeholder='e.g. valid_username'
+                      type='email'
+                      placeholder='teammate@example.com'
                       value={inviteIdentifier}
                       onChange={e => {
                         setInviteIdentifier(e.target.value);
