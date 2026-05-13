@@ -746,6 +746,7 @@ export interface ExploreSubmissionsResponse {
   category: string;
   description: string;
   logo?: string | null;
+  banner?: string | null;
   videoUrl?: string | null;
   introduction?: string | null;
   links?: Array<{ type: string; url: string }>;
@@ -856,6 +857,7 @@ export interface CreateSubmissionRequest {
   category: string;
   description: string;
   logo?: string;
+  banner?: string;
   videoUrl?: string;
   introduction?: string;
   links: Array<{ type: string; url: string; description?: string }>;

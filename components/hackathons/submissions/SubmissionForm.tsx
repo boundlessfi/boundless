@@ -90,6 +90,7 @@ const baseSubmissionSchema = z.object({
   category: z.string().min(1, 'Please select a category'),
   description: z.string().min(50, 'Description must be at least 50 characters'),
   logo: z.string().optional(),
+  banner: z.string().optional(),
   videoUrl: z
     .union([z.string().url('Please enter a valid URL'), z.literal('')])
     .optional(),
@@ -245,6 +246,8 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [bannerPreview, setBannerPreview] = useState<string>('');
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const hasAutoAdvanced = useRef(false);
 
   const { create, update, isSubmitting } = useSubmission({
@@ -274,6 +277,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       category: '',
       description: '',
       logo: '',
+      banner: '',
       videoUrl: '',
       introduction: '',
       links: [],
@@ -301,6 +305,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         category: initialData.category || '',
         description: initialData.description || '',
         logo: initialData.logo || '',
+        banner: initialData.banner || '',
         videoUrl: initialData.videoUrl || '',
         introduction: initialData.introduction || '',
         links: initialData.links || [],
@@ -308,6 +313,9 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       });
       if (initialData.logo && isValidImageUrl(initialData.logo)) {
         setLogoPreview(initialData.logo);
+      }
+      if (initialData.banner && isValidImageUrl(initialData.banner)) {
+        setBannerPreview(initialData.banner);
       }
     }
   }, [open, initialData, form]);
@@ -373,6 +381,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
           participationType: 'INDIVIDUAL',
         });
         setLogoPreview('');
+        setBannerPreview('');
         setCurrentStep(0);
         setSteps(INITIAL_STEPS);
         hasAutoAdvanced.current = false;
@@ -428,6 +437,56 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       setLogoPreview('');
     } finally {
       setIsUploadingLogo(false);
+    }
+  };
+
+  const handleBannerUpload = async (file: File) => {
+    if (!file.type.match(/^image\/(jpeg|jpg|png|gif|webp)$/)) {
+      toast.error('Please upload a JPEG, PNG, GIF, or WebP image');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      const result = e.target?.result as string;
+      setBannerPreview(result);
+    };
+    reader.readAsDataURL(file);
+
+    setIsUploadingBanner(true);
+    try {
+      const uploadResult = await uploadService.uploadSingle(file, {
+        folder: 'boundless/hackathons/submissions/banners',
+        tags: ['hackathon', 'submission', 'banner'],
+        transformation: {
+          width: 1600,
+          height: 900,
+          crop: 'fill',
+          quality: 'auto',
+          format: 'auto',
+        },
+      });
+
+      if (uploadResult.success) {
+        form.setValue('banner', uploadResult.data.secure_url, {
+          shouldValidate: true,
+        });
+        toast.success('Banner uploaded successfully');
+      } else {
+        throw new Error(uploadResult.message || 'Upload failed');
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Upload failed';
+      toast.error(`Failed to upload banner: ${errorMessage}`);
+      setBannerPreview('');
+    } finally {
+      setIsUploadingBanner(false);
     }
   };
 
@@ -610,6 +669,11 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
           (data.logo ?? currentValues.logo) &&
           String(data.logo ?? currentValues.logo).trim() !== ''
             ? String(data.logo ?? currentValues.logo).trim()
+            : undefined,
+        banner:
+          (data.banner ?? currentValues.banner) &&
+          String(data.banner ?? currentValues.banner).trim() !== ''
+            ? String(data.banner ?? currentValues.banner).trim()
             : undefined,
         videoUrl:
           (data.videoUrl ?? currentValues.videoUrl) &&
@@ -1102,6 +1166,74 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
 
             <FormField
               control={form.control}
+              name='banner'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className='text-white'>Project Banner</FormLabel>
+                  <FormControl>
+                    <div className='space-y-4'>
+                      {bannerPreview || isValidImageUrl(field.value) ? (
+                        <div className='relative w-full overflow-hidden rounded-lg'>
+                          <Image
+                            src={bannerPreview || field.value || ''}
+                            alt='Banner preview'
+                            width={1600}
+                            height={900}
+                            className='aspect-video w-full object-cover'
+                          />
+                          <Button
+                            type='button'
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => {
+                              setBannerPreview('');
+                              form.setValue('banner', '', {
+                                shouldValidate: true,
+                              });
+                            }}
+                            className='absolute top-2 right-2 h-6 w-6 rounded-full bg-red-500 p-0 hover:bg-red-600'
+                          >
+                            <X className='h-4 w-4' />
+                          </Button>
+                        </div>
+                      ) : (
+                        <label className='flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-700 bg-gray-800/50 hover:border-gray-600'>
+                          <input
+                            type='file'
+                            className='hidden'
+                            accept='image/jpeg,image/jpg,image/png,image/gif,image/webp'
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handleBannerUpload(file);
+                              }
+                            }}
+                            disabled={isUploadingBanner}
+                          />
+                          {isUploadingBanner ? (
+                            <Loader2 className='mb-2 h-8 w-8 animate-spin text-gray-400' />
+                          ) : (
+                            <Upload className='mb-2 h-8 w-8 text-gray-400' />
+                          )}
+                          <span className='text-sm text-gray-400'>
+                            {isUploadingBanner
+                              ? 'Uploading...'
+                              : 'Click to upload or drag and drop'}
+                          </span>
+                          <span className='text-xs text-gray-500'>
+                            16:9 hero image. PNG, JPG, GIF up to 5MB.
+                          </span>
+                        </label>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name='videoUrl'
               render={({ field }) => (
                 <FormItem>
@@ -1282,6 +1414,20 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                       width={100}
                       height={100}
                       className='rounded-lg object-cover'
+                    />
+                  </div>
+                )}
+                {isValidImageUrl(form.watch('banner')) && (
+                  <div>
+                    <p className='mb-2 text-sm font-medium text-gray-400'>
+                      Banner
+                    </p>
+                    <Image
+                      src={form.watch('banner') || ''}
+                      alt='Banner'
+                      width={400}
+                      height={225}
+                      className='aspect-video w-full max-w-sm rounded-lg object-cover'
                     />
                   </div>
                 )}

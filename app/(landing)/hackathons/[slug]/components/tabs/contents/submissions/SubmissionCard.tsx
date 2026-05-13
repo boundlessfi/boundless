@@ -36,6 +36,7 @@ const SubmissionCard = ({ submission }: SubmissionCardProps) => {
     teamMembers = [],
     participant,
     logo,
+    banner,
   } = submission;
 
   const router = useRouter();
@@ -88,17 +89,32 @@ const SubmissionCard = ({ submission }: SubmissionCardProps) => {
   return (
     <div className='group hover:border-primary/20 bg-background-card hover:bg-background-card-hover flex h-full flex-col overflow-hidden rounded-2xl border border-white/5 transition-all'>
       <div className='relative aspect-video w-full overflow-hidden bg-[#0D0E10]'>
-        {logo ? (
+        {banner ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={banner}
+            alt={`${projectName} banner`}
+            className='h-full w-full object-cover transition-transform duration-300 group-hover:scale-105'
+          />
+        ) : logo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={logo}
-            alt={`${projectName} banner`}
-            className='h-full w-full object-cover transition-transform duration-300 group-hover:scale-105'
+            alt={`${projectName} logo`}
+            className='h-full w-full object-contain p-8 transition-transform duration-300 group-hover:scale-105'
           />
         ) : (
           <div className='text-primary flex h-full w-full items-center justify-center bg-[#232B20]'>
             <LayoutGrid className='h-10 w-10' />
           </div>
+        )}
+        {banner && logo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logo}
+            alt={`${projectName} logo`}
+            className='absolute bottom-3 left-3 h-12 w-12 rounded-lg border-2 border-[#0D0E10] bg-[#0D0E10] object-cover shadow-lg'
+          />
         )}
       </div>
 

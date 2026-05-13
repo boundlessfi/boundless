@@ -79,7 +79,11 @@ const FindTeam = () => {
       category:
         categoryFilter !== 'All Categories' ? categoryFilter : undefined,
       role: roleFilter !== 'Role' ? roleFilter : undefined,
-      openOnly: true,
+      // Show every team (open + closed). TeamCard already hides the
+      // Join / Message buttons on closed teams and surfaces a CLOSED badge,
+      // so listed closed teams act as "taken" signals without inviting
+      // a join attempt.
+      openOnly: false,
     },
     !!hackathon?.id && hackathon.participantType !== 'INDIVIDUAL'
   );
