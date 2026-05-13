@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Clock,
   Briefcase,
@@ -275,29 +276,50 @@ export default function PoolAndAction() {
         {/* Once the user has a submission, the new "Your Submission" panel
             above carries the View / Edit affordances. Showing "Submit Now"
             here on top of that is redundant and confusing — we only keep the
-            button to communicate closed/ended states for participants who
-            haven't submitted. */}
-        {!hasSubmitted && (
-          <BoundlessButton
-            className={cn(
-              'group h-12 w-full rounded-xl text-sm font-bold transition-all',
-              isButtonDisabled
-                ? 'cursor-not-allowed bg-gray-800 text-gray-500'
-                : 'bg-primary hover:bg-primary/90 text-black'
-            )}
-            onClick={handleSubmit}
-            disabled={isButtonDisabled}
-            iconPosition='right'
-            fullWidth
-            icon={
-              !isButtonDisabled && (
-                <ChevronRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
-              )
-            }
-          >
-            {getButtonText()}
-          </BoundlessButton>
-        )}
+            CTA to communicate closed/ended states for participants who
+            haven't submitted.
+
+            For an authenticated user with submissions open we render a real
+            <Link target="_blank"> instead of a router.push handler. The
+            submit page does a fair amount of synchronous work on mount
+            (auth, hackathon, my-submission, my-team) and the perceived
+            delay was hurting the click; opening in a new tab keeps the
+            current page responsive while the form loads. Unauthenticated
+            users still get the button so the auth modal can intercept
+            in place. */}
+        {!hasSubmitted &&
+          (isButtonDisabled || !isAuthenticated ? (
+            <BoundlessButton
+              className={cn(
+                'group h-12 w-full rounded-xl text-sm font-bold transition-all',
+                isButtonDisabled
+                  ? 'cursor-not-allowed bg-gray-800 text-gray-500'
+                  : 'bg-primary hover:bg-primary/90 text-black'
+              )}
+              onClick={handleSubmit}
+              disabled={isButtonDisabled}
+              iconPosition='right'
+              fullWidth
+              icon={
+                !isButtonDisabled && (
+                  <ChevronRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
+                )
+              }
+            >
+              {getButtonText()}
+            </BoundlessButton>
+          ) : (
+            <Link
+              href={`/hackathons/${slug}/submit`}
+              target='_blank'
+              rel='noopener noreferrer'
+              prefetch
+              className='group bg-primary hover:bg-primary/90 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-bold text-black transition-all'
+            >
+              {getButtonText()}
+              <ChevronRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
+            </Link>
+          ))}
       </div>
     </div>
   );
