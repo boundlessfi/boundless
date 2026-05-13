@@ -23,6 +23,8 @@ interface ScoreSliderProps {
   commentPlaceholder?: string;
   onSubmitWithEnter?: () => void;
   onAdvance?: () => void;
+  /** Render in read-only mode (post-deadline). */
+  disabled?: boolean;
 }
 
 export function ScoreSlider({
@@ -44,6 +46,7 @@ export function ScoreSlider({
   commentPlaceholder,
   onSubmitWithEnter,
   onAdvance,
+  disabled = false,
 }: ScoreSliderProps) {
   const sliderRef = useRef<HTMLInputElement>(null);
   const numericValue = typeof value === 'number' ? value : 0;
@@ -73,8 +76,10 @@ export function ScoreSlider({
         isFocused
           ? 'border-primary/40 shadow-[0_0_0_1px_rgba(46,237,170,0.2)]'
           : 'border-white/5 hover:border-white/10',
-        error && 'border-red-500/40'
+        error && 'border-red-500/40',
+        disabled && 'pointer-events-none opacity-60'
       )}
+      aria-disabled={disabled || undefined}
     >
       <div className='flex items-start justify-between gap-4'>
         <div className='min-w-0 flex-1'>
@@ -103,9 +108,11 @@ export function ScoreSlider({
             onFocus={onFocus}
             onBlur={onBlur}
             id={inputId}
+            disabled={disabled}
             className={cn(
               'w-14 rounded border border-white/10 bg-black/40 px-2 py-1 text-right text-xl font-semibold text-white outline-none',
-              'focus:border-primary/40 focus:ring-primary/30 focus:ring-1'
+              'focus:border-primary/40 focus:ring-primary/30 focus:ring-1',
+              disabled && 'cursor-not-allowed'
             )}
             placeholder='—'
           />
@@ -124,6 +131,7 @@ export function ScoreSlider({
           onChange={handleSlider}
           onFocus={onFocus}
           onBlur={onBlur}
+          disabled={disabled}
           onKeyDown={e => {
             if (e.key === 'Enter') {
               e.preventDefault();
@@ -147,9 +155,11 @@ export function ScoreSlider({
           onChange={e => onCommentChange(e.target.value)}
           placeholder={commentPlaceholder ?? 'Optional note for the team'}
           rows={2}
+          disabled={disabled}
           className={cn(
             'mt-3 w-full resize-none rounded-lg border border-white/5 bg-black/40 p-2.5 text-sm text-gray-200 placeholder:text-gray-700',
-            'focus:border-primary/40 focus:ring-primary/30 focus:ring-1 focus:outline-none'
+            'focus:border-primary/40 focus:ring-primary/30 focus:ring-1 focus:outline-none',
+            disabled && 'cursor-not-allowed'
           )}
         />
       )}

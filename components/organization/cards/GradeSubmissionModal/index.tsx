@@ -1,5 +1,8 @@
 import BoundlessSheet from '@/components/sheet/boundless-sheet';
-import type { JudgingCriterion } from '@/lib/api/hackathons/judging';
+import {
+  disqualifySubmission,
+  type JudgingCriterion,
+} from '@/lib/api/hackathons/judging';
 import { ProjectHeader } from './ProjectHeader';
 import { ScoringSection } from './ScoringSection';
 import { TotalScoreCard } from './TotalScoreCard';
@@ -11,9 +14,12 @@ import { useScoreCalculation } from './useScoreCalculation';
 import { useJudgingCriteria } from './useJudgingCriteria';
 import { useSubmissionScores } from './useSubmissionScores';
 import { useScoreForm } from './useScoreForm';
+import { DisqualifyDialog } from '@/components/organization/hackathons/submissions/DisqualifyDialog';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Ban } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -77,6 +83,31 @@ export default function GradeSubmissionModal({
   const [selectedJudgeId, setSelectedJudgeId] = useState<string | undefined>(
     overrideJudgeId
   );
+  const [disqualifyOpen, setDisqualifyOpen] = useState(false);
+  const [isDisqualifying, setIsDisqualifying] = useState(false);
+
+  const handleDisqualify = async (reason: string) => {
+    setIsDisqualifying(true);
+    try {
+      const res = await disqualifySubmission(
+        organizationId,
+        hackathonId,
+        participantId,
+        reason
+      );
+      if (res.success) {
+        toast.success('Submission disqualified');
+        onSuccess?.();
+        onOpenChange(false);
+      } else {
+        toast.error(res.message || 'Failed to disqualify submission');
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to disqualify submission');
+    } finally {
+      setIsDisqualifying(false);
+    }
+  };
 
   const availableJudges = judges
     .map(j => ({
@@ -210,6 +241,14 @@ export default function GradeSubmissionModal({
                       />
                       <span>Credit judge</span>
                     </div>
+                    <button
+                      type='button'
+                      onClick={() => setDisqualifyOpen(true)}
+                      className='ml-auto inline-flex items-center gap-1 text-[11px] text-amber-200/80 underline-offset-2 hover:text-amber-100 hover:underline'
+                    >
+                      <Ban className='h-3 w-3' />
+                      Disqualify submission
+                    </button>
                     {creditJudge && (
                       <div className='min-w-[220px]'>
                         <Select
@@ -356,6 +395,15 @@ export default function GradeSubmissionModal({
             />
           </div>
         </div>
+
+        {/* Organizer convenience: open the same DisqualifyDialog used
+            from the submissions page, scoped to this submission. */}
+        <DisqualifyDialog
+          open={disqualifyOpen}
+          onOpenChange={setDisqualifyOpen}
+          onSubmit={handleDisqualify}
+          isSubmitting={isDisqualifying}
+        />
       </div>
     </BoundlessSheet>
   );

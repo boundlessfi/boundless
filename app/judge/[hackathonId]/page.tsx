@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { ProgressRing } from '@/components/judge/ProgressRing';
 import { DeadlineBadge } from '@/components/judge/DeadlineBadge';
 import { HackathonBanner } from '@/components/judge/HackathonBanner';
+import { CountdownBanner } from '@/components/judge/CountdownBanner';
 import { useJudgeHackathon } from '@/hooks/judge/use-judge-queries';
 import type { JudgingCriterion } from '@/lib/api/hackathons/judging';
 import { cn } from '@/lib/utils';
@@ -98,6 +99,18 @@ function JudgeHackathon() {
           </div>
         </div>
       </HackathonBanner>
+
+      {/* Live countdown — only renders when within 48h. After deadline,
+          renders a "closed" state. */}
+      <CountdownBanner
+        deadline={data.judgingEnd}
+        hint={
+          data.totalSubmissions > 0
+            ? `${remaining} left in your queue`
+            : undefined
+        }
+        closedLabel='Judging is closed'
+      />
 
       {/* Progress + primary CTA */}
       <div className='grid gap-4 md:grid-cols-[auto_1fr]'>

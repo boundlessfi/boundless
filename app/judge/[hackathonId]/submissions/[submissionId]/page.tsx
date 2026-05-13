@@ -20,10 +20,13 @@ import {
   ShortcutDef,
 } from '@/components/judge/KeyboardShortcuts';
 import {
+  useJudgeHackathon,
   useJudgeQueueNeighbors,
   useJudgeSubmission,
   useSubmitJudgeScore,
 } from '@/hooks/judge/use-judge-queries';
+import { CountdownBanner } from '@/components/judge/CountdownBanner';
+import { getCountdown } from '@/components/judge/utils';
 import type {
   CriterionScoreRequest,
   JudgingCriterion,
@@ -67,6 +70,14 @@ function ScorePage() {
     hackathonId,
     submissionId
   );
+  // Pull the hackathon overview for the deadline. Same query is on the
+  // overview page, so when the judge navigates here from there this is
+  // a cache hit.
+  const { data: hackathonOverview } = useJudgeHackathon(hackathonId);
+  const judgingClosed = (() => {
+    if (!hackathonOverview?.judgingEnd) return false;
+    return getCountdown(hackathonOverview.judgingEnd).isPast;
+  })();
   // Cursor-style lookup so we never fetch the full queue. Powers the
   // "X of N" counter, J/K navigation, and auto-advance.
   const { data: neighbors } = useJudgeQueueNeighbors(hackathonId, submissionId);
@@ -260,6 +271,11 @@ function ScorePage() {
   if (isPending) return <SkeletonScoringPage />;
   if (isError || !data) return <UnavailableState hackathonId={hackathonId} />;
 
+  // Once judging closes, the page becomes read-only. Existing scores
+  // are still visible (organizer can override on the org side); the
+  // form is disabled.
+  const readOnly = judgingClosed;
+
   const { submission, participant, myScore } = data;
   const videoUrl = submission.videoUrl;
   const links = submission.links ?? [];
@@ -301,6 +317,14 @@ function ScorePage() {
           position={neighbors?.position ?? null}
         />
       )}
+
+      {/* Countdown / closed state. Hidden when judging is comfortably
+          in the future. Switches to a "Judging is closed" banner once
+          past the deadline. */}
+      <CountdownBanner
+        deadline={hackathonOverview?.judgingEnd}
+        hint='You can still see your scores, but new ratings are disabled.'
+      />
 
       <div className='grid gap-5 lg:grid-cols-[1.1fr_1fr]'>
         {/* Left column: context */}
@@ -496,6 +520,7 @@ function ScorePage() {
                       }
                       error={errors[key] ?? null}
                       inputId={`score-${key}`}
+                      disabled={readOnly}
                     />
                   );
                 })}
@@ -541,10 +566,13 @@ function ScorePage() {
 
             <Button
               onClick={submitOrError}
-              disabled={submit.isPending || criteria.length === 0}
-              className='bg-primary hover:bg-primary/90 text-primary-foreground mt-3 h-11 w-full text-sm font-semibold'
+              disabled={submit.isPending || criteria.length === 0 || readOnly}
+              className='bg-primary hover:bg-primary/90 text-primary-foreground mt-3 h-11 w-full text-sm font-semibold disabled:opacity-50'
+              title={readOnly ? 'Judging is closed' : undefined}
             >
-              {submit.isPending ? (
+              {readOnly ? (
+                'Judging closed'
+              ) : submit.isPending ? (
                 <>
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   {myScore ? 'Updating…' : 'Submitting…'}
