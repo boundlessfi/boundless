@@ -333,7 +333,6 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         hackathonSlugOrId={hackathonSlug}
-        teamMin={hackathon?.teamMin}
         teamMax={hackathon?.teamMax}
         initialData={team}
       />

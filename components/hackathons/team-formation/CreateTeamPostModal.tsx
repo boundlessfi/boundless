@@ -35,16 +35,13 @@ const roleSchema = z.object({
   skills: z.array(z.string()).optional(),
 });
 
-// Fallbacks match the backend's default when a hackathon hasn't pinned team size.
-const DEFAULT_TEAM_MIN = 1;
+// Fallback matches the backend's default when a hackathon hasn't pinned team size.
 const DEFAULT_TEAM_MAX = 10;
 
 interface CreateTeamPostModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hackathonSlugOrId: string;
-  /** Roles needed = teamMin - 1 (leader counts as one member). */
-  teamMin?: number;
   teamMax?: number;
   organizationId?: string;
   initialData?: TeamRecruitmentPost;
@@ -57,7 +54,6 @@ export function CreateTeamPostModal({
   open,
   onOpenChange,
   hackathonSlugOrId,
-  teamMin,
   teamMax,
   organizationId,
   initialData,
@@ -68,9 +64,9 @@ export function CreateTeamPostModal({
     autoFetch: false,
   });
 
-  const effectiveTeamMin = teamMin ?? DEFAULT_TEAM_MIN;
   const effectiveTeamMax = teamMax ?? DEFAULT_TEAM_MAX;
-  const minRoles = Math.max(0, effectiveTeamMin - 1);
+  // Roles are opt-in recruitment slots. Team size minimums are enforced at
+  // submission time once invites have filled the team.
   const maxRoles = Math.max(1, effectiveTeamMax - 1);
 
   const teamPostSchema = useMemo(
@@ -86,15 +82,9 @@ export function CreateTeamPostModal({
           .max(500, 'Description cannot exceed 500 characters'),
         lookingFor: z
           .array(roleSchema)
-          .min(
-            minRoles,
-            minRoles === 0
-              ? 'You can leave this empty to keep the team closed'
-              : `Add at least ${minRoles} role${minRoles === 1 ? '' : 's'} (the team needs ${effectiveTeamMin} member${effectiveTeamMin === 1 ? '' : 's'} including you)`
-          )
           .max(
             maxRoles,
-            `You can add at most ${maxRoles} role${maxRoles === 1 ? '' : 's'} (the team is capped at ${effectiveTeamMax} member${effectiveTeamMax === 1 ? '' : 's'} including you)`
+            `You can add at most ${maxRoles} open role${maxRoles === 1 ? '' : 's'} (the team is capped at ${effectiveTeamMax} member${effectiveTeamMax === 1 ? '' : 's'} including you)`
           ),
         contactMethod: z.enum([
           'email',
@@ -105,7 +95,7 @@ export function CreateTeamPostModal({
         ]),
         contactInfo: z.string().min(1, 'Contact info is required'),
       }),
-    [minRoles, maxRoles, effectiveTeamMin, effectiveTeamMax]
+    [maxRoles, effectiveTeamMax]
   );
 
   type TeamPostFormData = z.infer<typeof teamPostSchema>;
@@ -124,7 +114,7 @@ export function CreateTeamPostModal({
         initialData?.lookingFor.map(roleObj => ({
           role: typeof roleObj === 'string' ? roleObj : roleObj.role,
           skills: typeof roleObj === 'string' ? [] : roleObj.skills || [],
-        })) || (minRoles > 0 ? [{ role: '', skills: [] }] : []),
+        })) || [],
       contactMethod: initialData?.contactMethod || 'email',
       contactInfo: initialData?.contactInfo || '',
     },
@@ -256,12 +246,12 @@ export function CreateTeamPostModal({
           <div className='mb-8 flex items-center justify-between'>
             <div>
               <h2 className='text-2xl font-bold text-white'>
-                {isEditMode ? 'Edit Team Post' : 'Create Team Post'}
+                {isEditMode ? 'Edit Team' : 'Create Team'}
               </h2>
               <p className='mt-1 text-sm text-gray-500'>
                 {isEditMode
-                  ? 'Update your recruitment details'
-                  : 'Start your journey and find fellow builders'}
+                  ? 'Update your team details'
+                  : 'Form a team — invite people you know, or open roles to recruit'}
               </p>
             </div>
           </div>
@@ -352,14 +342,16 @@ export function CreateTeamPostModal({
                     <div className='flex items-center justify-between'>
                       <div>
                         <FormLabel className='text-xs font-bold tracking-[0.2em] text-gray-400 uppercase'>
-                          Roles Needed
+                          Open Roles (Optional)
                         </FormLabel>
                         <p className='mt-1 text-xs text-gray-500'>
-                          {minRoles === maxRoles
-                            ? `Add exactly ${minRoles} role${minRoles === 1 ? '' : 's'} — this hackathon's teams must have ${effectiveTeamMin} member${effectiveTeamMin === 1 ? '' : 's'} (you + ${minRoles}).`
-                            : minRoles === 0
-                              ? `Add up to ${maxRoles} role${maxRoles === 1 ? '' : 's'} — leave empty to keep the team closed. This hackathon caps teams at ${effectiveTeamMax} member${effectiveTeamMax === 1 ? '' : 's'} (you + ${maxRoles}).`
-                              : `Add ${minRoles}–${maxRoles} roles — this hackathon's teams have ${effectiveTeamMin}–${effectiveTeamMax} members (you + ${minRoles}–${maxRoles} others).`}
+                          Want others to find and join you? Add up to {maxRoles}{' '}
+                          open role{maxRoles === 1 ? '' : 's'} and your team
+                          will be visible to potential teammates. Already have
+                          your team? Skip this step — you can invite them
+                          directly after creating. This hackathon caps teams at{' '}
+                          {effectiveTeamMax} member
+                          {effectiveTeamMax === 1 ? '' : 's'} including you.
                         </p>
                       </div>
                       <BoundlessButton
@@ -377,10 +369,11 @@ export function CreateTeamPostModal({
 
                     {lookingFor.length === 0 && (
                       <div className='rounded-2xl border border-dashed border-white/10 bg-white/2 p-8 text-center text-sm text-gray-500'>
-                        No roles added. Click{' '}
+                        No open roles. Your team will be created as{' '}
+                        <span className='font-bold text-white'>private</span> —
+                        not listed for joiners. Click{' '}
                         <span className='font-bold text-white'>Add Role</span>{' '}
-                        if you want to open the team to joiners — otherwise
-                        leave it empty to keep the team closed.
+                        if you'd like to recruit teammates instead.
                       </div>
                     )}
 
@@ -390,7 +383,7 @@ export function CreateTeamPostModal({
                           key={roleIndex}
                           className='relative rounded-2xl border border-white/5 bg-white/2 p-6 transition-all hover:bg-white/4'
                         >
-                          {lookingFor.length > minRoles && (
+                          {lookingFor.length > 0 && (
                             <button
                               type='button'
                               onClick={() => removeRole(roleIndex)}
@@ -479,14 +472,14 @@ export function CreateTeamPostModal({
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className='focus:border-primary/20 h-12 border-white/5 bg-white/5 text-white'>
                               <SelectValue placeholder='Select method' />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent className='border-white/10 bg-[#0D0E10] text-white'>
+                          <SelectContent className='z-70 border-white/10 bg-[#0D0E10] text-white'>
                             <SelectItem value='email'>Email</SelectItem>
                             <SelectItem value='telegram'>Telegram</SelectItem>
                             <SelectItem value='discord'>Discord</SelectItem>
@@ -562,9 +555,9 @@ export function CreateTeamPostModal({
                     {isCreating || isUpdating ? (
                       <Loader2 className='h-4 w-4 animate-spin' />
                     ) : isEditMode ? (
-                      'Update Post'
+                      'Update Team'
                     ) : (
-                      'Finish & Post'
+                      'Create Team'
                     )}
                   </BoundlessButton>
                 )}

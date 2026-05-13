@@ -10,6 +10,12 @@ import { cn } from '@/lib/utils';
 import { useMarkdown } from '@/hooks/use-markdown';
 import SponsorsSection from '../../SponsorsSection';
 
+function getOrdinal(n: number) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 const Overview = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: hackathon } = useHackathon(slug);
@@ -247,8 +253,7 @@ const Overview = () => {
               </div>
 
               <h3 className='text-sm font-semibold text-gray-400'>
-                {tier.name ||
-                  (i === 0 ? '1st Place' : i === 1 ? '2nd Place' : '3rd Place')}
+                {tier.name || `${getOrdinal(i + 1)} Place`}
               </h3>
               <div className='my-2 flex items-baseline gap-1'>
                 <span className='text-3xl font-black text-white'>

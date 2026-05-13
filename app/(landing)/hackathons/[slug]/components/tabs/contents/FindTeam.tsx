@@ -286,7 +286,6 @@ const FindTeam = () => {
 
           <CreateTeamPostModal
             hackathonSlugOrId={slug}
-            teamMin={hackathon.teamMin}
             teamMax={hackathon.teamMax}
             open={isCreateModalOpen}
             onOpenChange={setIsCreateModalOpen}

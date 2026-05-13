@@ -162,14 +162,20 @@ const LINK_TYPES = [
 
 const OTHER_LINK_TYPES = ['demo', 'website', 'documentation', 'other'];
 
-const CATEGORIES = [
-  'Web Development',
-  'Mobile App',
-  'Blockchain',
-  'AI/ML',
-  'IoT',
-  'Game Development',
-  'Design',
+// Used when a hackathon has no configured categories (legacy data). Mirrors
+// the wizard's CategorySelection list so the dropdown stays usable.
+const FALLBACK_CATEGORIES = [
+  'DeFi',
+  'NFTs',
+  'DAOs',
+  'Layer 2',
+  'Cross-chain',
+  'Web3 Gaming',
+  'Social Tokens',
+  'Infrastructure',
+  'Privacy',
+  'Sustainability',
+  'Real World Assets',
   'Other',
 ];
 
@@ -212,6 +218,15 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   const requireGithub = currentHackathon?.requireGithub ?? false;
   const requireDemoVideo = currentHackathon?.requireDemoVideo ?? false;
   const requireOtherLinks = currentHackathon?.requireOtherLinks ?? false;
+
+  // Source the dropdown from the categories the organizer picked when creating
+  // this hackathon. If a hackathon has none configured (legacy data or empty
+  // save), fall back to the platform's standard category list so the dropdown
+  // is still usable.
+  const categoryOptions = useMemo(() => {
+    const list = currentHackathon?.categories ?? [];
+    return list.length > 0 ? list : FALLBACK_CATEGORIES;
+  }, [currentHackathon?.categories]);
 
   // participantType reaches us in mixed case across endpoints; normalize once.
   const rawParticipantType = currentHackathon?.participantType;
@@ -421,7 +436,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   const handleFillMockData = () => {
     const mockData = {
       projectName: 'AI-Powered Task Manager',
-      category: 'AI/ML',
+      category: categoryOptions[0],
       description:
         'An intelligent task management application that uses machine learning to prioritize tasks...',
       logo: '',
@@ -1167,7 +1182,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className='border-gray-700 bg-gray-800 text-white'>
-                      {CATEGORIES.map(category => (
+                      {categoryOptions.map(category => (
                         <SelectItem key={category} value={category}>
                           {category}
                         </SelectItem>

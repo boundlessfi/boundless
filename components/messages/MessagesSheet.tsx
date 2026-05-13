@@ -209,6 +209,12 @@ function ThreadView({
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
+  // Tracks the delivery state of optimistic messages by their temp client id.
+  // 'sending' shows the spinner, 'failed' shows a retry affordance. Confirmed
+  // messages have no entry (or are removed once the temp swaps to a real id).
+  const [messageStatus, setMessageStatus] = useState<
+    Record<string, 'sending' | 'failed'>
+  >({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastScrollBottomMessageId = useRef<string | null>(null);
 
@@ -276,28 +282,66 @@ function ThreadView({
     }
   }, [conversationId, nextCursor, loadingOlder]);
 
-  const handleSend = useCallback(async () => {
+  // Shared send path used by both first-time sends and retries. Keeps the
+  // optimistic message in place across attempts so the bubble's position is
+  // stable; only the status badge changes.
+  const performSend = useCallback(
+    async (clientId: string, messageBody: string) => {
+      setSendError(null);
+      setSending(true);
+      setMessageStatus(prev => ({ ...prev, [clientId]: 'sending' }));
+      try {
+        const sent = await sendMessage(conversationId, messageBody);
+        setMessages(prev => {
+          const withoutTemp = prev.filter(m => m.id !== clientId);
+          return withoutTemp.some(m => m.id === sent.id)
+            ? withoutTemp
+            : [...withoutTemp, sent];
+        });
+        setMessageStatus(prev => {
+          const next = { ...prev };
+          delete next[clientId];
+          return next;
+        });
+      } catch (e) {
+        setMessageStatus(prev => ({ ...prev, [clientId]: 'failed' }));
+        const msg = isApiError(e)
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : 'Failed to send message';
+        setSendError(msg);
+      } finally {
+        setSending(false);
+      }
+    },
+    [conversationId]
+  );
+
+  const handleSend = useCallback(() => {
     const trimmed = body.trim();
     if (!trimmed || sending || trimmed.length > MAX_BODY_LENGTH) return;
-    setSendError(null);
-    setSending(true);
-    try {
-      const sent = await sendMessage(conversationId, trimmed);
-      setMessages(prev =>
-        prev.some(m => m.id === sent.id) ? prev : [...prev, sent]
-      );
-      setBody('');
-    } catch (e) {
-      const msg = isApiError(e)
-        ? e.message
-        : e instanceof Error
-          ? e.message
-          : 'Failed to send message';
-      setSendError(msg);
-    } finally {
-      setSending(false);
-    }
-  }, [body, conversationId, sending]);
+    if (!currentUserId) return;
+
+    const clientId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const optimistic: Message = {
+      id: clientId,
+      conversationId,
+      senderId: currentUserId,
+      body: trimmed,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimistic]);
+    setBody('');
+    void performSend(clientId, trimmed);
+  }, [body, conversationId, sending, currentUserId, performSend]);
+
+  const retryMessage = useCallback(
+    (message: Message) => {
+      void performSend(message.id, message.body);
+    },
+    [performSend]
+  );
 
   if (loading && !conversation) {
     return (
@@ -367,6 +411,8 @@ function ThreadView({
                 key={msg.id}
                 message={msg}
                 isOwn={msg.senderId === currentUserId}
+                status={messageStatus[msg.id]}
+                onRetry={() => retryMessage(msg)}
               />
             ))}
             <div ref={messagesEndRef} />
@@ -417,10 +463,15 @@ function ThreadView({
 function MessageBubble({
   message,
   isOwn,
+  status,
+  onRetry,
 }: {
   message: Message;
   isOwn: boolean;
+  status?: 'sending' | 'failed';
+  onRetry?: () => void;
 }) {
+  const isFailed = status === 'failed';
   return (
     <div
       className={cn(
@@ -433,14 +484,32 @@ function MessageBubble({
           'rounded-2xl px-3 py-2 text-sm',
           isOwn
             ? 'bg-primary text-primary-foreground'
-            : 'bg-zinc-800 text-white'
+            : 'bg-zinc-800 text-white',
+          isFailed && 'opacity-60'
         )}
       >
         {message.body}
       </div>
-      <span className='text-[10px] text-zinc-500'>
-        {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
-      </span>
+      {isOwn && status === 'sending' ? (
+        <span className='flex items-center gap-1 text-[10px] text-zinc-500'>
+          <Loader2 className='h-2.5 w-2.5 animate-spin' />
+          Sending…
+        </span>
+      ) : isOwn && isFailed ? (
+        <button
+          type='button'
+          onClick={onRetry}
+          className='text-[10px] font-medium text-red-400 hover:text-red-300'
+        >
+          Not sent · Tap to retry
+        </button>
+      ) : (
+        <span className='text-[10px] text-zinc-500'>
+          {formatDistanceToNow(new Date(message.createdAt), {
+            addSuffix: true,
+          })}
+        </span>
+      )}
     </div>
   );
 }

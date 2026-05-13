@@ -63,29 +63,31 @@ const TeamCard = ({ team, onJoin, onMessageLeader }: TeamCardProps) => {
           </div>
         </div>
 
-        <div className='flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap'>
-          {onMessageLeader && team.leader?.id && (
+        {isOpen && (
+          <div className='flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap'>
+            {onMessageLeader && team.leader?.id && (
+              <BoundlessButton
+                variant='outline'
+                size='sm'
+                className='h-11 shrink-0 rounded-xl border-white/10 bg-white/5 px-4 text-sm font-bold text-white transition-all hover:bg-white/10'
+                onClick={e => onMessageLeader(team, e.currentTarget)}
+                aria-label='Message team leader'
+              >
+                <MessageCircle className='mr-2 h-4 w-4' />
+                Message
+              </BoundlessButton>
+            )}
             <BoundlessButton
               variant='outline'
               size='sm'
-              className='h-11 shrink-0 rounded-xl border-white/10 bg-white/5 px-4 text-sm font-bold text-white transition-all hover:bg-white/10'
-              onClick={e => onMessageLeader(team, e.currentTarget)}
-              aria-label='Message team leader'
+              className='border-primary/20 text-primary hover:bg-primary h-11 w-full rounded-xl bg-[#232B20]/30 px-6 text-sm font-bold transition-all hover:text-black sm:w-auto'
+              onClick={() => onJoin?.(team)}
+              disabled={memberCount >= maxSize}
             >
-              <MessageCircle className='mr-2 h-4 w-4' />
-              Message
+              Join Team
             </BoundlessButton>
-          )}
-          <BoundlessButton
-            variant='outline'
-            size='sm'
-            className='border-primary/20 text-primary hover:bg-primary h-11 w-full rounded-xl bg-[#232B20]/30 px-6 text-sm font-bold transition-all hover:text-black sm:w-auto'
-            onClick={() => onJoin?.(team)}
-            disabled={!isOpen || memberCount >= maxSize}
-          >
-            Join Team
-          </BoundlessButton>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Description */}
