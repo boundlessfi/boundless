@@ -9,7 +9,10 @@ import {
   Crown,
   ShieldCheck,
   Briefcase,
+  UserMinus,
+  Trash2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Team, TeamMember } from '@/lib/api/hackathons/teams';
 import {
   useHackathon,
@@ -18,6 +21,8 @@ import {
   useInvitationActions,
   useTransferLeadership,
   useRefreshHackathon,
+  useRemoveTeamMember,
+  useDisbandTeam,
 } from '@/hooks/hackathon/use-hackathon-queries';
 import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import BasicAvatar from '@/components/avatars/BasicAvatar';
@@ -48,6 +53,8 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
   const leaveMutation = useLeaveTeam(hackathonSlug);
   const inviteMutation = useInviteToTeam(hackathonSlug);
   const transferMutation = useTransferLeadership(hackathonSlug);
+  const removeMemberMutation = useRemoveTeamMember(hackathonSlug);
+  const disbandMutation = useDisbandTeam(hackathonSlug);
   const refresh = useRefreshHackathon(hackathonSlug);
   const { withAuth } = useRequireAuthForAction();
 
@@ -60,6 +67,11 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [isDisbandDialogOpen, setIsDisbandDialogOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [selectedMember, setSelectedMember] = useState<{
     id: string;
     name: string;
@@ -112,6 +124,37 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
     setSelectedMember(null);
   };
 
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
+    try {
+      await removeMemberMutation.mutateAsync({
+        teamId: team.id,
+        userId: memberToRemove.id,
+      });
+      toast.success(`${memberToRemove.name} has been removed from the team`);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to remove member';
+      toast.error(errorMessage);
+    } finally {
+      setMemberToRemove(null);
+    }
+  };
+
+  const handleDisband = async () => {
+    try {
+      await disbandMutation.mutateAsync(team.id);
+      toast.success('Team disbanded');
+      setIsDisbandDialogOpen(false);
+    } catch (err) {
+      // Backend refuses with a clear message if there's an existing
+      // submission — surface it verbatim instead of a generic toast.
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to disband team';
+      toast.error(errorMessage);
+    }
+  };
+
   return (
     <div className='animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500'>
       {/* Team Header */}
@@ -153,7 +196,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
           </div>
         </div>
 
-        <div className='flex shrink-0 gap-3'>
+        <div className='flex shrink-0 flex-wrap gap-3'>
           {isLeader && (
             <BoundlessButton
               variant='outline'
@@ -161,6 +204,16 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
               onClick={() => setIsEditModalOpen(true)}
             >
               <Settings className='mr-2 h-4 w-4' /> Edit Team
+            </BoundlessButton>
+          )}
+          {isLeader && (
+            <BoundlessButton
+              variant='outline'
+              className='h-12 rounded-xl border-red-500/20 px-6 font-bold text-red-500 hover:bg-red-500/10'
+              onClick={() => setIsDisbandDialogOpen(true)}
+              loading={disbandMutation.isPending}
+            >
+              <Trash2 className='mr-2 h-4 w-4' /> Disband Team
             </BoundlessButton>
           )}
           <BoundlessButton
@@ -289,21 +342,41 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
                       </div>
                     </div>
                     {isLeader && (
-                      <BoundlessButton
-                        variant='outline'
-                        size='sm'
-                        className='hover:text-primary mt-2 h-9 w-full border-white/5 text-[10px] font-black tracking-widest text-gray-400 uppercase sm:opacity-0 sm:group-hover:opacity-100'
-                        onClick={() => {
-                          setSelectedMember({
-                            id: member.userId,
-                            name: member.name,
-                          });
-                          setIsTransferDialogOpen(true);
-                        }}
-                        loading={transferMutation.isPending}
-                      >
-                        Transfer Lead
-                      </BoundlessButton>
+                      <div className='mt-2 flex w-full flex-col gap-2 sm:opacity-0 sm:group-hover:opacity-100'>
+                        <BoundlessButton
+                          variant='outline'
+                          size='sm'
+                          className='hover:text-primary h-9 w-full border-white/5 text-[10px] font-black tracking-widest text-gray-400 uppercase'
+                          onClick={() => {
+                            setSelectedMember({
+                              id: member.userId,
+                              name: member.name,
+                            });
+                            setIsTransferDialogOpen(true);
+                          }}
+                          loading={transferMutation.isPending}
+                        >
+                          Transfer Lead
+                        </BoundlessButton>
+                        <BoundlessButton
+                          variant='outline'
+                          size='sm'
+                          className='h-9 w-full border-red-500/10 text-[10px] font-black tracking-widest text-red-400 uppercase hover:bg-red-500/10 hover:text-red-300'
+                          onClick={() =>
+                            setMemberToRemove({
+                              id: member.userId,
+                              name: member.name,
+                            })
+                          }
+                          loading={
+                            removeMemberMutation.isPending &&
+                            removeMemberMutation.variables?.userId ===
+                              member.userId
+                          }
+                        >
+                          <UserMinus className='mr-1 h-3 w-3' /> Remove
+                        </BoundlessButton>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -378,6 +451,71 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
               className='bg-primary hover:bg-primary/90 text-black'
             >
               Transfer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!memberToRemove}
+        onOpenChange={open => {
+          if (!open) setMemberToRemove(null);
+        }}
+      >
+        <AlertDialogContent className='bg-background-card border-white/10 text-white'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Member</AlertDialogTitle>
+            <AlertDialogDescription className='text-gray-400'>
+              Remove{' '}
+              <span className='font-bold text-white'>
+                {memberToRemove?.name}
+              </span>{' '}
+              from the team? They'll be notified and can be re-invited later.
+              Any submission you've already made keeps its current member list —
+              this only affects the live roster.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className='border-white/5 bg-white/5 text-white hover:bg-white/10'>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveMember}
+              className='bg-red-500 text-white hover:bg-red-600'
+            >
+              Remove Member
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isDisbandDialogOpen}
+        onOpenChange={setIsDisbandDialogOpen}
+      >
+        <AlertDialogContent className='bg-background-card border-white/10 text-white'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disband Team</AlertDialogTitle>
+            <AlertDialogDescription className='text-gray-400'>
+              Permanently disband{' '}
+              <span className='font-bold text-white'>{team.teamName}</span>? All
+              members will be notified and pending invitations will be
+              cancelled. If your team has already submitted a project, the
+              backend will refuse — withdraw the submission first.
+              <br />
+              <br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className='border-white/5 bg-white/5 text-white hover:bg-white/10'>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDisband}
+              className='bg-red-500 text-white hover:bg-red-600'
+            >
+              Disband Team
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

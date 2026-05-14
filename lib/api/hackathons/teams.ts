@@ -213,6 +213,32 @@ export const leaveTeam = async (
 };
 
 /**
+ * Remove a member from the team (leader only).
+ */
+export const removeTeamMember = async (
+  id: string,
+  teamId: string,
+  userId: string
+): Promise<ApiResponse<{ message: string }>> => {
+  const res = await api.delete(
+    `/hackathons/${id}/teams/${teamId}/members/${userId}`
+  );
+  return res.data;
+};
+
+/**
+ * Disband a team (leader only). Refused server-side if the team has an
+ * existing submission.
+ */
+export const disbandTeam = async (
+  id: string,
+  teamId: string
+): Promise<ApiResponse<{ message: string }>> => {
+  const res = await api.delete(`/hackathons/${id}/teams/${teamId}`);
+  return res.data;
+};
+
+/**
  * Get current user's team for a hackathon
  */
 export const getMyTeam = async (

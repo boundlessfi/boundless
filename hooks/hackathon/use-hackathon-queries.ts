@@ -26,6 +26,8 @@ import {
   updateTeam,
   joinTeam,
   leaveTeam,
+  removeTeamMember,
+  disbandTeam,
   getMyTeam,
   inviteToTeam,
   getMyInvitations,
@@ -418,6 +420,40 @@ export function useLeaveTeam(slug: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (teamId: string) => leaveTeam(slug, teamId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: hackathonKeys.myTeam(slug) });
+      queryClient.invalidateQueries({
+        queryKey: hackathonKeys.teamsBase(slug),
+      });
+    },
+  });
+}
+
+/**
+ * Mutation for the team leader to remove a specific member.
+ */
+export function useRemoveTeamMember(slug: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
+      removeTeamMember(slug, teamId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: hackathonKeys.myTeam(slug) });
+      queryClient.invalidateQueries({
+        queryKey: hackathonKeys.teamsBase(slug),
+      });
+    },
+  });
+}
+
+/**
+ * Mutation for the team leader to disband the team. Backend refuses if
+ * the team has an existing submission.
+ */
+export function useDisbandTeam(slug: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (teamId: string) => disbandTeam(slug, teamId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: hackathonKeys.myTeam(slug) });
       queryClient.invalidateQueries({
