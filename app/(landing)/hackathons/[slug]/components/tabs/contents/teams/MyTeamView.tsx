@@ -11,9 +11,14 @@ import {
   Briefcase,
   UserMinus,
   Trash2,
+  Mail,
+  RefreshCw,
+  Clock,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Team, TeamMember } from '@/lib/api/hackathons/teams';
+import type { TeamInvitation } from '@/lib/api/hackathons';
 import {
   useHackathon,
   useLeaveTeam,
@@ -23,6 +28,7 @@ import {
   useRefreshHackathon,
   useRemoveTeamMember,
   useDisbandTeam,
+  useTeamInvitations,
 } from '@/hooks/hackathon/use-hackathon-queries';
 import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import BasicAvatar from '@/components/avatars/BasicAvatar';
@@ -57,6 +63,21 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
   const disbandMutation = useDisbandTeam(hackathonSlug);
   const refresh = useRefreshHackathon(hackathonSlug);
   const { withAuth } = useRequireAuthForAction();
+
+  // Pending sent-invitations list (leader-only). The endpoint itself is
+  // authz'd to leader; we still gate the query to avoid the 403 noise on
+  // non-leader views.
+  const { data: invitationsData, isLoading: isLoadingInvitations } =
+    useTeamInvitations(hackathonSlug, team.id, 'pending', isLeader);
+  // Backend sometimes returns the wrapped { invitations, total } shape;
+  // pull defensively.
+  const pendingInvitations: TeamInvitation[] = Array.isArray(
+    (invitationsData as { invitations?: TeamInvitation[] } | undefined)
+      ?.invitations
+  )
+    ? ((invitationsData as { invitations: TeamInvitation[] }).invitations ?? [])
+    : [];
+  const { cancelAction } = useInvitationActions(hackathonSlug);
 
   const [inviteIdentifier, setInviteIdentifier] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
@@ -285,6 +306,188 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
             </div>
           </div>
         )}
+
+        {/* Pending Invitations — leader-only, only renders when there are
+            actually pending invites so we don't add empty noise to teams
+            with no outstanding asks. */}
+        {isLeader &&
+          (isLoadingInvitations || pendingInvitations.length > 0) && (
+            <div className='bg-background-card rounded-3xl border border-white/5 p-6 md:p-8'>
+              <div className='mb-5 flex items-center justify-between gap-4'>
+                <h3 className='flex items-center gap-2 text-lg font-bold text-white'>
+                  <Mail className='text-primary h-5 w-5' />
+                  Pending Invitations
+                  {pendingInvitations.length > 0 && (
+                    <span className='bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-black'>
+                      {pendingInvitations.length}
+                    </span>
+                  )}
+                </h3>
+              </div>
+
+              {isLoadingInvitations && pendingInvitations.length === 0 ? (
+                <div className='py-6 text-center text-sm text-gray-500'>
+                  Loading...
+                </div>
+              ) : (
+                <div className='space-y-3'>
+                  {pendingInvitations.map(inv => {
+                    // Backend returns invitee as a flat { id, name, username,
+                    // email, image } shape (not the nested Participant the FE
+                    // type claims). For unregistered invitees inviteeId is
+                    // null and the email lives on the invitation row itself.
+                    const invitee = inv.invitee as
+                      | {
+                          id?: string;
+                          name?: string | null;
+                          username?: string | null;
+                          email?: string | null;
+                        }
+                      | null
+                      | undefined;
+                    const inviteeEmail =
+                      (inv as unknown as { inviteeEmail?: string | null })
+                        .inviteeEmail ??
+                      invitee?.email ??
+                      null;
+                    const displayName =
+                      invitee?.name ||
+                      invitee?.username ||
+                      inviteeEmail ||
+                      'Invitee';
+                    const displayEmail =
+                      inviteeEmail && inviteeEmail !== displayName
+                        ? inviteeEmail
+                        : null;
+                    // Resend uses the email when we have one (works for both
+                    // registered and unregistered targets); falls back to id
+                    // for the legacy id-only case.
+                    const resendIdentifier =
+                      inviteeEmail || invitee?.username || invitee?.id || null;
+                    const expiresAt = inv.expiresAt
+                      ? new Date(inv.expiresAt)
+                      : null;
+                    const expiresInDays = expiresAt
+                      ? Math.max(
+                          0,
+                          Math.ceil(
+                            (expiresAt.getTime() - Date.now()) /
+                              (1000 * 60 * 60 * 24)
+                          )
+                        )
+                      : null;
+                    const isExpiringSoon =
+                      expiresInDays !== null && expiresInDays <= 1;
+
+                    const resending =
+                      inviteMutation.isPending &&
+                      inviteMutation.variables?.inviteeIdentifier ===
+                        resendIdentifier;
+                    const cancelling =
+                      cancelAction.isPending &&
+                      cancelAction.variables?.inviteId === inv.id;
+
+                    return (
+                      <div
+                        key={inv.id}
+                        className='flex flex-col gap-3 rounded-xl border border-white/5 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between'
+                      >
+                        <div className='min-w-0 flex-1'>
+                          <p className='truncate text-sm font-bold text-white'>
+                            {displayName}
+                          </p>
+                          {displayEmail && (
+                            <p className='truncate text-xs text-gray-500'>
+                              {displayEmail}
+                            </p>
+                          )}
+                          <div className='mt-1 flex items-center gap-1.5 text-[11px] text-gray-500'>
+                            <Clock
+                              className={`h-3 w-3 ${isExpiringSoon ? 'text-amber-400' : ''}`}
+                            />
+                            <span
+                              className={
+                                isExpiringSoon ? 'text-amber-400' : undefined
+                              }
+                            >
+                              {expiresInDays === null
+                                ? 'No expiry set'
+                                : expiresInDays === 0
+                                  ? 'Expires today'
+                                  : expiresInDays === 1
+                                    ? 'Expires tomorrow'
+                                    : `Expires in ${expiresInDays} days`}
+                            </span>
+                            {!invitee?.id && inviteeEmail && (
+                              <span className='ml-2 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-300'>
+                                Awaiting signup
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className='flex items-center gap-2'>
+                          <BoundlessButton
+                            variant='outline'
+                            size='sm'
+                            className='gap-1 border-white/10 text-xs text-gray-300 hover:text-white'
+                            disabled={!resendIdentifier || resending}
+                            loading={resending}
+                            onClick={async () => {
+                              if (!resendIdentifier) return;
+                              try {
+                                await inviteMutation.mutateAsync({
+                                  teamId: team.id,
+                                  inviteeIdentifier: resendIdentifier,
+                                  message: inv.message ?? undefined,
+                                });
+                                toast.success(
+                                  `Invitation re-sent to ${displayName}`
+                                );
+                              } catch (err) {
+                                toast.error(
+                                  err instanceof Error
+                                    ? err.message
+                                    : 'Failed to resend invitation'
+                                );
+                              }
+                            }}
+                          >
+                            <RefreshCw className='h-3 w-3' />
+                            Resend
+                          </BoundlessButton>
+                          <BoundlessButton
+                            variant='outline'
+                            size='sm'
+                            className='gap-1 border-red-500/10 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300'
+                            disabled={cancelling}
+                            loading={cancelling}
+                            onClick={async () => {
+                              try {
+                                await cancelAction.mutateAsync({
+                                  teamId: team.id,
+                                  inviteId: inv.id,
+                                });
+                                toast.success('Invitation cancelled');
+                              } catch (err) {
+                                toast.error(
+                                  err instanceof Error
+                                    ? err.message
+                                    : 'Failed to cancel invitation'
+                                );
+                              }
+                            }}
+                          >
+                            <X className='h-3 w-3' />
+                            Cancel
+                          </BoundlessButton>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
         {/* Member list - Full Width */}
         <div className='space-y-6'>
