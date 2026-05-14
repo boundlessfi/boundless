@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
+const REDIRECT_DELAY_MS = 1500;
+
 const AcceptTeamInvitationPage = () => {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -37,7 +39,7 @@ const AcceptTeamInvitationPage = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successTeamName, setSuccessTeamName] = useState<string>('');
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [successHackathonName, setSuccessHackathonName] = useState<string>('');
   const [autoEnrolled, setAutoEnrolled] = useState(false);
   const [showAcceptButton, setShowAcceptButton] = useState(false);
@@ -48,21 +50,23 @@ const AcceptTeamInvitationPage = () => {
       return;
     }
 
-    // If user is authenticated, show accept button
     if (isAuthenticated && !authLoading) {
       setShowAcceptButton(true);
     }
 
-    // If user is not authenticated and not loading, redirect to auth
     if (!isAuthenticated && !authLoading) {
       redirectToAuth();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authLoading, invitationToken]);
 
-  const redirectToAuth = () => {
-    const redirectUrl = `/hackathons/${hackathonSlug}/team-invitations/${invitationToken}/accept`;
-    const authUrl = `/auth?mode=signin&redirect=${encodeURIComponent(redirectUrl)}`;
-    router.push(authUrl);
+  const redirectToAuth = (mode: 'signin' | 'signup' = 'signin') => {
+    // The rest of the app uses `callbackUrl`, not `redirect`. Match it so
+    // the auth page actually honors where we want to send the user back.
+    const callbackUrl = `/hackathons/${hackathonSlug}/team-invitations/${invitationToken}/accept`;
+    router.push(
+      `/auth?mode=${mode}&callbackUrl=${encodeURIComponent(callbackUrl)}`
+    );
   };
 
   const handleAcceptInvitation = async () => {
@@ -70,6 +74,7 @@ const AcceptTeamInvitationPage = () => {
 
     setIsProcessing(true);
     setError(null);
+    setErrorStatus(null);
 
     try {
       const response = await acceptTeamInvitation(
@@ -78,39 +83,55 @@ const AcceptTeamInvitationPage = () => {
       );
 
       if (response.success) {
-        setSuccessTeamName(response.data?.teamId || 'the team');
-        setSuccessHackathonName(response.data?.hackathon?.name || '');
+        const hackathonName =
+          response.data?.hackathon?.name ||
+          response.data?.invitation?.hackathon?.name ||
+          '';
+        setSuccessHackathonName(hackathonName);
         setAutoEnrolled(!!response.data?.autoEnrolled);
-        // Use the slug from the response if available, otherwise go to hackathons list
-        const finalSlug = response.data?.invitation?.hackathon?.slug;
+
         toast.success(
-          response.data?.autoEnrolled
-            ? `Joined ${response.data?.hackathon?.name ?? 'the hackathon'} and the team!`
+          response.data?.autoEnrolled && hackathonName
+            ? `Joined ${hackathonName} and the team!`
             : 'Successfully joined the team!'
         );
-        setTimeout(() => {
-          if (finalSlug) {
-            router.push(`/hackathons/${finalSlug}?tab=team-formation`);
-          } else {
-            router.push('/hackathons');
-          }
-        }, 2000);
-      }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Failed to accept invitation';
-      setError(errorMessage);
 
-      if (err?.status === 403) {
-        if (errorMessage.includes('different email address')) {
+        // Prefer the slug from the response, fall back to the slug in the
+        // URL (we know it's correct), then finally the hackathons list.
+        const finalSlug =
+          response.data?.invitation?.hackathon?.slug || hackathonSlug;
+        setTimeout(() => {
+          router.push(
+            finalSlug
+              ? `/hackathons/${finalSlug}?tab=team-formation`
+              : '/hackathons'
+          );
+        }, REDIRECT_DELAY_MS);
+      }
+    } catch (err: unknown) {
+      const errorObj = err as {
+        message?: string;
+        status?: number;
+        response?: { status?: number };
+      };
+      const errorMessage = errorObj?.message || 'Failed to accept invitation';
+      const status = errorObj?.status ?? errorObj?.response?.status ?? null;
+      setError(errorMessage);
+      setErrorStatus(status);
+
+      // Status-specific toasts. The error card below has the full copy and
+      // the right action button — toast is a quick attention grab.
+      if (status === 403) {
+        if (errorMessage.toLowerCase().includes('different email')) {
           toast.error('This invitation was sent to a different email address');
         } else {
           toast.error('Authentication required');
           redirectToAuth();
         }
-      } else if (err?.status === 404) {
+      } else if (status === 404) {
         toast.error('Invitation not found or has expired');
-      } else if (err?.status === 409) {
-        toast.error('You are already a member of this team');
+      } else if (status === 409) {
+        toast.error("You're already on this team");
       } else {
         toast.error(errorMessage);
       }
@@ -137,7 +158,7 @@ const AcceptTeamInvitationPage = () => {
     );
   }
 
-  if (showAcceptButton && !error && !successTeamName) {
+  if (showAcceptButton && !error && !successHackathonName) {
     return (
       <div className='bg-background flex min-h-screen items-center justify-center p-4'>
         <Card className='border-border bg-card w-full max-w-md shadow-lg'>
@@ -194,14 +215,21 @@ const AcceptTeamInvitationPage = () => {
   }
 
   if (error && !isProcessing) {
-    const isWrongEmail = error.includes('different email address');
-    const isAlreadyMember = error.includes('already a member');
+    const isWrongEmail =
+      errorStatus === 403 && error.toLowerCase().includes('different email');
+    const isAlreadyMember =
+      errorStatus === 409 || error.toLowerCase().includes('already');
+    const isNotFound = errorStatus === 404;
 
     return (
       <div className='bg-background flex min-h-screen items-center justify-center p-4'>
         <Card className='border-border bg-card w-full max-w-md shadow-lg'>
           <CardHeader className='text-center'>
-            <div className='bg-destructive/10 mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full'>
+            <div
+              className={`mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full ${
+                isAlreadyMember ? 'bg-primary/10' : 'bg-destructive/10'
+              }`}
+            >
               {isAlreadyMember ? (
                 <CheckCircle2 className='text-primary h-10 w-10' />
               ) : (
@@ -209,7 +237,13 @@ const AcceptTeamInvitationPage = () => {
               )}
             </div>
             <CardTitle className='text-2xl'>
-              {isAlreadyMember ? 'Already a Member' : 'Unable to Join'}
+              {isAlreadyMember
+                ? "You're already on this team"
+                : isNotFound
+                  ? 'Invitation not found'
+                  : isWrongEmail
+                    ? 'Wrong account'
+                    : 'Unable to Join'}
             </CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
@@ -217,70 +251,94 @@ const AcceptTeamInvitationPage = () => {
             {isWrongEmail && (
               <Alert variant='destructive'>
                 <Mail className='h-4 w-4' />
-                <AlertTitle>Wrong Account</AlertTitle>
+                <AlertTitle>Sign in with the invited email</AlertTitle>
                 <AlertDescription>
-                  Please sign in with the email address this invitation was sent
-                  to.
+                  This invitation was sent to a different email address than the
+                  one you're signed in with. Sign out, then sign back in with
+                  the email the invitation was sent to.
+                </AlertDescription>
+              </Alert>
+            )}
+            {isNotFound && (
+              <Alert variant='destructive'>
+                <AlertCircle className='h-4 w-4' />
+                <AlertTitle>Expired or revoked</AlertTitle>
+                <AlertDescription>
+                  Invitations expire after 7 days. Ask the team leader to send
+                  you a fresh one.
                 </AlertDescription>
               </Alert>
             )}
           </CardContent>
           <CardFooter className='flex flex-col gap-3'>
-            {isWrongEmail ? (
-              <>
-                <Button
-                  className='w-full'
-                  onClick={() => {
-                    const redirectUrl = `/hackathons/${hackathonSlug}/team-invitations/${invitationToken}/accept`;
-                    router.push(
-                      `/auth?mode=signup&redirect=${encodeURIComponent(redirectUrl)}`
-                    );
-                  }}
-                >
-                  Switch Account
-                </Button>
-                <Button
-                  variant='outline'
-                  className='w-full'
-                  onClick={() => router.push('/hackathons')}
-                >
-                  Back to Hackathons
-                </Button>
-              </>
-            ) : (
+            {isWrongEmail && (
+              // Signin (not signup) — they already have an account, they
+              // just need to switch to the right one.
               <Button
                 className='w-full'
-                onClick={() => router.push('/hackathons')}
+                onClick={() => redirectToAuth('signin')}
               >
-                Back to Hackathons
+                Switch Account
               </Button>
             )}
+            {isAlreadyMember && (
+              <Button
+                className='w-full'
+                onClick={() =>
+                  router.push(`/hackathons/${hackathonSlug}?tab=team-formation`)
+                }
+              >
+                View Team
+              </Button>
+            )}
+            <Button
+              variant={isWrongEmail || isAlreadyMember ? 'outline' : 'default'}
+              className='w-full'
+              onClick={() => router.push(`/hackathons/${hackathonSlug}`)}
+            >
+              Back to Hackathon
+            </Button>
           </CardFooter>
         </Card>
       </div>
     );
   }
 
-  if (successTeamName) {
+  if (successHackathonName || (!error && !showAcceptButton && !authLoading)) {
+    // Render the success card if we got a hackathon name back, or as a
+    // generic fallback if no other state matches (defensive — should be
+    // rare since the auth/error/accept-button branches above cover most
+    // paths, but stops the page rendering blank if response shape shifts).
+    const showingSuccess = !!successHackathonName;
     return (
       <div className='bg-background flex min-h-screen items-center justify-center p-4'>
         <Card className='border-border bg-card w-full max-w-md shadow-lg'>
           <CardHeader className='text-center'>
             <div className='bg-primary/10 mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full'>
-              <CheckCircle2 className='text-primary h-10 w-10' />
+              {showingSuccess ? (
+                <CheckCircle2 className='text-primary h-10 w-10' />
+              ) : (
+                <Loader2 className='text-primary h-10 w-10 animate-spin' />
+              )}
             </div>
-            <CardTitle className='text-2xl'>Welcome!</CardTitle>
+            <CardTitle className='text-2xl'>
+              {showingSuccess ? 'Welcome!' : 'Loading...'}
+            </CardTitle>
             <CardDescription>
-              {autoEnrolled && successHackathonName
-                ? `You've joined ${successHackathonName} and ${successTeamName}. Redirecting...`
-                : `You've successfully joined ${successTeamName}. Redirecting...`}
+              {showingSuccess
+                ? autoEnrolled
+                  ? `You've joined ${successHackathonName} and the team. Redirecting...`
+                  : `You've successfully joined the team in ${successHackathonName}. Redirecting...`
+                : 'Preparing your invitation.'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className='bg-secondary h-1 w-full overflow-hidden rounded-full'>
-              <div className='bg-primary h-full w-full animate-[loading_2s_ease-in-out]' />
-            </div>
-          </CardContent>
+          {showingSuccess && (
+            <CardContent>
+              <div className='bg-secondary h-1 w-full overflow-hidden rounded-full'>
+                <div className='bg-primary h-full w-full animate-[loading_1.5s_ease-in-out]' />
+              </div>
+            </CardContent>
+          )}
         </Card>
       </div>
     );
