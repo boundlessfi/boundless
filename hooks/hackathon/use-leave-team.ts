@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { leaveHackathonTeam } from '@/lib/api/hackathons';
+import { hackathonKeys } from '@/hooks/hackathon/use-hackathon-queries';
 
 interface UseLeaveTeamOptions {
   hackathonSlugOrId: string;
@@ -19,6 +21,7 @@ export function useLeaveTeam({
   onSuccess,
 }: UseLeaveTeamOptions) {
   const { isAuthenticated } = useAuthStatus();
+  const queryClient = useQueryClient();
   const [isLeaving, setIsLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
 
@@ -45,19 +48,34 @@ export function useLeaveTeam({
 
       if (response.success) {
         toast.success('Successfully left the team');
+        // Refresh every consumer of myTeam (sidebar, submission form, MyTeamView)
+        // and the team-list pages so they reflect the change without a reload.
+        queryClient.invalidateQueries({
+          queryKey: hackathonKeys.myTeam(hackathonSlugOrId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: hackathonKeys.teamsBase(hackathonSlugOrId),
+        });
         onSuccess?.();
       } else {
         throw new Error(response.message || 'Failed to leave team');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err.response?.data?.message || err.message || 'Failed to leave team';
+        err instanceof Error ? err.message : 'Failed to leave team';
       setLeaveError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setIsLeaving(false);
     }
-  }, [hackathonSlugOrId, teamId, organizationId, isAuthenticated, onSuccess]);
+  }, [
+    hackathonSlugOrId,
+    teamId,
+    organizationId,
+    isAuthenticated,
+    onSuccess,
+    queryClient,
+  ]);
 
   return {
     leaveTeam,

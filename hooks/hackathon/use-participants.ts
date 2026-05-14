@@ -78,10 +78,11 @@ export function useParticipants() {
         });
       }
 
-      // Add members
+      // Add members. Backend always returns TeamMember objects (the old
+      // string-id arm of the type was removed), so we read userId directly.
       if (Array.isArray(team.members)) {
-        team.members.forEach((member: any) => {
-          const mUserId = typeof member === 'string' ? member : member.userId;
+        team.members.forEach(member => {
+          const mUserId = member.userId;
           if (mUserId && !map.has(mUserId)) {
             map.set(mUserId, {
               teamId: team.id,

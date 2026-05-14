@@ -36,7 +36,10 @@ export interface Team {
     username: string;
     image?: string;
   };
-  members: string[] | TeamMember[]; // Backend returns IDs or full objects depending on endpoint
+  // Backend always returns full TeamMember objects via the
+  // TransformResponseInterceptor. The historical `string[]` arm of this
+  // union was for an old endpoint that no longer exists.
+  members: TeamMember[];
   memberCount: number;
   maxSize: number;
   lookingFor: LookingForRole[];
