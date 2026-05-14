@@ -8,9 +8,11 @@ import { authClient } from '@/lib/auth-client';
 const SignupWrapper = ({
   setLoadingState,
   invitation,
+  defaultEmail,
 }: {
   setLoadingState: (isLoading: boolean) => void;
   invitation?: string | null;
+  defaultEmail?: string | null;
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastMethod, setLastMethod] = useState<string | null>(null);
@@ -67,6 +69,7 @@ const SignupWrapper = ({
     <SignupForm
       onLoadingChange={setIsLoading}
       invitation={invitation}
+      defaultEmail={defaultEmail}
       onGoogleSignIn={handleGoogleSignIn}
       lastMethod={lastMethod}
     />

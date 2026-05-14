@@ -39,6 +39,12 @@ const formSchema = z.object({
 interface SignupFormProps {
   onLoadingChange?: (isLoading: boolean) => void;
   invitation?: string | null;
+  /**
+   * Prefills the email field. Comes through the URL as `?email=...` —
+   * email-invite links to unregistered users carry it so the invitee
+   * doesn't have to retype the address the invitation was sent to.
+   */
+  defaultEmail?: string | null;
   onGoogleSignIn?: () => void;
   lastMethod?: string | null;
 }
@@ -46,6 +52,7 @@ interface SignupFormProps {
 const SignupForm = ({
   onLoadingChange,
   invitation,
+  defaultEmail,
   onGoogleSignIn,
   lastMethod,
 }: SignupFormProps) => {
@@ -55,7 +62,7 @@ const SignupForm = ({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
+      email: defaultEmail ?? '',
       firstName: '',
       lastName: '',
       password: '',
