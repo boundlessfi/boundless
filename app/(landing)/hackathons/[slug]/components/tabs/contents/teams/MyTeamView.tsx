@@ -9,8 +9,16 @@ import {
   Crown,
   ShieldCheck,
   Briefcase,
+  UserMinus,
+  Trash2,
+  Mail,
+  RefreshCw,
+  Clock,
+  X,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Team, TeamMember } from '@/lib/api/hackathons/teams';
+import type { TeamInvitation } from '@/lib/api/hackathons';
 import {
   useHackathon,
   useLeaveTeam,
@@ -18,12 +26,14 @@ import {
   useInvitationActions,
   useTransferLeadership,
   useRefreshHackathon,
+  useRemoveTeamMember,
+  useDisbandTeam,
+  useTeamInvitations,
 } from '@/hooks/hackathon/use-hackathon-queries';
 import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import BasicAvatar from '@/components/avatars/BasicAvatar';
 import { useOptionalAuth } from '@/hooks/use-auth';
 import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
-import { getUserProfileByUsername } from '@/lib/api/auth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,8 +59,25 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
   const leaveMutation = useLeaveTeam(hackathonSlug);
   const inviteMutation = useInviteToTeam(hackathonSlug);
   const transferMutation = useTransferLeadership(hackathonSlug);
+  const removeMemberMutation = useRemoveTeamMember(hackathonSlug);
+  const disbandMutation = useDisbandTeam(hackathonSlug);
   const refresh = useRefreshHackathon(hackathonSlug);
   const { withAuth } = useRequireAuthForAction();
+
+  // Pending sent-invitations list (leader-only). The endpoint itself is
+  // authz'd to leader; we still gate the query to avoid the 403 noise on
+  // non-leader views.
+  const { data: invitationsData, isLoading: isLoadingInvitations } =
+    useTeamInvitations(hackathonSlug, team.id, 'pending', isLeader);
+  // Backend sometimes returns the wrapped { invitations, total } shape;
+  // pull defensively.
+  const pendingInvitations: TeamInvitation[] = Array.isArray(
+    (invitationsData as { invitations?: TeamInvitation[] } | undefined)
+      ?.invitations
+  )
+    ? ((invitationsData as { invitations: TeamInvitation[] }).invitations ?? [])
+    : [];
+  const { cancelAction } = useInvitationActions(hackathonSlug);
 
   const [inviteIdentifier, setInviteIdentifier] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
@@ -61,6 +88,11 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [isDisbandDialogOpen, setIsDisbandDialogOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [selectedMember, setSelectedMember] = useState<{
     id: string;
     name: string;
@@ -73,38 +105,22 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteIdentifier) return;
+    const identifier = inviteIdentifier.trim();
+    if (!identifier) return;
 
     setIsVerifying(true);
     setVerificationError(null);
 
-    // 1. Verify user exists first
-    try {
-      const profile = await getUserProfileByUsername(inviteIdentifier);
-      if (!profile) {
-        setVerificationError('User not found. Please check the username.');
-        setIsVerifying(false);
-        return;
-      }
-    } catch (err: any) {
-      setVerificationError(
-        err.response?.status === 404
-          ? 'User not found. Please check the username.'
-          : 'Failed to verify user. Please try again.'
-      );
-      setIsVerifying(false);
-      return;
-    }
-
-    // 2. Send invitation
+    // Backend resolves the identifier (email, username, or user id) and
+    // returns a clear error if the user isn't registered, so we no longer
+    // pre-check via getUserProfileByUsername (which only handled usernames).
     try {
       await inviteMutation.mutateAsync({
         teamId: team.id,
-        inviteeIdentifier: inviteIdentifier,
+        inviteeIdentifier: identifier,
         message: inviteMessage,
       });
 
-      // Only clear inputs and errors on successful invite
       setInviteIdentifier('');
       setInviteMessage('');
       setVerificationError(null);
@@ -127,6 +143,37 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
     });
     setIsTransferDialogOpen(false);
     setSelectedMember(null);
+  };
+
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
+    try {
+      await removeMemberMutation.mutateAsync({
+        teamId: team.id,
+        userId: memberToRemove.id,
+      });
+      toast.success(`${memberToRemove.name} has been removed from the team`);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to remove member';
+      toast.error(errorMessage);
+    } finally {
+      setMemberToRemove(null);
+    }
+  };
+
+  const handleDisband = async () => {
+    try {
+      await disbandMutation.mutateAsync(team.id);
+      toast.success('Team disbanded');
+      setIsDisbandDialogOpen(false);
+    } catch (err) {
+      // Backend refuses with a clear message if there's an existing
+      // submission — surface it verbatim instead of a generic toast.
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to disband team';
+      toast.error(errorMessage);
+    }
   };
 
   return (
@@ -170,7 +217,7 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
           </div>
         </div>
 
-        <div className='flex shrink-0 gap-3'>
+        <div className='flex shrink-0 flex-wrap gap-3'>
           {isLeader && (
             <BoundlessButton
               variant='outline'
@@ -178,6 +225,16 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
               onClick={() => setIsEditModalOpen(true)}
             >
               <Settings className='mr-2 h-4 w-4' /> Edit Team
+            </BoundlessButton>
+          )}
+          {isLeader && (
+            <BoundlessButton
+              variant='outline'
+              className='h-12 rounded-xl border-red-500/20 px-6 font-bold text-red-500 hover:bg-red-500/10'
+              onClick={() => setIsDisbandDialogOpen(true)}
+              loading={disbandMutation.isPending}
+            >
+              <Trash2 className='mr-2 h-4 w-4' /> Disband Team
             </BoundlessButton>
           )}
           <BoundlessButton
@@ -206,11 +263,11 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
                 <div className='grid gap-4 sm:grid-cols-2'>
                   <div className='space-y-2'>
                     <label className='text-[10px] font-black tracking-[0.2em] text-[#555555] uppercase'>
-                      USERNAME
+                      Email or Username
                     </label>
                     <input
                       type='text'
-                      placeholder='e.g. valid_username'
+                      placeholder='teammate@example.com or username'
                       value={inviteIdentifier}
                       onChange={e => {
                         setInviteIdentifier(e.target.value);
@@ -249,6 +306,188 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
             </div>
           </div>
         )}
+
+        {/* Pending Invitations — leader-only, only renders when there are
+            actually pending invites so we don't add empty noise to teams
+            with no outstanding asks. */}
+        {isLeader &&
+          (isLoadingInvitations || pendingInvitations.length > 0) && (
+            <div className='bg-background-card rounded-3xl border border-white/5 p-6 md:p-8'>
+              <div className='mb-5 flex items-center justify-between gap-4'>
+                <h3 className='flex items-center gap-2 text-lg font-bold text-white'>
+                  <Mail className='text-primary h-5 w-5' />
+                  Pending Invitations
+                  {pendingInvitations.length > 0 && (
+                    <span className='bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-black'>
+                      {pendingInvitations.length}
+                    </span>
+                  )}
+                </h3>
+              </div>
+
+              {isLoadingInvitations && pendingInvitations.length === 0 ? (
+                <div className='py-6 text-center text-sm text-gray-500'>
+                  Loading...
+                </div>
+              ) : (
+                <div className='space-y-3'>
+                  {pendingInvitations.map(inv => {
+                    // Backend returns invitee as a flat { id, name, username,
+                    // email, image } shape (not the nested Participant the FE
+                    // type claims). For unregistered invitees inviteeId is
+                    // null and the email lives on the invitation row itself.
+                    const invitee = inv.invitee as
+                      | {
+                          id?: string;
+                          name?: string | null;
+                          username?: string | null;
+                          email?: string | null;
+                        }
+                      | null
+                      | undefined;
+                    const inviteeEmail =
+                      (inv as unknown as { inviteeEmail?: string | null })
+                        .inviteeEmail ??
+                      invitee?.email ??
+                      null;
+                    const displayName =
+                      invitee?.name ||
+                      invitee?.username ||
+                      inviteeEmail ||
+                      'Invitee';
+                    const displayEmail =
+                      inviteeEmail && inviteeEmail !== displayName
+                        ? inviteeEmail
+                        : null;
+                    // Resend uses the email when we have one (works for both
+                    // registered and unregistered targets); falls back to id
+                    // for the legacy id-only case.
+                    const resendIdentifier =
+                      inviteeEmail || invitee?.username || invitee?.id || null;
+                    const expiresAt = inv.expiresAt
+                      ? new Date(inv.expiresAt)
+                      : null;
+                    const expiresInDays = expiresAt
+                      ? Math.max(
+                          0,
+                          Math.ceil(
+                            (expiresAt.getTime() - Date.now()) /
+                              (1000 * 60 * 60 * 24)
+                          )
+                        )
+                      : null;
+                    const isExpiringSoon =
+                      expiresInDays !== null && expiresInDays <= 1;
+
+                    const resending =
+                      inviteMutation.isPending &&
+                      inviteMutation.variables?.inviteeIdentifier ===
+                        resendIdentifier;
+                    const cancelling =
+                      cancelAction.isPending &&
+                      cancelAction.variables?.inviteId === inv.id;
+
+                    return (
+                      <div
+                        key={inv.id}
+                        className='flex flex-col gap-3 rounded-xl border border-white/5 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between'
+                      >
+                        <div className='min-w-0 flex-1'>
+                          <p className='truncate text-sm font-bold text-white'>
+                            {displayName}
+                          </p>
+                          {displayEmail && (
+                            <p className='truncate text-xs text-gray-500'>
+                              {displayEmail}
+                            </p>
+                          )}
+                          <div className='mt-1 flex items-center gap-1.5 text-[11px] text-gray-500'>
+                            <Clock
+                              className={`h-3 w-3 ${isExpiringSoon ? 'text-amber-400' : ''}`}
+                            />
+                            <span
+                              className={
+                                isExpiringSoon ? 'text-amber-400' : undefined
+                              }
+                            >
+                              {expiresInDays === null
+                                ? 'No expiry set'
+                                : expiresInDays === 0
+                                  ? 'Expires today'
+                                  : expiresInDays === 1
+                                    ? 'Expires tomorrow'
+                                    : `Expires in ${expiresInDays} days`}
+                            </span>
+                            {!invitee?.id && inviteeEmail && (
+                              <span className='ml-2 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-300'>
+                                Awaiting signup
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className='flex items-center gap-2'>
+                          <BoundlessButton
+                            variant='outline'
+                            size='sm'
+                            className='gap-1 border-white/10 text-xs text-gray-300 hover:text-white'
+                            disabled={!resendIdentifier || resending}
+                            loading={resending}
+                            onClick={async () => {
+                              if (!resendIdentifier) return;
+                              try {
+                                await inviteMutation.mutateAsync({
+                                  teamId: team.id,
+                                  inviteeIdentifier: resendIdentifier,
+                                  message: inv.message ?? undefined,
+                                });
+                                toast.success(
+                                  `Invitation re-sent to ${displayName}`
+                                );
+                              } catch (err) {
+                                toast.error(
+                                  err instanceof Error
+                                    ? err.message
+                                    : 'Failed to resend invitation'
+                                );
+                              }
+                            }}
+                          >
+                            <RefreshCw className='h-3 w-3' />
+                            Resend
+                          </BoundlessButton>
+                          <BoundlessButton
+                            variant='outline'
+                            size='sm'
+                            className='gap-1 border-red-500/10 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300'
+                            disabled={cancelling}
+                            loading={cancelling}
+                            onClick={async () => {
+                              try {
+                                await cancelAction.mutateAsync({
+                                  teamId: team.id,
+                                  inviteId: inv.id,
+                                });
+                                toast.success('Invitation cancelled');
+                              } catch (err) {
+                                toast.error(
+                                  err instanceof Error
+                                    ? err.message
+                                    : 'Failed to cancel invitation'
+                                );
+                              }
+                            }}
+                          >
+                            <X className='h-3 w-3' />
+                            Cancel
+                          </BoundlessButton>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
         {/* Member list - Full Width */}
         <div className='space-y-6'>
@@ -306,21 +545,41 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
                       </div>
                     </div>
                     {isLeader && (
-                      <BoundlessButton
-                        variant='outline'
-                        size='sm'
-                        className='hover:text-primary mt-2 h-9 w-full border-white/5 text-[10px] font-black tracking-widest text-gray-400 uppercase sm:opacity-0 sm:group-hover:opacity-100'
-                        onClick={() => {
-                          setSelectedMember({
-                            id: member.userId,
-                            name: member.name,
-                          });
-                          setIsTransferDialogOpen(true);
-                        }}
-                        loading={transferMutation.isPending}
-                      >
-                        Transfer Lead
-                      </BoundlessButton>
+                      <div className='mt-2 flex w-full flex-col gap-2 sm:opacity-0 sm:group-hover:opacity-100'>
+                        <BoundlessButton
+                          variant='outline'
+                          size='sm'
+                          className='hover:text-primary h-9 w-full border-white/5 text-[10px] font-black tracking-widest text-gray-400 uppercase'
+                          onClick={() => {
+                            setSelectedMember({
+                              id: member.userId,
+                              name: member.name,
+                            });
+                            setIsTransferDialogOpen(true);
+                          }}
+                          loading={transferMutation.isPending}
+                        >
+                          Transfer Lead
+                        </BoundlessButton>
+                        <BoundlessButton
+                          variant='outline'
+                          size='sm'
+                          className='h-9 w-full border-red-500/10 text-[10px] font-black tracking-widest text-red-400 uppercase hover:bg-red-500/10 hover:text-red-300'
+                          onClick={() =>
+                            setMemberToRemove({
+                              id: member.userId,
+                              name: member.name,
+                            })
+                          }
+                          loading={
+                            removeMemberMutation.isPending &&
+                            removeMemberMutation.variables?.userId ===
+                              member.userId
+                          }
+                        >
+                          <UserMinus className='mr-1 h-3 w-3' /> Remove
+                        </BoundlessButton>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -395,6 +654,71 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
               className='bg-primary hover:bg-primary/90 text-black'
             >
               Transfer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!memberToRemove}
+        onOpenChange={open => {
+          if (!open) setMemberToRemove(null);
+        }}
+      >
+        <AlertDialogContent className='bg-background-card border-white/10 text-white'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Member</AlertDialogTitle>
+            <AlertDialogDescription className='text-gray-400'>
+              Remove{' '}
+              <span className='font-bold text-white'>
+                {memberToRemove?.name}
+              </span>{' '}
+              from the team? They'll be notified and can be re-invited later.
+              Any submission you've already made keeps its current member list —
+              this only affects the live roster.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className='border-white/5 bg-white/5 text-white hover:bg-white/10'>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveMember}
+              className='bg-red-500 text-white hover:bg-red-600'
+            >
+              Remove Member
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isDisbandDialogOpen}
+        onOpenChange={setIsDisbandDialogOpen}
+      >
+        <AlertDialogContent className='bg-background-card border-white/10 text-white'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disband Team</AlertDialogTitle>
+            <AlertDialogDescription className='text-gray-400'>
+              Permanently disband{' '}
+              <span className='font-bold text-white'>{team.teamName}</span>? All
+              members will be notified and pending invitations will be
+              cancelled. If your team has already submitted a project, the
+              backend will refuse — withdraw the submission first.
+              <br />
+              <br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className='border-white/5 bg-white/5 text-white hover:bg-white/10'>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDisband}
+              className='bg-red-500 text-white hover:bg-red-600'
+            >
+              Disband Team
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -14,6 +14,10 @@ export default function AuthPage() {
 
   const modeParam = searchParams.get('mode');
   const invitation = searchParams.get('invitation');
+  // Email-invite links to unregistered users carry ?email=... so the signup
+  // form can prefill. Without this, the user has to retype the address the
+  // invitation was just sent to.
+  const prefillEmail = searchParams.get('email');
 
   const getModeFromQuery = (mode: string | null): 'signin' | 'signup' => {
     if (mode === 'signup') return 'signup';
@@ -61,6 +65,7 @@ export default function AuthPage() {
                   <SignupWrapper
                     setLoadingState={setLoadingState}
                     invitation={invitation}
+                    defaultEmail={prefillEmail}
                   />
                 )}
               </div>

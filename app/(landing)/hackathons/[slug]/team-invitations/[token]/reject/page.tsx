@@ -1,7 +1,7 @@
 'use client';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import { Users, AlertCircle, Loader2, XCircle } from 'lucide-react';
+import { AlertCircle, Loader2, XCircle, CheckCircle2 } from 'lucide-react';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { rejectTeamInvitation } from '@/lib/api/hackathons';
 import { toast } from 'sonner';
@@ -14,6 +14,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+
+const REDIRECT_DELAY_MS = 1500;
 
 const RejectTeamInvitationPage = () => {
   const params = useParams();
@@ -28,6 +30,7 @@ const RejectTeamInvitationPage = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -39,12 +42,17 @@ const RejectTeamInvitationPage = () => {
     if (!isAuthenticated && !authLoading) {
       redirectToAuth();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authLoading, invitationToken]);
 
   const redirectToAuth = () => {
-    const currentUrl = window.location.href;
-    const encodedRedirect = encodeURIComponent(currentUrl);
-    router.push(`/auth/login?redirect=${encodedRedirect}`);
+    // Match the rest of the app: /auth?mode=signin&callbackUrl=...
+    // (the previous /auth/login?redirect=... was a non-existent route and
+    // got the user stuck.)
+    const callbackUrl = `/hackathons/${hackathonSlug}/team-invitations/${invitationToken}/reject`;
+    router.push(
+      `/auth?mode=signin&callbackUrl=${encodeURIComponent(callbackUrl)}`
+    );
   };
 
   const handleReject = async () => {
@@ -52,6 +60,7 @@ const RejectTeamInvitationPage = () => {
 
     setIsProcessing(true);
     setError(null);
+    setErrorStatus(null);
 
     try {
       const response = await rejectTeamInvitation(
@@ -61,26 +70,32 @@ const RejectTeamInvitationPage = () => {
 
       if (response.success) {
         setSuccess(true);
-        // Use the slug from the response if available, otherwise go to hackathons list
-        const finalSlug = response.data?.invitation?.hackathon?.slug;
+        const finalSlug =
+          response.data?.invitation?.hackathon?.slug || hackathonSlug;
         toast.success('Invitation declined');
         setTimeout(() => {
-          if (finalSlug) {
-            router.push(`/hackathons/${finalSlug}`);
-          } else {
-            router.push('/hackathons');
-          }
-        }, 2000);
+          router.push(finalSlug ? `/hackathons/${finalSlug}` : '/hackathons');
+        }, REDIRECT_DELAY_MS);
       }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Failed to decline invitation';
+    } catch (err: unknown) {
+      const errorObj = err as {
+        message?: string;
+        status?: number;
+        response?: { status?: number };
+      };
+      const errorMessage = errorObj?.message || 'Failed to decline invitation';
+      const status = errorObj?.status ?? errorObj?.response?.status ?? null;
       setError(errorMessage);
+      setErrorStatus(status);
 
-      if (err?.status === 403) {
+      if (status === 403) {
         toast.error('Authentication required');
         redirectToAuth();
-      } else if (err?.status === 404) {
+      } else if (status === 404) {
         toast.error('Invitation not found or has expired');
+      } else if (status === 400 && /already/i.test(errorMessage)) {
+        // Backend uses 400 for "Invitation has already been {accepted|rejected|expired}"
+        toast.error(errorMessage);
       } else {
         toast.error(errorMessage);
       }
@@ -108,24 +123,39 @@ const RejectTeamInvitationPage = () => {
   }
 
   if (error && !success) {
+    const isAlreadyResponded = errorStatus === 400 && /already/i.test(error);
+    const isNotFound = errorStatus === 404;
+
     return (
       <div className='bg-background flex min-h-screen items-center justify-center p-4'>
         <Card className='border-border bg-card w-full max-w-md shadow-lg'>
           <CardHeader className='text-center'>
-            <div className='bg-destructive/10 mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full'>
-              <AlertCircle className='text-destructive h-10 w-10' />
+            <div
+              className={`mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full ${
+                isAlreadyResponded ? 'bg-muted' : 'bg-destructive/10'
+              }`}
+            >
+              {isAlreadyResponded ? (
+                <CheckCircle2 className='text-muted-foreground h-10 w-10' />
+              ) : (
+                <AlertCircle className='text-destructive h-10 w-10' />
+              )}
             </div>
-            <CardTitle className='text-destructive text-2xl'>
-              Unable to Process
+            <CardTitle className='text-2xl'>
+              {isAlreadyResponded
+                ? 'Already Responded'
+                : isNotFound
+                  ? 'Invitation Not Found'
+                  : 'Unable to Process'}
             </CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
           <CardFooter>
             <Button
               className='w-full'
-              onClick={() => router.push('/hackathons')}
+              onClick={() => router.push(`/hackathons/${hackathonSlug}`)}
             >
-              Return to Hackathons
+              Back to Hackathon
             </Button>
           </CardFooter>
         </Card>
@@ -147,8 +177,8 @@ const RejectTeamInvitationPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className='flex justify-center'>
-              <Loader2 className='text-primary h-6 w-6 animate-spin' />
+            <div className='bg-secondary h-1 w-full overflow-hidden rounded-full'>
+              <div className='bg-primary h-full w-full animate-[loading_1.5s_ease-in-out]' />
             </div>
           </CardContent>
         </Card>
@@ -191,7 +221,7 @@ const RejectTeamInvitationPage = () => {
           <Button
             variant='ghost'
             className='w-full'
-            onClick={() => router.push('/hackathons')}
+            onClick={() => router.push(`/hackathons/${hackathonSlug}`)}
             disabled={isProcessing}
           >
             Cancel

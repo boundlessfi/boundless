@@ -457,6 +457,11 @@ export type Hackathon = {
   contractId?: string;
   escrowAddress?: string;
   resultsPublished?: boolean;
+  // Backend-computed viewer perspective. Drives which protected endpoints
+  // (organizer-only submissions list, winners before publish, etc.) the
+  // client is allowed to query. Anything other than 'organizer'/'admin'
+  // means the client should NOT call those endpoints — they 403.
+  viewerRole?: 'organizer' | 'admin' | 'participant' | 'judge' | 'visitor';
   transactionHash?: string | null;
   message?: string;
   escrowDetails?: object;
@@ -702,6 +707,7 @@ export interface ParticipantSubmission {
   category: string;
   description: string;
   logo?: string;
+  banner?: string;
   videoUrl?: string;
   introduction?: string;
   links?: Array<{ type: string; url: string }>;
@@ -751,6 +757,7 @@ export interface ExploreSubmissionsResponse {
   category: string;
   description: string;
   logo?: string | null;
+  banner?: string | null;
   videoUrl?: string | null;
   introduction?: string | null;
   links?: Array<{ type: string; url: string }>;
@@ -861,6 +868,7 @@ export interface CreateSubmissionRequest {
   category: string;
   description: string;
   logo?: string;
+  banner?: string;
   videoUrl?: string;
   introduction?: string;
   links: Array<{ type: string; url: string; description?: string }>;

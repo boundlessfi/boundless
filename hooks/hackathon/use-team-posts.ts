@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import {
@@ -19,7 +19,6 @@ import {
   type GetTeamOptions as GetTeamPostsOptions,
 } from '@/lib/api/hackathons/teams';
 import { hackathonKeys } from '@/hooks/hackathon/use-hackathon-queries';
-import { reportError } from '@/lib/error-reporting';
 
 function getErrorMessage(err: unknown, defaultMessage: string): string {
   if (err instanceof AxiosError && err.response?.data?.message != null) {
@@ -56,14 +55,32 @@ export function useTeamPosts({
     });
   }, [queryClient, hackathonSlugOrId]);
   const [posts, setPosts] = useState<TeamRecruitmentPost[]>([]);
-  const [myTeam, setMyTeam] = useState<TeamRecruitmentPost | null>(null);
   const [myPosts, setMyPosts] = useState<TeamRecruitmentPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMyTeam, setIsLoadingMyTeam] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // myTeam lives in React Query so any mutation that invalidates
+  // hackathonKeys.myTeam(slug) — from this hook OR from elsewhere
+  // (use-hackathon-queries' useLeaveTeam, useInvitationActions,
+  // useTransferLeadership, etc.) — refreshes every consumer at once.
+  // Previously this was per-hook useState and stayed stale.
+  const {
+    data: myTeam = null,
+    isFetching: isLoadingMyTeam,
+    refetch: refetchMyTeam,
+  } = useQuery<TeamRecruitmentPost | null>({
+    queryKey: hackathonKeys.myTeam(hackathonSlugOrId),
+    queryFn: async () => {
+      const response = await getMyTeam(hackathonSlugOrId);
+      if (response.success && response.data) return response.data;
+      return null;
+    },
+    enabled: !!hackathonSlugOrId && isAuthenticated,
+    staleTime: 30 * 1000,
+  });
 
   const fetchPosts = useCallback(
     async (options?: GetTeamPostsOptions) => {
@@ -133,30 +150,12 @@ export function useTeamPosts({
     }
   }, [hackathonSlugOrId, organizationId, isAuthenticated, currentUserId]);
 
+  // Backward-compat: callers used to invoke fetchMyTeam() directly. Funnel it
+  // through React Query's refetch so the cache stays the source of truth.
   const fetchMyTeam = useCallback(async () => {
-    if (!hackathonSlugOrId || !isAuthenticated) {
-      setMyTeam(null);
-      return;
-    }
-
-    setIsLoadingMyTeam(true);
-    try {
-      const response = await getMyTeam(hackathonSlugOrId);
-      if (response.success && response.data) {
-        setMyTeam(response.data);
-      } else {
-        setMyTeam(null);
-      }
-    } catch (err) {
-      reportError(err, {
-        context: 'team-posts-fetchMyTeam',
-        hackathonSlugOrId,
-      });
-      setMyTeam(null);
-    } finally {
-      setIsLoadingMyTeam(false);
-    }
-  }, [hackathonSlugOrId, organizationId, isAuthenticated]);
+    if (!hackathonSlugOrId || !isAuthenticated) return;
+    await refetchMyTeam();
+  }, [hackathonSlugOrId, isAuthenticated, refetchMyTeam]);
 
   const createPost = useCallback(
     async (data: CreateTeamPostRequest) => {
@@ -174,14 +173,7 @@ export function useTeamPosts({
         if (response.success && response.data) {
           setPosts(prev => [response.data!, ...prev]);
           setMyPosts(prev => [response.data!, ...prev]);
-          setMyTeam(prev =>
-            prev
-              ? { ...prev, posts: [response.data!, ...(prev.posts || [])] }
-              : {
-                  ...response.data!,
-                  posts: [response.data!],
-                }
-          );
+          // myTeam refreshes via the invalidation below — no manual setMyTeam.
           invalidateTeamQueries();
           toast.success('Team post created successfully');
           return response.data;
@@ -219,16 +211,6 @@ export function useTeamPosts({
           );
           setMyPosts(prev =>
             prev.map(post => (post.id === postId ? response.data! : post))
-          );
-          setMyTeam(prev =>
-            prev
-              ? {
-                  ...prev,
-                  posts: (prev.posts || []).map(p =>
-                    p.id === postId ? response.data! : p
-                  ),
-                }
-              : null
           );
           invalidateTeamQueries();
           toast.success('Team post updated successfully');
@@ -306,12 +288,11 @@ export function useTeamPosts({
   useEffect(() => {
     if (isAuthenticated && hackathonSlugOrId) {
       fetchMyPosts();
-      fetchMyTeam();
     } else {
       setMyPosts([]);
-      setMyTeam(null);
     }
-  }, [isAuthenticated, hackathonSlugOrId, fetchMyPosts, fetchMyTeam]);
+    // myTeam initial fetch is handled by React Query's `enabled` flag.
+  }, [isAuthenticated, hackathonSlugOrId, fetchMyPosts]);
 
   return {
     posts,

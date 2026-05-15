@@ -1,7 +1,17 @@
 'use client';
 
 import React from 'react';
-import { ArrowUpRight, Github, Twitter, Globe, Link2 } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Github,
+  Twitter,
+  Globe,
+  Link2,
+  Video,
+  FileText,
+  Presentation,
+  Play,
+} from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { motion } from 'motion/react';
 
@@ -15,6 +25,14 @@ const getIcon = (type: string) => {
       return <Github className='h-5 w-5' />;
     case 'twitter':
       return <Twitter className='h-5 w-5' />;
+    case 'demo':
+      return <Play className='h-5 w-5' />;
+    case 'video':
+      return <Video className='h-5 w-5' />;
+    case 'document':
+      return <FileText className='h-5 w-5' />;
+    case 'presentation':
+      return <Presentation className='h-5 w-5' />;
     case 'website':
       return <Globe className='h-5 w-5' />;
     default:

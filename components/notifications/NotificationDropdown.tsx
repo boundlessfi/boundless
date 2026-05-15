@@ -98,7 +98,26 @@ export const NotificationDropdown = ({
       return;
     }
 
-    if (data.organizationId) {
+    // Team-invitation notifications carry { hackathonId, teamId,
+    // invitationId, inviterId }. Routing them to /hackathons/:id (the
+    // default by-priority match below) dumps the user on the hackathon
+    // page where there's no obvious next step. The accept page IS the
+    // next step — go straight there. The MyInvitationsPanel in the
+    // sidebar handles the case where they navigate elsewhere first.
+    const hackathonRef = (data.hackathonSlug || data.hackathonId) as
+      | string
+      | undefined;
+    const invitationId = (data.invitationId || data.teamInvitationId) as
+      | string
+      | undefined;
+    const isTeamInvitation =
+      hackathonRef && invitationId && data.teamId !== undefined;
+
+    if (isTeamInvitation) {
+      router.push(
+        `/hackathons/${hackathonRef}/team-invitations/${invitationId}/accept`
+      );
+    } else if (data.organizationId) {
       router.push(`/organizations/${data.organizationId}`);
     } else if (data.hackathonId) {
       if (data.hackathonSlug) {

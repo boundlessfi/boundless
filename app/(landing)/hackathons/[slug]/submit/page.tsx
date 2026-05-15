@@ -6,6 +6,7 @@ import { useHackathon } from '@/hooks/hackathon/use-hackathon-queries';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { useSubmission } from '@/hooks/hackathon/use-submission';
 import { SubmissionFormContent } from '@/components/hackathons/submissions/SubmissionForm';
+import { HackathonDataProvider } from '@/lib/providers/hackathonProvider';
 import LoadingScreen from '@/features/projects/components/CreateProjectModal/LoadingScreen';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -121,43 +122,57 @@ export default function SubmitProjectPage({
     );
   }
   return (
-    <div className='min-h-screen bg-black px-5 py-5 text-white md:px-[50px] lg:px-[100px]'>
-      <div className='mx-auto max-w-[1200px] pb-10'>
-        <Button
-          variant='ghost'
-          className='mb-6 pl-0 text-gray-400 hover:text-white'
-          onClick={handleClose}
-        >
-          <ArrowLeft className='mr-2 h-4 w-4' />
-          Back to Hackathon
-        </Button>
+    // The outer `app/(landing)/hackathons/layout.tsx` wraps in
+    // HackathonDataProvider with an empty slug (the [slug] param isn't in
+    // scope at that layout level), so we re-wrap here with the resolved slug
+    // and the just-fetched hackathon as initialData. Without this, the form's
+    // `useHackathonData()` returns a null `currentHackathon`, the category
+    // dropdown falls back to its empty state, and team/participation logic
+    // misfires.
+    <HackathonDataProvider
+      hackathonSlug={hackathonSlug}
+      initialData={currentHackathon}
+    >
+      <div className='min-h-screen bg-black px-5 py-5 text-white md:px-[50px] lg:px-[100px]'>
+        <div className='mx-auto max-w-[1200px] pb-10'>
+          <Button
+            variant='ghost'
+            className='mb-6 pl-0 text-gray-400 hover:text-white'
+            onClick={handleClose}
+          >
+            <ArrowLeft className='mr-2 h-4 w-4' />
+            Back to Hackathon
+          </Button>
 
-        <div className='min-h-[700px] overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 shadow-2xl'>
-          <SubmissionFormContent
-            hackathonSlugOrId={hackathonId}
-            organizationId={orgId}
-            submissionId={mySubmission?.id}
-            initialData={
-              mySubmission
-                ? {
-                    projectName: mySubmission.projectName,
-                    category: mySubmission.category,
-                    description: mySubmission.description,
-                    logo: mySubmission.logo,
-                    videoUrl: mySubmission.videoUrl,
-                    introduction: mySubmission.introduction,
-                    links: mySubmission.links,
-                    participationType: (mySubmission as any).participationType,
-                    teamName: (mySubmission as any).teamName,
-                    teamMembers: (mySubmission as any).teamMembers,
-                  }
-                : undefined
-            }
-            onSuccess={handleSuccess}
-            onClose={handleClose}
-          />
+          <div className='min-h-[700px] overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 shadow-2xl'>
+            <SubmissionFormContent
+              hackathonSlugOrId={hackathonId}
+              organizationId={orgId}
+              submissionId={mySubmission?.id}
+              initialData={
+                mySubmission
+                  ? {
+                      projectName: mySubmission.projectName,
+                      category: mySubmission.category,
+                      description: mySubmission.description,
+                      logo: mySubmission.logo,
+                      banner: mySubmission.banner,
+                      videoUrl: mySubmission.videoUrl,
+                      introduction: mySubmission.introduction,
+                      links: mySubmission.links,
+                      participationType: (mySubmission as any)
+                        .participationType,
+                      teamName: (mySubmission as any).teamName,
+                      teamMembers: (mySubmission as any).teamMembers,
+                    }
+                  : undefined
+              }
+              onSuccess={handleSuccess}
+              onClose={handleClose}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </HackathonDataProvider>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Clock,
   Briefcase,
@@ -12,6 +13,7 @@ import {
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useOptionalAuth } from '@/hooks/use-auth';
 import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
+import { useSubmission } from '@/hooks/hackathon/use-submission';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -57,8 +59,17 @@ function useCountdown(deadline?: string) {
 export default function PoolAndAction() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useOptionalAuth();
+  const { user, isAuthenticated } = useOptionalAuth();
   const slug = params.slug as string;
+
+  // React Query dedupes — MySubmissionPanel mounts the same query, so this
+  // doesn't fire a second network request. We only need it here to know
+  // whether to hide the Submit CTA.
+  const { submission: mySubmission } = useSubmission({
+    hackathonSlugOrId: slug,
+    autoFetch: isAuthenticated && !!slug,
+  });
+  const hasSubmitted = !!mySubmission;
 
   const {
     currentHackathon: hackathon,
@@ -101,10 +112,31 @@ export default function PoolAndAction() {
 
   const { withAuth } = useRequireAuthForAction();
 
-  const handleSubmit = withAuth(() => {
-    if (isButtonDisabled) return;
-    router.push(`/hackathons/${slug}/submit`);
-  });
+  // For unauth users we open the auth modal in place. After they sign in
+  // we want to match the authenticated path's UX: keep the hackathon page
+  // interactive and open the submit form in a new tab. `onAuthSuccess`
+  // fires inside LoginWrapper's success handler (gesture context is still
+  // fresh from the sign-in click, so most browsers allow window.open). If
+  // the popup IS blocked we fall back to a same-tab navigation.
+  //
+  // `redirectTo` is still set so Google sign-in (a full provider redirect
+  // that bypasses onAuthSuccess) lands somewhere sensible.
+  const submitUrl = `/hackathons/${slug}/submit`;
+  const handleSubmit = withAuth(
+    () => {
+      if (isButtonDisabled) return;
+      router.push(submitUrl);
+    },
+    {
+      redirectTo: submitUrl,
+      onAuthSuccess: () => {
+        const popup = window.open(submitUrl, '_blank', 'noopener,noreferrer');
+        if (!popup) {
+          router.push(submitUrl);
+        }
+      },
+    }
+  );
 
   if (isDataLoading) {
     return (
@@ -262,25 +294,53 @@ export default function PoolAndAction() {
           </div>
         </div>
 
-        <BoundlessButton
-          className={cn(
-            'group h-12 w-full rounded-xl text-sm font-bold transition-all',
-            isButtonDisabled
-              ? 'cursor-not-allowed bg-gray-800 text-gray-500'
-              : 'bg-primary hover:bg-primary/90 text-black'
-          )}
-          onClick={handleSubmit}
-          disabled={isButtonDisabled}
-          iconPosition='right'
-          fullWidth
-          icon={
-            !isButtonDisabled && (
+        {/* Once the user has a submission, the new "Your Submission" panel
+            above carries the View / Edit affordances. Showing "Submit Now"
+            here on top of that is redundant and confusing — we only keep the
+            CTA to communicate closed/ended states for participants who
+            haven't submitted.
+
+            For an authenticated user with submissions open we render a real
+            <Link target="_blank"> instead of a router.push handler. The
+            submit page does a fair amount of synchronous work on mount
+            (auth, hackathon, my-submission, my-team) and the perceived
+            delay was hurting the click; opening in a new tab keeps the
+            current page responsive while the form loads. Unauthenticated
+            users still get the button so the auth modal can intercept
+            in place. */}
+        {!hasSubmitted &&
+          (isButtonDisabled || !isAuthenticated ? (
+            <BoundlessButton
+              className={cn(
+                'group h-12 w-full rounded-xl text-sm font-bold transition-all',
+                isButtonDisabled
+                  ? 'cursor-not-allowed bg-gray-800 text-gray-500'
+                  : 'bg-primary hover:bg-primary/90 text-black'
+              )}
+              onClick={handleSubmit}
+              disabled={isButtonDisabled}
+              iconPosition='right'
+              fullWidth
+              icon={
+                !isButtonDisabled && (
+                  <ChevronRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
+                )
+              }
+            >
+              {getButtonText()}
+            </BoundlessButton>
+          ) : (
+            <Link
+              href={`/hackathons/${slug}/submit`}
+              target='_blank'
+              rel='noopener noreferrer'
+              prefetch
+              className='group bg-primary hover:bg-primary/90 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-bold text-black transition-all'
+            >
+              {getButtonText()}
               <ChevronRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
-            )
-          }
-        >
-          {getButtonText()}
-        </BoundlessButton>
+            </Link>
+          ))}
       </div>
     </div>
   );

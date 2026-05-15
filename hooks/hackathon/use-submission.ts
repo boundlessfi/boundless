@@ -134,7 +134,10 @@ export function useSubmission({
           'Failed to create submission'
         );
         setError(errorMessage);
-        toast.error(errorMessage);
+        toast.error('Submission failed', {
+          description: errorMessage,
+          duration: 8000,
+        });
         reportError(err, {
           context: 'hackathon-createSubmission',
           hackathonSlugOrId,
@@ -180,7 +183,10 @@ export function useSubmission({
           'Failed to update submission'
         );
         setError(errorMessage);
-        toast.error(errorMessage);
+        toast.error('Update failed', {
+          description: errorMessage,
+          duration: 8000,
+        });
         reportError(err, {
           context: 'hackathon-updateSubmission',
           submissionId,
@@ -214,7 +220,10 @@ export function useSubmission({
           'Failed to delete submission'
         );
         setError(errorMessage);
-        toast.error(errorMessage);
+        toast.error('Delete failed', {
+          description: errorMessage,
+          duration: 8000,
+        });
         throw err;
       } finally {
         setIsSubmitting(false);

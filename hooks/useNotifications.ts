@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSocket } from './useSocket';
 import { getNotifications } from '@/lib/api/notifications';
-import { Notification } from '@/types/notifications';
+import { Notification, NotificationsResponse } from '@/types/notifications';
 import { reportError } from '@/lib/error-reporting';
 import { useNotificationStore } from '@/lib/stores/notification-store';
 
@@ -28,6 +29,11 @@ export interface UseNotificationsReturn {
   refetch: () => Promise<void>;
 }
 
+const NOTIFICATIONS_QUERY_KEY = ['notifications'] as const;
+
+const sortByCreatedAtDesc = (a: Notification, b: Notification) =>
+  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+
 export function useNotifications(
   input?: string | UseNotificationsOptions
 ): UseNotificationsReturn {
@@ -49,13 +55,12 @@ export function useNotifications(
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(autoFetch);
-  const [error, setError] = useState<Error | null>(null);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [hasFetched, setHasFetched] = useState(false);
 
   const { setUnreadCount: setGlobalUnreadCount } = useNotificationStore();
+  const queryClient = useQueryClient();
 
   // Sync with global store
   useEffect(() => {
@@ -64,12 +69,12 @@ export function useNotifications(
     }
   }, [unreadCount, setGlobalUnreadCount, hasFetched]);
 
-  // Merge server list with current state: dedupe by id, preserve optimistic read state (short rollback path)
+  // Merge server list with current state: dedupe by id, preserve optimistic read state
   const mergeNotifications = useCallback(
     (prev: Notification[], serverList: Notification[]): Notification[] => {
       const byId = new Map<string, Notification>();
       serverList.forEach(n => {
-        const id = n.id ?? (n as any)._id;
+        const id = n.id ?? (n as { _id?: string })._id;
         if (id) byId.set(id, n);
       });
       const merged = Array.from(byId.values()).map(server => {
@@ -77,44 +82,48 @@ export function useNotifications(
         const read = local?.read ?? server.read;
         return { ...server, read };
       });
-      return merged.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      return merged.sort(sortByCreatedAtDesc);
     },
     []
   );
 
-  // Fetch notifications with pagination; merge with current state to preserve optimistic read and dedupe by id
-  const fetchNotifications = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await getNotifications(currentPage, limit);
+  // React Query handles dedupe across components. Multiple consumers calling this
+  // hook with the same (page, limit) share a single network request.
+  const {
+    data: response,
+    isFetching: queryFetching,
+    error: queryError,
+    refetch: refetchQuery,
+  } = useQuery<NotificationsResponse>({
+    queryKey: [...NOTIFICATIONS_QUERY_KEY, 'list', currentPage, limit],
+    queryFn: () => getNotifications(currentPage, limit),
+    enabled: enabled && autoFetch,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  });
 
-      if (response && Array.isArray(response.notifications)) {
-        setNotifications(prev =>
-          mergeNotifications(prev, response.notifications)
-        );
-        setTotal(response.total || 0);
-        setHasFetched(true);
-      }
-    } catch (err) {
-      reportError(err, { context: 'notifications-fetch' });
-      setError(
-        err instanceof Error ? err : new Error('Failed to fetch notifications')
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, limit, mergeNotifications]);
-
-  // Initial fetch
+  // Merge query data into local state so socket-driven updates can layer on top.
   useEffect(() => {
-    if (autoFetch) {
-      fetchNotifications();
+    if (response && Array.isArray(response.notifications)) {
+      setNotifications(prev =>
+        mergeNotifications(prev, response.notifications)
+      );
+      setTotal(response.total || 0);
+      setHasFetched(true);
     }
-  }, [fetchNotifications, autoFetch]);
+  }, [response, mergeNotifications]);
+
+  useEffect(() => {
+    if (queryError) {
+      reportError(queryError, { context: 'notifications-fetch' });
+    }
+  }, [queryError]);
+
+  const fetchNotifications = useCallback(async () => {
+    await refetchQuery();
+  }, [refetchQuery]);
 
   // Request initial unread count when socket connects
   useEffect(() => {
@@ -129,44 +138,59 @@ export function useNotifications(
       return;
     }
 
-    // Listen for new notifications
-    const handleNotification = (notification: any) => {
+    const handleNotification = (notification: Record<string, unknown>) => {
       const normalizedNotification: Notification = {
-        ...notification,
-        id: notification.id || notification._id,
+        ...(notification as unknown as Notification),
+        id: (notification.id || notification._id) as string,
         createdAt:
-          notification.createdAt ||
-          notification.timestamp ||
+          (notification.createdAt as string) ||
+          (notification.timestamp as string) ||
           new Date().toISOString(),
       };
 
       setNotifications(prev => {
-        // Avoid duplicates
         const exists = prev.some(n => n.id === normalizedNotification.id);
         if (exists) {
           return prev;
         }
 
-        // Add new notification and resort
-        // Note: For pagination, real-time updates might be tricky.
-        // We typically add it to the top if we are on page 1.
         if (currentPage === 1) {
           return [normalizedNotification, ...prev];
         }
         return prev;
       });
       setUnreadCount(prev => prev + 1);
+
+      // Keep React Query cache in sync so other consumers see the same data.
+      queryClient.setQueryData<NotificationsResponse | undefined>(
+        [...NOTIFICATIONS_QUERY_KEY, 'list', currentPage, limit],
+        prevData => {
+          if (!prevData) return prevData;
+          const exists = prevData.notifications.some(
+            n => n.id === normalizedNotification.id
+          );
+          if (exists || currentPage !== 1) return prevData;
+          return {
+            ...prevData,
+            notifications: [
+              normalizedNotification,
+              ...prevData.notifications,
+            ].sort(sortByCreatedAtDesc),
+            total: (prevData.total || 0) + 1,
+          };
+        }
+      );
     };
 
-    // Listen for unread count updates
     const handleUnreadCount = (data: { count: number }) => {
       setUnreadCount(data.count);
       setHasFetched(true);
     };
 
-    // Listen for notification updates
-    const handleNotificationUpdated = (data: any) => {
-      const id = data.notificationId || data.id || data._id;
+    const handleNotificationUpdated = (data: Record<string, unknown>) => {
+      const id = (data.notificationId || data.id || data._id) as
+        | string
+        | undefined;
       if (id) {
         setNotifications(prev =>
           prev.map(notif => (notif.id === id ? { ...notif, ...data } : notif))
@@ -174,7 +198,6 @@ export function useNotifications(
       }
     };
 
-    // Listen for all notifications read
     const handleAllRead = () => {
       setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
       setUnreadCount(0);
@@ -197,7 +220,7 @@ export function useNotifications(
       socket.off('all-notifications-read', handleAllRead);
       socket.off('error', handleError);
     };
-  }, [socket, currentPage]);
+  }, [socket, currentPage, limit, queryClient]);
 
   const markAsRead = (notificationId: string) => {
     setNotifications(prev =>
@@ -238,8 +261,8 @@ export function useNotifications(
     notifications,
     unreadCount,
     isConnected,
-    loading,
-    error,
+    loading: queryFetching,
+    error: queryError as Error | null,
     total,
     currentPage,
     setCurrentPage,

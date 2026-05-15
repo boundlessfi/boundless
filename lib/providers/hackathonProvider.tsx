@@ -84,11 +84,21 @@ export function HackathonDataProvider({
     error: hackathonError,
   } = useHackathon(hackathonSlug, initialData);
 
+  // The full submissions list is an organizer-only endpoint — calling it as
+  // a participant returns 403 and pollutes the network tab / Sentry. Only
+  // fetch when the backend says this viewer can see everyone's submissions.
+  const isOrganizerView =
+    currentHackathon?.viewerRole === 'organizer' ||
+    currentHackathon?.viewerRole === 'admin';
+
   const {
     data: submissions = [],
     isLoading: submissionsLoading,
     error: submissionsError,
-  } = useHackathonSubmissions(hackathonSlug);
+  } = useHackathonSubmissions(isOrganizerView ? hackathonSlug : '', {
+    page: 1,
+    limit: 12,
+  });
 
   const {
     data: exploreSubmissionsData,
@@ -119,11 +129,18 @@ export function HackathonDataProvider({
   const exploreSubmissionsTotal =
     exploreSubmissionsData?.pagination?.total ?? 0;
 
+  // Winners are organizer-only until results are published. After publish
+  // they're public. Gate accordingly so participants don't get a 403 on
+  // every hackathon page load before results go live.
+  const canViewWinners =
+    !!hackathonSlug &&
+    (currentHackathon?.resultsPublished === true || isOrganizerView);
+
   const {
     data: winners = [],
     isLoading: winnersLoading,
     error: winnersError,
-  } = useHackathonWinners(hackathonSlug, !!hackathonSlug);
+  } = useHackathonWinners(hackathonSlug, canViewWinners);
 
   const refreshCurrentHackathon = useRefreshHackathon(hackathonSlug);
 

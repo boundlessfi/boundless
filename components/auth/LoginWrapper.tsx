@@ -27,11 +27,23 @@ interface LoginWrapperProps {
   setLoadingState: (isLoading: boolean) => void;
   /** When provided (e.g. from AuthModalProvider), overrides URL search param and env default */
   callbackUrl?: string;
+  /**
+   * Optional success callback for callers that want to handle navigation
+   * themselves (e.g. open a different URL in a new tab) instead of the
+   * default `window.location.href = callbackUrl` hard-reload. Applies to
+   * email/password and 2FA paths. Google sign-in still uses callbackUrl
+   * because it's a full-page provider redirect.
+   *
+   * Caller is responsible for closing any UI (e.g. the auth modal) and for
+   * any navigation. The session has already been synced before this fires.
+   */
+  onAuthSuccess?: () => void | Promise<void>;
 }
 
 const LoginWrapper = ({
   setLoadingState,
   callbackUrl: callbackUrlProp,
+  onAuthSuccess,
 }: LoginWrapperProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -253,7 +265,11 @@ const LoginWrapper = ({
 
               await new Promise(resolve => setTimeout(resolve, 200));
               await syncSession();
-              window.location.href = callbackUrl;
+              if (onAuthSuccess) {
+                await onAuthSuccess();
+              } else {
+                window.location.href = callbackUrl;
+              }
             },
             onError: ctx => {
               const errorObj = ctx.error || ctx;
@@ -294,14 +310,18 @@ const LoginWrapper = ({
         setLoadingState(false);
       }
     },
-    [handleAuthError, setLoadingState, callbackUrl]
+    [handleAuthError, setLoadingState, callbackUrl, onAuthSuccess]
   );
 
   if (twoFactorRequired) {
     return (
       <TwoFactorVerify
         onSuccess={async () => {
-          window.location.href = callbackUrl;
+          if (onAuthSuccess) {
+            await onAuthSuccess();
+          } else {
+            window.location.href = callbackUrl;
+          }
         }}
         onCancel={() => setTwoFactorRequired(false)}
       />

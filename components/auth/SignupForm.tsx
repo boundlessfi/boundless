@@ -39,6 +39,12 @@ const formSchema = z.object({
 interface SignupFormProps {
   onLoadingChange?: (isLoading: boolean) => void;
   invitation?: string | null;
+  /**
+   * Prefills the email field. Comes through the URL as `?email=...` —
+   * email-invite links to unregistered users carry it so the invitee
+   * doesn't have to retype the address the invitation was sent to.
+   */
+  defaultEmail?: string | null;
   onGoogleSignIn?: () => void;
   lastMethod?: string | null;
 }
@@ -46,6 +52,7 @@ interface SignupFormProps {
 const SignupForm = ({
   onLoadingChange,
   invitation,
+  defaultEmail,
   onGoogleSignIn,
   lastMethod,
 }: SignupFormProps) => {
@@ -65,7 +72,10 @@ const SignupForm = ({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: prefilledEmail,
+      // Prefer the explicit prop (most callers pass it through from
+      // their own URL parsing) but fall back to ?email= in the URL so
+      // judge-invitation deep links work even without a parent wrapper.
+      email: defaultEmail ?? prefilledEmail,
       firstName: '',
       lastName: '',
       password: '',

@@ -1,32 +1,29 @@
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useCallback, useState } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authClient } from '@/lib/auth-client';
 import { getMe } from '@/lib/api/auth';
 import { GetMeResponse } from '@/lib/api/types';
 
-const authProfileInvalidationListeners = new Set<() => void>();
+const AUTH_PROFILE_QUERY_KEY = ['auth', 'me'] as const;
 
-export function invalidateAuthProfileCache() {
-  authProfileInvalidationListeners.forEach(listener => {
-    listener();
+function useAuthProfileQuery(sessionUserId: string | null | undefined) {
+  return useQuery<GetMeResponse | null>({
+    queryKey: [...AUTH_PROFILE_QUERY_KEY, sessionUserId ?? null],
+    queryFn: getMe,
+    enabled: !!sessionUserId,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 }
 
-function useAuthProfileInvalidationSignal() {
-  const [refreshSignal, setRefreshSignal] = useState(0);
-
-  useEffect(() => {
-    const listener = () => {
-      setRefreshSignal(current => current + 1);
-    };
-
-    authProfileInvalidationListeners.add(listener);
-    return () => {
-      authProfileInvalidationListeners.delete(listener);
-    };
-  }, []);
-
-  return refreshSignal;
+export function invalidateAuthProfileCache() {
+  // Kept for backward compatibility. Components that need to force a refetch
+  // should call `useAuth().refreshUser()` (or invalidate via QueryClient directly).
+  // We can't access QueryClient from a non-hook context here, so this is a no-op.
 }
 
 export function useAuth(requireAuth = true) {
@@ -37,9 +34,12 @@ export function useAuth(requireAuth = true) {
   } = authClient.useSession();
 
   const router = useRouter();
-  const [userProfile, setUserProfile] = useState<GetMeResponse | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const profileRefreshSignal = useAuthProfileInvalidationSignal();
+  const queryClient = useQueryClient();
+  const sessionUserId =
+    session && 'user' in session ? (session.user?.id ?? null) : null;
+
+  const { data: userProfile, isFetching: profileLoading } =
+    useAuthProfileQuery(sessionUserId);
 
   const user = useMemo(() => {
     if (session && 'user' in session && session.user) {
@@ -50,7 +50,7 @@ export function useAuth(requireAuth = true) {
         image: session.user.image || null,
         role: 'USER' as 'USER' | 'ADMIN',
         username: null,
-        profile: userProfile,
+        profile: userProfile ?? null,
       };
     }
     return null;
@@ -60,25 +60,6 @@ export function useAuth(requireAuth = true) {
   const isLoading = sessionPending || profileLoading;
   const error = sessionError?.message || null;
 
-  // Fetch profile
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (session && 'user' in session && session.user) {
-        try {
-          setProfileLoading(true);
-          const profile = await getMe();
-          setUserProfile(profile);
-        } catch {
-          // ignore error
-        } finally {
-          setProfileLoading(false);
-        }
-      }
-    };
-
-    fetchProfile();
-  }, [session, profileRefreshSignal]);
-
   // Redirect if required and unauthenticated
   useEffect(() => {
     if (requireAuth && !isAuthenticated && !isLoading) {
@@ -86,17 +67,14 @@ export function useAuth(requireAuth = true) {
     }
   }, [requireAuth, isAuthenticated, isLoading, router]);
 
-  // refreshUser does not need useless try/catch
   const refreshUser = useCallback(async () => {
-    const profile = await getMe();
-    setUserProfile(profile);
-  }, []);
+    await queryClient.invalidateQueries({ queryKey: AUTH_PROFILE_QUERY_KEY });
+  }, [queryClient]);
 
-  // clearAuth — same fix
   const clearAuth = useCallback(async () => {
-    setUserProfile(null);
+    queryClient.removeQueries({ queryKey: AUTH_PROFILE_QUERY_KEY });
     await authClient.signOut();
-  }, []);
+  }, [queryClient]);
 
   return {
     user,
@@ -118,9 +96,11 @@ export function useOptionalAuth() {
 
 export function useAuthStatus() {
   const { data: session, isPending: sessionPending } = authClient.useSession();
-  const [userProfile, setUserProfile] = useState<GetMeResponse | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const profileRefreshSignal = useAuthProfileInvalidationSignal();
+  const sessionUserId =
+    session && 'user' in session ? (session.user?.id ?? null) : null;
+
+  const { data: userProfile, isFetching: profileLoading } =
+    useAuthProfileQuery(sessionUserId);
 
   const user = useMemo(() => {
     if (session && 'user' in session && session.user) {
@@ -131,29 +111,11 @@ export function useAuthStatus() {
         image: session.user.image || null,
         role: 'USER' as 'USER' | 'ADMIN',
         username: null,
-        profile: userProfile,
+        profile: userProfile ?? null,
       };
     }
     return null;
   }, [session, userProfile]);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (session && 'user' in session && session.user) {
-        try {
-          setProfileLoading(true);
-          const profile = await getMe();
-          setUserProfile(profile);
-        } catch {
-          // ignore
-        } finally {
-          setProfileLoading(false);
-        }
-      }
-    };
-
-    fetchProfile();
-  }, [session, profileRefreshSignal]);
 
   return {
     isAuthenticated: !!(session && 'user' in session && session.user),
@@ -164,12 +126,13 @@ export function useAuthStatus() {
 
 export function useAuthActions() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  // remove useless catch
   const logout = useCallback(async () => {
+    queryClient.removeQueries({ queryKey: AUTH_PROFILE_QUERY_KEY });
     await authClient.signOut();
     router.push('/');
-  }, []);
+  }, [queryClient, router]);
 
   return {
     logout,

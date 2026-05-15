@@ -36,7 +36,10 @@ export interface Team {
     username: string;
     image?: string;
   };
-  members: string[] | TeamMember[]; // Backend returns IDs or full objects depending on endpoint
+  // Backend always returns full TeamMember objects via the
+  // TransformResponseInterceptor. The historical `string[]` arm of this
+  // union was for an old endpoint that no longer exists.
+  members: TeamMember[];
   memberCount: number;
   maxSize: number;
   lookingFor: LookingForRole[];
@@ -206,6 +209,32 @@ export const leaveTeam = async (
   teamId: string
 ): Promise<ApiResponse<null>> => {
   const res = await api.post(`/hackathons/${id}/teams/${teamId}/leave`);
+  return res.data;
+};
+
+/**
+ * Remove a member from the team (leader only).
+ */
+export const removeTeamMember = async (
+  id: string,
+  teamId: string,
+  userId: string
+): Promise<ApiResponse<{ message: string }>> => {
+  const res = await api.delete(
+    `/hackathons/${id}/teams/${teamId}/members/${userId}`
+  );
+  return res.data;
+};
+
+/**
+ * Disband a team (leader only). Refused server-side if the team has an
+ * existing submission.
+ */
+export const disbandTeam = async (
+  id: string,
+  teamId: string
+): Promise<ApiResponse<{ message: string }>> => {
+  const res = await api.delete(`/hackathons/${id}/teams/${teamId}`);
   return res.data;
 };
 
