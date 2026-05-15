@@ -32,6 +32,7 @@ export enum SubmissionVisibility {
 export enum SubmissionStatusVisibility {
   ALL = 'ALL',
   ACCEPTED_SHORTLISTED = 'ACCEPTED_SHORTLISTED',
+  HIDDEN_UNTIL_RESULTS = 'HIDDEN_UNTIL_RESULTS',
 }
 
 export enum VenueType {

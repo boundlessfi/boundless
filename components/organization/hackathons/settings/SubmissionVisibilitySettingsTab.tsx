@@ -47,7 +47,8 @@ export default function SubmissionVisibilitySettingsTab({
     resolver: zodResolver(visibilitySettingsSchema),
     defaultValues: {
       submissionVisibility: SubmissionVisibility.PUBLIC,
-      submissionStatusVisibility: SubmissionStatusVisibility.ALL,
+      submissionStatusVisibility:
+        SubmissionStatusVisibility.ACCEPTED_SHORTLISTED,
     },
   });
 
@@ -61,7 +62,7 @@ export default function SubmissionVisibilitySettingsTab({
               response.data.submissionVisibility || SubmissionVisibility.PUBLIC,
             submissionStatusVisibility:
               response.data.submissionStatusVisibility ||
-              SubmissionStatusVisibility.ALL,
+              SubmissionStatusVisibility.ACCEPTED_SHORTLISTED,
           });
         }
       } catch (error) {
@@ -181,20 +182,6 @@ export default function SubmissionVisibilitySettingsTab({
                       <FormItem className='flex items-center space-y-0 space-x-3 rounded-lg border border-gray-900 p-4'>
                         <FormControl>
                           <RadioGroupItem
-                            value={SubmissionStatusVisibility.ALL}
-                          />
-                        </FormControl>
-                        <FormLabel className='cursor-pointer font-normal text-white'>
-                          <div className='font-medium'>All Submissions</div>
-                          <div className='text-xs text-gray-400'>
-                            Show all projects (accepted, shortlisted, and
-                            rejected).
-                          </div>
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className='flex items-center space-y-0 space-x-3 rounded-lg border border-gray-900 p-4'>
-                        <FormControl>
-                          <RadioGroupItem
                             value={
                               SubmissionStatusVisibility.ACCEPTED_SHORTLISTED
                             }
@@ -202,11 +189,45 @@ export default function SubmissionVisibilitySettingsTab({
                         </FormControl>
                         <FormLabel className='cursor-pointer font-normal text-white'>
                           <div className='font-medium'>
-                            Accepted/Shortlisted Only
+                            Shortlisted only (recommended)
                           </div>
                           <div className='text-xs text-gray-400'>
-                            Only show projects that have been approved or
-                            shortlisted.
+                            Submissions stay hidden until you shortlist them.
+                            Disqualified projects are never shown.
+                          </div>
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className='flex items-center space-y-0 space-x-3 rounded-lg border border-gray-900 p-4'>
+                        <FormControl>
+                          <RadioGroupItem
+                            value={
+                              SubmissionStatusVisibility.HIDDEN_UNTIL_RESULTS
+                            }
+                          />
+                        </FormControl>
+                        <FormLabel className='cursor-pointer font-normal text-white'>
+                          <div className='font-medium'>
+                            Hidden until results are announced
+                          </div>
+                          <div className='text-xs text-gray-400'>
+                            Submissions stay hidden from everyone (except the
+                            participants who made them and your team) until you
+                            publish results. Then only shortlisted projects
+                            appear.
+                          </div>
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className='flex items-center space-y-0 space-x-3 rounded-lg border border-gray-900 p-4'>
+                        <FormControl>
+                          <RadioGroupItem
+                            value={SubmissionStatusVisibility.ALL}
+                          />
+                        </FormControl>
+                        <FormLabel className='cursor-pointer font-normal text-white'>
+                          <div className='font-medium'>All submissions</div>
+                          <div className='text-xs text-gray-400'>
+                            Every submission is visible as soon as it&apos;s
+                            made. Disqualified projects are still hidden.
                           </div>
                         </FormLabel>
                       </FormItem>
