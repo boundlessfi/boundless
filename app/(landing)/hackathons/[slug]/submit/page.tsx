@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useHackathon } from '@/hooks/hackathon/use-hackathon-queries';
 import { useAuthStatus } from '@/hooks/use-auth';
@@ -94,6 +94,40 @@ export default function SubmitProjectPage({
     router.push(`/hackathons/${hackathonSlug}?tab=submission`);
   };
 
+  // Stable initialData reference so the form doesn't re-reset (and wipe
+  // the user's typed-but-unsaved input) on every parent re-render. The
+  // form's reset effect depends on this object identity, so it MUST only
+  // change when the underlying submission actually changes.
+  //
+  // We also pass through the Phase A polish fields (tagline, builtWith,
+  // screenshots, license, codeAttestedAt) and trackEntries — if these
+  // are missing, the form initialises them to empty and any save then
+  // clobbers the server values with empties.
+  const initialData = useMemo(() => {
+    if (!mySubmission) return undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = mySubmission as any;
+    return {
+      projectName: mySubmission.projectName,
+      category: mySubmission.category,
+      description: mySubmission.description,
+      logo: mySubmission.logo,
+      banner: mySubmission.banner,
+      videoUrl: mySubmission.videoUrl,
+      introduction: mySubmission.introduction,
+      links: mySubmission.links,
+      participationType: s.participationType,
+      teamName: s.teamName,
+      teamMembers: s.teamMembers,
+      tagline: s.tagline,
+      builtWith: s.builtWith,
+      screenshots: s.screenshots,
+      license: s.license,
+      codeAttestedAt: s.codeAttestedAt,
+      trackEntries: s.trackEntries,
+    };
+  }, [mySubmission]);
+
   const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
 
   useEffect(() => {
@@ -149,24 +183,7 @@ export default function SubmitProjectPage({
               hackathonSlugOrId={hackathonId}
               organizationId={orgId}
               submissionId={mySubmission?.id}
-              initialData={
-                mySubmission
-                  ? {
-                      projectName: mySubmission.projectName,
-                      category: mySubmission.category,
-                      description: mySubmission.description,
-                      logo: mySubmission.logo,
-                      banner: mySubmission.banner,
-                      videoUrl: mySubmission.videoUrl,
-                      introduction: mySubmission.introduction,
-                      links: mySubmission.links,
-                      participationType: (mySubmission as any)
-                        .participationType,
-                      teamName: (mySubmission as any).teamName,
-                      teamMembers: (mySubmission as any).teamMembers,
-                    }
-                  : undefined
-              }
+              initialData={initialData}
               onSuccess={handleSuccess}
               onClose={handleClose}
             />

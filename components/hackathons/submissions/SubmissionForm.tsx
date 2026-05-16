@@ -185,7 +185,23 @@ type SubmissionFormDataLocal = z.infer<typeof baseSubmissionSchema>;
 interface SubmissionFormContentProps {
   hackathonSlugOrId: string;
   organizationId?: string;
-  initialData?: Partial<SubmissionFormDataLocal>;
+  /**
+   * Pre-populates the form when editing an existing submission. Accepts
+   * the raw submission shape from the API so server-only fields like
+   * trackEntries and codeAttestedAt can be hydrated alongside the Zod-
+   * typed form fields (which the form reads via a typed cast).
+   */
+  initialData?: Partial<SubmissionFormDataLocal> & {
+    trackEntries?: Array<{
+      trackId: string;
+      trackAnswers?: {
+        promptAnswer?: string;
+        customAnswers?: Record<string, string>;
+        artifacts?: Record<string, string>;
+      };
+    }>;
+    codeAttestedAt?: string | null;
+  };
   submissionId?: string;
   onSuccess?: () => void;
   onClose?: () => void;
