@@ -14,6 +14,7 @@ import {
   Sliders,
   Eye,
   HandCoins,
+  Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api/api';
@@ -27,6 +28,7 @@ import CollaborationSettingsTab from '@/components/organization/hackathons/setti
 import AdvancedSettingsTab from '@/components/organization/hackathons/settings/AdvancedSettingsTab';
 import SubmissionVisibilitySettingsTab from '@/components/organization/hackathons/settings/SubmissionVisibilitySettingsTab';
 import PartnersSettingsTab from '@/components/organization/hackathons/settings/PartnersSettingsTab';
+import TracksSettingsTab from '@/components/organization/hackathons/settings/TracksSettingsTab';
 import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
 
@@ -232,6 +234,10 @@ export default function SettingsPage() {
                       <Trophy className='h-4 w-4' />
                       Rewards
                     </TabsTrigger>
+                    <TabsTrigger value='tracks' className={tabTriggerClassName}>
+                      <Layers className='h-4 w-4' />
+                      Tracks
+                    </TabsTrigger>
                     <TabsTrigger
                       value='collaboration'
                       className={tabTriggerClassName}
@@ -314,11 +320,24 @@ export default function SettingsPage() {
               <RewardsSettingsTab
                 organizationId={organizationId}
                 hackathonId={hackathonId}
-                initialData={{ prizeTiers: hackathon?.prizeTiers || [] } as any}
+                initialData={
+                  {
+                    prizeTiers: hackathon?.prizeTiers || [],
+                    prizeStructure: hackathon?.prizeStructure,
+                    tracksMaxPerSubmission: hackathon?.tracksMaxPerSubmission,
+                  } as any
+                }
                 onSave={async data => {
                   await handleSave('Rewards', data);
                 }}
                 isLoading={isSaving}
+              />
+            </TabsContent>
+
+            <TabsContent value='tracks' className='mt-0'>
+              <TracksSettingsTab
+                organizationId={organizationId}
+                hackathonId={hackathonId}
               />
             </TabsContent>
 

@@ -404,7 +404,14 @@ export type Hackathon = {
     currency?: string;
     description?: string;
     passMark?: number;
+    kind?: 'OVERALL' | 'TRACK';
+    trackId?: string;
   }>;
+
+  /** Track-based prize structure. Defaults to OVERALL_ONLY. */
+  prizeStructure?: 'OVERALL_ONLY' | 'OVERALL_AND_TRACKS' | 'TRACKS_ONLY';
+  /** Cap on tracks a submission may opt into. Defaults to 3. */
+  tracksMaxPerSubmission?: number;
 
   phases: Array<{
     id?: string;
@@ -736,6 +743,22 @@ export interface ParticipantSubmission {
     email: string;
   } | null;
   reviewedAt?: string | null;
+  /** Track entries opted into by the submitter. */
+  trackEntries?: Array<{
+    trackId: string;
+    trackSlug: string;
+    trackName: string;
+    wonRank: number | null;
+  }>;
+  /** Overall placement (1, 2, 3, ...). Null until results published. */
+  rank?: number | null;
+
+  // ── Phase A submission polish ──
+  tagline?: string;
+  builtWith?: string[];
+  screenshots?: string[];
+  license?: string;
+  codeAttestedAt?: string | null;
 }
 
 export interface ExploreSubmissionsResponse {
@@ -879,6 +902,25 @@ export interface CreateSubmissionRequest {
     twitter?: string;
     email?: string;
   };
+  /** Optional track opt-in. Capped by hackathon.tracksMaxPerSubmission. */
+  trackIds?: string[];
+
+  /** Per-track answers (Phase B). */
+  trackAnswers?: Record<
+    string,
+    {
+      promptAnswer?: string;
+      customAnswers?: Record<string, string>;
+      artifacts?: Record<string, string>;
+    }
+  >;
+
+  // ── Phase A submission polish ──
+  tagline?: string;
+  builtWith?: string[];
+  screenshots?: string[];
+  license?: string;
+  codeAttested?: boolean;
 }
 
 export interface UpdateSubmissionRequest extends CreateSubmissionRequest {
@@ -2963,9 +3005,32 @@ export interface HackathonWinner {
   slug?: string;
 }
 
+export interface HackathonTrackWinner {
+  track: {
+    id: string;
+    slug: string;
+    name: string;
+    description?: string;
+  };
+  /** Placement within the track. P1 currently emits 1 only. */
+  wonRank: number;
+  projectName: string;
+  logo: string | null;
+  teamName: string | null;
+  participants: Array<{
+    userId?: string;
+    username: string;
+    avatar?: string;
+  }>;
+  prize: string;
+  submissionId: string;
+}
+
 export interface GetHackathonWinnersResponse extends ApiResponse<{
   hackathonId: string;
   winners: HackathonWinner[];
+  /** Track winners; empty when the hackathon uses OVERALL_ONLY structure. */
+  trackWinners?: HackathonTrackWinner[];
 }> {
   success: true;
 }

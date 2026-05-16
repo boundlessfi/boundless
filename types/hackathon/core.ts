@@ -110,10 +110,23 @@ export interface PrizeTier {
   prizeAmount?: string;
   /** @deprecated Use prizeAmount. Kept for API compatibility. */
   amount?: string;
+  /** Tier classification — OVERALL (default) or TRACK. Added with the
+   *  track-based prize structure feature. Tiers without `kind` are
+   *  treated as OVERALL by the backend. */
+  kind?: 'OVERALL' | 'TRACK';
+  /** Required when kind=TRACK. References a HackathonTrack on the same hackathon. */
+  trackId?: string;
 }
+
+export type HackathonPrizeStructure =
+  | 'OVERALL_ONLY'
+  | 'OVERALL_AND_TRACKS'
+  | 'TRACKS_ONLY';
 
 export interface HackathonRewards {
   prizeTiers: PrizeTier[];
+  prizeStructure?: HackathonPrizeStructure;
+  tracksMaxPerSubmission?: number;
 }
 
 export interface JudgingCriterion {
@@ -260,7 +273,14 @@ export type Hackathon = {
     currency?: string;
     description?: string;
     passMark?: number;
+    kind?: 'OVERALL' | 'TRACK';
+    trackId?: string;
   }>;
+
+  /** P1 of track-based prize structure. Defaults to OVERALL_ONLY when omitted. */
+  prizeStructure?: HackathonPrizeStructure;
+  /** Cap on tracks a submission may opt into. Defaults to 3. */
+  tracksMaxPerSubmission?: number;
 
   phases: Array<{
     id?: string;

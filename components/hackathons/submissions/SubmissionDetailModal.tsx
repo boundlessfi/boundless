@@ -217,13 +217,152 @@ export function SubmissionDetailModal({
               </div>
             )}
 
+            {/* Tagline — short pitch shown above the long description. */}
+            {(() => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const tagline = (submission as any).tagline as string | undefined;
+              return tagline ? (
+                <p className='text-base text-gray-200 italic'>
+                  &ldquo;{tagline}&rdquo;
+                </p>
+              ) : null;
+            })()}
+
+            {/* Screenshots gallery (up to 5). Renders as a horizontal
+                scroll on mobile, a row of thumbnails on desktop. */}
+            {(() => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const screenshots = ((submission as any).screenshots ??
+                []) as string[];
+              return screenshots.length > 0 ? (
+                <div>
+                  <h3 className='mb-2 text-lg font-semibold'>Screenshots</h3>
+                  <div className='flex gap-3 overflow-x-auto pb-2'>
+                    {screenshots.map((src, i) => (
+                      <a
+                        key={`${src}-${i}`}
+                        href={src}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='shrink-0'
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={src}
+                          alt={`Screenshot ${i + 1}`}
+                          className='h-40 rounded-md border border-gray-700 object-cover transition-opacity hover:opacity-90'
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
             {/* Description */}
             <div>
               <h3 className='mb-2 text-lg font-semibold'>Description</h3>
-              <p className='text-gray-300'>{submission.description}</p>
+              <p className='whitespace-pre-wrap text-gray-300'>
+                {submission.description}
+              </p>
             </div>
 
-            {/* Introduction */}
+            {/* Per-track answers — only for tracks where the organizer
+                set a prompt / custom questions / required artifacts and
+                the submitter filled at least one in. We index by
+                trackId so the section header gets the track name. */}
+            {(() => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const entries = ((submission as any).trackEntries ??
+                []) as Array<{
+                trackId: string;
+                trackName: string;
+                trackAnswers?: {
+                  promptAnswer?: string;
+                  customAnswers?: Record<string, string>;
+                  artifacts?: Record<string, string>;
+                };
+              }>;
+              const withAnswers = entries.filter(e => {
+                const a = e.trackAnswers;
+                if (!a) return false;
+                return !!(
+                  a.promptAnswer?.trim() ||
+                  Object.values(a.customAnswers ?? {}).some(v => v?.trim?.()) ||
+                  Object.values(a.artifacts ?? {}).some(v => v?.trim?.())
+                );
+              });
+              if (withAnswers.length === 0) return null;
+              return (
+                <div className='space-y-4'>
+                  <h3 className='text-lg font-semibold'>Track answers</h3>
+                  {withAnswers.map(e => (
+                    <div
+                      key={e.trackId}
+                      className='space-y-2 rounded-md border border-gray-700 bg-gray-900/40 p-3'
+                    >
+                      <p className='text-sm font-medium text-white'>
+                        {e.trackName}
+                      </p>
+                      {e.trackAnswers?.promptAnswer && (
+                        <p className='text-sm whitespace-pre-wrap text-gray-300'>
+                          {e.trackAnswers.promptAnswer}
+                        </p>
+                      )}
+                      {Object.entries(e.trackAnswers?.customAnswers ?? {})
+                        .filter(([, v]) => v && v.trim().length > 0)
+                        .map(([qid, value]) => (
+                          <div key={qid} className='text-sm'>
+                            <p className='text-xs text-gray-400'>{qid}</p>
+                            <p className='whitespace-pre-wrap text-gray-200'>
+                              {value}
+                            </p>
+                          </div>
+                        ))}
+                      {Object.entries(e.trackAnswers?.artifacts ?? {})
+                        .filter(([, v]) => v && v.trim().length > 0)
+                        .map(([aid, url]) => (
+                          <div key={aid} className='text-sm'>
+                            <p className='text-xs text-gray-400'>{aid}</p>
+                            <a
+                              href={url}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='text-primary break-all hover:underline'
+                            >
+                              {url}
+                            </a>
+                          </div>
+                        ))}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Built with — tech-stack chips, hidden when empty. */}
+            {(() => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const builtWith = ((submission as any).builtWith ??
+                []) as string[];
+              return builtWith.length > 0 ? (
+                <div>
+                  <h3 className='mb-2 text-lg font-semibold'>Built with</h3>
+                  <div className='flex flex-wrap gap-2'>
+                    {builtWith.map((tag, i) => (
+                      <span
+                        key={`${tag}-${i}`}
+                        className='rounded-md border border-gray-700 bg-gray-900/40 px-2 py-1 text-xs text-gray-200'
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Introduction (legacy field — keep for backward compat) */}
             {submission.introduction && (
               <div>
                 <h3 className='mb-2 text-lg font-semibold'>Introduction</h3>
@@ -271,7 +410,7 @@ export function SubmissionDetailModal({
             <Separator className='bg-gray-700' />
 
             {/* Footer Info */}
-            <div className='flex items-center gap-6 text-sm text-gray-400'>
+            <div className='flex flex-wrap items-center gap-6 text-sm text-gray-400'>
               <div className='flex items-center gap-2'>
                 <Calendar className='h-4 w-4' />
                 <span>
@@ -292,6 +431,17 @@ export function SubmissionDetailModal({
                   comments
                 </span>
               </div>
+              {(() => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const license = (submission as any).license as
+                  | string
+                  | undefined;
+                return license ? (
+                  <span className='rounded border border-gray-700 px-2 py-0.5 text-xs tracking-wide uppercase'>
+                    License · {license}
+                  </span>
+                ) : null;
+              })()}
             </div>
 
             {/* Disqualification Reason */}

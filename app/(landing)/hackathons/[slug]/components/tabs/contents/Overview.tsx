@@ -1,9 +1,19 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useHackathon } from '@/hooks/hackathon/use-hackathon-queries';
+import {
+  useHackathon,
+  useHackathonTracks,
+} from '@/hooks/hackathon/use-hackathon-queries';
 import { TabsContent } from '@/components/ui/tabs';
-import { Info, Target, Clock, Trophy, ChevronRight } from 'lucide-react';
+import {
+  Info,
+  Target,
+  Clock,
+  Trophy,
+  ChevronRight,
+  Layers,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +29,17 @@ function getOrdinal(n: number) {
 const Overview = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: hackathon } = useHackathon(slug);
+  // Only fetch tracks once we know the hackathon uses a tracked structure.
+  // Avoids an extra network call on every overview render for legacy
+  // overall-only hackathons.
+  const tracksEnabled =
+    hackathon?.prizeStructure === 'OVERALL_AND_TRACKS' ||
+    hackathon?.prizeStructure === 'TRACKS_ONLY';
+  const { data: hackathonTracks = [] } = useHackathonTracks(
+    slug,
+    tracksEnabled
+  );
+  const trackById = new Map(hackathonTracks.map(t => [t.id, t] as const));
 
   const { styledContent, loading: markdownLoading } = useMarkdown(
     hackathon?.description || '',
@@ -218,61 +239,138 @@ const Overview = () => {
       </section>
 
       {/* Prizes Section */}
-      <section className='space-y-6'>
-        <div className='flex items-center gap-2'>
-          <h2 className='text-xl font-bold text-white'>Prizes</h2>
-        </div>
-        <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
-          {hackathon.prizeTiers.map((tier, i) => (
-            <div
-              key={i}
-              className={cn(
-                'relative flex flex-col items-center rounded-2xl border bg-[#141517] p-8 text-center transition-all',
-                i === 0
-                  ? 'border-primary/30 ring-primary/20 ring-1'
-                  : 'border-white/5'
-              )}
-            >
-              {i === 0 && (
-                <Badge className='bg-primary absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-[10px] font-bold text-black uppercase'>
-                  Top Tier
-                </Badge>
-              )}
+      {(() => {
+        // Partition tiers into overall vs track. Tiers without an
+        // explicit kind are treated as OVERALL for backward compat with
+        // hackathons created before the track structure landed.
+        const overallTiers = hackathon.prizeTiers.filter(
+          t => !t.kind || t.kind === 'OVERALL'
+        );
+        const trackTiers = hackathon.prizeTiers.filter(t => t.kind === 'TRACK');
 
-              <div className='mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5'>
-                <Trophy
-                  className={cn(
-                    'h-7 w-7',
-                    i === 0
-                      ? 'text-primary'
-                      : i === 1
-                        ? 'text-blue-400'
-                        : 'text-gray-400'
-                  )}
-                />
+        return (
+          <section className='space-y-8'>
+            {overallTiers.length > 0 && (
+              <div className='space-y-6'>
+                <div className='flex items-center gap-2'>
+                  <h2 className='text-xl font-bold text-white'>
+                    {trackTiers.length > 0 ? 'Overall Prizes' : 'Prizes'}
+                  </h2>
+                </div>
+                <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
+                  {overallTiers.map((tier, i) => (
+                    <div
+                      key={tier.id ?? `overall-${i}`}
+                      className={cn(
+                        'relative flex flex-col items-center rounded-2xl border bg-[#141517] p-8 text-center transition-all',
+                        i === 0
+                          ? 'border-primary/30 ring-primary/20 ring-1'
+                          : 'border-white/5'
+                      )}
+                    >
+                      {i === 0 && (
+                        <Badge className='bg-primary absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-[10px] font-bold text-black uppercase'>
+                          Top Tier
+                        </Badge>
+                      )}
+
+                      <div className='mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5'>
+                        <Trophy
+                          className={cn(
+                            'h-7 w-7',
+                            i === 0
+                              ? 'text-primary'
+                              : i === 1
+                                ? 'text-blue-400'
+                                : 'text-gray-400'
+                          )}
+                        />
+                      </div>
+
+                      <h3 className='text-sm font-semibold text-gray-400'>
+                        {tier.name || `${getOrdinal(i + 1)} Place`}
+                      </h3>
+                      <div className='my-2 flex items-baseline gap-1'>
+                        <span className='text-3xl font-black text-white'>
+                          {Number(tier.prizeAmount).toLocaleString()}
+                        </span>
+                        <span className='text-lg font-bold text-gray-500 uppercase'>
+                          {tier.currency || 'USDC'}
+                        </span>
+                      </div>
+
+                      {tier.description && (
+                        <p className='mt-4 text-xs leading-relaxed text-gray-500'>
+                          {tier.description}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
+            )}
 
-              <h3 className='text-sm font-semibold text-gray-400'>
-                {tier.name || `${getOrdinal(i + 1)} Place`}
-              </h3>
-              <div className='my-2 flex items-baseline gap-1'>
-                <span className='text-3xl font-black text-white'>
-                  {Number(tier.prizeAmount).toLocaleString()}
-                </span>
-                <span className='text-lg font-bold text-gray-500 uppercase'>
-                  {tier.currency || 'USDC'}
-                </span>
-              </div>
-
-              {tier.description && (
-                <p className='mt-4 text-xs leading-relaxed text-gray-500'>
-                  {tier.description}
+            {trackTiers.length > 0 && (
+              <div className='space-y-6'>
+                <div className='flex items-center gap-2'>
+                  <Layers className='text-primary h-5 w-5' />
+                  <h2 className='text-xl font-bold text-white'>Track Prizes</h2>
+                </div>
+                <p className='text-sm text-gray-400'>
+                  Category prizes alongside the overall placements. Pick the
+                  tracks you want your submission considered for when you
+                  submit.
                 </p>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
+                <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
+                  {trackTiers.map((tier, i) => {
+                    const track = tier.trackId
+                      ? trackById.get(tier.trackId)
+                      : undefined;
+                    return (
+                      <div
+                        key={tier.id ?? `track-${i}`}
+                        className='relative flex flex-col rounded-2xl border border-white/5 bg-[#141517] p-6 transition-all hover:border-white/10'
+                      >
+                        <div className='mb-3 flex items-start justify-between gap-2'>
+                          <Badge
+                            variant='outline'
+                            className='border-primary/40 text-primary'
+                          >
+                            {track?.name ?? tier.name ?? 'Track'}
+                          </Badge>
+                          {track?.type && (
+                            <span className='text-[10px] tracking-widest text-gray-500 uppercase'>
+                              {track.type}
+                            </span>
+                          )}
+                        </div>
+                        <div className='mb-2 flex items-baseline gap-1'>
+                          <span className='text-2xl font-black text-white'>
+                            {Number(tier.prizeAmount).toLocaleString()}
+                          </span>
+                          <span className='text-sm font-bold text-gray-500 uppercase'>
+                            {tier.currency || 'USDC'}
+                          </span>
+                        </div>
+                        {(track?.description || tier.description) && (
+                          <p className='text-xs leading-relaxed text-gray-500'>
+                            {track?.description || tier.description}
+                          </p>
+                        )}
+                        {!track && tier.trackId && (
+                          <p className='mt-2 text-[10px] text-amber-400/70'>
+                            Track details loading…
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+        );
+      })()}
 
       <SponsorsSection
         slug={slug}

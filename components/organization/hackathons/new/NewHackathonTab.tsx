@@ -261,6 +261,8 @@ export default function NewHackathonTab({
               onSave={saveRewardsStep}
               initialData={stepData.rewards}
               isLoading={loadingStates.rewards}
+              organizationId={derivedOrgId}
+              hackathonId={draftId ?? undefined}
             />
           </TabsContent>
 

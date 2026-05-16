@@ -11,6 +11,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
+import { useHackathonTracks } from '@/hooks/hackathon/use-hackathon-queries';
 import { useOptionalAuth } from '@/hooks/use-auth';
 import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
 import { useSubmission } from '@/hooks/hackathon/use-submission';
@@ -79,6 +80,18 @@ export default function PoolAndAction() {
   } = useHackathonData();
   const hackathonError = error;
   const isDataLoading = loading || !hackathon;
+
+  // Load tracks when the hackathon uses a tracked structure so the prize
+  // list can label TRACK tiers by the actual track name instead of
+  // falling through to a generic "4th/5th Place" auto-label.
+  const tracksEnabled =
+    hackathon?.prizeStructure === 'OVERALL_AND_TRACKS' ||
+    hackathon?.prizeStructure === 'TRACKS_ONLY';
+  const { data: hackathonTracks = [] } = useHackathonTracks(
+    slug,
+    tracksEnabled
+  );
+  const trackById = new Map(hackathonTracks.map(t => [t.id, t] as const));
   const participants = hackathon?.participants || [];
   const deadline = hackathon?.submissionDeadline;
   const startDate = hackathon?.startDate;
@@ -240,30 +253,70 @@ export default function PoolAndAction() {
           </div>
         </div>
 
-        {hackathon && hackathon.prizeTiers.length > 0 && (
-          <div className='relative mb-5 ml-1'>
-            <div className='bg-primary/30 absolute top-2 bottom-2 left-[5px] w-[2px]' />
-            <div className='flex flex-col gap-3'>
-              {hackathon.prizeTiers.map((tier, i) => (
-                <div key={tier.id ?? i} className='flex items-start gap-4'>
-                  <span className='bg-primary relative z-10 mt-[5px] h-3 w-3 shrink-0 rounded-full ring-4 ring-[#11230F]' />
-                  <div>
-                    <p className='text-xs text-gray-500'>
-                      {tier.name ??
-                        `${i + 1}${['st', 'nd', 'rd'][i] ?? 'th'} Place`}
-                    </p>
-                    <p className='text-base font-bold text-white'>
-                      {Number(tier.prizeAmount ?? 0).toLocaleString()}{' '}
-                      <span className='font-medium text-gray-400'>
-                        {tier.currency ?? currency}
-                      </span>
-                    </p>
-                  </div>
+        {hackathon &&
+          hackathon.prizeTiers.length > 0 &&
+          (() => {
+            // Walk the tiers once, but keep a separate counter for
+            // OVERALL placements so the "1st/2nd/3rd" labels stay
+            // accurate even when track tiers are interleaved. Track
+            // tiers get the actual track name (looked up via trackId)
+            // and a "TRACK" prefix so the sidebar matches what the
+            // organizer set up in Rewards.
+            let overallIdx = 0;
+            return (
+              <div className='relative mb-5 ml-1'>
+                <div className='bg-primary/30 absolute top-2 bottom-2 left-[5px] w-[2px]' />
+                <div className='flex flex-col gap-3'>
+                  {hackathon.prizeTiers.map((tier, i) => {
+                    const isTrack = tier.kind === 'TRACK';
+                    const track =
+                      isTrack && tier.trackId
+                        ? trackById.get(tier.trackId)
+                        : undefined;
+                    let label: string;
+                    if (isTrack) {
+                      label = track?.name ?? tier.name ?? 'Track';
+                    } else {
+                      const place = overallIdx;
+                      overallIdx += 1;
+                      label =
+                        tier.name ??
+                        `${place + 1}${['st', 'nd', 'rd'][place] ?? 'th'} Place`;
+                    }
+                    return (
+                      <div
+                        key={tier.id ?? i}
+                        className='flex items-start gap-4'
+                      >
+                        <span
+                          className={cn(
+                            'relative z-10 mt-[5px] h-3 w-3 shrink-0 rounded-full ring-4 ring-[#11230F]',
+                            isTrack ? 'bg-primary/60' : 'bg-primary'
+                          )}
+                        />
+                        <div>
+                          <p className='text-xs text-gray-500'>
+                            {isTrack && (
+                              <span className='text-primary/80 mr-1 text-[9px] font-bold tracking-widest uppercase'>
+                                Track ·
+                              </span>
+                            )}
+                            {label}
+                          </p>
+                          <p className='text-base font-bold text-white'>
+                            {Number(tier.prizeAmount ?? 0).toLocaleString()}{' '}
+                            <span className='font-medium text-gray-400'>
+                              {tier.currency ?? currency}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+            );
+          })()}
 
         <div className='mb-5 flex items-stretch gap-0 overflow-hidden rounded-xl border border-[#252628] bg-[#191B1E]'>
           <div className='flex flex-1 flex-col gap-0.5 px-4 py-3'>

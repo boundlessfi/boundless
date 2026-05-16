@@ -19,6 +19,7 @@ import {
 } from '@/lib/api/hackathons/participants';
 import { getExploreSubmissions } from '@/lib/api/hackathons';
 import { listAnnouncements } from '@/lib/api/hackathons/index';
+import { listTracks, type HackathonTrack } from '@/lib/api/hackathons/tracks';
 import {
   getTeams,
   createTeam,
@@ -82,6 +83,7 @@ export const hackathonKeys = {
     }
   ) => ['hackathon', 'exploreSubmissions', id, params] as const,
   winners: (idOrSlug: string) => ['hackathon', 'winners', idOrSlug] as const,
+  tracks: (idOrSlug: string) => ['hackathon', 'tracks', idOrSlug] as const,
   announcements: (idOrSlug: string) =>
     ['hackathon', 'announcements', idOrSlug] as const,
   teams: (idOrSlug: string, params?: GetTeamOptions) =>
@@ -253,6 +255,10 @@ export function useExploreSubmissions(
 
 /**
  * Fetch winners for a hackathon.
+ *
+ * Returns the legacy `HackathonWinner[]` shape for backward compatibility
+ * via the array-typed callers. Use `useHackathonWinnersWithTracks` when
+ * you also need the track-based prize winners.
  */
 export function useHackathonWinners(idOrSlug: string, enabled = true) {
   return useQuery<HackathonWinner[]>({
@@ -261,6 +267,58 @@ export function useHackathonWinners(idOrSlug: string, enabled = true) {
       const response = await getHackathonWinners(idOrSlug);
       if (!response.success || !response.data) return [];
       return response.data.winners;
+    },
+    enabled: !!idOrSlug && enabled,
+  });
+}
+
+/**
+ * Fetch winners + track winners for a hackathon. Used by the public
+ * winners view to render both the overall podium and per-track prizes.
+ */
+export function useHackathonWinnersWithTracks(
+  idOrSlug: string,
+  enabled = true
+) {
+  return useQuery<{
+    winners: HackathonWinner[];
+    trackWinners: import('@/lib/api/hackathons').HackathonTrackWinner[];
+  }>({
+    queryKey: [...hackathonKeys.winners(idOrSlug), 'with-tracks'],
+    queryFn: async () => {
+      const response = await getHackathonWinners(idOrSlug);
+      if (!response.success || !response.data) {
+        return { winners: [], trackWinners: [] };
+      }
+      return {
+        winners: response.data.winners ?? [],
+        trackWinners:
+          (
+            response.data as {
+              trackWinners?: import('@/lib/api/hackathons').HackathonTrackWinner[];
+            }
+          ).trackWinners ?? [],
+      };
+    },
+    enabled: !!idOrSlug && enabled,
+  });
+}
+
+/**
+ * Public list of tracks for a hackathon. Returns only active (non-archived)
+ * tracks. Used by the public detail page to render Track Prizes and the
+ * submission form to populate the track picker.
+ */
+export function useHackathonTracks(idOrSlug: string, enabled = true) {
+  return useQuery<HackathonTrack[]>({
+    queryKey: hackathonKeys.tracks(idOrSlug),
+    queryFn: async () => {
+      try {
+        return await listTracks(idOrSlug);
+      } catch {
+        // Best-effort: a 404 / network error shouldn't kill the page.
+        return [];
+      }
     },
     enabled: !!idOrSlug && enabled,
   });

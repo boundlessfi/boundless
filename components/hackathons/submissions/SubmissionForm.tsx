@@ -42,6 +42,7 @@ import {
   type SubmissionFormData,
 } from '@/hooks/hackathon/use-submission';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
+import { listTracks, type HackathonTrack } from '@/lib/api/hackathons/tracks';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -83,6 +84,16 @@ const teamMemberSchema = z
     path: ['email'],
   });
 
+const LICENSE_OPTIONS = [
+  'MIT',
+  'Apache-2.0',
+  'GPL-3.0',
+  'BSD-3',
+  'PROPRIETARY',
+  'OTHER',
+] as const;
+type License = (typeof LICENSE_OPTIONS)[number];
+
 const baseSubmissionSchema = z.object({
   projectName: z.string().min(3, 'Project name must be at least 3 characters'),
   category: z.string().min(1, 'Please select a category'),
@@ -105,6 +116,42 @@ const baseSubmissionSchema = z.object({
   participationType: z.enum(['INDIVIDUAL', 'TEAM']),
   teamName: z.string().optional(),
   teamMembers: z.array(teamMemberSchema).optional(),
+  /** Track ids the submitter has opted into. Capped client-side by
+   *  hackathon.tracksMaxPerSubmission; the backend re-validates. */
+  trackIds: z.array(z.string()).optional(),
+  /** Track-specific answers, keyed by trackId (Phase B). The backend
+   *  validates required fields against each track's customization. */
+  trackAnswers: z
+    .record(
+      z.string(),
+      z.object({
+        promptAnswer: z.string().max(2000).optional(),
+        customAnswers: z.record(z.string(), z.string()).optional(),
+        artifacts: z.record(z.string(), z.string()).optional(),
+      })
+    )
+    .optional(),
+
+  // ── Phase A submission polish ──
+  tagline: z
+    .string()
+    .max(200, 'Tagline must be 200 characters or fewer')
+    .optional(),
+  builtWith: z
+    .array(z.string().max(40, 'Tag must be 40 characters or fewer'))
+    .max(20, 'Up to 20 tags')
+    .optional(),
+  screenshots: z
+    .array(z.string().url('Each screenshot must be a valid URL'))
+    .max(5, 'Up to 5 screenshots')
+    .optional(),
+  license: z
+    .enum(LICENSE_OPTIONS as unknown as [License, ...License[]])
+    .optional(),
+  // codeAttested is enforced at submit time (see onSubmit) rather than
+  // here so the user can move between steps without the schema blocking
+  // them. The Review step UI wires it as a required gate.
+  codeAttested: z.boolean().optional(),
 });
 
 const createSubmissionSchema = (requireDemoVideo: boolean) =>
@@ -208,6 +255,37 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   const { user } = useAuthStatus();
 
   const requireGithub = currentHackathon?.requireGithub ?? false;
+
+  // ── Tracks ────────────────────────────────────────────────────────────
+  // Best-effort load — if the endpoint fails the form falls back to
+  // overall-only and the submission still goes through.
+  const [availableTracks, setAvailableTracks] = useState<HackathonTrack[]>([]);
+  const trackCap = currentHackathon?.tracksMaxPerSubmission ?? 3;
+  const prizeStructure = currentHackathon?.prizeStructure ?? 'OVERALL_ONLY';
+  const tracksEnabled = prizeStructure !== 'OVERALL_ONLY';
+
+  useEffect(() => {
+    if (!hackathonSlugOrId || !tracksEnabled) {
+      setAvailableTracks([]);
+      return;
+    }
+    let cancelled = false;
+    listTracks(hackathonSlugOrId)
+      .then(rows => {
+        if (!cancelled) {
+          // Only OPT_IN tracks need a pick — OPEN tracks auto-include
+          // every submission, so showing them in a checkbox group would
+          // just confuse submitters.
+          setAvailableTracks(rows.filter(t => t.eligibility === 'OPT_IN'));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAvailableTracks([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hackathonSlugOrId, tracksEnabled]);
   const requireDemoVideo = currentHackathon?.requireDemoVideo ?? false;
   const requireOtherLinks = currentHackathon?.requireOtherLinks ?? false;
 
@@ -277,6 +355,13 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       participationType: 'INDIVIDUAL',
       teamName: '',
       teamMembers: [],
+      trackIds: [],
+      trackAnswers: {},
+      tagline: '',
+      builtWith: [],
+      screenshots: [],
+      license: undefined,
+      codeAttested: false,
     },
   });
 
@@ -293,6 +378,8 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   // Initialize form when modal opens with data
   useEffect(() => {
     if (open && initialData) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = initialData as any;
       form.reset({
         projectName: initialData.projectName || '',
         category: initialData.category || '',
@@ -303,6 +390,52 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         introduction: initialData.introduction || '',
         links: initialData.links || [],
         participationType: initialData.participationType || 'INDIVIDUAL',
+        trackIds:
+          raw.trackIds ??
+          ((raw.trackEntries ?? []) as Array<{ trackId: string }>).map(
+            e => e.trackId
+          ),
+        // Reconstruct trackAnswers from trackEntries the backend returns
+        // on reload. The shape is { [trackId]: TrackAnswer }.
+        trackAnswers: ((): Record<
+          string,
+          {
+            promptAnswer?: string;
+            customAnswers?: Record<string, string>;
+            artifacts?: Record<string, string>;
+          }
+        > => {
+          const entries = (raw.trackEntries ?? []) as Array<{
+            trackId: string;
+            trackAnswers?: {
+              promptAnswer?: string;
+              customAnswers?: Record<string, string>;
+              artifacts?: Record<string, string>;
+            };
+          }>;
+          const out: Record<
+            string,
+            {
+              promptAnswer?: string;
+              customAnswers?: Record<string, string>;
+              artifacts?: Record<string, string>;
+            }
+          > = {};
+          for (const e of entries) {
+            if (e.trackAnswers && typeof e.trackAnswers === 'object') {
+              out[e.trackId] = e.trackAnswers;
+            }
+          }
+          return out;
+        })(),
+        tagline: raw.tagline ?? '',
+        builtWith: raw.builtWith ?? [],
+        screenshots: raw.screenshots ?? [],
+        license: raw.license,
+        // The attestation timestamp coming back from the server gets
+        // mapped to the boolean form field; reloading a previously
+        // attested submission keeps the box checked.
+        codeAttested: !!raw.codeAttestedAt || !!raw.codeAttested,
       });
       if (initialData.logo && isValidImageUrl(initialData.logo)) {
         setLogoPreview(initialData.logo);
@@ -784,6 +917,65 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                 }))
             : [],
         participationType: data.participationType || 'INDIVIDUAL',
+        trackIds:
+          (data.trackIds ?? currentValues.trackIds)?.filter(
+            (id): id is string => typeof id === 'string' && id.length > 0
+          ) ?? undefined,
+        // Pull per-track answers only for the tracks that are
+        // currently selected. Stale entries from de-selected tracks
+        // get dropped so the backend doesn't store dangling answers.
+        trackAnswers: (():
+          | Record<
+              string,
+              {
+                promptAnswer?: string;
+                customAnswers?: Record<string, string>;
+                artifacts?: Record<string, string>;
+              }
+            >
+          | undefined => {
+          const picked = data.trackIds ?? currentValues.trackIds ?? [];
+          const all = (data.trackAnswers ??
+            currentValues.trackAnswers ??
+            {}) as Record<
+            string,
+            {
+              promptAnswer?: string;
+              customAnswers?: Record<string, string>;
+              artifacts?: Record<string, string>;
+            }
+          >;
+          if (picked.length === 0) return undefined;
+          const next: Record<
+            string,
+            {
+              promptAnswer?: string;
+              customAnswers?: Record<string, string>;
+              artifacts?: Record<string, string>;
+            }
+          > = {};
+          for (const id of picked) {
+            if (typeof id !== 'string' || !id) continue;
+            if (all[id]) next[id] = all[id];
+          }
+          return Object.keys(next).length > 0 ? next : undefined;
+        })(),
+        // ── Phase A submission polish ─ string fields default to undefined
+        // (not empty string) so the backend update path doesn't clobber
+        // existing values with empties.
+        tagline:
+          (data.tagline ?? currentValues.tagline)?.toString().trim() ||
+          undefined,
+        builtWith:
+          (data.builtWith ?? currentValues.builtWith)
+            ?.map(t => t.trim())
+            .filter(t => t.length > 0) ?? undefined,
+        screenshots:
+          (data.screenshots ?? currentValues.screenshots)
+            ?.map(u => u.trim())
+            .filter(u => u.length > 0) ?? undefined,
+        license: data.license ?? currentValues.license ?? undefined,
+        codeAttested: data.codeAttested ?? currentValues.codeAttested ?? false,
       };
 
       const isValid = await form.trigger([
@@ -860,6 +1052,34 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
 
       const participationType = safeData.participationType || 'INDIVIDUAL';
       const teamId = participationType === 'TEAM' ? myTeam?.id : undefined;
+
+      // Gate the compliance fields on NEW submissions only.
+      //
+      // For an existing submission (`submissionId` is set), license +
+      // attestation are optional so participants who submitted before
+      // the Phase A polish rolled out aren't blocked from editing
+      // other fields like videoUrl or screenshots. They CAN fill in
+      // the new fields if they want — the form still shows them and
+      // the data round-trips.
+      //
+      // The schema marks both fields optional, so we enforce the gate
+      // here (at the moment of submit) instead of letting zod block
+      // step navigation.
+      const isNewSubmission = !submissionId;
+      if (isNewSubmission && !safeData.license) {
+        toast.error('Pick a license on the Review step before submitting.');
+        setCurrentStep(3);
+        updateStepState(3, 'active');
+        return;
+      }
+      if (isNewSubmission && !safeData.codeAttested) {
+        toast.error(
+          'Please confirm the code is original or properly attributed on the Review step.'
+        );
+        setCurrentStep(3);
+        updateStepState(3, 'active');
+        return;
+      }
 
       // Team submissions always go through a real team. handleNext blocks
       // advancing past step 0 if participationType is TEAM but myTeam is
@@ -1121,6 +1341,40 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
 
             <FormField
               control={form.control}
+              name='tagline'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className='text-white'>
+                    Tagline{' '}
+                    <span className='text-xs font-normal text-gray-500'>
+                      (one-line pitch, up to 200 chars)
+                    </span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder='Trustless escrow for one-time freelance gigs on Stellar.'
+                      maxLength={200}
+                      className='border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormDescription className='text-gray-400'>
+                    Shown on hackathon cards, sidebar, and the judge queue.
+                    {field.value
+                      ? ` ${field.value.length} / 200`
+                      : ' Optional but strongly recommended.'}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name='category'
               render={({ field }) => (
                 <FormItem>
@@ -1184,6 +1438,283 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                 </FormItem>
               )}
             />
+
+            {tracksEnabled && availableTracks.length > 0 && (
+              <FormField
+                control={form.control}
+                name='trackIds'
+                render={({ field }) => {
+                  const value: string[] = field.value ?? [];
+                  const toggle = (id: string) => {
+                    if (value.includes(id)) {
+                      field.onChange(value.filter(v => v !== id));
+                    } else {
+                      if (value.length >= trackCap) {
+                        toast.error(
+                          `You can enter at most ${trackCap} track${
+                            trackCap === 1 ? '' : 's'
+                          }.`
+                        );
+                        return;
+                      }
+                      field.onChange([...value, id]);
+                    }
+                  };
+                  return (
+                    <FormItem>
+                      <FormLabel className='text-white'>
+                        Tracks{' '}
+                        <span className='text-xs font-normal text-gray-500'>
+                          (optional, up to {trackCap})
+                        </span>
+                      </FormLabel>
+                      <FormDescription className='text-gray-400'>
+                        Pick the tracks your project should be considered for.
+                        Overall placements always apply; tracks unlock
+                        additional category prizes.
+                      </FormDescription>
+                      <div className='space-y-2'>
+                        {availableTracks.map(track => {
+                          const checked = value.includes(track.id);
+                          return (
+                            <label
+                              key={track.id}
+                              className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors ${
+                                checked
+                                  ? 'border-primary bg-primary/10'
+                                  : 'border-gray-800 bg-gray-900/40 hover:border-gray-700'
+                              }`}
+                            >
+                              <input
+                                type='checkbox'
+                                checked={checked}
+                                onChange={() => toggle(track.id)}
+                                className='accent-primary mt-1 h-4 w-4'
+                              />
+                              <div className='flex-1'>
+                                <div className='flex items-center gap-2'>
+                                  <span className='text-sm font-medium text-white'>
+                                    {track.name}
+                                  </span>
+                                  {track.type && (
+                                    <Badge
+                                      variant='outline'
+                                      className='text-xs'
+                                    >
+                                      {track.type}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {track.description && (
+                                  <p className='mt-1 text-xs text-gray-400'>
+                                    {track.description}
+                                  </p>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {value.length > 0 && (
+                        <p className='mt-2 text-xs text-gray-500'>
+                          {value.length} of {trackCap} selected
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            )}
+
+            {/* Per-track answer collection (Phase B). Renders one card
+                per selected track, with the track's prompt, custom
+                questions, and required artifacts inline. The form
+                field is a single nested object so the value naturally
+                round-trips through react-hook-form. */}
+            {tracksEnabled &&
+              availableTracks.length > 0 &&
+              (() => {
+                const picked =
+                  (form.watch('trackIds') as string[] | undefined) ?? [];
+                const tracksById = new Map(
+                  availableTracks.map(t => [t.id, t] as const)
+                );
+                const relevant = picked
+                  .map(id => tracksById.get(id))
+                  .filter((t): t is (typeof availableTracks)[number] => !!t)
+                  .filter(
+                    t =>
+                      !!t.prompt ||
+                      (t.customQuestions && t.customQuestions.length > 0) ||
+                      (t.requiredArtifacts && t.requiredArtifacts.length > 0)
+                  );
+                if (relevant.length === 0) return null;
+                return (
+                  <FormField
+                    control={form.control}
+                    name='trackAnswers'
+                    render={({ field }) => {
+                      const value =
+                        (field.value as
+                          | Record<
+                              string,
+                              {
+                                promptAnswer?: string;
+                                customAnswers?: Record<string, string>;
+                                artifacts?: Record<string, string>;
+                              }
+                            >
+                          | undefined) ?? {};
+                      const setAnswer = (
+                        trackId: string,
+                        patch: Partial<{
+                          promptAnswer: string;
+                          customAnswers: Record<string, string>;
+                          artifacts: Record<string, string>;
+                        }>
+                      ) => {
+                        const prev = value[trackId] ?? {};
+                        field.onChange({
+                          ...value,
+                          [trackId]: { ...prev, ...patch },
+                        });
+                      };
+                      return (
+                        <FormItem className='space-y-3'>
+                          <FormLabel className='text-white'>
+                            Track answers{' '}
+                            <span className='text-xs font-normal text-gray-500'>
+                              ({relevant.length} of your selected{' '}
+                              {relevant.length === 1 ? 'track' : 'tracks'} needs
+                              more info)
+                            </span>
+                          </FormLabel>
+                          {relevant.map(track => {
+                            const answer = value[track.id] ?? {};
+                            return (
+                              <div
+                                key={track.id}
+                                className='space-y-3 rounded-md border border-gray-800 bg-gray-900/40 p-4'
+                              >
+                                <p className='text-sm font-semibold text-white'>
+                                  {track.name}
+                                </p>
+                                {track.prompt && (
+                                  <div className='space-y-1'>
+                                    <label className='text-xs font-medium text-gray-300'>
+                                      {track.prompt}{' '}
+                                      <span className='text-red-400'>*</span>
+                                    </label>
+                                    <Textarea
+                                      value={answer.promptAnswer ?? ''}
+                                      maxLength={2000}
+                                      onChange={e =>
+                                        setAnswer(track.id, {
+                                          promptAnswer: e.target.value,
+                                        })
+                                      }
+                                      placeholder='Your answer...'
+                                      className='min-h-[80px] border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
+                                    />
+                                  </div>
+                                )}
+                                {(track.customQuestions ?? []).map(q => {
+                                  const v = answer.customAnswers?.[q.id] ?? '';
+                                  const onChange = (val: string) =>
+                                    setAnswer(track.id, {
+                                      customAnswers: {
+                                        ...(answer.customAnswers ?? {}),
+                                        [q.id]: val,
+                                      },
+                                    });
+                                  return (
+                                    <div key={q.id} className='space-y-1'>
+                                      <label className='text-xs font-medium text-gray-300'>
+                                        {q.label}
+                                        {q.required && (
+                                          <span className='text-red-400'>
+                                            {' '}
+                                            *
+                                          </span>
+                                        )}
+                                      </label>
+                                      {q.type === 'long' ? (
+                                        <Textarea
+                                          value={v}
+                                          maxLength={q.maxLength ?? 1000}
+                                          onChange={e =>
+                                            onChange(e.target.value)
+                                          }
+                                          className='min-h-[60px] border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
+                                        />
+                                      ) : (
+                                        <Input
+                                          type={
+                                            q.type === 'url' ? 'url' : 'text'
+                                          }
+                                          value={v}
+                                          maxLength={
+                                            q.maxLength ??
+                                            (q.type === 'url' ? 500 : 200)
+                                          }
+                                          onChange={e =>
+                                            onChange(e.target.value)
+                                          }
+                                          placeholder={
+                                            q.type === 'url'
+                                              ? 'https://...'
+                                              : ''
+                                          }
+                                          className='border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
+                                        />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                                {(track.requiredArtifacts ?? []).map(a => {
+                                  const v = answer.artifacts?.[a.id] ?? '';
+                                  return (
+                                    <div key={a.id} className='space-y-1'>
+                                      <label className='text-xs font-medium text-gray-300'>
+                                        {a.label}{' '}
+                                        <span className='text-[10px] tracking-widest text-gray-500 uppercase'>
+                                          {a.type}
+                                        </span>
+                                        {a.required && (
+                                          <span className='text-red-400'>
+                                            {' '}
+                                            *
+                                          </span>
+                                        )}
+                                      </label>
+                                      <Input
+                                        type='url'
+                                        value={v}
+                                        maxLength={500}
+                                        onChange={e =>
+                                          setAnswer(track.id, {
+                                            artifacts: {
+                                              ...(answer.artifacts ?? {}),
+                                              [a.id]: e.target.value,
+                                            },
+                                          })
+                                        }
+                                        placeholder='https://...'
+                                        className='border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
+                        </FormItem>
+                      );
+                    }}
+                  />
+                );
+              })()}
           </div>
         );
 
@@ -1357,6 +1888,162 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                         )}
                       </div>
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name='screenshots'
+              render={({ field }) => {
+                const value: string[] = field.value ?? [];
+                const setAt = (i: number, v: string) => {
+                  const next = value.slice();
+                  next[i] = v;
+                  field.onChange(next.filter(u => u !== undefined));
+                };
+                const remove = (i: number) =>
+                  field.onChange(value.filter((_, j) => j !== i));
+                const add = () => {
+                  if (value.length >= 5) return;
+                  field.onChange([...value, '']);
+                };
+                return (
+                  <FormItem>
+                    <FormLabel className='text-white'>
+                      Screenshots{' '}
+                      <span className='text-xs font-normal text-gray-500'>
+                        (up to 5, public image URLs)
+                      </span>
+                    </FormLabel>
+                    <div className='space-y-2'>
+                      {value.map((url, i) => (
+                        <div
+                          key={`screenshot-${i}`}
+                          className='flex items-center gap-2'
+                        >
+                          <Input
+                            placeholder='https://...'
+                            value={url}
+                            onChange={e => setAt(i, e.target.value)}
+                            className='border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
+                          />
+                          <Button
+                            type='button'
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => remove(i)}
+                            className='text-red-400 hover:bg-red-500/20'
+                            aria-label='Remove screenshot'
+                          >
+                            <X className='h-4 w-4' />
+                          </Button>
+                        </div>
+                      ))}
+                      {value.length < 5 && (
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='sm'
+                          onClick={add}
+                          className='border-gray-700'
+                        >
+                          + Add screenshot
+                        </Button>
+                      )}
+                    </div>
+                    <FormDescription className='text-gray-400'>
+                      First screenshot is used as the hero image on judge /
+                      public views.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name='builtWith'
+              render={({ field }) => {
+                const value: string[] = field.value ?? [];
+                const [draft, setDraft] = [
+                  // useState-like inline; the parent component owns the
+                  // input through field state instead of an extra hook.
+                  // Keeping the chip-list lean — Enter or comma adds.
+                  '' as string,
+                  (_: string) => {},
+                ];
+                void setDraft;
+                void draft;
+                const addRaw = (raw: string) => {
+                  const tags = raw
+                    .split(',')
+                    .map(t => t.trim())
+                    .filter(t => t.length > 0 && t.length <= 40);
+                  if (tags.length === 0) return;
+                  const next = Array.from(new Set([...value, ...tags])).slice(
+                    0,
+                    20
+                  );
+                  field.onChange(next);
+                };
+                const remove = (i: number) =>
+                  field.onChange(value.filter((_, j) => j !== i));
+                return (
+                  <FormItem>
+                    <FormLabel className='text-white'>
+                      Built with{' '}
+                      <span className='text-xs font-normal text-gray-500'>
+                        (tech stack tags, up to 20)
+                      </span>
+                    </FormLabel>
+                    <div className='space-y-2'>
+                      {value.length > 0 && (
+                        <div className='flex flex-wrap gap-2'>
+                          {value.map((tag, i) => (
+                            <Badge
+                              key={`${tag}-${i}`}
+                              variant='outline'
+                              className='gap-1 border-gray-700 text-white'
+                            >
+                              {tag}
+                              <button
+                                type='button'
+                                onClick={() => remove(i)}
+                                className='ml-1 rounded-full p-0.5 text-gray-400 hover:bg-gray-700 hover:text-white'
+                                aria-label={`Remove ${tag}`}
+                              >
+                                <X className='h-3 w-3' />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      <Input
+                        placeholder='Soroban, Stellar SDK, Next.js — comma or Enter to add'
+                        className='border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
+                        onKeyDown={e => {
+                          const target = e.currentTarget;
+                          if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            addRaw(target.value);
+                            target.value = '';
+                          }
+                        }}
+                        onBlur={e => {
+                          if (e.currentTarget.value.trim()) {
+                            addRaw(e.currentTarget.value);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                      />
+                    </div>
+                    <FormDescription className='text-gray-400'>
+                      {value.length} / 20 tags
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 );
@@ -1540,6 +2227,48 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                   </p>
                   <p className='text-white'>{form.watch('description')}</p>
                 </div>
+                {tracksEnabled &&
+                  (() => {
+                    const picked =
+                      (form.watch('trackIds') as string[] | undefined) ?? [];
+                    if (picked.length === 0) {
+                      return (
+                        <div>
+                          <p className='text-sm font-medium text-gray-400'>
+                            Tracks
+                          </p>
+                          <p className='text-sm text-gray-500'>
+                            None — your submission will be considered for
+                            overall placements only.
+                          </p>
+                        </div>
+                      );
+                    }
+                    const byId = new Map(
+                      availableTracks.map(t => [t.id, t] as const)
+                    );
+                    return (
+                      <div>
+                        <p className='text-sm font-medium text-gray-400'>
+                          Tracks
+                        </p>
+                        <div className='mt-1 flex flex-wrap gap-2'>
+                          {picked.map(id => {
+                            const t = byId.get(id);
+                            return (
+                              <Badge
+                                key={id}
+                                variant='outline'
+                                className='text-white'
+                              >
+                                {t?.name ?? id}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 {(() => {
                   const reviewLogo =
                     (isValidImageUrl(form.watch('logo'))
@@ -1632,6 +2361,99 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Compliance.
+                - NEW submissions: license + attestation are required.
+                  Submit is hard-gated client-side and the asterisks
+                  show on the labels.
+                - Existing submissions (created before Phase A): both
+                  fields are optional, the asterisks hide, and submit
+                  isn't blocked. Filling them in still works and the
+                  data round-trips. */}
+            <div className='space-y-4 rounded-lg border border-gray-700 bg-gray-800/50 p-6'>
+              <h3 className='text-lg font-semibold text-white'>
+                License & attestation
+                {submissionId && (
+                  <span className='ml-2 text-xs font-normal text-gray-400'>
+                    (optional for existing submissions)
+                  </span>
+                )}
+              </h3>
+              <FormField
+                control={form.control}
+                name='license'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-white'>
+                      License{' '}
+                      {!submissionId && <span className='text-red-400'>*</span>}
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ?? ''}
+                    >
+                      <FormControl>
+                        <SelectTrigger className='border-gray-700 bg-gray-900/50 text-white'>
+                          <SelectValue placeholder='Pick a license' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className='border-gray-700 bg-gray-800 text-white'>
+                        {LICENSE_OPTIONS.map(opt => (
+                          <SelectItem key={opt} value={opt}>
+                            {opt === 'PROPRIETARY'
+                              ? 'Proprietary / All rights reserved'
+                              : opt === 'OTHER'
+                                ? 'Other (specify in description)'
+                                : opt}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className='text-gray-400'>
+                      The license your code ships under. Pick MIT or Apache-2.0
+                      if you want maximum compatibility.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='codeAttested'
+                render={({ field }) => (
+                  <FormItem>
+                    <label className='flex cursor-pointer items-start gap-3 rounded-md border border-gray-700 bg-gray-900/40 p-3'>
+                      <input
+                        type='checkbox'
+                        checked={!!field.value}
+                        onChange={e => field.onChange(e.target.checked)}
+                        className='accent-primary mt-0.5 h-4 w-4'
+                      />
+                      <div className='flex-1'>
+                        <p className='text-sm font-medium text-white'>
+                          I confirm the code is original or properly attributed.
+                          {!submissionId && (
+                            <>
+                              {' '}
+                              <span className='text-red-400'>*</span>
+                            </>
+                          )}
+                        </p>
+                        <p className='mt-0.5 text-xs text-gray-400'>
+                          Any third-party libraries, assets, or pre-existing
+                          work used in this project are either
+                          MIT/Apache-compatible or have explicit credit in your
+                          README. The organizer may audit this before paying out
+                          prizes.
+                        </p>
+                      </div>
+                    </label>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </div>
         );

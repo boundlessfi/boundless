@@ -94,6 +94,19 @@ export interface ParticipantSubmission {
     email: string;
   } | null;
   reviewedAt?: string | null;
+  /** Track entries on this submission. Populated by the backend when the
+   *  submitter opts into tracks; wonRank is stamped at publish time. */
+  trackEntries?: SubmissionTrackEntry[];
+  /** Overall placement (1, 2, 3...). Null until results are published. */
+  rank?: number | null;
+
+  // ── Phase A submission polish ──
+  tagline?: string;
+  builtWith?: string[];
+  screenshots?: string[];
+  license?: string;
+  /** ISO timestamp set when the submitter ticked the originality attestation. */
+  codeAttestedAt?: string | null;
 }
 
 export interface Participant {
@@ -166,6 +179,37 @@ export interface CreateSubmissionRequest {
     twitter?: string;
     email?: string;
   };
+  /** Optional track opt-in. Capped by the hackathon's tracksMaxPerSubmission. */
+  trackIds?: string[];
+
+  /** Per-track answers (Phase B). Keyed by trackId. */
+  trackAnswers?: Record<
+    string,
+    {
+      promptAnswer?: string;
+      customAnswers?: Record<string, string>;
+      artifacts?: Record<string, string>;
+    }
+  >;
+
+  // ── Phase A submission polish ──
+  /** Short elevator pitch (~160 chars). */
+  tagline?: string;
+  /** Free-form tech-stack chips. */
+  builtWith?: string[];
+  /** Up to 5 screenshot URLs. */
+  screenshots?: string[];
+  /** License code (MIT / Apache-2.0 / GPL-3.0 / BSD-3 / PROPRIETARY / OTHER). */
+  license?: string;
+  /** True when the submitter has ticked the originality attestation. */
+  codeAttested?: boolean;
+}
+
+export interface SubmissionTrackEntry {
+  trackId: string;
+  trackSlug: string;
+  trackName: string;
+  wonRank: number | null;
 }
 
 export interface UpdateSubmissionRequest extends CreateSubmissionRequest {

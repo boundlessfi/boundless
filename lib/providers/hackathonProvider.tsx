@@ -13,13 +13,17 @@
  */
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import type { Hackathon, HackathonWinner } from '@/lib/api/hackathons';
+import type {
+  Hackathon,
+  HackathonWinner,
+  HackathonTrackWinner,
+} from '@/lib/api/hackathons';
 import type { SubmissionCardProps } from '@/types/hackathon';
 import {
   useHackathon,
   useHackathonSubmissions,
   useExploreSubmissions,
-  useHackathonWinners,
+  useHackathonWinnersWithTracks,
   useRefreshHackathon,
   hackathonKeys,
 } from '@/hooks/hackathon/use-hackathon-queries';
@@ -42,6 +46,7 @@ interface HackathonDataContextType {
   exploreSubmissions: SubmissionCardProps[];
   exploreSubmissionsTotal: number;
   winners: HackathonWinner[];
+  trackWinners: HackathonTrackWinner[];
 
   // Loading / error
   loading: boolean;
@@ -137,10 +142,12 @@ export function HackathonDataProvider({
     (currentHackathon?.resultsPublished === true || isOrganizerView);
 
   const {
-    data: winners = [],
+    data: winnersBundle = { winners: [], trackWinners: [] },
     isLoading: winnersLoading,
     error: winnersError,
-  } = useHackathonWinners(hackathonSlug, canViewWinners);
+  } = useHackathonWinnersWithTracks(hackathonSlug, canViewWinners);
+  const winners = winnersBundle.winners;
+  const trackWinners = winnersBundle.trackWinners;
 
   const refreshCurrentHackathon = useRefreshHackathon(hackathonSlug);
 
@@ -158,6 +165,7 @@ export function HackathonDataProvider({
     exploreSubmissions,
     exploreSubmissionsTotal,
     winners,
+    trackWinners,
     loading,
     error,
     refreshCurrentHackathon,

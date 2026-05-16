@@ -6,12 +6,17 @@ import { MainStageHeader } from './winners/MainStageHeader';
 import { TopWinnerCard } from './winners/TopWinnerCard';
 import { PodiumWinnerCard } from './winners/PodiumWinnerCard';
 import { GeneralWinnerCard } from './winners/GeneralWinnerCard';
-import { Trophy } from 'lucide-react';
+import { Trophy, Layers } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const Winners = () => {
-  const { currentHackathon, winners, submissions } = useHackathonData();
+  const { currentHackathon, winners, trackWinners, submissions } =
+    useHackathonData();
 
-  if (!winners || winners.length === 0) {
+  const hasOverall = winners && winners.length > 0;
+  const hasTracks = trackWinners && trackWinners.length > 0;
+
+  if (!hasOverall && !hasTracks) {
     return (
       <TabsContent value='winners' className='mt-0 w-full outline-none'>
         <div className='mt-8 rounded-3xl border border-white/5 bg-[#0A0A0A] py-24 text-center'>
@@ -86,6 +91,55 @@ const Winners = () => {
                     submission={getSubmission(winner.submissionId)}
                   />
                 ))}
+              </div>
+            </div>
+          )}
+
+          {hasTracks && (
+            <div className='mt-8'>
+              <div className='mb-6 flex items-center gap-3'>
+                <div className='h-px flex-1 bg-white/5' />
+                <span className='flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-white/30 uppercase'>
+                  <Layers className='h-3 w-3' />
+                  Track Prizes
+                </span>
+                <div className='h-px flex-1 bg-white/5' />
+              </div>
+
+              <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
+                {trackWinners!.map(tw => {
+                  // Adapt the track-winner shape to the GeneralWinnerCard
+                  // contract: it expects a `winner` with rank + projectName +
+                  // logo + participants + prize + submissionId. We feed
+                  // wonRank as the rank so the card renders sanely; the
+                  // surrounding Badge labels which track this is for.
+                  const adapted = {
+                    rank: tw.wonRank,
+                    projectName: tw.projectName,
+                    logo: tw.logo ?? '',
+                    teamName: tw.teamName,
+                    participants: tw.participants,
+                    prize: tw.prize,
+                    submissionId: tw.submissionId,
+                  };
+                  return (
+                    <div
+                      key={`${tw.submissionId}-${tw.track.id}`}
+                      className='space-y-2'
+                    >
+                      <Badge
+                        variant='outline'
+                        className='border-primary/40 text-primary'
+                      >
+                        {tw.track.name}
+                      </Badge>
+                      <GeneralWinnerCard
+                        winner={adapted}
+                        submission={getSubmission(tw.submissionId)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

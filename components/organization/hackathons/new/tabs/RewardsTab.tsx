@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+} from 'react';
 import { BoundlessButton } from '@/components/buttons';
 import { toast } from 'sonner';
 import {
@@ -63,6 +69,15 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { listOrganizerTracks } from '@/lib/api/hackathons/tracks';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import TracksSettingsTab from '@/components/organization/hackathons/settings/TracksSettingsTab';
 
 interface RewardsTabProps {
   onContinue?: () => void;
@@ -72,6 +87,10 @@ interface RewardsTabProps {
   /** Required to call the financial preview dry-run endpoint */
   organizationId?: string;
   hackathonId?: string;
+  /** Tracks the organizer has created. Passed in so the parent can keep
+   *  ownership of the fetch + react-query / refresh logic.
+   *  Defaults to [] which collapses the track UI back to overall-only. */
+  availableTracks?: TrackOption[];
 }
 
 const PRIZE_PRESETS = {
@@ -138,6 +157,17 @@ interface PrizeTierProps {
   canRemove: boolean;
   control: Control<RewardsFormData>;
   totalTiers: number;
+  /** Tracks the organizer has created on this hackathon. */
+  availableTracks: TrackOption[];
+  /** When true, tier kind picker + track binding UI is visible. */
+  tracksEnabled: boolean;
+}
+
+export interface TrackOption {
+  id: string;
+  name: string;
+  slug: string;
+  isArchived: boolean;
 }
 
 // ─── Sortable Prize Tier ─────────────────────────────────────────────────────
@@ -148,6 +178,8 @@ const PrizeTierComponent = ({
   canRemove,
   control,
   totalTiers,
+  availableTracks,
+  tracksEnabled,
 }: PrizeTierProps) => {
   const {
     attributes,
@@ -260,6 +292,75 @@ const PrizeTierComponent = ({
               </FormItem>
             )}
           />
+
+          {/* Tier kind + track binding (only when structure includes tracks) */}
+          {tracksEnabled && (
+            <div className='grid gap-3 rounded-md border border-zinc-800 bg-zinc-950/40 p-3 md:grid-cols-2'>
+              <FormField
+                control={control}
+                name={`prizeTiers.${index}.kind`}
+                render={({ field }) => (
+                  <FormItem className='space-y-1'>
+                    <label className='text-xs font-medium text-zinc-400'>
+                      Tier kind
+                    </label>
+                    <FormControl>
+                      <select
+                        value={field.value ?? 'OVERALL'}
+                        onChange={e => {
+                          const next = e.target.value as 'OVERALL' | 'TRACK';
+                          field.onChange(next);
+                        }}
+                        className='h-9 w-full rounded-md border border-zinc-800 bg-zinc-900/50 px-2 text-sm text-white'
+                      >
+                        <option value='OVERALL'>Overall placement</option>
+                        <option value='TRACK'>Track</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage className='text-xs text-red-500' />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name={`prizeTiers.${index}.trackId`}
+                render={({ field }) => {
+                  const isTrack =
+                    (tier?.kind as string | undefined) === 'TRACK';
+                  return (
+                    <FormItem className='space-y-1'>
+                      <label className='text-xs font-medium text-zinc-400'>
+                        Track
+                      </label>
+                      <FormControl>
+                        <select
+                          value={field.value ?? ''}
+                          onChange={e =>
+                            field.onChange(e.target.value || undefined)
+                          }
+                          disabled={!isTrack}
+                          className='h-9 w-full rounded-md border border-zinc-800 bg-zinc-900/50 px-2 text-sm text-white disabled:opacity-50'
+                        >
+                          <option value=''>
+                            {isTrack ? 'Select a track…' : '—'}
+                          </option>
+                          {availableTracks
+                            .filter(t => !t.isArchived || t.id === field.value)
+                            .map(t => (
+                              <option key={t.id} value={t.id}>
+                                {t.name}
+                                {t.isArchived ? ' (archived)' : ''}
+                              </option>
+                            ))}
+                        </select>
+                      </FormControl>
+                      <FormMessage className='text-xs text-red-500' />
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Delete Button */}
@@ -602,7 +703,37 @@ export default function RewardsTab({
   isLoading = false,
   organizationId,
   hackathonId,
+  availableTracks: availableTracksProp,
 }: RewardsTabProps) {
+  // Tracks state. When the parent passes `availableTracks` we honor it
+  // and skip the internal fetch (settings page already maintains its own
+  // list). Otherwise we fetch + manage tracks ourselves so the new-
+  // hackathon wizard works without parent plumbing.
+  const [internalTracks, setInternalTracks] = useState<TrackOption[]>([]);
+  const availableTracks = availableTracksProp ?? internalTracks;
+  const refetchTracks = useCallback(async () => {
+    if (availableTracksProp) return; // parent owns this state
+    if (!organizationId || !hackathonId) return;
+    try {
+      const rows = await listOrganizerTracks(organizationId, hackathonId);
+      setInternalTracks(
+        rows.map(r => ({
+          id: r.id,
+          name: r.name,
+          slug: r.slug,
+          isArchived: r.isArchived,
+        }))
+      );
+    } catch {
+      // Best-effort: track UI degrades gracefully if the call fails.
+      setInternalTracks([]);
+    }
+  }, [availableTracksProp, organizationId, hackathonId]);
+  useEffect(() => {
+    refetchTracks();
+  }, [refetchTracks]);
+  const [manageTracksOpen, setManageTracksOpen] = useState(false);
+
   const [showPresets, setShowPresets] = useState(false);
   const [pendingPreset, setPendingPreset] = useState<
     keyof typeof PRIZE_PRESETS | null
@@ -633,15 +764,25 @@ export default function RewardsTab({
     if (initialData?.prizeTiers?.length) {
       return {
         ...initialData,
-        prizeTiers: initialData.prizeTiers.map((tier, idx) => ({
-          id: (tier as any).id || `tier-init-${idx}-${Date.now()}`,
-          place: tier.place || `${PLACE_LABELS[idx] || `${idx + 1}th`} Place`,
-          prizeAmount: String(tier.prizeAmount ?? '0'),
-          description: tier.description || '',
-          currency: tier.currency || 'USDC',
-          rank: Number(tier.rank ?? idx + 1),
-          passMark: Number((tier as any).passMark ?? 0),
-        })),
+        prizeTiers: initialData.prizeTiers.map((tier, idx) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const raw = tier as any;
+          return {
+            id: raw.id || `tier-init-${idx}-${Date.now()}`,
+            place: tier.place || `${PLACE_LABELS[idx] || `${idx + 1}th`} Place`,
+            prizeAmount: String(tier.prizeAmount ?? '0'),
+            description: tier.description || '',
+            currency: tier.currency || 'USDC',
+            rank: Number(tier.rank ?? idx + 1),
+            passMark: Number(raw.passMark ?? 0),
+            // Preserve track-binding fields when reloading a saved
+            // draft — without these the per-tier track picker shows
+            // blank even though the structure picker remembers the
+            // organizer's choice.
+            ...(raw.kind !== undefined && { kind: raw.kind }),
+            ...(raw.trackId !== undefined && { trackId: raw.trackId }),
+          };
+        }),
       };
     }
     return {
@@ -889,6 +1030,39 @@ export default function RewardsTab({
     form.formState.errors.prizeTiers?.message ||
     (form.formState.errors.prizeTiers?.root as any)?.message;
 
+  // Live structure picker value drives:
+  // - Whether per-tier kind/track UI is shown.
+  // - Whether the schema's superRefine rejects mismatched tiers.
+  const prizeStructure = useWatch({
+    control: form.control,
+    name: 'prizeStructure',
+    defaultValue: 'OVERALL_ONLY',
+  });
+  const tracksEnabled =
+    prizeStructure === 'OVERALL_AND_TRACKS' || prizeStructure === 'TRACKS_ONLY';
+  const hasTracks = availableTracks.some(t => !t.isArchived);
+
+  // Detect "tracks created but no tier is bound to them" — the most
+  // common reason the public page shows zero track prizes. Surfaces a
+  // banner with a direct CTA so organizers don't have to guess what
+  // step they missed.
+  const watchedTiers = useWatch({
+    control: form.control,
+    name: 'prizeTiers',
+    defaultValue: form.getValues('prizeTiers') || [],
+  });
+  const hasAnyTrackTier = (watchedTiers ?? []).some(t => t?.kind === 'TRACK');
+  const showTracksUnboundBanner =
+    tracksEnabled && hasTracks && !hasAnyTrackTier;
+  const boundTrackIds = new Set(
+    (watchedTiers ?? [])
+      .filter(t => t?.kind === 'TRACK' && t?.trackId)
+      .map(t => t!.trackId as string)
+  );
+  const unboundActiveTracks = availableTracks.filter(
+    t => !t.isArchived && !boundTrackIds.has(t.id)
+  );
+
   return (
     <Form {...form}>
       {/* onSubmit is intentionally preventDefault — submission goes through handleContinueClick → AlertDialog confirm */}
@@ -900,6 +1074,156 @@ export default function RewardsTab({
             Set up prizes and drag to reorder winners
           </p>
         </div>
+
+        {/* Prize structure picker */}
+        <FormField
+          control={form.control}
+          name='prizeStructure'
+          render={({ field }) => (
+            <FormItem>
+              <div className='flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900/30 p-4'>
+                <div className='flex items-start justify-between gap-3'>
+                  <div>
+                    <p className='text-sm font-medium text-white'>
+                      Prize structure
+                    </p>
+                    <p className='mt-0.5 text-xs text-zinc-500'>
+                      Overall only is the legacy default. Switch to Overall +
+                      Tracks for things like Best UI/UX alongside 1st/2nd/3rd.
+                    </p>
+                  </div>
+                  {organizationId && hackathonId && tracksEnabled && (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      onClick={() => setManageTracksOpen(true)}
+                      className='shrink-0'
+                    >
+                      <Plus className='h-3.5 w-3.5' />
+                      {hasTracks ? 'Manage tracks' : 'Add tracks'}
+                    </Button>
+                  )}
+                </div>
+                <div className='grid gap-2 md:grid-cols-3'>
+                  {(
+                    [
+                      {
+                        value: 'OVERALL_ONLY',
+                        title: 'Overall only',
+                        hint: '1st, 2nd, 3rd. No tracks.',
+                      },
+                      {
+                        value: 'OVERALL_AND_TRACKS',
+                        title: 'Overall + Tracks',
+                        hint: 'Top placements + category prizes.',
+                      },
+                      {
+                        value: 'TRACKS_ONLY',
+                        title: 'Tracks only',
+                        hint: 'Every prize is a track.',
+                      },
+                    ] as const
+                  ).map(opt => {
+                    const active =
+                      (field.value ?? 'OVERALL_ONLY') === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type='button'
+                        onClick={() => field.onChange(opt.value)}
+                        className={cn(
+                          'rounded-lg border p-3 text-left transition-colors',
+                          active
+                            ? 'border-primary bg-primary/10'
+                            : 'border-zinc-800 bg-zinc-950/30 hover:border-zinc-700'
+                        )}
+                      >
+                        <p
+                          className={cn(
+                            'text-sm font-medium',
+                            active ? 'text-primary' : 'text-white'
+                          )}
+                        >
+                          {opt.title}
+                        </p>
+                        <p className='mt-0.5 text-xs text-zinc-500'>
+                          {opt.hint}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+                {tracksEnabled && !hasTracks && (
+                  <p className='flex items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-300'>
+                    <Info className='h-3.5 w-3.5' />
+                    {organizationId && hackathonId
+                      ? 'No tracks created yet. Click "Add tracks" to create them, then bind tiers to each one below.'
+                      : 'No tracks created yet. Create tracks in the Tracks tab first, then come back here to bind tiers to them.'}
+                  </p>
+                )}
+                {tracksEnabled && hasTracks && (
+                  <p className='text-xs text-zinc-500'>
+                    {availableTracks.filter(t => !t.isArchived).length} active
+                    track
+                    {availableTracks.filter(t => !t.isArchived).length === 1
+                      ? ''
+                      : 's'}{' '}
+                    available. Mark a tier&apos;s kind as &ldquo;Track&rdquo;
+                    below to bind it.
+                  </p>
+                )}
+                <FormMessage className='text-xs text-red-500' />
+              </div>
+            </FormItem>
+          )}
+        />
+
+        {/* Tracks-unbound warning. Common case: organizer set the
+            structure + created tracks, but forgot to mark any tier's
+            kind as TRACK. Without this banner the public page shows
+            zero track prizes and the cause isn't obvious. */}
+        {showTracksUnboundBanner && (
+          <div className='flex flex-col gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4'>
+            <div className='flex items-start gap-3'>
+              <Info className='mt-0.5 h-5 w-5 shrink-0 text-amber-400' />
+              <div className='space-y-1'>
+                <p className='text-sm font-medium text-amber-200'>
+                  Tracks created but no prize is bound to them
+                </p>
+                <p className='text-xs text-amber-300/80'>
+                  You have{' '}
+                  <span className='font-semibold'>
+                    {availableTracks.filter(t => !t.isArchived).length} track
+                    {availableTracks.filter(t => !t.isArchived).length === 1
+                      ? ''
+                      : 's'}
+                  </span>{' '}
+                  set up, but none of your prize tiers below is marked as a
+                  Track. The public hackathon page will show only your overall
+                  placements. To award a track prize:
+                </p>
+                <ol className='list-decimal pl-4 text-xs text-amber-300/80'>
+                  <li>
+                    Pick a prize tier you want to be a track prize (or click
+                    &ldquo;Add Prize Tier&rdquo; for a new one).
+                  </li>
+                  <li>
+                    Change its <strong>Tier kind</strong> dropdown to{' '}
+                    <strong>Track</strong>.
+                  </li>
+                  <li>
+                    Pick the track from the dropdown next to it. Save when done.
+                  </li>
+                </ol>
+                <p className='pt-1 text-[11px] text-amber-300/60'>
+                  Tracks still waiting for a tier:{' '}
+                  {unboundActiveTracks.map(t => t.name).join(', ')}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Summary Card */}
         <PrizeSummary
@@ -1006,12 +1330,14 @@ export default function RewardsTab({
               {fields.map((tier, index) => (
                 <PrizeTierComponent
                   key={tier.id}
-                  tier={tier}
+                  tier={prizeTiers[index] ?? tier}
                   index={index}
                   onRemove={handleRemove}
                   canRemove={fields.length > 1}
                   control={form.control}
                   totalTiers={fields.length}
+                  availableTracks={availableTracks}
+                  tracksEnabled={tracksEnabled}
                 />
               ))}
             </SortableContext>
@@ -1073,6 +1399,40 @@ export default function RewardsTab({
           </BoundlessButton>
         </div>
       </form>
+
+      {/* Inline tracks management. Renders the same CRUD UX as the
+          settings-page Tracks tab inside a dialog so organizers can
+          create tracks from the new-hackathon wizard or from the
+          Rewards step without leaving context. */}
+      {organizationId && hackathonId && (
+        <Dialog
+          open={manageTracksOpen}
+          onOpenChange={open => {
+            setManageTracksOpen(open);
+            if (!open) {
+              // Re-fetch on close so the structure picker / per-tier
+              // dropdown reflects whatever the organizer did inside.
+              refetchTracks();
+            }
+          }}
+        >
+          <DialogContent className='max-w-3xl border-zinc-800 bg-zinc-950 p-0 text-white'>
+            <DialogHeader className='px-6 pt-6'>
+              <DialogTitle>Manage tracks</DialogTitle>
+              <DialogDescription>
+                Create, rename, or archive the tracks this hackathon awards
+                prizes for. Tier bindings below update automatically.
+              </DialogDescription>
+            </DialogHeader>
+            <div className='max-h-[70vh] overflow-y-auto px-6 pb-6'>
+              <TracksSettingsTab
+                organizationId={organizationId}
+                hackathonId={hackathonId}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* ── Confirmation AlertDialog ── */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
