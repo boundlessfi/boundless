@@ -95,9 +95,15 @@ const LICENSE_OPTIONS = [
 type License = (typeof LICENSE_OPTIONS)[number];
 
 const baseSubmissionSchema = z.object({
-  projectName: z.string().min(3, 'Project name must be at least 3 characters'),
+  projectName: z
+    .string()
+    .min(3, 'Project name must be at least 3 characters')
+    .max(100, 'Project name cannot exceed 100 characters'),
   category: z.string().min(1, 'Please select a category'),
-  description: z.string().min(50, 'Description must be at least 50 characters'),
+  description: z
+    .string()
+    .min(50, 'Description must be at least 50 characters')
+    .max(5000, 'Description cannot exceed 5000 characters'),
   logo: z.string().optional(),
   banner: z.string().optional(),
   videoUrl: z
@@ -110,7 +116,13 @@ const baseSubmissionSchema = z.object({
   links: z.array(
     z.object({
       type: z.string(),
-      url: z.union([z.string().url('Please enter a valid URL'), z.literal('')]),
+      url: z.union([
+        z
+          .string()
+          .url('Please enter a valid URL')
+          .max(500, 'URL cannot exceed 500 characters'),
+        z.literal(''),
+      ]),
     })
   ),
   participationType: z.enum(['INDIVIDUAL', 'TEAM']),

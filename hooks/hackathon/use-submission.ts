@@ -17,12 +17,16 @@ import { reportError } from '@/lib/error-reporting';
 function getApiErrorMessage(err: unknown, fallback: string): string {
   const apiErr = err as ApiError | undefined;
   if (apiErr && typeof apiErr.message === 'string' && apiErr.message) {
-    const firstField =
-      Array.isArray(apiErr.errors) && apiErr.errors.length > 0
-        ? apiErr.errors[0].message
-        : null;
-    if (firstField && firstField !== apiErr.message) {
-      return `${apiErr.message}: ${firstField}`;
+    const first = Array.isArray(apiErr.errors) ? apiErr.errors[0] : undefined;
+    const fieldMsg = first?.message;
+    // `debug` is only present outside production; surfaces the real Prisma
+    // reason when the generic "Data validation failed" fires.
+    const debug = first?.debug;
+    if (debug && debug !== apiErr.message) {
+      return `${apiErr.message}: ${debug}`;
+    }
+    if (fieldMsg && fieldMsg !== apiErr.message) {
+      return `${apiErr.message}: ${fieldMsg}`;
     }
     return apiErr.message;
   }

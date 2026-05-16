@@ -26,6 +26,8 @@ export interface ApiResponse<T = unknown> {
 export interface ApiErrorField {
   field?: string;
   message: string;
+  /** Populated by the backend Prisma filter outside production. */
+  debug?: string;
 }
 
 export interface ApiError {
