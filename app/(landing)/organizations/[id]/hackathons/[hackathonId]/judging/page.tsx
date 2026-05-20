@@ -53,7 +53,14 @@ import { reportError, reportMessage } from '@/lib/error-reporting';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JudgingCriteriaList } from '@/components/organization/hackathons/judging/JudgingCriteriaList';
 import JudgingResultsTable from '@/components/organization/hackathons/judging/JudgingResultsTable';
+import TrackResultsSection from '@/components/organization/hackathons/judging/TrackResultsSection';
+import AllocationPreviewCard from '@/components/organization/hackathons/judging/AllocationPreviewCard';
+import CoverageMatrix from '@/components/organization/hackathons/judging/CoverageMatrix';
 import { OrganizerJudgesPanel } from '@/components/organization/hackathons/judging/OrganizerJudgesPanel';
+import {
+  useHackathon,
+  useHackathonTracks,
+} from '@/hooks/hackathon/use-hackathon-queries';
 import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
@@ -79,6 +86,38 @@ export default function JudgingPage() {
   const hackathonId = params.hackathonId as string;
 
   const { activeOrgId, activeOrg } = useOrganization();
+
+  // Hackathon + tracks for the per-track Results section. Both are
+  // best-effort — a 404 or empty array degrades gracefully (the
+  // per-track UI just won't render).
+  const { data: hackathonDetail } = useHackathon(hackathonId);
+  const { data: tracksData } = useHackathonTracks(hackathonId);
+  const tracks = tracksData ?? [];
+
+  // Map trackId → human prize string ("$2,000 USDC") sourced from the
+  // hackathon's bound prize tiers. Used as a chip on each track section
+  // header so organizers know which prize a track is paying out.
+  const prizeByTrackId = useMemo<Record<string, string>>(() => {
+    const tiers =
+      (
+        hackathonDetail as
+          | { prizeTiers?: Array<Record<string, unknown>> }
+          | undefined
+      )?.prizeTiers ?? [];
+    const out: Record<string, string> = {};
+    for (const t of tiers) {
+      if (t?.kind !== 'TRACK' || !t?.trackId) continue;
+      const amount = String(t.prizeAmount ?? '').trim();
+      const currency = String(t.currency ?? 'USDC').trim();
+      if (!amount) continue;
+      out[t.trackId as string] =
+        currency.length === 1
+          ? `${currency}${amount}`
+          : `${amount} ${currency}`;
+    }
+    return out;
+  }, [hackathonDetail]);
+
   const [submissions, setSubmissions] = useState<JudgingSubmission[]>([]);
   const [criteria, setCriteria] = useState<JudgingCriterion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -710,6 +749,14 @@ export default function JudgingPage() {
             </div>
 
             <TabsContent value='overview' className='mt-6 space-y-6'>
+              {/* Coverage heatmap. Surfaces idle judges + orphan
+                  submissions before they become a publish blocker. */}
+              <CoverageMatrix
+                organizationId={organizationId}
+                hackathonId={hackathonId}
+                refreshKey={submissionsPage}
+              />
+
               {isLoading && submissions.length === 0 ? (
                 <div className='flex items-center justify-center py-12'>
                   <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
@@ -1019,6 +1066,14 @@ export default function JudgingPage() {
                     </div>
                   )}
 
+                {!resultsPublished && (
+                  <AllocationPreviewCard
+                    organizationId={organizationId}
+                    hackathonId={hackathonId}
+                    refreshKey={resultsPage}
+                  />
+                )}
+
                 {winners.length > 0 && (
                   <div className='space-y-4'>
                     <h2 className='flex items-center gap-2 text-lg font-bold text-yellow-500'>
@@ -1035,6 +1090,20 @@ export default function JudgingPage() {
                       winnerOverrides={judgingSummary?.winnerOverrides}
                     />
                   </div>
+                )}
+
+                {tracks.length > 0 && judgingResults.length > 0 && (
+                  <TrackResultsSection
+                    tracks={tracks}
+                    results={judgingResults}
+                    totalJudges={currentJudges.length}
+                    criteria={criteria}
+                    canManage={canManageJudges}
+                    winnerOverrides={judgingSummary?.winnerOverrides}
+                    prizeByTrackId={prizeByTrackId}
+                    organizationId={organizationId}
+                    hackathonId={hackathonId}
+                  />
                 )}
 
                 <div className='space-y-4'>

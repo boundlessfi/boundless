@@ -87,6 +87,10 @@ export interface JudgingResult {
   hasDisagreement: boolean;
   prize?: string;
   overriddenRank?: number; // Added to track manual overrides
+  /** Track opt-ins for this submission. Empty for OVERALL_ONLY hackathons
+   *  or submissions that didn't pick any track. Used to group results
+   *  per-track in the organizer dashboard. */
+  trackIds?: string[];
 }
 
 export interface AggregatedJudgingResults {
@@ -645,6 +649,118 @@ export interface JudgingCompletenessPreview {
     missingJudges: Array<{ id: string; name: string }>;
   }>;
 }
+
+// ── Coverage matrix (Phase 3: dashboard) ────────────────────────────
+
+export interface JudgingCoverageJudge {
+  userId: string;
+  name: string;
+  scoredCount: number;
+  missingCount: number;
+  lastScoredAt: string | null;
+}
+
+export interface JudgingCoverageSubmission {
+  submissionId: string;
+  projectName: string;
+  /** User IDs of judges who scored this submission. */
+  scoredBy: string[];
+  scoredCount: number;
+  missingCount: number;
+  isCovered: boolean;
+}
+
+export interface JudgingCoverage {
+  hackathonId: string;
+  judges: JudgingCoverageJudge[];
+  submissions: JudgingCoverageSubmission[];
+  summary: {
+    totalSubmissions: number;
+    totalJudges: number;
+    expectedScores: number;
+    actualScores: number;
+    submissionsFullyCovered: number;
+    submissionsPartiallyCovered: number;
+    submissionsUncovered: number;
+  };
+}
+
+/**
+ * Full judges × submissions coverage matrix for the organizer
+ * dashboard. Used to render the heatmap that exposes idle judges and
+ * orphan submissions.
+ */
+export const getJudgingCoverage = async (
+  organizationId: string,
+  hackathonId: string
+): Promise<ApiResponse<JudgingCoverage>> => {
+  const res = await api.get(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/coverage`
+  );
+  return res.data;
+};
+
+// ── Allocator preview (Phase 2: dashboard) ──────────────────────────
+
+export interface AllocationPreviewOverallEntry {
+  rank: number;
+  submissionId: string;
+  projectName: string;
+  averageScore: number;
+  prizeAmount?: string;
+  currency?: string;
+  isOverride: boolean;
+}
+
+export interface AllocationPreviewTrackEntry {
+  trackId: string;
+  trackName: string;
+  trackSlug: string;
+  prizeAmount?: string;
+  currency?: string;
+  winner: {
+    submissionId: string;
+    projectName: string;
+    averageScore: number;
+  } | null;
+  runnersUp: Array<{
+    submissionId: string;
+    projectName: string;
+    averageScore: number;
+  }>;
+  /** Why a track has no winner. NO_ENTRIES = no submissions opted in;
+   *  NO_SCORED_ENTRIES = opted in but no judge scored them. */
+  skippedReason: 'NO_ENTRIES' | 'NO_SCORED_ENTRIES' | null;
+}
+
+export interface AllocationPreview {
+  hackathonId: string;
+  overall: AllocationPreviewOverallEntry[];
+  tracks: AllocationPreviewTrackEntry[];
+  gates: {
+    submissionDeadlinePassed: boolean;
+    complete: boolean;
+    incompleteSubmissionCount: number;
+    reviewedCount: number;
+    unallocatedPartnerContributionAmount: number;
+    currency: string;
+  };
+}
+
+/**
+ * Read-only allocator dry-run. Returns the overall + per-track outcome
+ * `publishJudgingResults` would produce, plus the publish-gate flags so
+ * the UI can render a "what's blocking publish?" panel.
+ */
+export const getAllocationPreview = async (
+  organizationId: string,
+  hackathonId: string
+): Promise<ApiResponse<AllocationPreview>> => {
+  const res = await api.get(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/judging/preview-allocation`
+  );
+  return res.data;
+};
 
 export const getJudgingCompleteness = async (
   organizationId: string,
