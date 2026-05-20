@@ -130,11 +130,17 @@ export default function AllocationPreviewCard({
   if (gates.reviewedCount === 0) {
     blockers.push('No submissions have been reviewed yet.');
   }
+
+  // Unallocated partner contributions are surfaced as a non-blocking
+  // warning. The escrow still holds the funds; organizers can release
+  // or refund them after publish. The backend gate that prevented this
+  // is intentionally relaxed (see judging.service.publishResults).
+  const warnings: string[] = [];
   if (gates.unallocatedPartnerContributionAmount > 0.0000001) {
-    blockers.push(
+    warnings.push(
       `${gates.unallocatedPartnerContributionAmount.toFixed(2)} ${
         gates.currency
-      } of partner contributions are unallocated.`
+      } of partner contributions are unallocated. Publish will succeed; funds remain in escrow until you release or refund them.`
     );
   }
 
@@ -185,6 +191,22 @@ export default function AllocationPreviewCard({
             {blockers.map((b, i) => (
               <li key={i} className='ml-4 list-disc'>
                 {b}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {warnings.length > 0 && (
+        <div className='rounded border border-blue-500/30 bg-blue-950/20 p-3'>
+          <div className='mb-2 flex items-center gap-2 text-xs font-semibold text-blue-300'>
+            <AlertTriangle className='h-3.5 w-3.5' />
+            Heads up
+          </div>
+          <ul className='space-y-1 text-xs text-blue-200/80'>
+            {warnings.map((w, i) => (
+              <li key={i} className='ml-4 list-disc'>
+                {w}
               </li>
             ))}
           </ul>
