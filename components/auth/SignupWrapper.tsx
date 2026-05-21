@@ -27,11 +27,25 @@ const SignupWrapper = ({
     setIsLoading(true);
     setLoadingState(true);
 
+    // Better Auth treats a relative `callbackURL` as relative to the API
+    // host that handled the OAuth callback (e.g. api.boundlessfi.xyz),
+    // not the frontend host. The previous default of '/' caused
+    // successful sign-ups to land on the API host's root, so users saw
+    // a blank/404 page and thought sign-up had failed — yet the session
+    // cookie was already set, so a later cache clear silently logged
+    // them in. Always send an absolute URL pointing at the frontend.
+    const callbackURL =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : (
+            process.env.NEXT_PUBLIC_APP_URL || 'https://boundlessfi.xyz'
+          ).replace(/\/$/, '');
+
     try {
       await authClient.signIn.social(
         {
           provider: 'google',
-          callbackURL: process.env.NEXT_PUBLIC_APP_URL || '/',
+          callbackURL,
         },
         {
           onRequest: () => {
