@@ -40,12 +40,25 @@ export default function PublishWinnersWizard({
   hackathonId,
   onSuccess,
 }: PublishWinnersWizardProps) {
-  const maxRank = prizeTiers.length;
+  // `maxRank` only counts OVERALL slots — track tiers don't have
+  // numeric ranks. The previous code used `prizeTiers.length`, which
+  // over-counted by the number of track tiers and could let a phantom
+  // overall rank slip through.
+  const maxRank = useMemo(
+    () => prizeTiers.filter(t => !t.kind || t.kind === 'OVERALL').length,
+    [prizeTiers]
+  );
 
+  // Include both overall winners (rank-keyed) AND track winners
+  // (flagged by `isTrackWinner` via useHackathonRewards). The BE
+  // trigger endpoint resolves the actual payout list itself; this
+  // array only drives the preview UI.
   const winners = useMemo(
     () =>
       submissions.filter(
-        s => s.rank !== undefined && s.rank !== null && s.rank <= maxRank
+        s =>
+          (s.rank !== undefined && s.rank !== null && s.rank <= maxRank) ||
+          s.isTrackWinner
       ),
     [submissions, maxRank]
   );
@@ -92,12 +105,21 @@ export default function PublishWinnersWizard({
         rank: tier.rank,
         prizeAmount: tier.prizeAmount,
         currency: tier.currency,
+        place: tier.place,
+        kind: tier.kind,
+        trackId: tier.trackId,
       })),
     [prizeTiers]
   );
 
+  // Format the prize for a given rank-based tier slot (overall). Track
+  // winners look up their prize via tier.trackId in WinnersGrid
+  // instead; this helper stays focused on overall placements so the
+  // preview's existing flow doesn't get gnarlier than needed.
   const getPrizeForRank = (rank: number) => {
-    const tier = mappedPrizeTiers.find(t => t.rank === rank);
+    const tier = mappedPrizeTiers.find(
+      t => (!t.kind || t.kind === 'OVERALL') && t.rank === rank
+    );
     if (tier) {
       const amount = parseFloat(tier.prizeAmount || '0').toLocaleString(
         'en-US'

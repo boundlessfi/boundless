@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { BoundlessButton } from '@/components/buttons';
 import PodiumSection from '@/components/organization/hackathons/rewards/PodiumSection';
+import { TrackWinnersSection } from '@/components/organization/hackathons/rewards/TrackWinnersSection';
 import SubmissionsList from '@/components/organization/hackathons/rewards/SubmissionsList';
 import EscrowStatusCard from '@/components/organization/hackathons/rewards/EscrowStatusCard';
 import { RewardDistributionStatusBanner } from '@/components/organization/hackathons/rewards/RewardDistributionStatusBanner';
@@ -21,6 +22,7 @@ import BoundlessSheet from '@/components/sheet/boundless-sheet';
 import { Submission } from '@/components/organization/hackathons/rewards/types';
 import type {
   HackathonEscrowData,
+  HackathonTrackWinner,
   RewardDistributionStatusResponse,
   RewardDistributionStatusEnum,
 } from '@/lib/api/hackathons';
@@ -41,6 +43,12 @@ interface RewardsPageContentProps {
   onRefreshDistributionStatus?: () => void;
   resultsPublished?: boolean;
   escrowAddress?: string;
+  /**
+   * Per-track winners stamped by publishResults. Rendered in a
+   * dedicated section below the rank-based podium. Empty pre-publish
+   * and on OVERALL_ONLY hackathons.
+   */
+  trackWinners?: HackathonTrackWinner[];
 }
 
 export const RewardsPageContent: React.FC<RewardsPageContentProps> = ({
@@ -57,6 +65,7 @@ export const RewardsPageContent: React.FC<RewardsPageContentProps> = ({
   onRefreshDistributionStatus,
   resultsPublished,
   escrowAddress,
+  trackWinners = [],
 }) => {
   const [isStatusSheetOpen, setIsStatusSheetOpen] = useState(false);
 
@@ -214,6 +223,7 @@ export const RewardsPageContent: React.FC<RewardsPageContentProps> = ({
           </div>
           <div className='space-y-6'>
             <PodiumSection submissions={submissions} maxRank={maxRank} />
+            <TrackWinnersSection trackWinners={trackWinners} />
             <div>
               <h3 className='mb-4 text-lg font-medium text-white'>
                 All Submissions

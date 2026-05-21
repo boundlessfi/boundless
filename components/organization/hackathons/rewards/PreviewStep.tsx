@@ -11,6 +11,9 @@ interface PreviewStepProps {
     rank: number;
     prizeAmount: string;
     currency: string;
+    place?: string;
+    kind?: 'OVERALL' | 'TRACK';
+    trackId?: string;
   }>;
   announcement: string;
   onEditAnnouncement: () => void;

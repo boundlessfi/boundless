@@ -7,7 +7,9 @@ import {
   getHackathonEscrow,
   type Hackathon,
   type HackathonEscrowData,
+  type HackathonTrackWinner,
 } from '@/lib/api/hackathons';
+import { getHackathonWinners } from '@/lib/api/hackathon';
 import {
   getJudgingResults,
   type JudgingResult,
@@ -76,6 +78,12 @@ interface UseHackathonRewardsReturn {
   refetchHackathon: () => Promise<void>;
   resultsPublished: boolean;
   hackathon: Hackathon | null;
+  /**
+   * Per-track winners stamped by publishResults. Empty until results
+   * are published, and empty for OVERALL_ONLY hackathons. The page
+   * renders these in a separate section below the rank-based podium.
+   */
+  trackWinners: HackathonTrackWinner[];
 }
 
 export const useHackathonRewards = (
@@ -91,6 +99,7 @@ export const useHackathonRewards = (
   const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);
+  const [trackWinners, setTrackWinners] = useState<HackathonTrackWinner[]>([]);
 
   const isFetchingEscrowRef = useRef(false);
   const lastFetchedContractIdRef = useRef<string | null>(null);
@@ -141,24 +150,58 @@ export const useHackathonRewards = (
         setHackathon(fetchedHackathon);
 
         if (fetchedHackathon.prizeTiers) {
-          // Sort tiers by amount descending or use parsed numeric rank from place if available
-          const sortedTiers = [...fetchedHackathon.prizeTiers].sort(
-            (a: any, b: any) => {
-              const rankA = parseInt(a.place?.match(/\d+/)?.[0] || '999');
-              const rankB = parseInt(b.place?.match(/\d+/)?.[0] || '999');
-              if (rankA !== rankB) return rankA - rankB;
+          // Sort: OVERALL tiers first by parsed numeric place ("1st",
+          // "2nd", etc.) ascending, then by amount descending; TRACK
+          // tiers after, in their original order (which matches the
+          // organizer-defined displayOrder). The previous code fell
+          // back to rank=999 for any non-numeric place string, which
+          // collapsed every track tier to the same slot.
+          const indexedTiers = (fetchedHackathon.prizeTiers as any[]).map(
+            (tier, i) => ({ tier, originalIndex: i })
+          );
 
-              const amountA = parseFloat(a.prizeAmount || '0');
-              const amountB = parseFloat(b.prizeAmount || '0');
-              return amountB - amountA;
-            }
+          const isTrack = (t: any) => t.kind === 'TRACK';
+
+          const overallEntries = indexedTiers.filter(e => !isTrack(e.tier));
+          const trackEntries = indexedTiers.filter(e => isTrack(e.tier));
+
+          overallEntries.sort((a, b) => {
+            const rankA = parseInt(
+              a.tier.place?.match(/\d+/)?.[0] || '999',
+              10
+            );
+            const rankB = parseInt(
+              b.tier.place?.match(/\d+/)?.[0] || '999',
+              10
+            );
+            if (rankA !== rankB) return rankA - rankB;
+            const amountA = parseFloat(a.tier.prizeAmount || '0');
+            const amountB = parseFloat(b.tier.prizeAmount || '0');
+            return amountB - amountA;
+          });
+          // Track entries keep their original ordering — that matches
+          // HackathonTrack.displayOrder on the backend.
+          trackEntries.sort((a, b) => a.originalIndex - b.originalIndex);
+
+          const sortedTiers = [...overallEntries, ...trackEntries].map(
+            e => e.tier
           );
 
           const tiers: PrizeTier[] = sortedTiers.map(
             (tier: any, index: number) => {
-              const parsedRank = parseInt(
-                tier.place?.match(/\d+/)?.[0] || String(index + 1)
+              // Overall tiers get a numeric rank parsed from "place".
+              // Track tiers get a synthetic rank slot AFTER the highest
+              // overall rank so existing rank-keyed lookups don't
+              // collide with overall ranks. Components that render
+              // track winners should branch on `kind === 'TRACK'`
+              // instead of relying on this rank value.
+              const numericFromPlace = parseInt(
+                tier.place?.match(/\d+/)?.[0] || '',
+                10
               );
+              const parsedRank = !isNaN(numericFromPlace)
+                ? numericFromPlace
+                : index + 1;
               return {
                 id: tier.id || `tier-${index + 1}`,
                 place: tier.place || `${getOrdinalSuffix(index + 1)} Place`,
@@ -167,6 +210,8 @@ export const useHackathonRewards = (
                 passMark: tier.passMark || 0,
                 description: tier.description,
                 rank: parsedRank,
+                kind: tier.kind,
+                trackId: tier.trackId,
               };
             }
           );
@@ -396,6 +441,67 @@ export const useHackathonRewards = (
     }
   }, [organizationId, hackathonId]);
 
+  // Post-publish track-winner enrichment.
+  //
+  // Track winners are stamped on `SubmissionTrackEntry.wonRank`, not on
+  // `submission.rank`, so the submissions list above has no idea who
+  // won a track. We pull `/judging/winners` (which returns the
+  // overall + trackWinners payload) and merge the track-winner info
+  // into the corresponding submission rows. Runs only after results
+  // are published — pre-publish, trackWinners doesn't exist yet.
+  useEffect(() => {
+    if (!hackathon?.resultsPublished || !hackathonId) {
+      setTrackWinners([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const winnersRes = await getHackathonWinners(hackathonId);
+        if (cancelled) return;
+        if (!winnersRes.success || !winnersRes.data) {
+          setTrackWinners([]);
+          return;
+        }
+        const data = winnersRes.data as {
+          trackWinners?: HackathonTrackWinner[];
+        };
+        const fetched = data.trackWinners ?? [];
+        setTrackWinners(fetched);
+        if (fetched.length === 0) return;
+        const byId = new Map(fetched.map(tw => [tw.submissionId, tw]));
+        setSubmissions(prev =>
+          prev.map(sub => {
+            const tw = byId.get(sub.id);
+            if (!tw) return sub;
+            return {
+              ...sub,
+              isTrackWinner: true,
+              trackId: tw.track.id,
+              trackName: tw.track.name,
+              trackPrize: tw.prize,
+              trackWonRank: tw.wonRank,
+            };
+          })
+        );
+      } catch (winnersErr) {
+        if (cancelled) return;
+        // Best-effort: an unreachable winners endpoint shouldn't kill
+        // the rewards page. Overall winners (from judging results) still
+        // render; track winners just go missing.
+        reportError(winnersErr, {
+          context: 'rewards-fetchTrackWinners',
+          organizationId,
+          hackathonId,
+        });
+        setTrackWinners([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hackathon?.resultsPublished, hackathonId, organizationId]);
+
   return {
     submissions,
     setSubmissions,
@@ -410,5 +516,6 @@ export const useHackathonRewards = (
     refetchHackathon: fetchHackathon,
     resultsPublished: !!hackathon?.resultsPublished,
     hackathon,
+    trackWinners,
   };
 };

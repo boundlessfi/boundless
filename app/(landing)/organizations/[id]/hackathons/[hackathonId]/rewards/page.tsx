@@ -31,6 +31,7 @@ export default function RewardsPage() {
     refetchHackathon,
     resultsPublished,
     hackathon,
+    trackWinners,
   } = useHackathonRewards(organizationId, hackathonId);
 
   const { handleRankChange } = useRankAssignment();
@@ -43,9 +44,17 @@ export default function RewardsPage() {
     refetch: refetchDistributionStatus,
   } = useRewardDistributionStatus(organizationId, hackathonId);
 
-  const maxRank = useMemo(() => prizeTiers.length, [prizeTiers.length]);
+  // `maxRank` is the number of OVERALL prize tier slots; track tiers
+  // are not rank-numbered so they don't contribute to this cap. The
+  // rank-based rendering (podium, rank-keyed lookups) still uses
+  // `maxRank`. Track winners flow through `isTrackWinner` instead.
+  const maxRank = useMemo(
+    () => prizeTiers.filter(t => !t.kind || t.kind === 'OVERALL').length,
+    [prizeTiers]
+  );
   const winners = useMemo(
-    () => submissions.filter(s => s.rank && s.rank <= maxRank),
+    () =>
+      submissions.filter(s => (s.rank && s.rank <= maxRank) || s.isTrackWinner),
     [submissions, maxRank]
   );
   const hasWinners = winners.length > 0;
@@ -121,6 +130,7 @@ export default function RewardsPage() {
             onRefreshDistributionStatus={refetchDistributionStatus}
             resultsPublished={resultsPublished}
             escrowAddress={hackathon?.escrowAddress || hackathon?.contractId}
+            trackWinners={trackWinners}
           />
         )}
 
