@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Submission } from './types';
 import WinnerCard from './WinnerCard';
@@ -105,37 +106,87 @@ export default function WinnersGrid({
     return sorted;
   }, [displayPairs.overallPairs]);
 
+  // Total prize pool across all tiers (overall + track). Drives the
+  // summary chip in the header so the organizer sees the dollar figure
+  // they're about to commit, not just the winner count.
+  const totalPool = useMemo(() => {
+    return prizeTiers.reduce((sum, t) => {
+      const amount = parseFloat(t.prizeAmount || '0');
+      return Number.isFinite(amount) ? sum + amount : sum;
+    }, 0);
+  }, [prizeTiers]);
+  const totalPoolCurrency = prizeTiers[0]?.currency || 'USDC';
+
+  const assignedCount = winners.length;
+  const isComplete = assignedCount === totalTiers && totalTiers > 0;
+
   return (
-    <div className='flex flex-col gap-4'>
-      <div className='flex items-center justify-between'>
-        <span className='text-xs font-medium text-gray-500'>
-          {winners.length}/{totalTiers} Winners Assigned
-        </span>
+    <div className='flex flex-col gap-5'>
+      {/* Summary header: completion state + total pool. Replaces the
+          minimal "3/8 Winners Assigned" that read as confusing in the
+          wizard preview. */}
+      <div className='flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5'>
+        <div className='flex items-center gap-2'>
+          {isComplete ? (
+            <CheckCircle2 className='h-4 w-4 text-green-400' />
+          ) : (
+            <AlertTriangle className='h-4 w-4 text-amber-400' />
+          )}
+          <div className='text-sm'>
+            <span
+              className={cn(
+                'font-semibold',
+                isComplete ? 'text-green-300' : 'text-amber-300'
+              )}
+            >
+              {isComplete
+                ? `All ${totalTiers} winners assigned`
+                : `${assignedCount} of ${totalTiers} winners assigned`}
+            </span>
+            {!isComplete && totalTiers - assignedCount > 0 && (
+              <span className='ml-1 text-xs text-gray-500'>
+                ({totalTiers - assignedCount} unassigned)
+              </span>
+            )}
+          </div>
+        </div>
+        {totalPool > 0 && (
+          <div className='flex items-center gap-1.5 rounded-full border border-[#2775CA]/20 bg-[#2775CA]/10 px-3 py-1'>
+            <span className='text-[10px] font-bold tracking-wide text-white uppercase'>
+              {totalPool.toLocaleString('en-US')} {totalPoolCurrency} pool
+            </span>
+          </div>
+        )}
       </div>
 
       {orderedOverall.length > 0 && (
-        <div
-          className={cn('mb-2 grid gap-3', getGridCols(orderedOverall.length))}
-        >
-          {orderedOverall.map(({ key, tier, winner }) => {
-            const prize = getPrizeForRank(tier.rank);
-            return (
-              <WinnerCard
-                key={key}
-                rank={tier.rank}
-                winner={winner}
-                prizeAmount={prize.amount || '0'}
-                currency={prize.currency || 'USDC'}
-                prizeLabel={prize.label}
-                maxRank={totalTiers}
-              />
-            );
-          })}
+        <div className='space-y-2'>
+          {displayPairs.trackPairs.length > 0 && (
+            <div className='text-xs font-semibold tracking-wide text-gray-400 uppercase'>
+              Overall Placements
+            </div>
+          )}
+          <div className={cn('grid gap-3', getGridCols(orderedOverall.length))}>
+            {orderedOverall.map(({ key, tier, winner }) => {
+              const prize = getPrizeForRank(tier.rank);
+              return (
+                <WinnerCard
+                  key={key}
+                  rank={tier.rank}
+                  winner={winner}
+                  prizeAmount={prize.amount || '0'}
+                  currency={prize.currency || 'USDC'}
+                  prizeLabel={prize.label}
+                  maxRank={totalTiers}
+                />
+              );
+            })}
+          </div>
         </div>
       )}
 
       {displayPairs.trackPairs.length > 0 && (
-        <div className='mb-6 space-y-2'>
+        <div className='space-y-2'>
           <div className='text-xs font-semibold tracking-wide text-gray-400 uppercase'>
             Track Winners
           </div>
@@ -150,15 +201,16 @@ export default function WinnersGrid({
               return (
                 <WinnerCard
                   key={key}
-                  // Synthetic rank that's outside the overall range so
-                  // the card doesn't render a crown / podium chrome
-                  // meant for ranks 1-3.
-                  rank={Math.max(totalTiers, 4)}
+                  rank={tier.rank}
                   winner={winner}
                   prizeAmount={prize.amount}
                   currency={prize.currency}
                   prizeLabel={tier.place || prize.label}
                   maxRank={totalTiers}
+                  // The card switches to track styling when this is set:
+                  // shows the track name as a chip instead of the rank
+                  // ribbon, and uses neutral (non-podium) borders.
+                  trackName={tier.place || winner.trackName || 'Track'}
                 />
               );
             })}

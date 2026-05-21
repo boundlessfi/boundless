@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
-import { ArrowUpRight } from 'lucide-react';
+import { Trophy, Layers } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -12,8 +11,7 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Submission } from './types';
-import Ribbon from '@/components/svg/Ribbon';
-import { getRibbonColors, getRibbonText } from './winnersUtils';
+import { getRibbonColors } from './winnersUtils';
 
 interface WinnerCardProps {
   rank: number;
@@ -22,7 +20,35 @@ interface WinnerCardProps {
   currency?: string;
   prizeLabel?: string;
   maxRank: number;
+  /**
+   * Track name to render as the primary badge instead of the
+   * rank ribbon. When present, the card switches to track-winner
+   * styling (no podium scaling, neutral border accent).
+   */
+  trackName?: string;
 }
+
+const formatPrize = (amount?: string, currency?: string) => {
+  if (!amount || amount === '0' || amount === '0.00') return null;
+  const c = currency || 'USDC';
+  // Industry-standard format: amount first, single currency suffix.
+  // The previous "$300 USDC" double-signed the value and read as
+  // confusing for USDC payouts (USDC is the unit, not USD).
+  const numeric = Number(amount);
+  const display = Number.isFinite(numeric)
+    ? numeric.toLocaleString('en-US')
+    : amount;
+  return `${display} ${c}`;
+};
+
+const ordinalSuffix = (rank: number) => {
+  const j = rank % 10;
+  const k = rank % 100;
+  if (j === 1 && k !== 11) return 'st';
+  if (j === 2 && k !== 12) return 'nd';
+  if (j === 3 && k !== 13) return 'rd';
+  return 'th';
+};
 
 export default function WinnerCard({
   rank,
@@ -31,113 +57,103 @@ export default function WinnerCard({
   currency,
   prizeLabel,
   maxRank,
+  trackName,
 }: WinnerCardProps) {
-  const getScaleClass = () => {
-    if (maxRank <= 3) {
-      if (rank === 1) return 'md:scale-110';
-      if (rank === 2 || rank === 3) return 'md:scale-95';
-    } else {
-      if (rank === 1) return 'md:scale-105';
-    }
-    return '';
-  };
+  const isTrack = !!trackName;
+  const prizeText = formatPrize(prizeAmount, currency) || prizeLabel || null;
+  const ribbonColors = getRibbonColors(rank);
+
+  // Subtle scale only for overall podium (rank 1-3). Track cards stay
+  // uniform — they're a flat sibling row, not a podium.
+  const scaleClass =
+    !isTrack && rank === 1 && maxRank <= 3 ? 'md:scale-105' : '';
 
   return (
     <div
       className={cn(
-        'bg-background-card relative w-fit overflow-hidden rounded-lg p-4 transition-transform',
-        getScaleClass()
+        'bg-background-card relative flex flex-col gap-3 overflow-hidden rounded-xl border border-white/5 p-4 transition-all hover:border-white/10',
+        scaleClass
       )}
     >
-      <div className='mb-3 flex items-center justify-center gap-2'>
-        <Image
-          src='/trophy.svg'
-          alt='Trophy'
-          width={16}
-          height={16}
-          className='h-4 w-4 text-yellow-400'
-        />
-        <span className='text-primary text-base font-medium'>
-          {prizeAmount != null && currency && prizeAmount !== '0'
-            ? `$${prizeAmount} ${currency}`
-            : prizeLabel || 'No prize configured'}
-        </span>
+      {/* Header: rank/track badge + prize chip */}
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        {isTrack ? (
+          <Badge
+            variant='outline'
+            className='border-primary/40 text-primary gap-1'
+          >
+            <Layers className='h-3 w-3' />
+            {trackName}
+          </Badge>
+        ) : (
+          <Badge
+            variant='outline'
+            className='gap-1 border-yellow-500/40 bg-yellow-500/10 text-yellow-300'
+            style={{
+              borderColor: `${ribbonColors.primaryColor}66`,
+              backgroundColor: `${ribbonColors.primaryColor}1A`,
+              color: ribbonColors.primaryColor,
+            }}
+          >
+            {rank}
+            <sup className='font-semibold'>{ordinalSuffix(rank)}</sup>
+            <span className='ml-0.5'>Place</span>
+          </Badge>
+        )}
+
+        {prizeText && (
+          <div className='flex items-center gap-1.5 rounded-full border border-[#2775CA]/20 bg-[#2775CA]/10 px-2.5 py-1'>
+            <Trophy className='h-3.5 w-3.5 text-yellow-500' />
+            <span className='text-[10px] font-bold tracking-wide text-white uppercase'>
+              {prizeText}
+            </span>
+          </div>
+        )}
       </div>
 
-      <div className='mb-3 flex justify-center'>
-        <Avatar className='h-16 w-16'>
-          {winner ? (
-            <>
-              <AvatarImage
-                src={winner.avatar || 'https://github.com/shadcn.png'}
-              />
-              <AvatarFallback>
-                {winner.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </>
-          ) : (
-            <AvatarFallback className='text-2xl text-gray-500'>
-              ?
+      {/* Project block: avatar + name + category */}
+      {winner ? (
+        <div className='flex items-center gap-3'>
+          <Avatar className='h-12 w-12'>
+            <AvatarImage
+              src={winner.avatar || undefined}
+              alt={winner.name || 'Participant'}
+            />
+            <AvatarFallback className='bg-gray-800 text-sm text-white uppercase'>
+              {winner.name?.charAt(0) || '?'}
             </AvatarFallback>
-          )}
-        </Avatar>
-      </div>
+          </Avatar>
 
-      <div className='relative mb-3 flex items-center justify-center'>
-        <Ribbon
-          primaryColor={getRibbonColors(rank).primaryColor}
-          secondaryColor={getRibbonColors(rank).secondaryColor}
-        />
-        <span className='absolute inset-0 -bottom-3 flex items-center justify-center text-[12px] font-black text-white'>
-          {getRibbonText(rank)}
-        </span>
-      </div>
-
-      <div className='mb-3 text-center'>
-        <h3 className='text-xs font-medium text-white'>
-          {winner?.name || '?'}
-        </h3>
-      </div>
-
-      {winner && (
-        <div className='flex items-center justify-between rounded-lg border border-gray-900 p-2'>
-          <div className='grid grid-cols-[44px_1fr] grid-rows-2 gap-x-2'>
-            <div className='row-span-2 h-11 w-11 overflow-hidden rounded'>
-              <Image
-                src='/bitmed.png'
-                alt={winner.projectName}
-                width={44}
-                height={44}
-                className='h-full w-full object-cover'
-              />
-            </div>
-            <div className='flex items-center gap-1'>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <p className='line-clamp-1 cursor-help text-sm font-medium text-white'>
-                    {winner.projectName}
-                  </p>
-                </TooltipTrigger>
-                <TooltipContent side='top' className='max-w-xs'>
-                  <p className='break-words'>{winner.projectName}</p>
-                </TooltipContent>
-              </Tooltip>
-              <Badge className='bg-office-brown border-office-brown-darker text-office-brown-darker rounded-[4px] border px-1 py-0.5 text-[10px] font-medium'>
-                {winner.category || 'General'}
-              </Badge>
-            </div>
-            <div className='flex items-center gap-2 text-[10px] text-gray-500'>
-              <span>
-                {winner.averageScore
-                  ? winner.averageScore.toFixed(1)
-                  : winner.score || 0}{' '}
-                Score
-              </span>
-              <div className='h-2 w-px bg-gray-900' />
-              <span>{winner.commentCount || 0} Comments</span>
-              <ArrowUpRight className='h-3 w-3' />
+          <div className='min-w-0 flex-1'>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className='line-clamp-1 cursor-help text-sm font-semibold text-white'>
+                  {winner.projectName}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent side='top' className='max-w-xs'>
+                <p className='break-words'>{winner.projectName}</p>
+              </TooltipContent>
+            </Tooltip>
+            <div className='mt-0.5 flex items-center gap-2 text-xs text-gray-400'>
+              <span className='line-clamp-1'>{winner.name || 'Unknown'}</span>
+              {winner.category && (
+                <>
+                  <span className='text-gray-700'>•</span>
+                  <span className='line-clamp-1'>{winner.category}</span>
+                </>
+              )}
             </div>
           </div>
+        </div>
+      ) : (
+        <div className='flex items-center gap-3 opacity-50'>
+          <Avatar className='h-12 w-12'>
+            <AvatarFallback className='bg-gray-900 text-gray-500'>
+              ?
+            </AvatarFallback>
+          </Avatar>
+          <div className='text-xs text-gray-500'>No winner assigned</div>
         </div>
       )}
     </div>
