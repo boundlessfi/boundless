@@ -1,5 +1,12 @@
 export interface Submission {
   id: string;
+  /**
+   * The actual HackathonSubmission row ID, distinct from `id` which the
+   * rewards data mapper sets to the participant ID. Required for
+   * matching submissions against backend payloads (judging results,
+   * track winners) that key by submissionId.
+   */
+  submissionId?: string;
   name: string;
   projectName: string;
   avatar?: string;

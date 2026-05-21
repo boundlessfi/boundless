@@ -63,6 +63,12 @@ export const mapJudgingSubmissionToRewardSubmission = (
 
   return {
     id: participant.id || sub.id || '',
+    // The real submission row ID, used by backend payloads (judging
+    // results, track winners) that key by submissionId. The mapper's
+    // `id` field stays on the participant ID for compatibility with
+    // existing rank-assignment and display code that already keys off
+    // it.
+    submissionId: submissionData.id || sub.id || sub.submissionId || '',
     participantId: participant.id || sub.id || '',
     name,
     projectName: submissionData.projectName || '',

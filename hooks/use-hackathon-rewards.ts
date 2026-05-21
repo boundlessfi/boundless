@@ -472,7 +472,14 @@ export const useHackathonRewards = (
         const byId = new Map(fetched.map(tw => [tw.submissionId, tw]));
         setSubmissions(prev =>
           prev.map(sub => {
-            const tw = byId.get(sub.id);
+            // Match against the real submission row ID (now threaded
+            // through by the mapper). Fall back to `sub.id` for any
+            // mapper output that predates the `submissionId` field —
+            // older rows would have `id === submissionId` when
+            // participant data was missing.
+            const tw =
+              (sub.submissionId && byId.get(sub.submissionId)) ||
+              byId.get(sub.id);
             if (!tw) return sub;
             return {
               ...sub,
