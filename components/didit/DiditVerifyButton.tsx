@@ -9,12 +9,14 @@ export interface DiditVerifyButtonProps {
   onError?: (error: Error | { code?: string; message?: string }) => void;
   className?: string;
   disabled?: boolean;
+  label?: string;
 }
 
 export function DiditVerifyButton({
   onError,
   className,
   disabled = false,
+  label = 'Verify identity',
 }: DiditVerifyButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export function DiditVerifyButton({
         disabled={disabled || loading}
         className={clsx(className)}
       >
-        {loading ? 'Redirecting to verification…' : 'Verify identity'}
+        {loading ? 'Redirecting to verification…' : label}
       </Button>
       {error && (
         <p className='text-sm text-red-500' role='alert'>

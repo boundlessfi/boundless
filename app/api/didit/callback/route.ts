@@ -1,17 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-/**
- * Didit redirect callback: user is sent here after completing verification on Didit.
- * We redirect them to Settings → Identity so they see their updated status.
- * The backend receives the final result via webhook; this route only handles the browser redirect.
- */
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const verification = searchParams.get('verification') ?? 'complete';
+const KNOWN_STATES = new Set([
+  'not_started',
+  'in_progress',
+  'in_review',
+  'approved',
+  'declined',
+  'abandoned',
+  'expired',
+]);
 
-  const baseUrl = request.nextUrl.origin;
-  const redirectUrl = new URL('/me/settings', baseUrl);
-  redirectUrl.searchParams.set('verification', verification);
+export async function GET(request: NextRequest) {
+  const params = request.nextUrl.searchParams;
+
+  // Backend (`GET /api/didit/callback` on NestJS) forwards an authoritative
+  // `state` from the DB. Didit's hosted flow may instead arrive here directly
+  // with `?status=Approved` (legacy) or `?verification=complete` (legacy).
+  // We normalize all of those, but only the new `state` is trusted as a
+  // status — the rest just route the user back to settings.
+  const stateRaw = params.get('state');
+  const state = stateRaw && KNOWN_STATES.has(stateRaw) ? stateRaw : 'in_review';
+
+  const redirectUrl = new URL('/me/settings', request.nextUrl.origin);
+  redirectUrl.searchParams.set('verification', state);
+  redirectUrl.searchParams.set('tab', 'identity');
+  const sessionId = params.get('session_id');
+  if (sessionId) redirectUrl.searchParams.set('session_id', sessionId);
 
   return NextResponse.redirect(redirectUrl, 302);
 }

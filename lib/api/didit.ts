@@ -49,3 +49,41 @@ export const createDiditSession = async (
     status: session.status,
   };
 };
+
+export type VerificationState =
+  | 'not_started'
+  | 'in_progress'
+  | 'in_review'
+  | 'approved'
+  | 'declined'
+  | 'abandoned'
+  | 'expired';
+
+export interface VerificationReviewWindow {
+  minBusinessDays: number;
+  maxBusinessDays: number;
+  estimatedCompletionAt: string;
+}
+
+export interface VerificationDecline {
+  reason?: string;
+  canRetry: boolean;
+}
+
+export interface VerificationStatus {
+  state: VerificationState;
+  canStartNew: boolean;
+  message: string;
+  verifiedAt?: string;
+  reviewedAt?: string;
+  reviewWindow?: VerificationReviewWindow;
+  decline?: VerificationDecline;
+}
+
+export const getDiditStatus = async (): Promise<VerificationStatus> => {
+  const res = await api.get<ApiResponse<VerificationStatus>>('/didit/status');
+  if (!res.data?.data?.state) {
+    throw new Error('Invalid verification status response');
+  }
+  return res.data.data;
+};

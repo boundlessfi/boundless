@@ -6,6 +6,11 @@ import { useSearchParams } from 'next/navigation';
 import { VerificationSubmittedModal } from '@/components/didit/VerificationSubmittedModal';
 import { User } from '@/types/user';
 import { getMe } from '@/lib/api/auth';
+import {
+  getDiditStatus,
+  type VerificationState,
+  type VerificationStatus,
+} from '@/lib/api/didit';
 import { GetMeResponse } from '@/lib/api/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Settings from '@/components/profile/update/Settings';
@@ -15,9 +20,32 @@ import { IdentityVerificationSection } from '@/components/didit/IdentityVerifica
 import { useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 
+const KNOWN_VERIFICATION_STATES = new Set<VerificationState>([
+  'not_started',
+  'in_progress',
+  'in_review',
+  'approved',
+  'declined',
+  'abandoned',
+  'expired',
+]);
+
 const SettingsContent = () => {
   const searchParams = useSearchParams();
-  const fromVerification = searchParams.get('verification') === 'complete';
+  const verificationParam = searchParams.get('verification');
+  // Modal is shown when the user just returned from the Didit hosted flow:
+  // the legacy callback used `verification=complete`, the new callback
+  // forwards the resolved `state` (e.g. `verification=in_review`).
+  const fromVerification = Boolean(verificationParam);
+  const initialModalState: VerificationState | null =
+    verificationParam &&
+    KNOWN_VERIFICATION_STATES.has(verificationParam as VerificationState)
+      ? (verificationParam as VerificationState)
+      : verificationParam === 'complete'
+        ? 'in_review'
+        : null;
+  const [verificationModalStatus, setVerificationModalStatus] =
+    useState<VerificationStatus | null>(null);
   const [userData, setUserData] = useState<GetMeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showVerificationModal, setShowVerificationModal] =
@@ -38,12 +66,34 @@ const SettingsContent = () => {
   }, []);
 
   useEffect(() => {
-    // Only set isLoading true on the very first fetch
     if (!hasLoadedOnce.current) {
       setIsLoading(true);
     }
     fetchUserData();
   }, [fetchUserData]);
+
+  useEffect(() => {
+    if (!fromVerification) return;
+    let cancelled = false;
+    getDiditStatus()
+      .then(status => {
+        if (cancelled) return;
+        setVerificationModalStatus(status);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        if (initialModalState) {
+          setVerificationModalStatus({
+            state: initialModalState,
+            canStartNew: false,
+            message: '',
+          });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fromVerification, initialModalState]);
 
   // Only show skeleton on first load — not on background refetches
   if (isLoading && !hasLoadedOnce.current) {
@@ -58,6 +108,7 @@ const SettingsContent = () => {
       <VerificationSubmittedModal
         open={showVerificationModal}
         onClose={() => setShowVerificationModal(false)}
+        status={verificationModalStatus}
       />
       <div className=''>
         {/* Header */}
@@ -70,7 +121,11 @@ const SettingsContent = () => {
           </p>
         </div>
         <Tabs
-          defaultValue={fromVerification ? 'identity' : 'profile'}
+          defaultValue={
+            searchParams.get('tab') === 'identity' || fromVerification
+              ? 'identity'
+              : 'profile'
+          }
           className='w-full'
         >
           <TabsList className='inline-flex h-auto gap-6 bg-transparent p-0'>
@@ -171,7 +226,7 @@ const SettingsContent = () => {
             )}
           </TabsContent>
           <TabsContent value='identity' className='space-y-6'>
-            <IdentityVerificationSection user={userData} />
+            <IdentityVerificationSection />
           </TabsContent>
         </Tabs>
       </div>
