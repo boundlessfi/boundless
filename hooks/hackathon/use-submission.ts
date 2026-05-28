@@ -92,10 +92,16 @@ function pickUpdateSubmissionFields(
       (out as Record<string, unknown>)[key] = data[key];
     }
   }
-  // teamMembers entries must not carry `email` (UpdateSubmissionDto's
-  // TeamMemberDto has no such field). Strip per-entry.
+  // teamMembers entries must match the backend TeamMemberDto exactly:
+  // { userId, name, username?, role } — no `email`, no `avatar`. Project
+  // each entry down to that shape so unknown fields never reach the wire.
   if (Array.isArray(out.teamMembers)) {
-    out.teamMembers = out.teamMembers.map(({ email: _email, ...rest }) => rest);
+    out.teamMembers = out.teamMembers.map(member => ({
+      userId: member.userId,
+      name: member.name,
+      role: member.role,
+      ...(member.username ? { username: member.username } : {}),
+    }));
   }
   return out;
 }
