@@ -24,6 +24,31 @@ export interface LookingForRole {
   skills?: string[];
 }
 
+/**
+ * Contact information for a team. Backend stores this as a sparse object
+ * keyed by channel rather than a string + separate method enum. The
+ * channel is implicit in whichever key is populated.
+ */
+export interface TeamContactInfo {
+  telegram?: string;
+  discord?: string;
+  email?: string;
+}
+
+/**
+ * Surface the active channel + raw string from a TeamContactInfo for UI
+ * display. Returns null when no channel is populated.
+ */
+export function readTeamContact(
+  info: TeamContactInfo | undefined | null
+): { method: 'email' | 'telegram' | 'discord'; value: string } | null {
+  if (!info) return null;
+  if (info.email) return { method: 'email', value: info.email };
+  if (info.telegram) return { method: 'telegram', value: info.telegram };
+  if (info.discord) return { method: 'discord', value: info.discord };
+  return null;
+}
+
 // Team Interface (Updated from TeamRecruitmentPost)
 export interface Team {
   id: string;
@@ -44,8 +69,7 @@ export interface Team {
   maxSize: number;
   lookingFor: LookingForRole[];
   rolesStatus?: TeamRole[]; // Track hired status for each role
-  contactMethod?: 'email' | 'telegram' | 'discord' | 'github' | 'other';
-  contactInfo: string;
+  contactInfo?: TeamContactInfo;
   isOpen: boolean;
   organizationId?: string;
   views?: number;
@@ -64,8 +88,7 @@ export interface CreateTeamRequest {
   description: string;
   lookingFor: LookingForRole[];
   maxSize?: number;
-  contactMethod?: 'email' | 'telegram' | 'discord' | 'github' | 'other';
-  contactInfo: string;
+  contactInfo?: TeamContactInfo;
 }
 
 export interface UpdateTeamRequest extends Partial<CreateTeamRequest> {

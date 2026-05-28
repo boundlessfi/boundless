@@ -55,7 +55,15 @@ export const getAuthHeaders = (): Record<string, string> => {
 };
 
 /**
- * Update user profile request interface - matches API payload specification
+ * Update user profile request interface. Mirrors the backend
+ * `UpdateProfileDto` (src/modules/users/dto/update-profile.dto.ts).
+ *
+ * Notably absent: a `preferences` block. The backend has dedicated
+ * endpoints for theme / language / timezone / notification toggles
+ * (see updateAppearanceSettings, updateNotificationsSettings,
+ * updateUserSettings in lib/api/user/settings.ts). Sending a
+ * `preferences` field here would be rejected as an unknown property
+ * once the backend enables forbidNonWhitelisted (PR #187).
  */
 export interface UpdateUserProfileRequest {
   bio?: string;
@@ -68,13 +76,6 @@ export interface UpdateUserProfileRequest {
     twitter?: string;
     linkedin?: string;
     discord?: string;
-  };
-  preferences?: {
-    theme?: 'light' | 'dark' | 'auto';
-    language?: string;
-    timezone?: string;
-    emailNotifications?: boolean;
-    pushNotifications?: boolean;
   };
 }
 

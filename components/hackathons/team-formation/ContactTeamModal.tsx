@@ -18,7 +18,10 @@ import {
   ExternalLink,
   Check,
 } from 'lucide-react';
-import { TeamRecruitmentPost } from '@/lib/api/hackathons/teams';
+import {
+  readTeamContact,
+  TeamRecruitmentPost,
+} from '@/lib/api/hackathons/teams';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -39,10 +42,16 @@ export function ContactTeamModal({
 
   if (!team) return null;
 
-  const { teamName, contactMethod, contactInfo, id } = team;
+  const { teamName, contactInfo, id } = team;
+  const contact = readTeamContact(contactInfo);
+
+  // If the team has no contact info at all, render nothing: the parent
+  // should have already gated this modal, but defend against bad data.
+  if (!contact) return null;
+  const { method: contactMethod, value: contactValue } = contact;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(contactInfo);
+    navigator.clipboard.writeText(contactValue);
     setCopied(true);
     toast.success('Contact info copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
@@ -56,8 +65,6 @@ export function ContactTeamModal({
       case 'telegram':
       case 'discord':
         return <MessageCircle className='h-5 w-5' />;
-      case 'github':
-        return <Github className='h-5 w-5' />;
       default:
         return <Globe className='h-5 w-5' />;
     }
@@ -71,15 +78,13 @@ export function ContactTeamModal({
         return 'Telegram Username/Link';
       case 'discord':
         return 'Discord Username';
-      case 'github':
-        return 'GitHub Profile';
       default:
         return 'Contact Info';
     }
   };
 
   const isLink =
-    contactInfo.startsWith('http') || contactInfo.startsWith('https');
+    contactValue.startsWith('http') || contactValue.startsWith('https');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -104,7 +109,7 @@ export function ContactTeamModal({
                   {getLabel()}
                 </p>
                 <p className='truncate text-lg font-bold text-white'>
-                  {contactInfo}
+                  {contactValue}
                 </p>
               </div>
             </div>
@@ -132,7 +137,7 @@ export function ContactTeamModal({
                 variant='outline'
                 className='h-12 flex-1 rounded-xl border-white/10 bg-white/5 font-bold hover:bg-white/10'
                 onClick={() => {
-                  window.open(contactInfo, '_blank', 'noopener,noreferrer');
+                  window.open(contactValue, '_blank', 'noopener,noreferrer');
                   onTrackContact?.(id);
                 }}
               >

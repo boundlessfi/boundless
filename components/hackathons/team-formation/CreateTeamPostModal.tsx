@@ -28,7 +28,11 @@ import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import { useTeamPosts } from '@/hooks/hackathon/use-team-posts';
 import { Loader2, Plus, X, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { type TeamRecruitmentPost } from '@/lib/api/hackathons/teams';
+import {
+  readTeamContact,
+  type TeamContactInfo,
+  type TeamRecruitmentPost,
+} from '@/lib/api/hackathons/teams';
 
 const roleSchema = z.object({
   role: z.string().min(1, 'Role name is required'),
@@ -86,13 +90,12 @@ export function CreateTeamPostModal({
             maxRoles,
             `You can add at most ${maxRoles} open role${maxRoles === 1 ? '' : 's'} (the team is capped at ${effectiveTeamMax} member${effectiveTeamMax === 1 ? '' : 's'} including you)`
           ),
-        contactMethod: z.enum([
-          'email',
-          'telegram',
-          'discord',
-          'github',
-          'other',
-        ]),
+        // contactMethod stays on the form for UX (radio-style selector)
+        // but is NOT sent to the backend as a separate field. Backend stores
+        // contact as a sparse object keyed by channel (TeamContactInfo);
+        // onSubmit transforms { contactMethod, contactInfo } into that shape.
+        // github / other were dropped because the backend cannot store them.
+        contactMethod: z.enum(['email', 'telegram', 'discord']),
         contactInfo: z.string().min(1, 'Contact info is required'),
       }),
     [maxRoles, effectiveTeamMax]
@@ -105,6 +108,11 @@ export function CreateTeamPostModal({
 
   const isEditMode = !!initialData;
 
+  // Flatten the backend's sparse contactInfo object back into the form's
+  // single { method, value } UI representation. Used both as the initial
+  // form value and in the edit-mode reset below.
+  const initialContact = readTeamContact(initialData?.contactInfo);
+
   const form = useForm<TeamPostFormData>({
     resolver: zodResolver(teamPostSchema),
     defaultValues: {
@@ -115,8 +123,8 @@ export function CreateTeamPostModal({
           role: typeof roleObj === 'string' ? roleObj : roleObj.role,
           skills: typeof roleObj === 'string' ? [] : roleObj.skills || [],
         })) || [],
-      contactMethod: initialData?.contactMethod || 'email',
-      contactInfo: initialData?.contactInfo || '',
+      contactMethod: initialContact?.method ?? 'email',
+      contactInfo: initialContact?.value ?? '',
     },
   });
 
@@ -125,6 +133,7 @@ export function CreateTeamPostModal({
 
   useEffect(() => {
     if (open && initialData) {
+      const contact = readTeamContact(initialData.contactInfo);
       form.reset({
         teamName: initialData.teamName,
         description: initialData.description,
@@ -132,8 +141,8 @@ export function CreateTeamPostModal({
           role: typeof roleObj === 'string' ? roleObj : roleObj.role,
           skills: typeof roleObj === 'string' ? [] : roleObj.skills || [],
         })),
-        contactMethod: initialData.contactMethod || 'email',
-        contactInfo: initialData.contactInfo,
+        contactMethod: contact?.method ?? 'email',
+        contactInfo: contact?.value ?? '',
       });
     } else if (!open) {
       form.reset();
@@ -207,6 +216,11 @@ export function CreateTeamPostModal({
   };
 
   const onSubmit = async (data: TeamPostFormData) => {
+    // Project the form's single { method, value } shape into the backend's
+    // sparse TeamContactInfo object. The channel is implicit in the key.
+    const contactInfo: TeamContactInfo = {
+      [data.contactMethod]: data.contactInfo,
+    };
     try {
       if (isEditMode && initialData) {
         await updatePost(initialData.id, {
@@ -214,11 +228,15 @@ export function CreateTeamPostModal({
           description: data.description,
           lookingFor: data.lookingFor,
           isOpen: data.lookingFor.length > 0,
-          contactMethod: data.contactMethod,
-          contactInfo: data.contactInfo,
+          contactInfo,
         });
       } else {
-        await createPost(data);
+        await createPost({
+          teamName: data.teamName,
+          description: data.description,
+          lookingFor: data.lookingFor,
+          contactInfo,
+        });
       }
 
       onOpenChange(false);
@@ -483,8 +501,6 @@ export function CreateTeamPostModal({
                             <SelectItem value='email'>Email</SelectItem>
                             <SelectItem value='telegram'>Telegram</SelectItem>
                             <SelectItem value='discord'>Discord</SelectItem>
-                            <SelectItem value='github'>GitHub</SelectItem>
-                            <SelectItem value='other'>Other</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

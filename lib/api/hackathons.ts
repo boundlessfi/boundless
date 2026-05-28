@@ -502,9 +502,24 @@ export interface PublishHackathonRequest extends Hackathon {
   escrowDetails?: object;
 }
 
-export type UpdateHackathonRequest = Partial<Hackathon> & {
+/**
+ * Narrow shape for the PUT /hackathons/:id endpoint. The previous wider
+ * `Partial<Hackathon>` typing let callers leak Hackathon-shape fields
+ * (id, organizationId, creatorId, status, ...) into the request body,
+ * any of which would 400 once the backend enables
+ * forbidNonWhitelisted (PR #187). The only caller today is the rank
+ * override save in JudgingResultsTable, which sends only `rewards`.
+ *
+ * Note: the backend route this calls (PUT /hackathons/:id) does not
+ * currently exist as a separate endpoint; the section-specific PATCH
+ * routes (/content, /schedule, /financial) are where edits should go.
+ * That mismatch is a separate pre-existing bug, but the narrow type
+ * here at least prevents the request from carrying unknown fields if
+ * the route is wired up later.
+ */
+export interface UpdateHackathonRequest {
   rewards?: HackathonRewards;
-};
+}
 
 // Response Types
 export interface CreateDraftResponse extends ApiResponse<HackathonDraft> {

@@ -237,7 +237,7 @@ export interface CriterionScoreRequest {
 export interface SubmitJudgingScoreRequest {
   submissionId: string;
   criteriaScores: CriterionScoreRequest[];
-  comment?: string; // Optional global feedback
+  notes?: string; // Optional global feedback (per-judge notes on this submission)
 }
 
 export interface OverrideSubmissionScoreRequest {

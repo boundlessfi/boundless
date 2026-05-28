@@ -175,7 +175,7 @@ export const useScoreForm = ({
           : await submitJudgingScore({
               submissionId,
               criteriaScores: scoreData,
-              comment: overallComment,
+              notes: overallComment,
             });
 
       const isSuccess = response.success !== false;

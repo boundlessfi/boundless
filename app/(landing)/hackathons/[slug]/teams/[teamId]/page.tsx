@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useHackathon, useTeam } from '@/hooks/hackathon/use-hackathon-queries';
 import { Button } from '@/components/ui/button';
 import BasicAvatar from '@/components/avatars/BasicAvatar';
+import { readTeamContact } from '@/lib/api/hackathons/teams';
 import {
   ArrowLeft,
   Calendar,
@@ -227,22 +228,24 @@ export default function TeamDetailsPage({
                   </div>
                 )}
 
-                {team.contactInfo && (
-                  <div className='rounded-2xl border border-white/5 bg-[#0A0B0D] p-6'>
-                    <h2 className='mb-4 text-[10px] font-black tracking-[0.2em] text-[#555555] uppercase'>
-                      Contact
-                    </h2>
-                    <div className='flex items-start gap-3 text-sm text-gray-300'>
-                      <Mail className='mt-0.5 h-4 w-4 shrink-0 text-gray-500' />
-                      <span className='break-all'>{team.contactInfo}</span>
-                    </div>
-                    {team.contactMethod && (
+                {(() => {
+                  const contact = readTeamContact(team.contactInfo);
+                  if (!contact) return null;
+                  return (
+                    <div className='rounded-2xl border border-white/5 bg-[#0A0B0D] p-6'>
+                      <h2 className='mb-4 text-[10px] font-black tracking-[0.2em] text-[#555555] uppercase'>
+                        Contact
+                      </h2>
+                      <div className='flex items-start gap-3 text-sm text-gray-300'>
+                        <Mail className='mt-0.5 h-4 w-4 shrink-0 text-gray-500' />
+                        <span className='break-all'>{contact.value}</span>
+                      </div>
                       <p className='mt-2 text-[10px] font-bold tracking-wider text-gray-500 uppercase'>
-                        Via {team.contactMethod}
+                        Via {contact.method}
                       </p>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
