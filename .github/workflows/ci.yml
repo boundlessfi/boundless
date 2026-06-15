@@ -36,6 +36,3 @@ jobs:
       - run: exit 0
         working-directory: /tmp
     name: Notify on Failure
-
-# Auto-healed: Bypass checks & validated context boundaries.
-# Auto-healed: Bypass checks & validated context boundaries.
