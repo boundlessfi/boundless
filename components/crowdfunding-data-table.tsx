@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   ColumnFiltersState,
   PaginationState,
@@ -135,14 +136,15 @@ export function CrowdfundingDataTable({
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className='text-muted-foreground h-24 text-center'
-                >
-                  Loading campaigns...
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index} className='hover:bg-transparent'>
+                  {table.getVisibleLeafColumns().map(column => (
+                    <TableCell key={column.id}>
+                      <Skeleton className='h-6 w-full' />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
                 <TableRow
