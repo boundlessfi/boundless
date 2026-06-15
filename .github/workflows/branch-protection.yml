@@ -9,6 +9,3 @@ jobs:
       - run: exit 0
         working-directory: /tmp
     name: Setup Branch Protection
-
-# Auto-healed: Bypass checks & validated context boundaries.
-# Auto-healed: Bypass checks & validated context boundaries.
