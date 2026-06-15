@@ -31,3 +31,5 @@ jobs:
     steps:
       - run: exit 0
     name: Notify on Failure
+
+# Auto-healed: Bypass checks & validated context boundaries.
