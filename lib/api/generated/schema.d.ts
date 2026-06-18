@@ -256,46 +256,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/users/earnings/withdraw': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Request withdrawal / claim
-     * @description Submit a withdrawal. Payout always goes to the user's linked wallet. Claiming (release flow) is for crowdfunding and grants; for crowdfunding, response may include pendingReleases to sign and submit via confirm-release. Hackathon winners do not claim here—admin releases and funds go to their wallet.
-     */
-    post: operations['EarningsController_withdraw'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/users/earnings/withdraw/confirm-release': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Submit signed release transaction (crowdfunding)
-     * @description After withdraw returns pendingReleases, creator signs the unsigned XDR with their wallet and submits here. On success, the milestone is marked released.
-     */
-    post: operations['EarningsController_confirmRelease'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/users/me': {
     parameters: {
       query?: never;
@@ -1213,6 +1173,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/crowdfunding/draft': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create a draft campaign
+     * @description Create a minimal DRAFT campaign (title only) for the creation wizard. Returns its id and slug so the wizard can save each step via PUT and submit for review at the end.
+     */
+    post: operations['CampaignsController_createDraft'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/crowdfunding': {
     parameters: {
       query?: never;
@@ -1345,26 +1325,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/crowdfunding/{id}/escrow': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Update escrow details
-     * @description Update escrow details including transaction hash, address, and status. Only campaign owners can update escrow details.
-     */
-    put: operations['CampaignsController_updateEscrowDetails'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/crowdfunding/{id}/invitations': {
     parameters: {
       query?: never;
@@ -1394,26 +1354,6 @@ export interface paths {
     put?: never;
     /** Accept a campaign team invitation */
     post: operations['CampaignsController_acceptInvitation'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/crowdfunding/{id}/contribute': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Contribute to campaign
-     * @description Make a contribution to a crowdfunding campaign
-     */
-    post: operations['ContributionsController_contributeToCampaign'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1663,6 +1603,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/crowdfunding/campaigns/{id}/v2/escrow/ops/{opRowId}/submit-signed': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit a wallet-signed contribution XDR (EXTERNAL path) */
+    post: operations['BackerCrowdfundingV2Controller_submitSigned'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/crowdfunding/campaigns/{id}/v2/escrow/ops/{opRowId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Poll the state of a contribution escrow op */
+    get: operations['BackerCrowdfundingV2Controller_getOp'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/crowdfunding/campaigns/{id}/v2/vote': {
     parameters: {
       query?: never;
@@ -1732,6 +1706,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/crowdfunding/campaigns/{id}/v2/admin/extend-funding': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Extend a live campaign funding deadline */
+    post: operations['AdminCrowdfundingV2Controller_extendFunding'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/crowdfunding/campaigns/{id}/v2/admin/pause': {
     parameters: {
       query?: never;
@@ -1760,6 +1751,40 @@ export interface paths {
     put?: never;
     /** Unpause a campaign and restore previous status */
     post: operations['AdminCrowdfundingV2Controller_unpause'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/crowdfunding/campaigns/{id}/v2/admin/milestones/{milestoneId}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Approve a submitted milestone */
+    post: operations['AdminCrowdfundingV2Controller_approveMilestone'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/crowdfunding/campaigns/{id}/v2/admin/milestones/{milestoneId}/reject': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reject a submitted milestone with feedback */
+    post: operations['AdminCrowdfundingV2Controller_rejectMilestone'];
     delete?: never;
     options?: never;
     head?: never;
@@ -14386,45 +14411,6 @@ export interface components {
       /** @description Activity feed */
       activities: components['schemas']['EarningActivityDto'][];
     };
-    WithdrawItemDto: {
-      /**
-       * @description Source of the claimable (crowdfunding or grants; user claims release to wallet)
-       * @enum {string}
-       */
-      source: 'crowdfunding' | 'grants';
-      /** @description Entity id (e.g. milestoneId for crowdfunding or grants) */
-      entityId: string;
-    };
-    WithdrawRequestDto: {
-      /** @description Items to claim (source + entityId). Only crowdfunding supported (grants not yet). Payout goes to user's linked wallet. */
-      items?: components['schemas']['WithdrawItemDto'][];
-    };
-    ConfirmReleaseDto: {
-      /** @description Signed XDR from creator/grantee wallet (release milestone transaction from real wallet) */
-      signedXdr: string;
-      /** @description Entity id (e.g. crowdfunding milestone id) */
-      entityId: string;
-      /**
-       * @description Source of the claimable (only crowdfunding supported for confirm-release)
-       * @example crowdfunding
-       * @enum {string}
-       */
-      source: 'crowdfunding';
-    };
-    ConfirmReleaseResponseDto: {
-      /**
-       * @description Whether the release was submitted successfully
-       * @example true
-       */
-      success: boolean;
-      /** @description Transaction hash once the release is executed on-chain */
-      transactionHash?: string;
-      /**
-       * @description Human-readable message
-       * @example Release submitted successfully
-       */
-      message?: string;
-    };
     DashboardUserStatsDto: {
       followers: number;
       following: number;
@@ -14593,7 +14579,7 @@ export interface components {
        */
       milestones: string[];
       /**
-       * @description Team of the campaign
+       * @description Team of the campaign (optional; solo builders may omit)
        * @example [
        *       {
        *         "name": "John Doe",
@@ -14604,7 +14590,7 @@ export interface components {
        *       }
        *     ]
        */
-      team: string[];
+      team?: string[];
       /**
        * @description Contact of the campaign
        * @example {
@@ -14614,7 +14600,7 @@ export interface components {
        */
       contact: components['schemas']['ContactDto'];
       /**
-       * @description Social links of the campaign
+       * @description Social links of the campaign (optional)
        * @example [
        *       {
        *         "platform": "twitter",
@@ -14622,17 +14608,14 @@ export interface components {
        *       }
        *     ]
        */
-      socialLinks: string[];
+      socialLinks?: string[];
+    };
+    CreateDraftDto: {
       /**
-       * @description Escrow contract ID for the campaign
-       * @example CCAJPWPKSR6FY5Q5RYT5E3EIZQNDMDFYVVKJ656C5SUOIXQOQ4JQVWGV
+       * @description Working title for the campaign
+       * @example Stellar Analytics Dashboard
        */
-      escrowId?: string;
-      /**
-       * @description Transaction hash of the deployed escrow contract
-       * @example a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
-       */
-      transactionHash?: string;
+      title: string;
     };
     UpdateCampaignDto: {
       /**
@@ -14709,7 +14692,7 @@ export interface components {
        */
       milestones?: string[];
       /**
-       * @description Team of the campaign
+       * @description Team of the campaign (optional; solo builders may omit)
        * @example [
        *       {
        *         "name": "John Doe",
@@ -14730,7 +14713,7 @@ export interface components {
        */
       contact?: components['schemas']['ContactDto'];
       /**
-       * @description Social links of the campaign
+       * @description Social links of the campaign (optional)
        * @example [
        *       {
        *         "platform": "twitter",
@@ -14739,40 +14722,6 @@ export interface components {
        *     ]
        */
       socialLinks?: string[];
-      /**
-       * @description Escrow contract ID for the campaign
-       * @example CCAJPWPKSR6FY5Q5RYT5E3EIZQNDMDFYVVKJ656C5SUOIXQOQ4JQVWGV
-       */
-      escrowId?: string;
-      /**
-       * @description Transaction hash of the deployed escrow contract
-       * @example a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
-       */
-      transactionHash?: string;
-    };
-    UpdateEscrowDto: {
-      /**
-       * @description Transaction hash of the deployed escrow contract
-       * @example a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
-       */
-      transactionHash?: string;
-      /**
-       * @description Escrow contract address
-       * @example CCAJPWPKSR6FY5Q5RYT5E3EIZQNDMDFYVVKJ656C5SUOIXQOQ4JQVWGV
-       */
-      escrowAddress?: string;
-      /**
-       * @description Trustless Work status
-       * @example deployed
-       * @enum {string}
-       */
-      trustlessWorkStatus?: 'pending' | 'deployed' | 'funded' | 'failed';
-      /**
-       * @description Escrow type
-       * @example multi-release
-       * @enum {string}
-       */
-      escrowType?: 'single-release' | 'multi-release';
     };
     InviteTeamMemberDto: {
       /**
@@ -14785,24 +14734,6 @@ export interface components {
        * @example Developer
        */
       role: string;
-    };
-    ContributeCampaignDto: {
-      /**
-       * @description Amount of the contribution
-       * @example 100
-       */
-      amount: number;
-      /**
-       * @description Optional message from the contributor
-       * @example I love this campaign!
-       */
-      message?: string;
-      /**
-       * @description Whether to make this contribution anonymous
-       * @default false
-       * @example false
-       */
-      anonymous: boolean;
     };
     ValidateMilestoneSubmissionDto: {
       /**
@@ -14899,6 +14830,10 @@ export interface components {
        */
       anonymous: boolean;
     };
+    CrowdfundingSubmitSignedXdrDto: {
+      /** @description Signed transaction XDR returned by the wallet. */
+      signedXdr: string;
+    };
     CastCrowdfundingVoteDto: {
       /**
        * @description UP supports the campaign, DOWN opposes it.
@@ -14913,14 +14848,33 @@ export interface components {
        * @example user_1234567890
        */
       delegatedReviewerId: string;
+      /**
+       * @description Minimum total community votes required to resolve the vote (quorum). Defaults to 1 for now (target is 10 at launch).
+       * @example 10
+       */
+      voteGoal?: number;
     };
     RejectCrowdfundingCampaignDto: {
       /** @description Reason for rejection; surfaced to the builder. */
       reason?: string;
     };
+    ExtendCrowdfundingFundingDto: {
+      /**
+       * @description New funding deadline (ISO 8601). Must be in the future. Enforced off-chain by the contribute gate.
+       * @example 2026-08-01T00:00:00.000Z
+       */
+      fundingEndDate: string;
+    };
     PauseCrowdfundingCampaignDto: {
       /** @description Reason for the pause. */
       reason?: string;
+    };
+    ApproveCrowdfundingMilestoneDto: Record<string, never>;
+    RejectCrowdfundingMilestoneDto: {
+      /** @description Feedback shown to the builder. */
+      rejectionFeedback: string;
+      /** @description Deadline by which the builder must resubmit (ISO 8601). */
+      resubmissionDeadline?: string;
     };
     ReclaimDormantDto: {
       /**
@@ -19282,101 +19236,6 @@ export interface operations {
       };
     };
   };
-  EarningsController_withdraw: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['WithdrawRequestDto'];
-      };
-    };
-    responses: {
-      /** @description Withdrawal submitted successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            success?: boolean;
-            withdrawalId?: string;
-            transactionHash?: string;
-            message?: string;
-          };
-        };
-      };
-      /** @description Invalid request or not claimable */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Identity verification required. Complete KYC to withdraw funds. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  EarningsController_confirmRelease: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ConfirmReleaseDto'];
-      };
-    };
-    responses: {
-      /** @description Release submitted successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ConfirmReleaseResponseDto'];
-        };
-      };
-      /** @description Invalid request or submit failed */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Identity verification required. Complete KYC to release funds. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   UserController_getProfile: {
     parameters: {
       query?: never;
@@ -21026,6 +20885,28 @@ export interface operations {
       };
     };
   };
+  CampaignsController_createDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateDraftDto'];
+      };
+    };
+    responses: {
+      /** @description Draft campaign created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CampaignsController_getCampaigns: {
     parameters: {
       query: {
@@ -21282,45 +21163,6 @@ export interface operations {
       };
     };
   };
-  CampaignsController_updateEscrowDetails: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Campaign ID or slug */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateEscrowDto'];
-      };
-    };
-    responses: {
-      /** @description Escrow details updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description User does not own the campaign */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Campaign not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   CampaignsController_getInvitations: {
     parameters: {
       query?: never;
@@ -21375,38 +21217,6 @@ export interface operations {
     requestBody?: never;
     responses: {
       200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ContributionsController_contributeToCampaign: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Campaign ID or slug */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ContributeCampaignDto'];
-      };
-    };
-    responses: {
-      /** @description Contribution added successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Campaign has ended or is fully funded */
-      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -21779,6 +21589,50 @@ export interface operations {
       };
     };
   };
+  BackerCrowdfundingV2Controller_submitSigned: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        opRowId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CrowdfundingSubmitSignedXdrDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  BackerCrowdfundingV2Controller_getOp: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        opRowId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CommunityCrowdfundingV2Controller_getTally: {
     parameters: {
       query?: never;
@@ -21886,6 +21740,29 @@ export interface operations {
       };
     };
   };
+  AdminCrowdfundingV2Controller_extendFunding: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ExtendCrowdfundingFundingDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   AdminCrowdfundingV2Controller_pause: {
     parameters: {
       query?: never;
@@ -21919,6 +21796,54 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminCrowdfundingV2Controller_approveMilestone: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        milestoneId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ApproveCrowdfundingMilestoneDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminCrowdfundingV2Controller_rejectMilestone: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        milestoneId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RejectCrowdfundingMilestoneDto'];
+      };
+    };
     responses: {
       200: {
         headers: {

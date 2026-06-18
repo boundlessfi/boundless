@@ -227,13 +227,15 @@ export const HackathonCard = ({
       aria-label={`View hackathon: ${name}`}
     >
       <div className='bg-muted relative h-44 w-full overflow-hidden sm:h-48'>
-        <Image
-          src={banner}
-          alt={name}
-          fill
-          className='object-cover transition-transform duration-500 group-hover:scale-105'
-          unoptimized
-        />
+        {typeof banner === 'string' && banner.trim() !== '' ? (
+          <Image
+            src={banner}
+            alt={name}
+            fill
+            className='object-cover transition-transform duration-500 group-hover:scale-105'
+            unoptimized
+          />
+        ) : null}
         <div className='to-background absolute inset-0 bg-linear-to-t from-black/0 via-black/10' />
 
         <div className='absolute top-4 right-4 left-4 flex items-start justify-between gap-2'>

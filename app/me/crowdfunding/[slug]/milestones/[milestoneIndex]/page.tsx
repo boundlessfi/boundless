@@ -1,273 +1,136 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import {
-  getCrowdfundingProject,
-  getCrowdfundingMilestone,
-  validateMilestoneSubmission,
-  updateMilestone,
-} from '@/features/projects/api';
+import { use } from 'react';
 import { uploadMilestoneDocuments } from '@/lib/api/upload';
-import { Crowdfunding, Milestone } from '@/features/projects/types';
+import {
+  useCampaign,
+  useSubmitMilestoneEvidence,
+  useClaimMilestone,
+} from '@/features/crowdfunding';
 import { MilestoneDetailHeader } from '@/components/crowdfunding/milestone-detail-header';
 import { MilestoneDetailInfo } from '@/components/crowdfunding/milestone-detail-info';
 import { MilestoneDetailDescription } from '@/components/crowdfunding/milestone-detail-description';
 import { MilestoneDetailLinks } from '@/components/crowdfunding/milestone-detail-links';
-import { SubmitEvidenceModal } from '@/components/crowdfunding/submit-evidence-modal';
-import WalletRequiredModal from '@/components/wallet/WalletRequiredModal';
-import { useProtectedAction } from '@/hooks/use-protected-action';
+import { MilestoneSubmitForm } from '@/components/crowdfunding/MilestoneSubmitForm';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, DollarSign, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  useChangeMilestoneStatus,
-  useSendTransaction,
-} from '@trustless-work/escrow';
-import { useWalletContext } from '@/components/providers/wallet-provider';
-import { signTransaction } from '@/lib/config/wallet-kit';
 
 interface PageProps {
-  params: Promise<{
-    slug: string;
-    milestoneIndex: number;
-  }>;
-}
-
-interface TransformedMilestone extends Milestone {
-  _id: string;
-  title: string;
-  dueDate: string;
-  submittedAt?: string;
-  approvedAt?: string;
-  rejectedAt?: string;
-  evidence?: {
-    text?: string;
-    attachments?: Array<{
-      type: 'image' | 'video' | 'document' | 'link';
-      url: string;
-      name?: string;
-    }>;
-  };
+  params: Promise<{ slug: string; milestoneIndex: string }>;
 }
 
 export default function MilestoneDetailPage({ params }: PageProps) {
-  const [campaign, setCampaign] = useState<Crowdfunding | null>(null);
-  const [milestone, setMilestone] = useState<TransformedMilestone | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const milestoneIndex = use(params).milestoneIndex;
-  const { changeMilestoneStatus } = useChangeMilestoneStatus();
-  const { sendTransaction } = useSendTransaction();
+  const { slug, milestoneIndex: milestoneParam } = use(params);
 
-  const { walletAddress } = useWalletContext();
+  const { data: campaign, isLoading, error } = useCampaign(slug);
 
-  const {
-    executeProtectedAction,
-    showWalletModal,
-    closeWalletModal,
-    handleWalletConnected,
-  } = useProtectedAction({
-    actionName: 'submit evidence',
-    onSuccess: () => setShowEvidenceModal(true),
-  });
+  // Milestone cards link by milestone id; fall back to array index for any
+  // legacy numeric links.
+  const milestones = campaign?.milestones ?? [];
+  let milestone = milestones.find(m => m.id === milestoneParam) ?? null;
+  let milestoneIndex = milestones.findIndex(m => m.id === milestoneParam);
+  if (!milestone && /^\d+$/.test(milestoneParam)) {
+    milestoneIndex = Number(milestoneParam);
+    milestone = milestones[milestoneIndex] ?? null;
+  }
+  const campaignId = campaign?.id ?? '';
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { slug } = await params;
+  const submitEvidence = useSubmitMilestoneEvidence(campaignId);
+  const claimMilestone = useClaimMilestone(campaignId);
 
-        const [campaignData, milestoneData] = await Promise.all([
-          getCrowdfundingProject(slug),
-          getCrowdfundingMilestone(slug, milestoneIndex.toString()),
-        ]);
-
-        setCampaign(campaignData);
-
-        if (milestoneData) {
-          setMilestone({
-            _id: milestoneData.id || milestoneData.name,
-            title: milestoneData.name,
-            description: milestoneData.description,
-            status: milestoneData.status,
-            dueDate: milestoneData.endDate,
-            amount: milestoneData.amount,
-            submittedAt: milestoneData.submittedAt,
-            approvedAt: milestoneData.approvedAt,
-            rejectedAt: milestoneData.rejectedAt,
-            evidence: milestoneData.evidence,
-            votes: milestoneData.votes,
-            userHasVoted: milestoneData.userHasVoted,
-            userVote: milestoneData.userVote,
-            ...milestoneData,
-          });
-        }
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [params]);
-
-  const handleSubmitEvidence = async (data: {
-    status: string;
+  const handleSubmitEvidence = async (formData: {
     submissionNotes: string;
     proofOfWorkLinks: string[];
-    documents?: File[];
+    documents: File[];
   }) => {
-    if (!campaign || !milestone) return;
+    if (!campaign || !milestone?.id) return;
 
-    setIsSubmitting(true);
-
-    try {
-      // Step 1: Upload documents to Cloudinary if provided
-      let documentUrls: string[] = [];
-      if (data.documents && data.documents.length > 0) {
-        toast.loading(`Uploading ${data.documents.length} file(s)...`);
-
-        const uploadResult = await uploadMilestoneDocuments(
-          data.documents,
-          campaign.slug,
-          milestoneIndex
+    let documentUrls: string[] = [];
+    if (formData.documents.length > 0) {
+      toast.loading(`Uploading ${formData.documents.length} file(s)...`);
+      const uploadResult = await uploadMilestoneDocuments(
+        formData.documents,
+        campaign.slug,
+        milestoneIndex
+      );
+      if (uploadResult.success) {
+        documentUrls = uploadResult.data.map(
+          (f: { secure_url: string }) => f.secure_url
         );
-
-        if (uploadResult.success) {
-          documentUrls = uploadResult.data.map(file => file.secure_url);
-          toast.success('Files uploaded successfully');
-        } else {
-          throw new Error('Failed to upload documents');
-        }
+        toast.success('Files uploaded');
+      } else {
+        toast.error('Failed to upload documents');
+        return;
       }
-
-      // Step 2: Validate submission with backend
-      toast('Validating submission...');
-
-      const validationResult = await validateMilestoneSubmission(
-        campaign.slug,
-        milestoneIndex,
-        {
-          submissionNotes: data.submissionNotes,
-          proofOfWorkLinks: data.proofOfWorkLinks,
-          proofOfWorkFiles: documentUrls,
-          status: data.status as 'completed' | 'in_review' | 'submitted',
-        }
-      );
-
-      if (!validationResult.validated) {
-        throw new Error(validationResult.error || 'Validation failed');
-      }
-
-      // Step 3: Perform blockchain transaction with Trustless Work SDK
-      toast('Please confirm the transaction in your wallet');
-
-      // const { unsignedTransaction } = await changeMilestoneStatus(
-      //   {
-      //     contractId: campaign.escrowAddress,
-      //     milestoneIndex: (milestone.orderIndex ?? milestoneIndex).toString(),
-      //     newStatus: data.status === 'completed' ? 'completed' : 'in_progress',
-      //     newEvidence: data.submissionNotes, // Use submission notes as evidence description
-      //     serviceProvider: walletAddress || '',
-      //   },
-      //   'multi-release'
-      // );
-      // if (!unsignedTransaction) {
-      //   throw new Error(
-      //     'Unsigned transaction is missing from useChangeMilestoneStatusresponse.'
-      //   );
-      // }
-
-      // const signedXdr = await signTransaction({
-      //   unsignedTransaction,
-      //   address: walletAddress || '',
-      // });
-
-      // const trxsent = await sendTransaction(signedXdr);
-      // if (trxsent.status === 'SUCCESS') {
-      //   toast.success('Transaction confirmed on blockchain');
-      // }
-
-      toast('Updating milestone...');
-
-      await updateMilestone(campaign.slug, milestoneIndex, {
-        status: data.status as
-          | 'pending'
-          | 'in_progress'
-          | 'completed'
-          | 'cancelled',
-        submissionNotes: data.submissionNotes,
-        proofOfWorkLinks: data.proofOfWorkLinks,
-        proofOfWorkFiles: documentUrls,
-        completedAt:
-          data.status === 'completed' ? new Date().toISOString() : undefined,
-        releaseTransactionHash: '',
-      });
-
-      // Step 5: Refetch milestone data
-      const updatedMilestone = await getCrowdfundingMilestone(
-        campaign.slug,
-        milestoneIndex.toString()
-      );
-
-      if (updatedMilestone) {
-        setMilestone({
-          _id: updatedMilestone.id || updatedMilestone.name,
-          title: updatedMilestone.name,
-          description: updatedMilestone.description,
-          status: updatedMilestone.status,
-          dueDate: updatedMilestone.endDate,
-          amount: updatedMilestone.amount,
-          submittedAt: updatedMilestone.submittedAt,
-          approvedAt: updatedMilestone.approvedAt,
-          rejectedAt: updatedMilestone.rejectedAt,
-          evidence: updatedMilestone.evidence,
-          votes: updatedMilestone.votes,
-          userHasVoted: updatedMilestone.userHasVoted,
-          userVote: updatedMilestone.userVote,
-          ...updatedMilestone,
-        });
-      }
-
-      toast.success('Milestone evidence submitted successfully');
-
-      setShowEvidenceModal(false);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Failed to submit evidence'
-      );
-    } finally {
-      setIsSubmitting(false);
     }
+
+    submitEvidence.mutate(
+      {
+        milestoneId: milestone.id,
+        submissionNotes: formData.submissionNotes,
+        proofOfWorkLinks: formData.proofOfWorkLinks,
+        proofOfWorkFiles: documentUrls,
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            'Evidence submitted. The team will review your submission.'
+          );
+        },
+        onError: err => {
+          toast.error(
+            err instanceof Error ? err.message : 'Failed to submit evidence'
+          );
+        },
+      }
+    );
   };
 
-  if (loading) {
+  const handleClaimPayout = () => {
+    if (!milestone?.id) return;
+    claimMilestone.mutate(
+      { builderAddress: '', crowdfundingMilestoneId: milestone.id },
+      {
+        onSuccess: () => toast.success('Payout claimed successfully!'),
+        onError: err => {
+          toast.error(
+            err instanceof Error ? err.message : 'Failed to claim payout'
+          );
+        },
+      }
+    );
+  };
+
+  if (isLoading) {
     return (
-      <div className='container mx-auto max-w-4xl px-4 py-12'>
-        <div className='text-muted-foreground text-center'>Loading...</div>
-      </div>
+      <div className='text-muted-foreground py-12 text-center'>Loading...</div>
     );
   }
 
   if (error || !campaign || !milestone) {
     return (
-      <div className='px-4 py-12'>
-        <div className='text-muted-foreground text-center'>
-          Milestone not found
-        </div>
+      <div className='text-muted-foreground py-12 text-center'>
+        Milestone not found
       </div>
     );
   }
+
+  const reviewStatus = milestone.reviewStatus?.toLowerCase();
+  const canSubmit =
+    reviewStatus === 'pending' || reviewStatus === 'resubmission_required';
+  const isRejected =
+    reviewStatus === 'rejected' || reviewStatus === 'resubmission_required';
+  const canClaim =
+    reviewStatus === 'approved' && campaign.v2Status === 'FUNDING';
+
   return (
-    <div className='px-6 py-8'>
+    <div className='mx-auto max-w-4xl space-y-8'>
       <MilestoneDetailHeader
         title={campaign.project.title}
         milestone={milestone}
         campaignSlug={campaign.slug}
         backLink={`/me/crowdfunding/${campaign.slug}/milestones`}
-        onSubmitEvidence={() =>
-          executeProtectedAction(() => setShowEvidenceModal(true))
-        }
       />
 
       <MilestoneDetailInfo milestone={milestone} campaign={campaign} />
@@ -279,23 +142,66 @@ export default function MilestoneDetailPage({ params }: PageProps) {
 
       <MilestoneDetailLinks campaign={campaign} />
 
-      {/* Evidence Submission Modal */}
-      <SubmitEvidenceModal
-        open={showEvidenceModal}
-        onOpenChange={setShowEvidenceModal}
-        milestoneId={milestone._id}
-        milestoneName={milestone.title}
-        onSubmit={handleSubmitEvidence}
-        isSubmitting={isSubmitting}
-      />
+      {/* Review feedback */}
+      {isRejected && (
+        <div className='flex items-start gap-3 rounded-xl border border-amber-800/50 bg-amber-950/20 p-4'>
+          <AlertTriangle className='mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400' />
+          <div>
+            <p className='text-sm font-medium text-amber-300'>
+              {reviewStatus === 'resubmission_required'
+                ? 'Resubmission required'
+                : 'Submission not accepted'}
+            </p>
+            <p className='mt-1 text-sm text-amber-200/70'>
+              The review team has requested changes to your submission. Update
+              your evidence below and resubmit.
+            </p>
+          </div>
+        </div>
+      )}
 
-      {/* Wallet Required Modal */}
-      <WalletRequiredModal
-        open={showWalletModal}
-        onOpenChange={closeWalletModal}
-        actionName='submit evidence'
-        onWalletConnected={handleWalletConnected}
-      />
+      {/* Inline evidence submission */}
+      {canSubmit && (
+        <MilestoneSubmitForm
+          milestoneName={milestone.title || milestone.name}
+          isSubmitting={submitEvidence.isPending}
+          onSubmit={handleSubmitEvidence}
+        />
+      )}
+
+      {/* Claim payout */}
+      {canClaim && (
+        <div className='rounded-xl border border-emerald-800/50 bg-emerald-950/20 p-6'>
+          <div className='flex items-start justify-between gap-4'>
+            <div>
+              <h3 className='text-base font-semibold text-emerald-300'>
+                Payout available
+              </h3>
+              <p className='mt-1 text-sm text-emerald-200/70'>
+                This milestone has been approved. Claim your share of the escrow
+                funds.
+              </p>
+              {milestone.amount != null && (
+                <p className='mt-2 text-lg font-bold text-white'>
+                  ${milestone.amount.toLocaleString()} USDC
+                </p>
+              )}
+            </div>
+            <Button
+              onClick={handleClaimPayout}
+              disabled={claimMilestone.isPending}
+              className='flex-shrink-0 gap-2 bg-emerald-600 text-white hover:bg-emerald-500'
+            >
+              {claimMilestone.isPending ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <DollarSign className='h-4 w-4' />
+              )}
+              {claimMilestone.isPending ? 'Claiming...' : 'Claim payout'}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

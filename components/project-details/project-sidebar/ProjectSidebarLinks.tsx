@@ -70,21 +70,24 @@ export function ProjectSidebarLinks({ project }: ProjectSidebarLinksProps) {
           </a>
         )}
 
-        {/* Social Links */}
-        {Object.entries(project.socialLinks).map(([platform, url], index) => (
-          <a
-            key={index}
-            href={url.url}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='group flex items-center gap-3 text-sm text-white transition-colors hover:text-white'
-          >
-            <span className='text-gray-400 transition-colors group-hover:text-white'>
-              {getIcon(platform.toLowerCase())}
-            </span>
-            <span className='truncate'>{url.url}</span>
-          </a>
-        ))}
+        {/* Social Links (socialLinks may be null/undefined at runtime) */}
+        {(project.socialLinks ?? []).map((link, index) => {
+          if (!link?.url) return null;
+          return (
+            <a
+              key={index}
+              href={link.url}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='group flex items-center gap-3 text-sm text-white transition-colors hover:text-white'
+            >
+              <span className='text-gray-400 transition-colors group-hover:text-white'>
+                {getIcon((link.platform ?? '').toLowerCase())}
+              </span>
+              <span className='truncate'>{link.url}</span>
+            </a>
+          );
+        })}
       </div>
     </div>
   );

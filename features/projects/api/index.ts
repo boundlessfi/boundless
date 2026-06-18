@@ -119,6 +119,28 @@ export const createCrowdfundingProject = async (
 };
 
 /**
+ * Create a minimal DRAFT campaign for the creation wizard. Only the title is
+ * required; the wizard saves each subsequent step via updateCrowdfundingProject
+ * and submits for review at the end. Returns the new campaign id and slug.
+ */
+export const createCampaignDraft = async (
+  title: string
+): Promise<{ id: string; slug: string }> => {
+  const res = await api.post<{
+    data?: { id: string; slug: string };
+    id?: string;
+    slug?: string;
+  }>('/crowdfunding/draft', { title });
+  const body = res.data;
+  const id = body?.data?.id ?? body?.id;
+  const slug = body?.data?.slug ?? body?.slug;
+  if (!id || !slug) {
+    throw new Error('Draft creation returned no id');
+  }
+  return { id, slug };
+};
+
+/**
  * Validate crowdfunding project data
  * @param data - Project data to validate
  */
@@ -511,6 +533,97 @@ export const contributeToProject = async (
 ): Promise<FundCrowdfundingProjectResponse> => {
   const res = await api.post<FundCrowdfundingProjectResponse>(
     `/crowdfunding/${projectId}/contribute`,
+    data
+  );
+  return res.data;
+};
+
+// ── Crowdfunding v2 builder endpoints ────────────────────────────────────────
+
+export const submitCampaignForReview = async (
+  campaignId: string
+): Promise<any> => {
+  const res = await api.post<ApiResponse<any>>(
+    `/crowdfunding/campaigns/${campaignId}/v2/submit-for-review`
+  );
+  return res.data;
+};
+
+export const withdrawCampaignSubmission = async (
+  campaignId: string
+): Promise<any> => {
+  const res = await api.post<ApiResponse<any>>(
+    `/crowdfunding/campaigns/${campaignId}/v2/withdraw-submission`
+  );
+  return res.data;
+};
+
+export const reviseAndResubmitCampaign = async (
+  campaignId: string
+): Promise<any> => {
+  const res = await api.post<ApiResponse<any>>(
+    `/crowdfunding/campaigns/${campaignId}/v2/revise-and-resubmit`
+  );
+  return res.data;
+};
+
+export const publishCampaignEscrow = async (
+  campaignId: string,
+  data: {
+    builderAddress: string;
+    tokenAddress: string;
+    fundingGoal: number;
+    nMilestones: number;
+    fundingDeadline: string;
+    contentUri?: string;
+  }
+): Promise<any> => {
+  const res = await api.post<ApiResponse<any>>(
+    `/crowdfunding/campaigns/${campaignId}/v2/escrow/publish`,
+    data
+  );
+  return res.data;
+};
+
+export const cancelCampaignEscrow = async (
+  campaignId: string,
+  data: { builderAddress: string }
+): Promise<any> => {
+  const res = await api.post<ApiResponse<any>>(
+    `/crowdfunding/campaigns/${campaignId}/v2/escrow/cancel`,
+    data
+  );
+  return res.data;
+};
+
+export const claimCampaignMilestone = async (
+  campaignId: string,
+  data: {
+    builderAddress: string;
+    crowdfundingMilestoneId: string;
+  }
+): Promise<any> => {
+  const res = await api.post<ApiResponse<any>>(
+    `/crowdfunding/campaigns/${campaignId}/v2/escrow/claim-milestone`,
+    data
+  );
+  return res.data;
+};
+
+// ── Crowdfunding v2 backer endpoint ──────────────────────────────────────────
+
+export const contributeV2 = async (
+  campaignId: string,
+  data: {
+    amount: number;
+    walletOrigin: 'BOUNDLESS' | 'EXTERNAL';
+    contributorAddress: string;
+    message?: string;
+    anonymous?: boolean;
+  }
+): Promise<any> => {
+  const res = await api.post<ApiResponse<any>>(
+    `/crowdfunding/campaigns/${campaignId}/v2/escrow/contribute`,
     data
   );
   return res.data;

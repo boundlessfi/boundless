@@ -5,9 +5,7 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { getMyCrowdfundingProjects } from '@/features/projects/api';
-import { CrowdfundingCampaign } from '@/lib/api/types';
-import { useAuthStatus } from '@/hooks/use-auth';
+import { useMyCampaigns } from '@/features/crowdfunding';
 import { CrowdfundingDataTable } from '@/components/crowdfunding-data-table';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import {
@@ -18,38 +16,20 @@ import {
 } from '@/components/ui/card';
 
 export default function MyCrowdfundingPage() {
-  const { user } = useAuthStatus();
-  const [data, setData] = React.useState<CrowdfundingCampaign[]>([]);
-  const [pagination, setPagination] = React.useState({
-    page: 1,
-    limit: 10,
+  const [page, setPage] = React.useState(1);
+  const [limit, setLimit] = React.useState(10);
+
+  const { data, isLoading, refetch } = useMyCampaigns(page, limit);
+
+  const campaigns = data?.data ?? [];
+  const pagination = data?.pagination ?? {
+    page,
+    limit,
     total: 0,
     totalPages: 0,
-  });
-  const [loading, setLoading] = React.useState(false);
+  };
 
-  const fetchCampaigns = React.useCallback(async (page = 1, limit = 10) => {
-    try {
-      setLoading(true);
-      const response = await getMyCrowdfundingProjects(page, limit);
-      setData(response.data.data || []);
-      if (response.meta?.pagination) {
-        setPagination(response.meta.pagination);
-      }
-    } catch {
-      // Error handled by UI state
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    if (user) {
-      fetchCampaigns();
-    }
-  }, [user, fetchCampaigns]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className='mx-auto flex h-screen items-center justify-center py-10'>
         <LoadingSpinner size='xl' />
@@ -72,7 +52,7 @@ export default function MyCrowdfundingPage() {
           </div>
           <div className='flex items-center space-x-2'>
             <Button asChild className='bg-primary hover:bg-primary/90'>
-              <Link href='/projects/create'>
+              <Link href='/crowdfunding/new'>
                 <Plus className='mr-2 h-4 w-4' />
                 Create Campaign
               </Link>
@@ -83,13 +63,14 @@ export default function MyCrowdfundingPage() {
 
       <div className='mt-6 space-y-4'>
         <CrowdfundingDataTable
-          data={data}
+          data={campaigns}
           pagination={pagination}
-          onPaginationChange={fetchCampaigns}
-          onDeleteSuccess={() =>
-            fetchCampaigns(pagination.page, pagination.limit)
-          }
-          loading={loading}
+          onPaginationChange={(p, l) => {
+            setPage(p);
+            setLimit(l ?? limit);
+          }}
+          onDeleteSuccess={() => refetch()}
+          loading={isLoading}
         />
       </div>
     </Card>

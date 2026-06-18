@@ -103,8 +103,8 @@ export const getCrowdfundingTableColumns = (
     },
   },
   {
-    id: 'project.status',
-    accessorKey: 'project.status',
+    id: 'v2Status',
+    accessorKey: 'v2Status',
     header: ({ column }) => {
       return (
         <Button
@@ -118,23 +118,72 @@ export const getCrowdfundingTableColumns = (
       );
     },
     cell: ({ row }) => {
-      const status = row.original.project.status;
-      const getStatusVariant = (status: string) => {
-        switch (status.toLowerCase()) {
-          case 'active':
-          case 'funding':
-            return 'bg-primary/20 text-primary border-primary/30';
-          case 'completed':
-            return 'bg-success-500/20 text-success-400 border-success-500/30';
-          case 'draft':
-            return 'bg-warning-500/20 text-warning-400 border-warning-500/30';
-          default:
-            return 'bg-muted text-muted-foreground';
-        }
+      // Show the campaign lifecycle status (v2Status), not the underlying
+      // project status (which is IDEA for fresh drafts).
+      const status = (
+        (row.original as { v2Status?: string }).v2Status ?? 'DRAFT'
+      ).toUpperCase();
+      const STATUS: Record<string, { label: string; cls: string }> = {
+        DRAFT: {
+          label: 'Draft',
+          cls: 'bg-warning-500/20 text-warning-400 border-warning-500/30',
+        },
+        SUBMITTED_FOR_REVIEW: {
+          label: 'Under Review',
+          cls: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        },
+        REVIEW_REJECTED: {
+          label: 'Changes Requested',
+          cls: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+        },
+        REVIEW_APPROVED: {
+          label: 'Approved',
+          cls: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+        },
+        VOTING: {
+          label: 'Voting',
+          cls: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+        },
+        VOTE_FAILED: {
+          label: 'Voting Failed',
+          cls: 'bg-red-500/20 text-red-400 border-red-500/30',
+        },
+        VOTE_PASSED: {
+          label: 'Ready to Launch',
+          cls: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+        },
+        PUBLISHING: {
+          label: 'Launching',
+          cls: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        },
+        FUNDING: {
+          label: 'Live',
+          cls: 'bg-primary/20 text-primary border-primary/30',
+        },
+        COMPLETED: {
+          label: 'Completed',
+          cls: 'bg-success-500/20 text-success-400 border-success-500/30',
+        },
+        CANCELLED: {
+          label: 'Cancelled',
+          cls: 'bg-red-500/20 text-red-400 border-red-500/30',
+        },
+        PAUSED: {
+          label: 'Paused',
+          cls: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+        },
+        FAILED: {
+          label: 'Failed',
+          cls: 'bg-red-500/20 text-red-400 border-red-500/30',
+        },
+      };
+      const cfg = STATUS[status] ?? {
+        label: status,
+        cls: 'bg-muted text-muted-foreground',
       };
       return (
-        <Badge variant='outline' className={getStatusVariant(status)}>
-          {status}
+        <Badge variant='outline' className={cfg.cls}>
+          {cfg.label}
         </Badge>
       );
     },
@@ -191,7 +240,13 @@ export const getCrowdfundingTableColumns = (
       );
     },
     cell: ({ row }) => {
-      const endDate = new Date(row.original.fundingEndDate);
+      // The funding deadline is only set once a campaign goes live (after the
+      // community vote). Drafts and pre-funding campaigns have no deadline.
+      const raw = row.original.fundingEndDate;
+      const endDate = raw ? new Date(raw) : null;
+      if (!endDate || isNaN(endDate.getTime())) {
+        return <span className='text-muted-foreground text-sm'>Not set</span>;
+      }
       const now = new Date();
       const daysLeft = Math.ceil(
         (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
