@@ -48,7 +48,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export function useBountiesList(params?: { page?: number; limit?: number }) {
   return useQuery({
     queryKey: [...BOUNDED_PREFIX, 'list', params],
-    queryFn: async (): Promise<{ bounties: BountySummary[]; pagination: Record<string, unknown> } => {
+    queryFn: async (): Promise<{ bounties: BountySummary[]; pagination: Record<string, unknown> }> => {
       const search = new URLSearchParams({ page: String(params?.page ?? 1), limit: String(params?.limit ?? 20) });
       const data = await request<{ bounties: BountySummary[]; pagination: Record<string, unknown> }>(`/api/bounties?${search}`);
       return { bounties: data.bounties ?? [], pagination: data.pagination ?? {} };
@@ -167,10 +167,10 @@ export function useWithdrawApplication(bountyId: string, applicationId: string) 
   });
 }
 
-async function runEscrowOp<T>(expected: 'terminal' | 'any' = 'any'): Promise<T> {
+async function runEscrowOp<T>(payload: Record<string, unknown>): Promise<T> {
   const data = await request<T>('/api/escrow/ops', {
     method: 'POST',
-    body: JSON.stringify({ scope: 'participant', mode: 'MANAGED' }),
+    body: JSON.stringify({ scope: 'participant', mode: 'MANAGED', ...payload }),
   });
   return data;
 }
@@ -184,14 +184,18 @@ export function useSubmitBounty(bountyId: string) {
       if (!description) {
         throw new Error('Description is required to submit bounty work');
       }
-      const result = await runEscrowOp<{ submission: { id: string; status: string } }>();
+      const result = await runEscrowOp<{ submission: { id: string; status: string } }>({
+        bountyId,
+        description,
+        links,
+      });
       if (!result || !('submission' in result)) {
         throw new Error('Escrow operation did not return a submission');
       }
       return result as { submission: { id: string; status: string } };
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: [...BOUNDED_PREFIX, bountyId] });
+      queryClient.invalidateQueries({ queryKey: [...BOUNDED_PREFIX, 'detail', bountyId] });
       toast.success(`Submission recorded${result?.submission?.id ? ': ' + result.submission.id : ''}`);
     },
     onError: (err: unknown) => {
@@ -211,7 +215,7 @@ export function useWithdrawSubmission(bountyId: string, submissionId: string) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...BOUNDED_PREFIX, bountyId] });
+      queryClient.invalidateQueries({ queryKey: [...BOUNDED_PREFIX, 'detail', bountyId] });
       toast.success('Submission withdrawn');
     },
     onError: (err: unknown) => {
@@ -222,14 +226,34 @@ export function useWithdrawSubmission(bountyId: string, submissionId: string) {
   });
 }
 
+type ParticipantSubmission = { id: string; bountyId: string; status: string };
+
+type ParticipantActivityItem =
+  | { kind: 'application'; data: BountyApplication }
+  | { kind: 'submission'; data: ParticipantSubmission };
+
 export function useMyBountyActivity(bountyId: string) {
   const applications = useMyBountyApplications(bountyId);
+  const submissions = useQuery({
+    queryKey: [...BOUNDED_PREFIX, 'my-submissions', bountyId],
+    queryFn: async (): Promise<ParticipantSubmission[]> => {
+      const data = await request<{ submissions: ParticipantSubmission[] }>(`/api/bounties/${encodeURIComponent(bountyId)}/submissions/me`);
+      return data.submissions ?? [];
+    },
+    enabled: !!bountyId,
+    staleTime: 20_000,
+  });
+
   return useQuery({
     queryKey: [...BOUNDED_PREFIX, 'my-activity', bountyId],
     queryFn: async (): Promise<ParticipantActivityItem[]> => {
       const apps = applications.data ?? [];
-      return apps.map<ParticipantActivityItem>(application => ({ kind: 'application', data: application }));
+      const subs = submissions.data ?? [];
+      return [
+        ...apps.map<ParticipantActivityItem>(application => ({ kind: 'application', data: application })),
+        ...subs.map<ParticipantActivityItem>(submission => ({ kind: 'submission', data: submission })),
+      ];
     },
-    enabled: !!bountyId && applications.isFetched,
+    enabled: !!bountyId && applications.isFetched && submissions.isFetched,
   });
 }
