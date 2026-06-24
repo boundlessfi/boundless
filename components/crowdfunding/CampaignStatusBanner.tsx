@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { extractApiErrorMessage } from '@/lib/api/api';
 import {
   useWithdrawSubmission,
   usePublishCampaign,
@@ -193,11 +194,9 @@ export function CampaignStatusBanner({ campaign, onStatusChange }: Props) {
         setLaunchOpen(false);
         onStatusChange?.();
       },
-      onError: err =>
+      onError: (err: unknown) =>
         toast.error(
-          err instanceof Error
-            ? err.message
-            : 'Failed to launch. Please try again.'
+          extractApiErrorMessage(err, 'Failed to launch. Please try again.')
         ),
     });
   };
@@ -286,8 +285,13 @@ export function CampaignStatusBanner({ campaign, onStatusChange }: Props) {
                   toast.success('Submission withdrawn.');
                   onStatusChange?.();
                 },
-                onError: () =>
-                  toast.error('Something went wrong. Please try again.'),
+                onError: (err: unknown) =>
+                  toast.error(
+                    extractApiErrorMessage(
+                      err,
+                      'Something went wrong. Please try again.'
+                    )
+                  ),
               })
             }
             className='text-zinc-400 hover:text-white'

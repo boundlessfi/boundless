@@ -2,6 +2,7 @@
 
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { extractApiErrorMessage } from '@/lib/api/api';
 
 import { useCastVote, useMyVote } from '@/features/crowdfunding';
 import type { Crowdfunding } from '@/features/projects/types';
@@ -31,11 +32,12 @@ export function VotePanel({ campaign }: { campaign: Crowdfunding }) {
           toast.success(
             choice === 'UP' ? 'Thanks, your vote is in.' : 'Your vote is in.'
           ),
-        onError: err =>
+        onError: (err: unknown) =>
           toast.error(
-            err instanceof Error
-              ? err.message
-              : 'Could not record your vote. Make sure you are signed in.'
+            extractApiErrorMessage(
+              err,
+              'Could not record your vote. Make sure you are signed in.'
+            )
           ),
       }
     );

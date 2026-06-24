@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2, Wallet, Zap, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { extractApiErrorMessage } from '@/lib/api/api';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   contributeV2,
@@ -118,9 +119,7 @@ export function ContributeSheet({
       setDone(true);
     } catch (err) {
       toast.error(
-        err instanceof Error
-          ? err.message
-          : 'Contribution failed. Please try again.'
+        extractApiErrorMessage(err, 'Contribution failed. Please try again.')
       );
     } finally {
       setSubmitting(false);

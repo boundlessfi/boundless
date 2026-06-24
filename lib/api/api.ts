@@ -45,31 +45,35 @@ export interface ApiError {
  * backend message on `.message` directly. Plain `Error` instances and raw
  * axios errors are also handled as fallbacks.
  */
+const normalizeMessage = (raw: unknown): string | null => {
+  if (Array.isArray(raw)) {
+    const joined = raw
+      .filter(s => typeof s === 'string' && s.trim())
+      .join('. ');
+    return joined || null;
+  }
+  if (typeof raw === 'string' && raw.trim()) return raw;
+  return null;
+};
+
 export const extractApiErrorMessage = (
   err: unknown,
   fallback = 'Something went wrong. Please try again.'
 ): string => {
   if (!err) return fallback;
 
-  // ApiError or any object with a non-empty `message` string (most common path)
-  if (
-    typeof err === 'object' &&
-    'message' in err &&
-    typeof (err as { message: unknown }).message === 'string' &&
-    (err as { message: string }).message.trim().length > 0
-  ) {
-    return (err as { message: string }).message;
+  // ApiError or any object with a `message` field (string or string[])
+  if (typeof err === 'object' && 'message' in err) {
+    const msg = normalizeMessage((err as { message: unknown }).message);
+    if (msg) return msg;
   }
 
   // Raw axios error fallback (in case it ever bypasses the interceptor)
-  if (
-    typeof err === 'object' &&
-    'response' in err &&
-    (err as { response?: { data?: { message?: string } } }).response?.data
-      ?.message
-  ) {
-    return (err as { response: { data: { message: string } } }).response.data
-      .message;
+  if (typeof err === 'object' && 'response' in err) {
+    const raw = (err as { response?: { data?: { message?: unknown } } })
+      .response?.data?.message;
+    const msg = normalizeMessage(raw);
+    if (msg) return msg;
   }
 
   if (typeof err === 'string' && err.trim().length > 0) return err;
@@ -222,11 +226,15 @@ const createClientApi = (): AxiosInstance => {
       // Handle other errors
       if (error.response) {
         const errorData = error.response.data as
-          | { message?: string; code?: string; errors?: ApiErrorField[] }
+          | {
+              message?: string | string[];
+              code?: string;
+              errors?: ApiErrorField[];
+            }
           | undefined;
         const customError: ApiError = {
           message:
-            errorData?.message ||
+            normalizeMessage(errorData?.message) ||
             `HTTP error! status: ${error.response.status}`,
           status: error.response.status,
           code: errorData?.code,

@@ -23,6 +23,7 @@ import {
   updateCrowdfundingProject,
   submitCampaignForReview,
 } from '@/features/projects/api';
+import { extractApiErrorMessage } from '@/lib/api/api';
 
 export interface WizardMilestone {
   title: string;
@@ -305,8 +306,13 @@ export default function NewCampaignWizard() {
         setCompletedSteps(done);
         setActiveStep(landing);
       })
-      .catch(() =>
-        toast.error('Could not load your draft. Starting a fresh form.')
+      .catch((err: unknown) =>
+        toast.error(
+          extractApiErrorMessage(
+            err,
+            'Could not load your draft. Starting a fresh form.'
+          )
+        )
       )
       .finally(() => setIsHydrating(false));
   }, []);
@@ -359,8 +365,13 @@ export default function NewCampaignWizard() {
       await persistDraft(data);
       markStepDone(activeStep);
       setActiveStep(s => s + 1);
-    } catch {
-      toast.error('Could not save your progress. Please try again.');
+    } catch (err) {
+      toast.error(
+        extractApiErrorMessage(
+          err,
+          'Could not save your progress. Please try again.'
+        )
+      );
     } finally {
       setIsSaving(false);
     }
@@ -384,8 +395,13 @@ export default function NewCampaignWizard() {
         toast.success('Campaign submitted for review!');
       }
       router.push(`/me/crowdfunding/${id}`);
-    } catch {
-      toast.error('Failed to submit for review. Please try again.');
+    } catch (err) {
+      toast.error(
+        extractApiErrorMessage(
+          err,
+          'Failed to submit for review. Please try again.'
+        )
+      );
     } finally {
       setIsSubmitting(false);
     }
