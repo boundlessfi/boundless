@@ -12,14 +12,20 @@ interface NewCampaignSidebarProps {
   activeStep: number;
   completedSteps: Set<number>;
   campaignId?: string;
+  onStepClick?: (step: number) => void;
 }
 
 interface SidebarContentProps {
   activeStep: number;
   completedSteps: Set<number>;
+  onStepClick?: (step: number) => void;
 }
 
-function SidebarContent({ activeStep, completedSteps }: SidebarContentProps) {
+function SidebarContent({
+  activeStep,
+  completedSteps,
+  onStepClick,
+}: SidebarContentProps) {
   return (
     <nav className='flex h-full flex-col overflow-y-auto px-4 py-6'>
       <div className='mb-8'>
@@ -45,6 +51,9 @@ function SidebarContent({ activeStep, completedSteps }: SidebarContentProps) {
           return (
             <div
               key={step.key}
+              onClick={() => {
+                if (!isLocked && !isActive) onStepClick?.(stepNumber);
+              }}
               className={cn(
                 'group relative flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all',
                 isActive
@@ -136,6 +145,7 @@ function SidebarContent({ activeStep, completedSteps }: SidebarContentProps) {
 export default function NewCampaignSidebar({
   activeStep,
   completedSteps,
+  onStepClick,
 }: NewCampaignSidebarProps) {
   const { height } = useWindowSize();
   const headerHeight = 64;
@@ -157,6 +167,7 @@ export default function NewCampaignSidebar({
             <SidebarContent
               activeStep={activeStep}
               completedSteps={completedSteps}
+              onStepClick={onStepClick}
             />
           </SheetContent>
         </Sheet>
