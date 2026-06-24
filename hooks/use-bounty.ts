@@ -164,6 +164,13 @@ export function useBountyPayout({ organizationId, bountyId }: UseBountyOptions) 
       ) {
         setEscrow(escrowRes.value.data);
       }
+
+      // Surface errors when both calls fail
+      const winnersFailed = winnersRes.status === 'rejected' || (winnersRes.status === 'fulfilled' && !winnersRes.value.success);
+      const escrowFailed = escrowRes.status === 'rejected' || (escrowRes.status === 'fulfilled' && !escrowRes.value.success);
+      if (winnersFailed && escrowFailed) {
+        setError('Failed to load payout data');
+      }
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : 'Failed to load payout data';

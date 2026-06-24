@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useBountySubmissions, useBountyPayout } from '@/hooks/use-bounty';
 import { selectWinners, type BountySubmission } from '@/lib/api/bounties';
+import { getTransactionExplorerUrl } from '@/lib/wallet-utils';
 import { reportError } from '@/lib/error-reporting';
 
 function RankBadge({ rank }: { rank: number }) {
@@ -250,7 +251,7 @@ export default function PayoutPage() {
                       </span>
                       {w.txHash && (
                         <a
-                          href={`https://etherscan.io/tx/${w.txHash}`}
+                          href={getTransactionExplorerUrl(w.txHash)}
                           target='_blank'
                           rel='noopener noreferrer'
                           className='text-zinc-400 hover:text-white'

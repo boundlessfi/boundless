@@ -69,7 +69,36 @@ export default function BountyOverviewPage() {
 
   const { bounty, loading, error } = useBounty({ organizationId, bountyId });
 
-  if (loading) {
+  const content = (() => {
+    if (loading) {
+    return (
+      <div className='flex min-h-screen items-center justify-center bg-black'>
+        <div className='flex flex-col items-center gap-3'>
+          <Loader2 className='h-6 w-6 animate-spin text-gray-400' />
+          <p className='text-sm text-gray-500'>Loading bounty...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !bounty) {
+    return (
+      <div className='flex min-h-screen items-center justify-center bg-black p-6'>
+        <Alert
+          variant='destructive'
+          className='max-w-md border-red-900/20 bg-red-950/20'
+        >
+          <AlertCircle className='h-4 w-4' />
+          <AlertTitle>Unable to load bounty</AlertTitle>
+          <AlertDescription className='text-sm text-gray-400'>
+            {error || 'Please try again later.'}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+    if (loading) {
     return (
       <div className='flex min-h-screen items-center justify-center bg-black'>
         <div className='flex flex-col items-center gap-3'>
@@ -98,8 +127,7 @@ export default function BountyOverviewPage() {
   }
 
   return (
-    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
-      <div className='min-h-screen bg-black'>
+    <div className='min-h-screen bg-black'>
         {/* Header */}
         <div className='border-b border-gray-900 p-4'>
           <div className='mx-auto flex max-w-7xl items-center justify-between gap-4'>
@@ -231,6 +259,11 @@ export default function BountyOverviewPage() {
           </section>
         </div>
       </div>
+  )();
+  
+  return (
+    <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
+      {content}
     </AuthGuard>
   );
 }

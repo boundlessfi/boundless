@@ -29,7 +29,7 @@ function SubmissionCard({ submission }: { submission: BountySubmission }) {
             {new Date(submission.submittedAt).toLocaleDateString()}
           </p>
         </div>
-        {submission.rank && (
+        {submission.rank != null && (
           <span className='rounded-full bg-yellow-500/20 px-2.5 py-0.5 text-xs font-medium text-yellow-400'>
             #{submission.rank}
           </span>
@@ -125,7 +125,7 @@ export default function SubmissionsPage() {
                 With Rank Assigned
               </div>
               <p className='text-2xl font-light text-white'>
-                {loading ? '—' : submissions.filter(s => s.rank).length}
+                {loading ? '—' : submissions.filter(s => s.rank != null).length}
               </p>
             </div>
           </div>
