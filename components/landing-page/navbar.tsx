@@ -44,7 +44,7 @@ const ACTIONS = {
 
 const MENU_ITEMS = [
   { href: '/about', label: 'About' },
-  { href: '/crowdfunding', label: 'Crowdfunding' },
+  { href: '/projects', label: 'Projects' },
   { href: '/hackathons', label: 'Hackathons' },
   { href: '/grants', label: 'Grants' },
   { href: '/bounties', label: 'Bounties' },

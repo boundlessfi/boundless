@@ -11,6 +11,7 @@ import {
   generateWebsiteStructuredData,
 } from '@/lib/structured-data';
 import NextTopLoader from 'nextjs-toploader';
+import DevelopmentStatusModal from '@/components/DevelopmentStatusModal';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -94,8 +95,9 @@ export default function RootLayout({
 
         <Providers>
           {children}
-          <Toaster position='top-right' />
+          <Toaster />
           <CookieConsent />
+          <DevelopmentStatusModal />
         </Providers>
         <AnalyticsWrapper />
       </body>

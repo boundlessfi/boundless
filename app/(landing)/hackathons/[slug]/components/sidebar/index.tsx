@@ -3,7 +3,6 @@ import PoolAndAction from './PoolAndAction';
 import FollowAndMessage from './FollowAndMessage';
 import MySubmissionPanel from './MySubmissionPanel';
 import MyInvitationsPanel from './MyInvitationsPanel';
-import CommunityLinks from './CommunityLinks';
 
 const Sidebar = () => {
   return (
@@ -16,9 +15,6 @@ const Sidebar = () => {
         <PoolAndAction />
       </div>
       <FollowAndMessage />
-      {/* Community links (Discord / Telegram / socials) render only when the
-          organizer collected them in the Collaboration step. */}
-      <CommunityLinks />
     </div>
   );
 };

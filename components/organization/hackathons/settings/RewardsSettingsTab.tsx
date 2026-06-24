@@ -24,7 +24,7 @@ export default function RewardsSettingsTab({
       <div className='mb-6'>
         <h2 className='text-xl font-semibold text-white'>Rewards & Prizes</h2>
         <p className='mt-1 text-sm text-gray-400'>
-          Configure prizes, placements, and judging criteria.
+          Configure prize tiers, amounts, and judging criteria.
         </p>
       </div>
 

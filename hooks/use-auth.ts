@@ -2,17 +2,14 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authClient } from '@/lib/auth-client';
-import { getMe, ME_QUERY_KEY } from '@/lib/api/auth';
+import { getMe } from '@/lib/api/auth';
 import { GetMeResponse } from '@/lib/api/types';
 
-// Shared with OrganizationProvider so a single `/users/me` query backs both the
-// session profile and the org list. Stable (no userId suffix); logout clears it
-// via removeQueries, so there's no cross-account cache leak.
-const AUTH_PROFILE_QUERY_KEY = ME_QUERY_KEY;
+const AUTH_PROFILE_QUERY_KEY = ['auth', 'me'] as const;
 
 function useAuthProfileQuery(sessionUserId: string | null | undefined) {
   return useQuery<GetMeResponse | null>({
-    queryKey: AUTH_PROFILE_QUERY_KEY,
+    queryKey: [...AUTH_PROFILE_QUERY_KEY, sessionUserId ?? null],
     queryFn: getMe,
     enabled: !!sessionUserId,
     staleTime: 60 * 1000,

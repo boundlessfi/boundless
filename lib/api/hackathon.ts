@@ -52,28 +52,11 @@ export const getHackathons = async (): Promise<HackathonListResponse> => {
 };
 
 export const getHackathon = async (
-  slug: string,
-  accessToken?: string
+  slug: string
 ): Promise<GetHackathonResponse> => {
-  const qs = accessToken
-    ? `?accessToken=${encodeURIComponent(accessToken)}`
-    : '';
-  const res = await api.get(`/hackathons/${slug}${qs}`);
+  const res = await api.get(`/hackathons/${slug}`);
 
   return res.data as GetHackathonResponse;
-};
-
-// Verify a private hackathon's access password; returns an unlock token.
-export const verifyHackathonAccess = async (
-  slug: string,
-  password: string
-): Promise<{ accessToken: string }> => {
-  const res = await api.post(`/hackathons/${slug}/access/verify`, { password });
-  const body = res.data as {
-    data?: { accessToken?: string };
-    accessToken?: string;
-  };
-  return { accessToken: body.data?.accessToken ?? body.accessToken ?? '' };
 };
 
 // Get featured hackathons

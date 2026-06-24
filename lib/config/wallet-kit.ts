@@ -1,21 +1,17 @@
 /**
- * Connected-wallet transaction signer.
- *
- * Previously a stub that threw (signing was unavailable). Now delegates to the
- * Stellar Wallets Kit (Freighter / xBull / Albedo / Lobstr / Hana) so the
- * legacy escrow + crowdfunding flows that call signTransaction({ ... }) get a
- * real multi-wallet signer with the Kit's built-in connect modal.
+ * Transaction signing stub. Wallet is managed by the backend; signing is not
+ * available until the backend exposes a sign endpoint (e.g. POST /api/wallet/sign).
+ * Escrow and funding flows will fail at runtime until then.
  */
-import { signXdrWithKit } from '@/lib/wallet/wallet-kit';
-
 interface SignTransactionProps {
   unsignedTransaction: string;
   address: string;
 }
 
-export const signTransaction = async ({
-  unsignedTransaction,
-  address,
-}: SignTransactionProps): Promise<string> => {
-  return signXdrWithKit(unsignedTransaction, address);
+export const signTransaction = async (
+  _props: SignTransactionProps
+): Promise<string> => {
+  throw new Error(
+    'Transaction signing is not available. Backend must expose a sign endpoint for escrow and funding.'
+  );
 };

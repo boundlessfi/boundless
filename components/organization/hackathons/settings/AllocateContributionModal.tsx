@@ -21,18 +21,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
   allocateContribution,
   getContributionAllocations,
-  listAllocatablePrizes,
   undoAllocation,
-  type AllocatablePrize,
   type AllocationRecord,
   type AllocationTarget,
   type ContributionAllocationDetail,
   type PartnerContribution,
+  type PrizeTierShape,
 } from '@/lib/api/hackathons/partners';
+import { getHackathon } from '@/lib/api/hackathons';
 import { extractApiErrorMessage } from '@/lib/api/api';
 import { reportError } from '@/lib/error-reporting';
 import { cn } from '@/lib/utils';
@@ -48,7 +49,10 @@ interface AllocateContributionModalProps {
 
 interface DraftLine {
   id: string;
-  placementId?: string;
+  kind: 'existing' | 'new';
+  tierId?: string;
+  newTierLabel?: string;
+  newTierDescription?: string;
   amount: string;
 }
 
@@ -61,8 +65,9 @@ const formatAmount = (raw: string | number) => {
   });
 };
 
-const newDraftLine = (): DraftLine => ({
+const newDraftLine = (kind: 'existing' | 'new'): DraftLine => ({
   id: Math.random().toString(36).slice(2),
+  kind,
   amount: '',
 });
 
@@ -76,11 +81,11 @@ export default function AllocateContributionModal({
 }: AllocateContributionModalProps) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [prizes, setPrizes] = useState<AllocatablePrize[]>([]);
+  const [tiers, setTiers] = useState<PrizeTierShape[]>([]);
   const [detail, setDetail] = useState<ContributionAllocationDetail | null>(
     null
   );
-  const [drafts, setDrafts] = useState<DraftLine[]>([newDraftLine()]);
+  const [drafts, setDrafts] = useState<DraftLine[]>([newDraftLine('existing')]);
 
   useEffect(() => {
     if (!open) return;
@@ -88,18 +93,21 @@ export default function AllocateContributionModal({
     setLoading(true);
     (async () => {
       try {
-        const [allocsRes, prizesRes] = await Promise.all([
+        const [allocsRes, hackRes] = await Promise.all([
           getContributionAllocations(
             organizationId,
             hackathonId,
             contribution.id
           ),
-          listAllocatablePrizes(organizationId, hackathonId),
+          getHackathon(hackathonId),
         ]);
         if (cancelled) return;
         setDetail(allocsRes.data ?? null);
-        setPrizes(prizesRes ?? []);
-        setDrafts([newDraftLine()]);
+        const hk = (hackRes.data ?? null) as unknown as {
+          prizeTiers?: PrizeTierShape[] | null;
+        } | null;
+        setTiers(hk?.prizeTiers ?? []);
+        setDrafts([newDraftLine('existing')]);
       } catch (err) {
         reportError(err, { context: 'allocate-modal-load' });
         toast.error(
@@ -128,8 +136,8 @@ export default function AllocateContributionModal({
   const overallocated = draftSum - remaining > 0.000001;
   const hasDrafts = drafts.some(d => parseFloat(d.amount) > 0);
 
-  const handleAddLine = () => {
-    setDrafts(d => [...d, newDraftLine()]);
+  const handleAddLine = (kind: 'existing' | 'new') => {
+    setDrafts(d => [...d, newDraftLine(kind)]);
   };
 
   const handleRemoveLine = (id: string) => {
@@ -154,11 +162,24 @@ export default function AllocateContributionModal({
     for (const d of drafts) {
       const amount = parseFloat(d.amount);
       if (Number.isNaN(amount) || amount <= 0) continue;
-      if (!d.placementId) {
-        toast.error('Select a prize placement for each row');
-        return;
+
+      if (d.kind === 'existing') {
+        if (!d.tierId) {
+          toast.error('Please select a prize tier for each row');
+          return;
+        }
+        targets.push({ tierId: d.tierId, amount });
+      } else {
+        if (!d.newTierLabel?.trim()) {
+          toast.error('Please name each new prize tier');
+          return;
+        }
+        targets.push({
+          newTierLabel: d.newTierLabel.trim(),
+          newTierDescription: d.newTierDescription?.trim() || undefined,
+          amount,
+        });
       }
-      targets.push({ placementId: d.placementId, amount });
     }
 
     if (targets.length === 0) {
@@ -205,16 +226,19 @@ export default function AllocateContributionModal({
       await undoAllocation(organizationId, hackathonId, allocation.id);
       toast.success('Allocation undone');
       // Refresh both modal state and parent
-      const [allocsRes, prizesRes] = await Promise.all([
+      const [allocsRes, hackRes] = await Promise.all([
         getContributionAllocations(
           organizationId,
           hackathonId,
           contribution.id
         ),
-        listAllocatablePrizes(organizationId, hackathonId),
+        getHackathon(hackathonId),
       ]);
       setDetail(allocsRes.data ?? null);
-      setPrizes(prizesRes ?? []);
+      const hk = (hackRes.data ?? null) as unknown as {
+        prizeTiers?: PrizeTierShape[] | null;
+      } | null;
+      setTiers(hk?.prizeTiers ?? []);
       onAllocated();
     } catch (err) {
       reportError(err, { context: 'undo-allocation' });
@@ -231,8 +255,9 @@ export default function AllocateContributionModal({
             Allocate {contribution.partnerName}&apos;s contribution
           </DialogTitle>
           <DialogDescription>
-            Distribute this sponsorship across prize placements. You can top up
-            any placement, and you don&apos;t have to allocate it all at once.
+            Distribute this sponsorship across prize tiers. You can boost
+            existing tiers or add new ones — and you don&apos;t have to allocate
+            it all at once.
           </DialogDescription>
         </DialogHeader>
 
@@ -320,7 +345,7 @@ export default function AllocateContributionModal({
                   <DraftLineRow
                     key={line.id}
                     line={line}
-                    prizes={prizes}
+                    tiers={tiers}
                     canRemove={drafts.length > 1}
                     onChange={patch => handleChange(line.id, patch)}
                     onRemove={() => handleRemoveLine(line.id)}
@@ -333,10 +358,19 @@ export default function AllocateContributionModal({
                     type='button'
                     variant='outline'
                     size='sm'
-                    onClick={() => handleAddLine()}
+                    onClick={() => handleAddLine('existing')}
                   >
                     <Plus className='mr-1.5 h-3.5 w-3.5' />
-                    Add allocation
+                    Boost existing tier
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    onClick={() => handleAddLine('new')}
+                  >
+                    <Plus className='mr-1.5 h-3.5 w-3.5' />
+                    Create new tier
                   </Button>
                 </div>
 
@@ -433,72 +467,124 @@ function SummaryCell({
 
 function DraftLineRow({
   line,
-  prizes,
+  tiers,
   canRemove,
   onChange,
   onRemove,
   currency,
 }: {
   line: DraftLine;
-  prizes: AllocatablePrize[];
+  tiers: PrizeTierShape[];
   canRemove: boolean;
   onChange: (patch: Partial<DraftLine>) => void;
   onRemove: () => void;
   currency: string;
 }) {
-  // Group placements by prize so the picker shows which prize/track each
-  // placement belongs to, instead of one flat list of every slot.
-  const ordinal = (n: number) => `${n}${['st', 'nd', 'rd'][n - 1] ?? 'th'}`;
-  const fundablePrizes = prizes.filter(p => p.placements.length > 0);
-
   return (
     <div className='space-y-3 rounded-xl border border-gray-900 bg-gray-950/30 p-3'>
-      <div className='flex items-start justify-between gap-2'>
-        <div className='flex-1 space-y-2'>
-          <Label className='text-xs text-gray-400'>Prize placement</Label>
-          <select
-            value={line.placementId ?? ''}
-            onChange={e =>
-              onChange({ placementId: e.target.value || undefined })
+      <div className='flex items-center justify-between'>
+        <div className='inline-flex rounded-lg border border-gray-900 bg-black/40 p-0.5 text-xs'>
+          <button
+            type='button'
+            onClick={() =>
+              onChange({
+                kind: 'existing',
+                newTierLabel: undefined,
+                newTierDescription: undefined,
+              })
             }
-            className='focus:border-primary w-full rounded-md border border-gray-800 bg-black/40 px-3 py-2 text-sm text-white outline-none'
-          >
-            <option value=''>Select a placement...</option>
-            {fundablePrizes.length === 0 ? (
-              <option value='' disabled>
-                No prize placements yet. Add them in the Rewards step.
-              </option>
-            ) : (
-              fundablePrizes.map(p => (
-                <optgroup
-                  key={p.id}
-                  label={
-                    p.trackIds.length > 0
-                      ? `Track · ${p.name}`
-                      : `Overall · ${p.name}`
-                  }
-                >
-                  {p.placements.map(pl => (
-                    <option key={pl.id} value={pl.id}>
-                      {pl.label || `${ordinal(pl.position)} place`} (now{' '}
-                      {formatAmount(pl.amount)} {pl.currency || currency})
-                    </option>
-                  ))}
-                </optgroup>
-              ))
+            className={cn(
+              'rounded-md px-3 py-1 transition-colors',
+              line.kind === 'existing'
+                ? 'bg-primary text-black'
+                : 'text-gray-400 hover:text-white'
             )}
-          </select>
+          >
+            Existing tier
+          </button>
+          <button
+            type='button'
+            onClick={() => onChange({ kind: 'new', tierId: undefined })}
+            className={cn(
+              'rounded-md px-3 py-1 transition-colors',
+              line.kind === 'new'
+                ? 'bg-primary text-black'
+                : 'text-gray-400 hover:text-white'
+            )}
+          >
+            New tier
+          </button>
         </div>
         {canRemove && (
           <button
             type='button'
             onClick={onRemove}
-            className='mt-7 text-gray-500 transition-colors hover:text-red-400'
+            className='text-gray-500 transition-colors hover:text-red-400'
           >
             <Trash2 className='h-4 w-4' />
           </button>
         )}
       </div>
+
+      {line.kind === 'existing' ? (
+        <div className='space-y-2'>
+          <Label className='text-xs text-gray-400'>Tier</Label>
+          <select
+            value={line.tierId ?? ''}
+            onChange={e => onChange({ tierId: e.target.value || undefined })}
+            className='focus:border-primary w-full rounded-md border border-gray-800 bg-black/40 px-3 py-2 text-sm text-white outline-none'
+          >
+            <option value=''>Select a tier...</option>
+            {tiers.length === 0 ? (
+              <option value='' disabled>
+                No tiers exist yet — create a new one instead
+              </option>
+            ) : (
+              tiers.map((t, i) => (
+                <option key={t.id ?? i} value={t.id ?? ''} disabled={!t.id}>
+                  {t.place} — currently {formatAmount(t.prizeAmount ?? '0')}{' '}
+                  {t.currency || currency}
+                  {!t.id ? ' (will get an id on save)' : ''}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+      ) : (
+        <div className='grid gap-3 sm:grid-cols-2'>
+          <div className='space-y-2'>
+            <Label
+              htmlFor={`new-label-${line.id}`}
+              className='text-xs text-gray-400'
+            >
+              New tier name
+            </Label>
+            <Input
+              id={`new-label-${line.id}`}
+              value={line.newTierLabel ?? ''}
+              onChange={e => onChange({ newTierLabel: e.target.value })}
+              placeholder='e.g. Best AI Project'
+              maxLength={100}
+            />
+          </div>
+          <div className='space-y-2'>
+            <Label
+              htmlFor={`new-desc-${line.id}`}
+              className='text-xs text-gray-400'
+            >
+              Description (optional)
+            </Label>
+            <Textarea
+              id={`new-desc-${line.id}`}
+              value={line.newTierDescription ?? ''}
+              onChange={e => onChange({ newTierDescription: e.target.value })}
+              rows={1}
+              maxLength={500}
+              placeholder='What is this prize for?'
+            />
+          </div>
+        </div>
+      )}
 
       <div className='space-y-2'>
         <Label htmlFor={`amount-${line.id}`} className='text-xs text-gray-400'>

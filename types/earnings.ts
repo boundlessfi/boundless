@@ -1,13 +1,23 @@
-import type { Schemas } from '@/lib/api/openapi';
-
 export type EarningSource =
   | 'hackathons'
   | 'grants'
   | 'crowdfunding'
   | 'bounties';
 
-export type EarningActivity = Schemas['PublicEarningActivityDto'];
+export interface EarningActivity {
+  source: EarningSource;
+  title: string;
+  amount: number;
+  currency: string;
+  occurredAt: string;
+}
 
-export type EarningsBreakdown = Schemas['EarningsBreakdownDto'];
+export type EarningsBreakdown = Record<EarningSource, number>;
 
-export type PublicEarningsResponse = Schemas['PublicEarningsResponseDto'];
+export interface PublicEarningsResponse {
+  summary: {
+    totalEarned: number;
+  };
+  breakdown: EarningsBreakdown;
+  activities: EarningActivity[];
+}

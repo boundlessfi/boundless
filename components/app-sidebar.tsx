@@ -3,12 +3,16 @@
 import * as React from 'react';
 import {
   IconBell,
+  IconChartBar,
+  IconCurrencyDollar,
   IconDashboard,
+  IconFileText,
+  IconFolder,
+  IconMessageCircle,
   IconSettings,
   IconShieldCheck,
   IconUserCircle,
   IconUsers,
-  IconRocket,
 } from '@tabler/icons-react';
 
 import { NavMain } from '@/components/nav-main';
@@ -32,6 +36,7 @@ const getNavigationData = (counts?: {
   participating?: number;
   unreadNotifications?: number;
   submissions?: number;
+  projects?: number;
 }) => ({
   main: [
     {
@@ -39,12 +44,28 @@ const getNavigationData = (counts?: {
       url: '/me',
       icon: IconDashboard,
     },
-  ],
-  crowdfunding: [
     {
-      title: 'My Campaigns',
-      url: '/me/crowdfunding',
-      icon: IconRocket,
+      title: 'Analytics',
+      url: '/me/analytics',
+      icon: IconChartBar,
+    },
+    {
+      title: 'Earnings',
+      url: '/me/earnings',
+      icon: IconCurrencyDollar,
+    },
+  ],
+  projects: [
+    {
+      title: 'My Projects',
+      url: '/me/projects',
+      icon: IconFolder,
+      badge: (counts?.projects ?? 0) > 0 ? String(counts?.projects) : undefined,
+    },
+    {
+      title: 'Create Project',
+      url: '/me/projects/create',
+      icon: IconFileText,
     },
   ],
   hackathons: [
@@ -67,11 +88,23 @@ const getNavigationData = (counts?: {
           : undefined,
     },
   ],
+  crowdfunding: [
+    {
+      title: 'Campaigns',
+      url: '/me/crowdfunding',
+      icon: IconShieldCheck,
+    },
+  ],
   account: [
     {
       title: 'Profile',
       url: '/me/profile',
       icon: IconUserCircle,
+    },
+    {
+      title: 'Messages',
+      url: '/me/messages',
+      icon: IconMessageCircle,
     },
     {
       title: 'Settings',
@@ -102,7 +135,7 @@ export function AppSidebar({
   ...props
 }: {
   user: UserData;
-  counts?: { participating?: number; submissions?: number };
+  counts?: { participating?: number; submissions?: number; projects?: number };
 } & React.ComponentProps<typeof Sidebar>) {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
@@ -149,6 +182,7 @@ export function AppSidebar({
       {/* Main Content */}
       <SidebarContent className='gap-4 px-2 py-4'>
         <NavMain items={navigationData.main} />
+        <NavMain items={navigationData.projects} label='Projects' />
         <NavMain items={navigationData.crowdfunding} label='Crowdfunding' />
         <NavMain items={navigationData.hackathons} label='Hackathons' />
         <NavMain items={navigationData.account} label='Account' />

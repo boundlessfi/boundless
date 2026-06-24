@@ -8,11 +8,13 @@ import { Submission } from './types';
 
 interface SubmissionsListProps {
   submissions: Submission[];
+  onRankChange: (submissionId: string, newRank: number | null) => void;
   maxRank?: number;
 }
 
 export default function SubmissionsList({
   submissions,
+  onRankChange,
   maxRank = 3,
 }: SubmissionsListProps) {
   const sortedSubmissions = [...submissions].sort((a, b) => {
@@ -26,7 +28,12 @@ export default function SubmissionsList({
     <>
       <div className='space-y-2'>
         {sortedSubmissions.map(submission => (
-          <SubmissionListItem key={submission.id} submission={submission} />
+          <SubmissionListItem
+            key={submission.id}
+            submission={submission}
+            onRankChange={onRankChange}
+            maxRank={maxRank}
+          />
         ))}
       </div>
 

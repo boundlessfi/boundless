@@ -1,0 +1,98 @@
+/* MD Editor Custom Styles for Dark Theme */
+
+.w-md-editor {
+  --md-editor-border-color: #484848;
+  --md-editor-bg-color: #0a0a0a;
+  --md-editor-toolbar-bg-color: #1a1a1a;
+  --md-editor-text-color: #ffffff;
+  --md-editor-placeholder-color: #666666;
+  --md-editor-hover-color: #333333;
+  --md-editor-focus-color: #3b82f6;
+  --md-editor-selected-color: #1e40af;
+}
+
+.w-md-editor-text-pre,
+.w-md-editor-text-pre * {
+  color: #ffffff !important;
+  background-color: #0a0a0a !important;
+}
+
+.w-md-editor-text-pre {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.w-md-editor-textarea {
+  background-color: #0a0a0a !important;
+  color: #ffffff !important;
+  border-color: #484848 !important;
+}
+
+.w-md-editor-textarea::placeholder {
+  color: #666666 !important;
+}
+
+.w-md-editor-textarea:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 1px #3b82f6 !important;
+}
+
+.w-md-editor-bar {
+  background-color: #1a1a1a !important;
+  border-color: #484848 !important;
+}
+
+.w-md-editor-bar svg {
+  fill: #ffffff !important;
+}
+
+.w-md-editor-bar button:hover {
+  background-color: #333333 !important;
+}
+
+.w-md-editor-bar button.active {
+  background-color: #1e40af !important;
+}
+
+.w-md-editor-show-live,
+.w-md-editor-show-edit,
+.w-md-editor-show-preview {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  border-color: #484848 !important;
+}
+
+.w-md-editor-show-live:hover,
+.w-md-editor-show-edit:hover,
+.w-md-editor-show-preview:hover {
+  background-color: #333333 !important;
+}
+
+.w-md-editor-show-live.active,
+.w-md-editor-show-edit.active,
+.w-md-editor-show-preview.active {
+  background-color: #1e40af !important;
+  color: #ffffff !important;
+}
+
+/* Hide toolbar items we don't need */
+.w-md-editor-bar .w-md-editor-bar-hidden {
+  display: none !important;
+}
+
+/* Custom scrollbar */
+.w-md-editor-textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.w-md-editor-textarea::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.w-md-editor-textarea::-webkit-scrollbar-thumb {
+  background: #484848;
+  border-radius: 4px;
+}
+
+.w-md-editor-textarea::-webkit-scrollbar-thumb:hover {
+  background: #666666;
+}

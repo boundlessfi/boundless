@@ -1,4 +1,5 @@
 import type { StepKey } from '@/components/organization/hackathons/new/constants';
+import type { HackathonDraft } from '@/lib/api/hackathons';
 import type { InfoFormData } from '@/components/organization/hackathons/new/tabs/schemas/infoSchema';
 import type { TimelineFormData } from '@/components/organization/hackathons/new/tabs/schemas/timelineSchema';
 import type { ParticipantFormData } from '@/components/organization/hackathons/new/tabs/schemas/participantSchema';
@@ -18,17 +19,66 @@ interface StepData {
 }
 
 /**
- * Checks if a step has meaningful data in the transformed form data.
+ * Checks if a step exists in the original draft API response
+ * This is more reliable than checking transformed data since transformFromApiFormat
+ * always returns objects with default values
+ */
+export const isStepSavedInDraft = (
+  stepKey: StepKey,
+  draft: HackathonDraft
+): boolean => {
+  switch (stepKey) {
+    case 'information':
+      return !!(
+        draft.data.information &&
+        draft.data.information.name &&
+        draft.data.information.banner &&
+        draft.data.information.description
+      );
+    case 'timeline':
+      return !!(
+        draft.data.timeline &&
+        draft.data.timeline.startDate &&
+        draft.data.timeline.submissionDeadline
+      );
+    case 'participation':
+      return !!(
+        draft.data.participation && draft.data.participation.participantType
+      );
+    case 'rewards':
+      return !!(
+        draft.data.rewards &&
+        draft.data.rewards.prizeTiers &&
+        draft.data.rewards.prizeTiers.length > 0
+      );
+    case 'resources':
+      // Resources are optional, so return true if the field exists (even if empty)
+      return draft.data.resources !== undefined;
+    case 'judging':
+      return !!(
+        draft.data.judging &&
+        draft.data.judging.criteria &&
+        draft.data.judging.criteria.length > 0
+      );
+    case 'collaboration':
+      return !!(
+        draft.data.collaboration &&
+        draft.data.collaboration.contactEmail &&
+        draft.data.collaboration.contactEmail.trim() !== ''
+      );
+    default:
+      return false;
+  }
+};
+
+/**
+ * Checks if a step has meaningful data in the transformed form data
+ * This is a fallback when we don't have access to the original draft
  */
 export const isStepDataValid = (
   stepKey: StepKey,
   formData: StepData
 ): boolean => {
-  // Tracks (a default "All Submissions" track always exists) and custom
-  // questions are optional, so neither section blocks navigation or publish.
-  // Treat them as always valid.
-  if (stepKey === 'tracks' || stepKey === 'custom-questions') return true;
-
   const stepData = formData[stepKey as keyof StepData];
   if (!stepData) return false;
 
@@ -55,6 +105,7 @@ export const isStepDataValid = (
       // Participation always has a default participantType from transformFromApiFormat.
       // For team types, we can check if team constraints exist.
       // For individual type, we check if participantType exists (it always will from transform).
+      // Note: This is a limitation - for accurate checking, use isStepSavedInDraft with the original draft.
       if (
         participation.participantType === 'team' ||
         participation.participantType === 'team_or_individual'

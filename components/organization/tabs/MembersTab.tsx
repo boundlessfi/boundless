@@ -8,7 +8,6 @@ import { removeBetterAuthMember } from '@/lib/api/better-auth-organization';
 import { authClient } from '@/lib/auth-client';
 import EmailInviteSection from './MembersTab/EmailInviteSection';
 import TeamManagementSection from './MembersTab/TeamManagementSection';
-import PermissionsTable from './MembersTab/PermissionsTable';
 import { toast } from 'sonner';
 import { X, Mail, Clock, Loader2 } from 'lucide-react';
 import { Role } from '@/lib/api/organization';
@@ -389,7 +388,7 @@ export default function MembersTab({ onSave }: MembersTabProps) {
         </div>
       )}
 
-      <PermissionsTable />
+      {/* <PermissionsTable /> */}
 
       {loadingMembers ? (
         <div className='rounded-lg border border-zinc-800 bg-zinc-900/50 p-8 text-center'>

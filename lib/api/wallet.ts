@@ -1,5 +1,4 @@
 import { api } from '@/lib/api/api';
-import type { Schemas } from '@/lib/api/openapi';
 import type {
   WalletBalance,
   WalletData,
@@ -29,7 +28,14 @@ export interface ValidateSendDestinationResponse {
   hasTrustline?: boolean;
 }
 
-export type SendFundsRequest = Schemas['UserSendDto'];
+export interface SendFundsRequest {
+  destinationPublicKey: string;
+  amount: number;
+  currency: string;
+  memo?: string;
+  memoRequired?: boolean;
+  idempotencyKey?: string;
+}
 
 /** Backend wraps payload in { success, message, data, meta } */
 interface BackendWrapped<T> {
@@ -93,17 +99,6 @@ export const addTrustline = async (
   return unwrap(data);
 };
 
-/** Live USDC + XLM balance for any Stellar address (public on-chain data). */
-export const getWalletBalanceByAddress = async (
-  address: string
-): Promise<{ address: string; usdc: string; xlm: string }> => {
-  const { data } = await api.get<
-    | { address: string; usdc: string; xlm: string }
-    | BackendWrapped<{ address: string; usdc: string; xlm: string }>
-  >(`wallet/balance/${address}`);
-  return unwrap(data);
-};
-
 export const validateSendDestination = async (
   destinationPublicKey: string,
   currency: string
@@ -135,6 +130,5 @@ export const walletApi = {
   getSupportedTrustlineAssets,
   addTrustline,
   validateSendDestination,
-  getWalletBalanceByAddress,
   sendFunds,
 };

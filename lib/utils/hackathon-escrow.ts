@@ -1,24 +1,25 @@
+import { InitializeMultiReleaseEscrowPayload } from '@trustless-work/escrow';
 import { RewardsFormData } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
-import type { WinnerDistributionEntry } from '@/features/hackathons';
 
 /**
- * Hackathon prize-pool math helpers.
- *
- * The escrow itself is now created through the boundless-events contract via
- * `lib/api/hackathons/escrow.ts` + `features/hackathons/api/use-escrow.ts`.
- * The TrustlessWork payload builders that used to live here are gone; what
- * remains is the pure prize-pool / fee math the configure + publish flows use.
+ * USDC trustline address for Stellar network
  */
+const USDC_TRUSTLINE_ADDRESS =
+  'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 
 /**
- * Platform fee percentage. Mirrors the boundless-events contract's default
- * fee_bps (250 bps = 2.5%), charged on top of the prize budget at publish (the
- * owner is debited budget + fee). Keep in sync with the contract default.
+ * Platform fee percentage (4% as per plan)
  */
-export const PLATFORM_FEE = 2.5;
+export const PLATFORM_FEE = 4;
+
+/**
+ * Minimal amount for placeholder milestone (1 USDC = 10000000 with 7 decimals)
+ */
+const PLACEHOLDER_MILESTONE_AMOUNT = 1;
 
 /**
  * Boundless platform wallet address
+ * This address will act as approver and release signer to reduce user transactions.
  * Must be set via NEXT_PUBLIC_BOUNDLESS_PLATFORM_ADDRESS in production.
  */
 const BOUNDLESS_PLATFORM_ADDRESS =
@@ -93,9 +94,10 @@ export const extractRankFromPosition = (
 };
 
 /**
- * Calculate total prize pool amount from prize tiers (token-native units).
+ * Calculate total prize pool amount from prize tiers
+ * Converts prize amounts to Stellar format (7 decimals)
  * @param rewards - Rewards form data containing prize tiers
- * @returns Total prize amount
+ * @returns Total amount in Stellar format (with 7 decimals)
  */
 export const calculateTotalPrizeAmount = (rewards: RewardsFormData): number => {
   if (!rewards.prizeTiers || rewards.prizeTiers.length === 0) {
@@ -107,6 +109,109 @@ export const calculateTotalPrizeAmount = (rewards: RewardsFormData): number => {
 
     return total + amount;
   }, 0);
+};
+
+/**
+ * Create a placeholder milestone for initial escrow
+ * This milestone will be replaced/added to with winner milestones after judging
+ * @param organizationAddress - Organization wallet address (receiver)
+ * @returns Milestone payload for placeholder
+ */
+export const createPlaceholderMilestone = (
+  organizationAddress: string
+): { description: string; amount: number; receiver: string } => {
+  return {
+    description: 'Hackathon Prize Pool - Placeholder',
+    amount: PLACEHOLDER_MILESTONE_AMOUNT, // 1 USDC
+    receiver: organizationAddress,
+  };
+};
+
+/**
+ * Create winner milestone payload (used after judging)
+ * @param position - Prize position (e.g., "1st Place")
+ * @param amount - Prize amount in Stellar format
+ * @param winnerAddress - Winner's wallet address
+ * @returns Milestone payload for winner
+ */
+export const createWinnerMilestone = (
+  position: string,
+  amount: number,
+  winnerAddress: string
+): { description: string; amount: number; receiver: string } => {
+  return {
+    description: `${position} Prize`,
+    amount: amount,
+    receiver: winnerAddress,
+  };
+};
+
+/**
+ * Create hackathon escrow payload with placeholder milestone
+ * @param params - Parameters for escrow creation
+ * @returns Escrow payload ready for Trustless Work
+ */
+export const createHackathonEscrow = (params: {
+  signer: string;
+  organizationAddress: string;
+  hackathonTitle: string;
+  hackathonDescription: string;
+  rewards: RewardsFormData;
+  engagementId?: string;
+}): InitializeMultiReleaseEscrowPayload => {
+  const {
+    signer,
+    organizationAddress,
+    hackathonTitle,
+    hackathonDescription,
+    engagementId,
+  } = params;
+
+  // Validate Boundless platform address is configured
+  if (!BOUNDLESS_PLATFORM_ADDRESS) {
+    throw new Error(
+      'Boundless platform address not configured. Please set NEXT_PUBLIC_BOUNDLESS_PLATFORM_ADDRESS environment variable.'
+    );
+  }
+
+  // Create placeholder milestone
+  const placeholderMilestone = createPlaceholderMilestone(
+    BOUNDLESS_PLATFORM_ADDRESS
+  );
+
+  // Generate engagement ID if not provided
+  const finalEngagementId =
+    engagementId ||
+    `hackathon-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+  return {
+    signer,
+    engagementId: finalEngagementId,
+    title: hackathonTitle,
+    description: hackathonDescription,
+    platformFee: PLATFORM_FEE,
+    trustline: {
+      address: USDC_TRUSTLINE_ADDRESS,
+      symbol: 'USDC',
+    },
+    roles: {
+      // Service Provider = Organizer (can update milestones, add evidence, raise disputes)
+      serviceProvider: organizationAddress,
+
+      // Approver = Boundless (validates milestones, approves work)
+      approver: BOUNDLESS_PLATFORM_ADDRESS,
+
+      // Release Signer = Boundless (triggers fund release after approval)
+      releaseSigner: BOUNDLESS_PLATFORM_ADDRESS,
+
+      // Platform Address = Boundless (collects platform fees)
+      platformAddress: BOUNDLESS_PLATFORM_ADDRESS,
+
+      // Dispute Resolver = Boundless (resolves conflicts)
+      disputeResolver: BOUNDLESS_PLATFORM_ADDRESS,
+    },
+    milestones: [placeholderMilestone],
+  };
 };
 
 /**
@@ -151,67 +256,4 @@ export const getTotalPrizePoolForFunding = (
   rewards: RewardsFormData
 ): number => {
   return calculateTotalFundingWithPlatformFee(rewards);
-};
-
-/**
- * Derive the on-chain winner distribution ([{position, percent}], summing to
- * exactly 100) from the configured OVERALL prize tiers, proportional to each
- * tier's prize amount.
- *
- * The events contract requires unique positions, each percent >= 1, and the
- * set summing to exactly 100. We give every tier a base of 1 percent then
- * distribute the remaining points by amount-weighted largest-remainder, so the
- * totals are always exact regardless of rounding. Returns undefined when there
- * are no fundable overall tiers (caller lets the backend default to 100% @ #1).
- */
-export const buildWinnerDistribution = (
-  rewards: RewardsFormData
-): WinnerDistributionEntry[] | undefined => {
-  // Only OVERALL tiers fund the on-chain winner_distribution; TRACK prizes are
-  // a separate concept and not part of the events-contract payout split.
-  const overall = (rewards.prizeTiers ?? []).filter(t => t.kind !== 'TRACK');
-
-  // Merge by position (defensive: duplicate places sum their amounts).
-  const byPosition = new Map<number, number>();
-  for (const tier of overall) {
-    const position = extractRankFromPosition(tier.place);
-    const amount = parseFloat(tier.prizeAmount || '0');
-    if (position == null || position < 1 || !(amount > 0)) continue;
-    byPosition.set(position, (byPosition.get(position) ?? 0) + amount);
-  }
-
-  const entries = [...byPosition.entries()]
-    .map(([position, amount]) => ({ position, amount }))
-    .sort((a, b) => a.position - b.position);
-
-  if (entries.length === 0) return undefined;
-
-  const total = entries.reduce((sum, e) => sum + e.amount, 0);
-  if (!(total > 0)) return undefined;
-
-  // Single tier (or everything to one position) -> 100% there.
-  if (entries.length === 1) {
-    return [{ position: entries[0].position, percent: 100 }];
-  }
-
-  const n = entries.length;
-  const remaining = 100 - n; // points to spread on top of the base 1-each
-  const spread = entries.map(e => {
-    const exact = (e.amount / total) * remaining;
-    const floor = Math.floor(exact);
-    return { position: e.position, extra: floor, remainder: exact - floor };
-  });
-
-  let used = spread.reduce((sum, s) => sum + s.extra, 0);
-  const byRemainder = [...spread].sort((a, b) => b.remainder - a.remainder);
-  let i = 0;
-  while (used < remaining && byRemainder.length > 0) {
-    byRemainder[i % byRemainder.length].extra += 1;
-    used += 1;
-    i += 1;
-  }
-
-  return spread
-    .map(s => ({ position: s.position, percent: 1 + s.extra }))
-    .sort((a, b) => a.position - b.position);
 };

@@ -190,14 +190,6 @@ const JudgingResultsTable = ({
                     <div className='flex flex-col gap-1'>
                       <span>{result.projectName}</span>
                       <div className='flex flex-wrap gap-1'>
-                        {result.recommendedOverall && (
-                          <Badge
-                            variant='outline'
-                            className='border-primary/50 bg-primary/10 text-primary h-4 py-0 text-[10px]'
-                          >
-                            Recommended
-                          </Badge>
-                        )}
                         {result.prize && (
                           <Badge
                             variant='outline'

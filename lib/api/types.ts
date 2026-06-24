@@ -1,6 +1,5 @@
 import { CrowdfundingProject, Crowdfunding } from '@/features/projects/types';
 import type { Hackathon } from '@/types/hackathon/core';
-import type { Schemas } from './openapi';
 
 // Backend API Response Structure
 export interface ApiResponse<T = unknown> {
@@ -252,7 +251,19 @@ export interface GetMeResponse {
   username?: string;
   image?: string;
   isVerified?: boolean;
-  stats: Schemas['UserStatsDto'];
+  stats: {
+    projectsCreated: number;
+    projectsFunded: number;
+    totalContributed: number;
+    commentsPosted: number;
+    votes: number;
+    grants: number;
+    hackathons: number;
+    followers: number;
+    following: number;
+    reputation: number;
+    communityScore: number;
+  };
   chart: Array<{ date: string; count: number }>;
   activitiesGraph: Array<{ date: string; count: number }>;
   recentActivities: Array<{
@@ -874,9 +885,6 @@ export interface DeleteCrowdfundingProjectResponse {
 }
 
 // Funding Types
-// NOT migrated to Schemas['ContributeCampaignDto']: the /crowdfunding/projects/:id/fund
-// endpoint this feeds (features/projects/api fundCrowdfundingProject) sends a
-// frontend-computed transactionHash, which the contribute DTO does not model.
 export interface FundCrowdfundingProjectRequest {
   amount: number;
   transactionHash?: string;
@@ -1008,10 +1016,36 @@ export interface RemoveVoteResponse {
 // Alias for backward compatibility
 // export type CrowdfundingCampaign = CreateCrowdfundingProjectResponse;
 
-export type AnnouncementAuthor = Schemas['AnnouncementAuthorDto'];
+export interface AnnouncementAuthor {
+  id: string;
+  name: string;
+  image?: string;
+  username?: string;
+}
 
-export type HackathonAnnouncement = Schemas['AnnouncementResponseDto'];
+export interface HackathonAnnouncement {
+  id: string;
+  hackathonId: string;
+  title: string;
+  content: string;
+  isDraft: boolean;
+  isPinned: boolean;
+  publishedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  author: AnnouncementAuthor;
+}
 
-export type CreateAnnouncementRequest = Schemas['CreateAnnouncementDto'];
+export interface CreateAnnouncementRequest {
+  title: string;
+  content: string;
+  isDraft?: boolean;
+  isPinned?: boolean;
+}
 
-export type UpdateAnnouncementRequest = Schemas['UpdateAnnouncementDto'];
+export interface UpdateAnnouncementRequest {
+  title?: string;
+  content?: string;
+  isDraft?: boolean;
+  isPinned?: boolean;
+}

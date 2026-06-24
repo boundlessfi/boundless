@@ -1,11 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
-import { getPublicHackathonsList, type Hackathon } from '@/lib/api/hackathons';
-import { effectivePrizeTiers } from '@/lib/utils/effective-prize-tiers';
+import {
+  getPublicHackathonsList,
+  type Hackathon,
+  type PublicHackathonsListData,
+} from '@/lib/api/hackathons';
 import type { HackathonFilters } from './use-hackathon-filters';
 import { mapSortToAPI, mapStatusToAPI } from './use-hackathon-filters';
+import { reportError } from '@/lib/error-reporting';
 
 type SortOption =
   | 'newest'
@@ -34,152 +37,223 @@ interface UseHackathonsListReturn {
   refetch: () => void;
 }
 
-// ─── Client-side helpers (API doesn't support these dimensions) ──────────────
+export const useHackathonsList: (
+  options: UseHackathonsListOptions
+) => UseHackathonsListReturn = (options: UseHackathonsListOptions = {}) => {
+  const { initialPage = 1, pageSize = 10, initialFilters = {} } = options;
 
-function getHackathonDeadline(hackathon: Hackathon): number {
-  try {
-    if (hackathon?.submissionDeadline) {
-      return new Date(hackathon.submissionDeadline).getTime();
-    }
-  } catch {
-    // ignore unparseable dates
-  }
-  return 0;
-}
+  const [hackathons, setHackathons] = React.useState<Hackathon[]>([]);
+  const [featuredHackathons, setFeaturedHackathons] = React.useState<
+    Hackathon[]
+  >([]);
+  const [loading, setLoading] = React.useState(true);
+  const [loadingMore, setLoadingMore] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(initialPage);
+  const [hasMore, setHasMore] = React.useState(true);
+  const [totalCount, setTotalCount] = React.useState(0);
+  const [filters, setFilters] =
+    React.useState<HackathonFilters>(initialFilters);
 
-function getPrizePoolTotal(hackathon: Hackathon): number {
-  const tiers = effectivePrizeTiers(hackathon);
-  return tiers.reduce((sum, tier) => {
-    const raw = tier.prizeAmount ?? (tier as { amount?: string }).amount;
-    const parsed = Number(raw);
-    return sum + (Number.isFinite(parsed) ? parsed : 0);
-  }, 0);
-}
+  // Update filters when initialFilters change
+  React.useEffect(() => {
+    setFilters(initialFilters);
+  }, [initialFilters]);
 
-/** Reverse-sort options the API can't do server-side (others are API-sorted). */
-function sortHackathons(
-  list: Hackathon[],
-  sortOption?: SortOption
-): Hackathon[] {
-  if (!sortOption) return list;
-  const sorted = [...list];
-  switch (sortOption) {
-    case 'prize_pool_low':
-      return sorted.sort((a, b) => getPrizePoolTotal(a) - getPrizePoolTotal(b));
-    case 'deadline_far':
-      return sorted.sort((a, b) => {
-        const aDeadline = getHackathonDeadline(a);
-        const bDeadline = getHackathonDeadline(b);
-        if (aDeadline === 0) return 1;
-        if (bDeadline === 0) return -1;
-        return bDeadline - aDeadline;
-      });
-    default:
-      return sorted;
-  }
-}
-
-function filterByLocation(list: Hackathon[], location?: string): Hackathon[] {
-  if (!location) return list;
-  if (location === 'virtual') {
-    return list.filter(h => h.venueType === 'VIRTUAL');
-  }
-  if (location === 'physical') {
-    return list.filter(h => h.venueType === 'PHYSICAL');
-  }
-  const searchLocation = location.toLowerCase();
-  return list.filter(h => {
-    const country = h.country?.toLowerCase();
-    const city = h.city?.toLowerCase();
-    const state = h.state?.toLowerCase();
-    return (
-      country?.includes(searchLocation) ||
-      city?.includes(searchLocation) ||
-      state?.includes(searchLocation)
-    );
-  });
-}
-
-// ─── Hook ────────────────────────────────────────────────────────────────────
-
-/**
- * Public hackathons list, backed by React Query (`useInfiniteQuery`).
- *
- * The query key is **value-based** — built from the mapped API params, not the
- * `initialFilters` object reference. That's the whole fix for the page firing
- * `/hackathons?page=1&limit=10` multiple times: `useHackathonFilters` hands a
- * fresh object every render, which used to churn local state + re-run a manual
- * fetch effect. With a structural key, identical filter *values* resolve to one
- * cached query, so the list loads once per unique filter set (deduped across any
- * component that calls this hook).
- *
- * Location and reverse-sort are client-only dimensions; they are deliberately
- * NOT in the key, so toggling them re-derives from the already-fetched pages
- * instead of hitting the API again.
- */
-export const useHackathonsList = (
-  options: UseHackathonsListOptions = {}
-): UseHackathonsListReturn => {
-  const { pageSize = 10, initialFilters = {} } = options;
-
-  const apiParams = {
-    limit: pageSize,
-    status: mapStatusToAPI(initialFilters.status),
-    category: initialFilters.category,
-    search: initialFilters.search,
-    sort: mapSortToAPI(initialFilters.sort),
-  };
-
-  const query = useInfiniteQuery({
-    queryKey: ['hackathons', 'list', apiParams],
-    queryFn: ({ pageParam }) =>
-      getPublicHackathonsList({ ...apiParams, page: pageParam }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.hasMore ? allPages.length + 1 : undefined,
-    placeholderData: keepPreviousData,
-    staleTime: 60_000,
-  });
-
-  const rawHackathons = React.useMemo(
-    () => (query.data?.pages ?? []).flatMap(page => page.hackathons ?? []),
-    [query.data]
+  // Get hackathon deadline in milliseconds
+  const getHackathonDeadline = React.useCallback(
+    (hackathon: Hackathon): number => {
+      try {
+        if (hackathon?.submissionDeadline) {
+          return new Date(hackathon?.submissionDeadline).getTime();
+        }
+      } catch {
+        // Handle error silently
+      }
+      return 0;
+    },
+    []
   );
 
-  // Apply client-side location filter + reverse sort to the accumulated pages.
-  const hackathons = React.useMemo(() => {
-    let list = filterByLocation(rawHackathons, initialFilters.location);
-    if (
-      initialFilters.sort === 'prize_pool_low' ||
-      initialFilters.sort === 'deadline_far'
-    ) {
-      list = sortHackathons(list, initialFilters.sort as SortOption);
-    }
-    return list;
-  }, [rawHackathons, initialFilters.location, initialFilters.sort]);
+  // Get prize pool total
+  const getPrizePoolTotal = React.useCallback(
+    (hackathon: Hackathon): number => {
+      if (hackathon?.prizeTiers && hackathon?.prizeTiers.length > 0) {
+        return hackathon?.prizeTiers.reduce((sum, tier) => {
+          const raw = tier.prizeAmount ?? (tier as { amount?: string }).amount;
+          const parsed = Number(raw);
+          return sum + (Number.isFinite(parsed) ? parsed : 0);
+        }, 0);
+      }
+      return 0;
+    },
+    []
+  );
 
-  const pages = query.data?.pages ?? [];
-  const totalCount =
-    pages.length > 0 ? (pages[pages.length - 1].total ?? 0) : 0;
+  // Sort hackathons for reverse sort options (client-side only)
+  const sortHackathons = React.useCallback(
+    (hackathonsList: Hackathon[], sortOption?: SortOption): Hackathon[] => {
+      if (!sortOption) return hackathonsList;
+
+      const sorted = [...hackathonsList];
+
+      // Only handle reverse sort options that API doesn't support
+      switch (sortOption) {
+        case 'prize_pool_low':
+          return sorted.sort(
+            (a, b) => getPrizePoolTotal(a) - getPrizePoolTotal(b)
+          );
+        case 'deadline_far':
+          return sorted.sort((a, b) => {
+            const aDeadline = getHackathonDeadline(a);
+            const bDeadline = getHackathonDeadline(b);
+            if (aDeadline === 0) return 1;
+            if (bDeadline === 0) return -1;
+            return bDeadline - aDeadline;
+          });
+        default:
+          // Other sorts are handled by API
+          return sorted;
+      }
+    },
+    [getHackathonDeadline, getPrizePoolTotal]
+  );
+
+  // Filter hackathons by location (client-side only, API doesn't support it)
+  const filterByLocation = React.useCallback(
+    (hackathonsList: Hackathon[], location?: string): Hackathon[] => {
+      if (!location) return hackathonsList;
+
+      let filtered = [...hackathonsList];
+
+      if (location === 'virtual') {
+        filtered = filtered.filter(h => h.venueType === 'VIRTUAL');
+      } else if (location === 'physical') {
+        filtered = filtered.filter(h => h.venueType === 'PHYSICAL');
+      } else {
+        // Filter by country/city/state if provided
+        filtered = filtered.filter(h => {
+          const country = h.country?.toLowerCase();
+          const city = h.city?.toLowerCase();
+          const state = h.state?.toLowerCase();
+          const searchLocation = location.toLowerCase();
+
+          return (
+            country?.includes(searchLocation) ||
+            city?.includes(searchLocation) ||
+            state?.includes(searchLocation)
+          );
+        });
+      }
+
+      return filtered;
+    },
+    []
+  );
+
+  // Fetch hackathons from public API
+  const fetchHackathons = React.useCallback(
+    async (page: number, currentFilters: HackathonFilters, append = false) => {
+      try {
+        if (append) {
+          setLoadingMore(true);
+        } else {
+          setLoading(true);
+        }
+        setError(null);
+
+        // Map UI filters to API format
+        const apiStatus = mapStatusToAPI(currentFilters.status);
+        const apiSort = mapSortToAPI(currentFilters.sort);
+
+        // Build API filters
+        const apiFilters = {
+          page,
+          limit: pageSize,
+          status: apiStatus,
+          category: currentFilters.category,
+          search: currentFilters.search,
+          sort: apiSort,
+        };
+
+        // Call public API
+        const response: PublicHackathonsListData =
+          await getPublicHackathonsList(apiFilters);
+        let hackathonsList = response.hackathons || [];
+
+        // Apply client-side location filtering (API doesn't support it)
+        hackathonsList = filterByLocation(
+          hackathonsList,
+          currentFilters.location
+        );
+
+        // Apply client-side reverse sorting for options API doesn't support
+        if (
+          currentFilters.sort === 'prize_pool_low' ||
+          currentFilters.sort === 'deadline_far'
+        ) {
+          hackathonsList = sortHackathons(
+            hackathonsList,
+            currentFilters.sort as SortOption
+          );
+        }
+
+        // Separate featured hackathons (currently empty - no featured logic implemented)
+        setFeaturedHackathons([]);
+
+        // Update state
+        setTotalCount(response.total || 0);
+        setHasMore(response.hasMore ?? false);
+
+        if (append) {
+          setHackathons(prev => [...prev, ...hackathonsList]);
+        } else {
+          setHackathons(hackathonsList);
+        }
+      } catch (err) {
+        reportError(err, {
+          context: 'useHackathonsList-fetch',
+          page: String(page),
+        });
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to fetch hackathons';
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [pageSize, filterByLocation, sortHackathons, mapStatusToAPI, mapSortToAPI]
+  );
+
+  // Fetch hackathons when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchHackathons(1, filters);
+  }, [filters, fetchHackathons]);
 
   const loadMore = React.useCallback(() => {
-    if (query.hasNextPage && !query.isFetchingNextPage) {
-      void query.fetchNextPage();
+    if (!loadingMore && hasMore) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchHackathons(nextPage, filters, true);
     }
-  }, [query]);
+  }, [loadingMore, hasMore, currentPage, filters, fetchHackathons]);
 
   const refetch = React.useCallback(() => {
-    void query.refetch();
-  }, [query]);
+    setCurrentPage(1);
+    fetchHackathons(1, filters);
+  }, [filters, fetchHackathons]);
 
   return {
     hackathons,
-    featuredHackathons: [],
-    loading: query.isLoading,
-    loadingMore: query.isFetchingNextPage,
-    error: query.error instanceof Error ? query.error.message : null,
-    hasMore: query.hasNextPage,
-    currentPage: pages.length || 1,
+    featuredHackathons,
+    loading,
+    loadingMore,
+    error,
+    hasMore,
+    currentPage,
     totalCount,
     loadMore,
     refetch,

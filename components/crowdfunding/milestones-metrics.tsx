@@ -10,12 +10,16 @@ interface MilestonesMetricsProps {
 
 export function MilestonesMetrics({ milestones }: MilestonesMetricsProps) {
   const totalAmount = milestones.reduce((sum, m) => sum + m.amount, 0);
-  const completedCount = milestones.filter(m => Boolean(m.claimedAt)).length;
+  const completedCount = milestones.filter(
+    m => m.reviewStatus?.toLowerCase() === 'completed'
+  ).length;
   const inProgressCount = milestones.filter(
-    m => m.reviewStatus === 'SUBMITTED' || m.reviewStatus === 'UNDER_REVIEW'
+    m =>
+      m.reviewStatus?.toLowerCase() === 'in progress' ||
+      m.reviewStatus?.toLowerCase() === 'in-progress'
   ).length;
   const completedAmount = milestones
-    .filter(m => Boolean(m.claimedAt))
+    .filter(m => m.reviewStatus?.toLowerCase() === 'completed')
     .reduce((sum, m) => sum + m.amount, 0);
   const completionRate = milestones.length
     ? Math.round((completedCount / milestones.length) * 100)

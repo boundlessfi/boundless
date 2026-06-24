@@ -41,7 +41,11 @@ const HackathonsPage: React.FC<HackathonsPageProps> = ({ className } = {}) => {
   const hackathonCards = React.useMemo(() => {
     return hackathons.map(hackathon => {
       return (
-        <HackathonCard isFullWidth={true} key={hackathon.slug} {...hackathon} />
+        <HackathonCard
+          isFullWidth={true}
+          key={hackathon.id || hackathon.slug}
+          {...hackathon}
+        />
       );
     });
   }, [hackathons]);

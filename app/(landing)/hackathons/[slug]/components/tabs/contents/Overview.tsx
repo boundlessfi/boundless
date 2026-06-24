@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { effectivePrizeTiers } from '@/lib/utils/effective-prize-tiers';
 
 import { useMarkdown } from '@/hooks/use-markdown';
 import SponsorsSection from '../../SponsorsSection';
@@ -244,9 +243,10 @@ const Overview = () => {
         // Partition tiers into overall vs track. Tiers without an
         // explicit kind are treated as OVERALL for backward compat with
         // hackathons created before the track structure landed.
-        const tiers = effectivePrizeTiers(hackathon);
-        const overallTiers = tiers.filter(t => !t.kind || t.kind === 'OVERALL');
-        const trackTiers = tiers.filter(t => t.kind === 'TRACK');
+        const overallTiers = hackathon.prizeTiers.filter(
+          t => !t.kind || t.kind === 'OVERALL'
+        );
+        const trackTiers = hackathon.prizeTiers.filter(t => t.kind === 'TRACK');
 
         return (
           <section className='space-y-8'>
@@ -310,124 +310,64 @@ const Overview = () => {
               </div>
             )}
 
-            {trackTiers.length > 0 &&
-              (() => {
-                // Group the flattened placements back under their track, so each
-                // track shows ONE card with its full placement ladder
-                // (1st / 2nd / 3rd) instead of a separate card per placement.
-                const order: string[] = [];
-                const byTrack = new Map<string, typeof trackTiers>();
-                for (const t of trackTiers) {
-                  const key = t.trackId ?? 'untracked';
-                  if (!byTrack.has(key)) {
-                    byTrack.set(key, []);
-                    order.push(key);
-                  }
-                  byTrack.get(key)!.push(t);
-                }
-                const rankChip = (i: number) =>
-                  i === 0
-                    ? 'bg-amber-400/15 text-amber-300'
-                    : i === 1
-                      ? 'bg-slate-300/15 text-slate-200'
-                      : i === 2
-                        ? 'bg-orange-500/15 text-orange-300'
-                        : 'bg-white/5 text-gray-400';
-                return (
-                  <div className='space-y-6'>
-                    <div className='flex items-center gap-2'>
-                      <Layers className='text-primary h-5 w-5' />
-                      <h2 className='text-xl font-bold text-white'>
-                        Track Prizes
-                      </h2>
-                    </div>
-                    <p className='text-sm text-gray-400'>
-                      Each track is judged on its own and awards its own
-                      placements. Opt your submission into the tracks you want
-                      it considered for when you submit.
-                    </p>
-                    <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-                      {order.map(trackId => {
-                        const placements = byTrack.get(trackId)!;
-                        const track =
-                          trackId !== 'untracked'
-                            ? trackById.get(trackId)
-                            : undefined;
-                        const currency = placements[0]?.currency || 'USDC';
-                        const total = placements.reduce(
-                          (s, t) => s + (Number(t.prizeAmount) || 0),
-                          0
-                        );
-                        const single = placements.length === 1;
-                        return (
-                          <div
-                            key={trackId}
-                            className='flex flex-col rounded-2xl border border-white/5 bg-[#141517] p-6 transition-all hover:border-white/10'
+            {trackTiers.length > 0 && (
+              <div className='space-y-6'>
+                <div className='flex items-center gap-2'>
+                  <Layers className='text-primary h-5 w-5' />
+                  <h2 className='text-xl font-bold text-white'>Track Prizes</h2>
+                </div>
+                <p className='text-sm text-gray-400'>
+                  Category prizes alongside the overall placements. Pick the
+                  tracks you want your submission considered for when you
+                  submit.
+                </p>
+                <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
+                  {trackTiers.map((tier, i) => {
+                    const track = tier.trackId
+                      ? trackById.get(tier.trackId)
+                      : undefined;
+                    return (
+                      <div
+                        key={tier.id ?? `track-${i}`}
+                        className='relative flex flex-col rounded-2xl border border-white/5 bg-[#141517] p-6 transition-all hover:border-white/10'
+                      >
+                        <div className='mb-3 flex items-start justify-between gap-2'>
+                          <Badge
+                            variant='outline'
+                            className='border-primary/40 text-primary'
                           >
-                            <div className='flex items-start justify-between gap-3'>
-                              <div className='min-w-0'>
-                                <div className='flex items-center gap-2'>
-                                  <Layers className='text-primary/70 h-4 w-4 shrink-0' />
-                                  <h3 className='truncate text-base font-bold text-white'>
-                                    {track?.name ??
-                                      placements[0]?.name ??
-                                      'Track'}
-                                  </h3>
-                                </div>
-                                {(track?.description ||
-                                  placements[0]?.description) && (
-                                  <p className='mt-1.5 line-clamp-2 text-xs leading-relaxed text-gray-500'>
-                                    {track?.description ||
-                                      placements[0]?.description}
-                                  </p>
-                                )}
-                              </div>
-                              <div className='shrink-0 text-right'>
-                                <div className='text-lg font-black text-white'>
-                                  {total.toLocaleString()}
-                                </div>
-                                <div className='text-[10px] font-semibold tracking-wider text-gray-500 uppercase'>
-                                  {currency} {single ? 'prize' : 'total'}
-                                </div>
-                              </div>
-                            </div>
-                            <ul className='mt-4 space-y-2'>
-                              {placements.map((pl, pi) => (
-                                <li
-                                  key={pl.id ?? `${trackId}-${pi}`}
-                                  className='flex items-center justify-between gap-3 rounded-lg bg-white/[0.03] px-3 py-2.5'
-                                >
-                                  <span className='flex items-center gap-2.5'>
-                                    <span
-                                      className={cn(
-                                        'flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold',
-                                        rankChip(pi)
-                                      )}
-                                    >
-                                      {pi + 1}
-                                    </span>
-                                    <span className='text-sm font-medium text-gray-300'>
-                                      {single
-                                        ? 'Winner'
-                                        : `${getOrdinal(pi + 1)} place`}
-                                    </span>
-                                  </span>
-                                  <span className='text-sm font-bold text-white'>
-                                    {Number(pl.prizeAmount).toLocaleString()}{' '}
-                                    <span className='text-gray-500'>
-                                      {pl.currency || currency}
-                                    </span>
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
+                            {track?.name ?? tier.name ?? 'Track'}
+                          </Badge>
+                          {track?.type && (
+                            <span className='text-[10px] tracking-widest text-gray-500 uppercase'>
+                              {track.type}
+                            </span>
+                          )}
+                        </div>
+                        <div className='mb-2 flex items-baseline gap-1'>
+                          <span className='text-2xl font-black text-white'>
+                            {Number(tier.prizeAmount).toLocaleString()}
+                          </span>
+                          <span className='text-sm font-bold text-gray-500 uppercase'>
+                            {tier.currency || 'USDC'}
+                          </span>
+                        </div>
+                        {(track?.description || tier.description) && (
+                          <p className='text-xs leading-relaxed text-gray-500'>
+                            {track?.description || tier.description}
+                          </p>
+                        )}
+                        {!track && tier.trackId && (
+                          <p className='mt-2 text-[10px] text-amber-400/70'>
+                            Track details loading…
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </section>
         );
       })()}

@@ -15,6 +15,7 @@ import {
 } from '../ui/form';
 import { InputOTP, InputOTPSlot } from '../ui/input-otp';
 import { authClient } from '@/lib/auth-client';
+import { useAuthStore } from '@/lib/stores/auth-store';
 
 const formSchema = z.object({
   otp: z.string().length(6, {
@@ -77,8 +78,36 @@ const OtpForm = ({
             // Loading state handled by form
           },
           onSuccess: async () => {
-            // Better Auth has established the cookie session; the app reads the
-            // user via useAuth/useAuthStatus, so no extra store sync is needed.
+            // Get session after successful verification
+            const session = await authClient.getSession();
+
+            // Type guard for Better Auth session
+            if (session && typeof session === 'object' && 'user' in session) {
+              const sessionUser = session.user as
+                | {
+                    id: string;
+                    email: string;
+                    name?: string | null;
+                    image?: string | null;
+                  }
+                | null
+                | undefined;
+
+              if (sessionUser && sessionUser.id && sessionUser.email) {
+                // Sync with Zustand store
+                const authStore = useAuthStore.getState();
+                await authStore.syncWithSession({
+                  id: sessionUser.id,
+                  email: sessionUser.email,
+                  name: sessionUser.name || undefined,
+                  image: sessionUser.image || undefined,
+                  role: 'USER', // Default role
+                  username: undefined,
+                  accessToken: undefined, // Better Auth handles tokens via cookies
+                });
+              }
+            }
+
             toast.success('Email verified successfully!');
             onOtpSuccess();
           },

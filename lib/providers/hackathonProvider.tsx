@@ -90,7 +90,7 @@ export function HackathonDataProvider({
   } = useHackathon(hackathonSlug, initialData);
 
   // The full submissions list is an organizer-only endpoint — calling it as
-  // a participant returns 403 and pollutes the network tab. Only
+  // a participant returns 403 and pollutes the network tab / Sentry. Only
   // fetch when the backend says this viewer can see everyone's submissions.
   const isOrganizerView =
     currentHackathon?.viewerRole === 'organizer' ||

@@ -8,8 +8,6 @@ import { BoundlessButton } from '@/components/buttons';
 interface PublishSectionProps {
   walletAddress: string | null;
   isLoading: boolean;
-  /** Phase-aware label shown while publishing (e.g. "Funding escrow on-chain…"). */
-  statusLabel?: string;
   isSavingDraft: boolean;
   onPublish: () => void;
   onSaveDraft?: () => void;
@@ -20,7 +18,6 @@ interface PublishSectionProps {
 export const PublishSection: React.FC<PublishSectionProps> = ({
   walletAddress,
   isLoading,
-  statusLabel,
   isSavingDraft,
   onPublish,
   onSaveDraft,
@@ -46,8 +43,8 @@ export const PublishSection: React.FC<PublishSectionProps> = ({
           </h3>
           <p className='text-sm text-gray-400'>
             {walletAddress
-              ? 'Review all sections above and publish your hackathon when ready. Your prize funds will be set aside securely.'
-              : 'Please connect your wallet to publish and set aside the prize funds.'}
+              ? 'Review all sections above and publish your hackathon when ready. Funds will be locked in escrow.'
+              : 'Please connect your wallet to publish and lock funds in escrow.'}
           </p>
         </div>
         <div className='flex w-full flex-wrap items-center gap-3 sm:w-auto'>
@@ -80,7 +77,7 @@ export const PublishSection: React.FC<PublishSectionProps> = ({
             disabled={isLoading || isSavingDraft || !walletAddress}
             className='flex-1 sm:flex-none'
           >
-            {isLoading ? (statusLabel ?? 'Publishing...') : 'Publish Hackathon'}
+            {isLoading ? 'Publishing...' : 'Publish Hackathon'}
           </BoundlessButton>
         </div>
       </div>

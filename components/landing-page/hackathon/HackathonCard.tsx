@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Hackathon } from '@/lib/api/hackathons';
-import { effectivePrizeTiers } from '@/lib/utils/effective-prize-tiers';
 import { cn } from '@/lib/utils';
 import GroupAvatar from '@/components/avatars/GroupAvatar';
 
@@ -108,13 +107,11 @@ export const HackathonCard = ({
   banner,
   organization,
   status,
-  visibility,
   venueName,
   startDate,
   submissionDeadline,
   categories,
   prizeTiers,
-  prizes,
   participants: participantMembers,
   isFullWidth = false,
   className,
@@ -128,9 +125,6 @@ export const HackathonCard = ({
   },
 }: HackathonCardProps) => {
   const router = useRouter();
-  // A private hackathon is listed (teased) but its detail page asks for a
-  // password. Derive from visibility so every list surface shows the badge.
-  const isPrivateHackathon = isPrivate || visibility === 'PRIVATE';
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>({
     days: 0,
     hours: 0,
@@ -145,13 +139,11 @@ export const HackathonCard = ({
       .filter(img => img !== '');
   }, [participantMembers]);
 
-  const totalPrize = effectivePrizeTiers({ prizes, prizeTiers }).reduce(
-    (acc, tier) => {
+  const totalPrize =
+    prizeTiers?.reduce((acc, tier) => {
       const amount = Number(tier.prizeAmount);
       return acc + (Number.isFinite(amount) ? amount : 0);
-    },
-    0
-  );
+    }, 0) || 0;
 
   const getTopBadgeStatus = useCallback(() => {
     if (status === 'ARCHIVED') return 'Archived';
@@ -227,22 +219,20 @@ export const HackathonCard = ({
       aria-label={`View hackathon: ${name}`}
     >
       <div className='bg-muted relative h-44 w-full overflow-hidden sm:h-48'>
-        {typeof banner === 'string' && banner.trim() !== '' ? (
-          <Image
-            src={banner}
-            alt={name}
-            fill
-            className='object-cover transition-transform duration-500 group-hover:scale-105'
-            unoptimized
-          />
-        ) : null}
+        <Image
+          src={banner}
+          alt={name}
+          fill
+          className='object-cover transition-transform duration-500 group-hover:scale-105'
+          unoptimized
+        />
         <div className='to-background absolute inset-0 bg-linear-to-t from-black/0 via-black/10' />
 
         <div className='absolute top-4 right-4 left-4 flex items-start justify-between gap-2'>
           <CategoriesDisplay categoriesList={categories} />
 
           <div className='z-10 flex items-center gap-2'>
-            {isPrivateHackathon && (
+            {isPrivate && (
               <span className='border-error-400/30 bg-error-400/20 text-error-200 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold tracking-wider whitespace-nowrap backdrop-blur-md'>
                 <Lock className='size-3' /> Private
               </span>

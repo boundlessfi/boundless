@@ -55,7 +55,7 @@ export const EscrowSummary: React.FC<EscrowSummaryProps> = ({
             <div className='flex items-center justify-between'>
               <span className='text-sm text-gray-400'>Prize Tiers</span>
               <span className='text-sm font-medium text-white'>
-                {rewards.prizeTiers?.length ?? 0}
+                {rewards.prizeTiers.length}
               </span>
             </div>
             <div className='mt-4 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3'>
@@ -63,10 +63,12 @@ export const EscrowSummary: React.FC<EscrowSummaryProps> = ({
                 <Info className='mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400' />
                 <div className='text-xs text-blue-300'>
                   <p className='mb-1'>
-                    Your prize money is set aside securely when you publish,
-                    ready to pay winners.
+                    Funds will be locked in escrow when you publish. A
+                    placeholder milestone will be created initially.
                   </p>
-                  <p>Winners are set once judging is complete.</p>
+                  <p>
+                    Winner milestones will be added after judging is complete.
+                  </p>
                 </div>
               </div>
             </div>

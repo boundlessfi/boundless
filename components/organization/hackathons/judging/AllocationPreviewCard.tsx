@@ -140,7 +140,7 @@ export default function AllocationPreviewCard({
     warnings.push(
       `${gates.unallocatedPartnerContributionAmount.toFixed(2)} ${
         gates.currency
-      } of partner contributions are unassigned. Publish will succeed; funds stay in the prize pool until you release or refund them.`
+      } of partner contributions are unallocated. Publish will succeed; funds remain in escrow until you release or refund them.`
     );
   }
 
@@ -268,107 +268,67 @@ export default function AllocationPreviewCard({
             Track winners
           </div>
           <div className='space-y-2'>
-            {(() => {
-              // Group the per-placement track rows back under their track, so a
-              // track with multiple placements shows ONE card with its ladder
-              // (1st / 2nd / 3rd) instead of repeated same-named rows.
-              const ordinal = (i: number) =>
-                `${i + 1}${['st', 'nd', 'rd'][i] ?? 'th'}`;
-              const order: string[] = [];
-              const byTrack = new Map<string, typeof tracks>();
-              for (const t of tracks) {
-                if (!byTrack.has(t.trackId)) {
-                  byTrack.set(t.trackId, []);
-                  order.push(t.trackId);
-                }
-                byTrack.get(t.trackId)!.push(t);
-              }
-              return order.map(trackId => {
-                const placements = byTrack.get(trackId)!;
-                const single = placements.length === 1;
-                const total = placements.reduce(
-                  (s, p) => s + (parseFloat(p.prizeAmount || '0') || 0),
-                  0
-                );
-                return (
-                  <div
-                    key={trackId}
-                    className='rounded border border-gray-900 bg-black/30 p-3'
-                  >
-                    <div className='flex items-center justify-between gap-2'>
-                      <span className='text-sm font-semibold text-white'>
-                        {placements[0].trackName}
-                      </span>
-                      {total > 0 && (
-                        <Badge
-                          variant='outline'
-                          className='border-yellow-500/30 bg-yellow-500/10 text-yellow-400'
-                        >
-                          {total.toLocaleString('en-US')}{' '}
-                          {placements[0].currency || 'USDC'}
-                          {!single ? ' total' : ''}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className='mt-2 space-y-2'>
-                      {placements.map((p, pi) => (
-                        <div
-                          key={`${trackId}-${pi}`}
-                          className='rounded-md bg-white/[0.02] px-2.5 py-2'
-                        >
-                          <div className='flex flex-wrap items-center justify-between gap-2'>
-                            <span className='text-xs font-medium text-gray-300'>
-                              {single ? 'Winner' : `${ordinal(pi)} place`}
-                              {formatPrize(p.prizeAmount, p.currency) && (
-                                <span className='ml-2 text-gray-500'>
-                                  {formatPrize(p.prizeAmount, p.currency)}
-                                </span>
-                              )}
-                            </span>
-                            {p.skippedReason && (
-                              <Badge
-                                variant='outline'
-                                className='border-amber-500/30 bg-amber-500/10 text-amber-400'
-                              >
-                                <AlertTriangle className='mr-1 h-3 w-3' />
-                                {p.skippedReason === 'NO_ENTRIES'
-                                  ? 'No opt-ins'
-                                  : 'No scored entries'}
-                              </Badge>
-                            )}
-                          </div>
-                          {p.winner ? (
-                            <div className='mt-1 flex items-center justify-between text-sm'>
-                              <span className='font-medium text-white'>
-                                {p.winner.projectName}
-                              </span>
-                              <span className='text-xs text-gray-500'>
-                                score {p.winner.averageScore.toFixed(2)}
-                              </span>
-                            </div>
-                          ) : (
-                            <p className='mt-1 text-xs text-amber-300/70'>
-                              No winner yet — this placement will not pay out.
-                            </p>
-                          )}
-                          {p.runnersUp.length > 0 && (
-                            <div className='mt-1 text-xs text-gray-500'>
-                              Runners-up:{' '}
-                              {p.runnersUp.map((r, i) => (
-                                <span key={r.submissionId}>
-                                  {r.projectName} ({r.averageScore.toFixed(2)})
-                                  {i < p.runnersUp.length - 1 ? ', ' : ''}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+            {tracks.map(t => (
+              <div
+                key={t.trackId}
+                className='rounded border border-gray-900 bg-black/30 p-3'
+              >
+                <div className='flex flex-wrap items-center justify-between gap-2'>
+                  <div className='flex items-center gap-2'>
+                    <span className='text-sm font-semibold text-white'>
+                      {t.trackName}
+                    </span>
+                    {formatPrize(t.prizeAmount, t.currency) && (
+                      <Badge
+                        variant='outline'
+                        className='border-yellow-500/30 bg-yellow-500/10 text-yellow-400'
+                      >
+                        {formatPrize(t.prizeAmount, t.currency)}
+                      </Badge>
+                    )}
                   </div>
-                );
-              });
-            })()}
+                  {t.skippedReason && (
+                    <Badge
+                      variant='outline'
+                      className='border-amber-500/30 bg-amber-500/10 text-amber-400'
+                    >
+                      <AlertTriangle className='mr-1 h-3 w-3' />
+                      {t.skippedReason === 'NO_ENTRIES'
+                        ? 'No opt-ins'
+                        : 'No scored entries'}
+                    </Badge>
+                  )}
+                </div>
+                {t.winner ? (
+                  <div className='mt-2 flex items-center justify-between text-sm'>
+                    <span className='text-gray-200'>
+                      Winner:{' '}
+                      <span className='font-medium text-white'>
+                        {t.winner.projectName}
+                      </span>
+                    </span>
+                    <span className='text-xs text-gray-500'>
+                      score {t.winner.averageScore.toFixed(2)}
+                    </span>
+                  </div>
+                ) : (
+                  <p className='mt-2 text-xs text-amber-300/70'>
+                    This track will not pay out — fix before publish.
+                  </p>
+                )}
+                {t.runnersUp.length > 0 && (
+                  <div className='mt-2 text-xs text-gray-500'>
+                    Runners-up:{' '}
+                    {t.runnersUp.map((r, i) => (
+                      <span key={r.submissionId}>
+                        {r.projectName} ({r.averageScore.toFixed(2)})
+                        {i < t.runnersUp.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

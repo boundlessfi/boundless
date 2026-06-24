@@ -12,13 +12,14 @@ import { STEP_ORDER } from './constants';
 interface HackathonTabsNavigationProps {
   activeTab: StepKey;
   steps: Record<StepKey, StepData>;
+  canAccessStep: (stepKey: StepKey) => boolean;
   navigateToStep: (stepKey: StepKey) => void;
   onPreview?: () => void;
 }
 
 export const HackathonTabsNavigation: React.FC<
   HackathonTabsNavigationProps
-> = ({ activeTab, steps, navigateToStep, onPreview }) => {
+> = ({ activeTab, steps, canAccessStep, navigateToStep, onPreview }) => {
   return (
     <div className='border-b border-zinc-800 pl-6 md:pl-8'>
       <div className='flex items-center gap-4'>
@@ -39,14 +40,17 @@ export const HackathonTabsNavigation: React.FC<
                   if (!step) return null;
                   const isActive = stepKey === activeTab;
                   const isCompleted = step.isCompleted;
+                  const canAccess = canAccessStep(stepKey);
 
                   return (
                     <TabsTrigger
                       key={stepKey}
                       value={stepKey}
                       onClick={() => navigateToStep(stepKey)}
+                      disabled={!canAccess}
                       className={cn(
                         'data-[state=active]:border-b-primary rounded-none border-b-2 border-transparent bg-transparent px-5 pt-4 pb-3 text-sm font-medium transition-all data-[state=active]:text-white data-[state=active]:shadow-none',
+                        !canAccess && 'cursor-not-allowed opacity-50',
                         isActive && 'border-b-primary text-white',
                         isCompleted && 'border-b-primary text-white',
                         !isActive && !isCompleted && 'text-zinc-400'
@@ -109,13 +113,15 @@ export const HackathonTabsNavigation: React.FC<
                 }
               )}
             </TabsList>
-            <Button
-              onClick={() => navigateToStep('review')}
-              className='bg-primary/10 text-primary hover:bg-primary/20 flex h-[50px] items-center gap-2 rounded-none border-l border-gray-900'
-            >
-              Review
-              <ArrowUpRight className='h-5 w-5' />
-            </Button>
+            {steps.collaboration?.isCompleted && (
+              <Button
+                onClick={() => navigateToStep('review')}
+                className='bg-primary/10 text-primary hover:bg-primary/20 flex h-[50px] items-center gap-2 rounded-none border-l border-gray-900'
+              >
+                Review
+                <ArrowUpRight className='h-5 w-5' />
+              </Button>
+            )}
             <Button
               onClick={onPreview}
               className='bg-active-bg text-primary flex h-[50px] items-center gap-2 rounded-none border-l border-gray-900'

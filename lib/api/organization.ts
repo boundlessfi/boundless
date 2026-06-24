@@ -1,7 +1,6 @@
 import api from './api';
 import { Logger } from '@/lib/logger';
 import { ApiResponse, ErrorResponse, PaginatedResponse } from './types';
-import type { Schemas } from './openapi';
 
 export interface OrganizationLinks {
   website: string;
@@ -36,7 +35,18 @@ export interface Organization {
 /**
  * Public organization profile (by slug) - GET /organizations/profile/:slug
  */
-export type OrganizationProfile = Schemas['OrganizationProfileDto'];
+export interface OrganizationProfile {
+  id: string;
+  name: string;
+  logoUrl: string;
+  description: string;
+  stats: {
+    projectsCount: number;
+    totalHackathons: number;
+    totalBounties: number;
+    totalGrants: number;
+  };
+}
 
 export type Role = 'member' | 'admin' | 'owner';
 

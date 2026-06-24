@@ -39,17 +39,10 @@ import Stepper from '@/components/stepper/Stepper';
 import { uploadService } from '@/lib/api/upload';
 import {
   useSubmission,
-  useSubmissionAnchor,
   type SubmissionFormData,
-} from '@/features/hackathons';
-import { useWalletContext } from '@/components/providers/wallet-provider';
-import SubmissionAnchorProgress from './SubmissionAnchorProgress';
+} from '@/hooks/hackathon/use-submission';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { listTracks, type HackathonTrack } from '@/lib/api/hackathons/tracks';
-import {
-  listPublicCustomQuestions,
-  type CustomQuestion,
-} from '@/lib/api/hackathons/custom-questions';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -149,11 +142,6 @@ const baseSubmissionSchema = z.object({
         artifacts: z.record(z.string(), z.string()).optional(),
       })
     )
-    .optional(),
-  /** Hackathon-level custom-question answers, keyed by question id. Value is a
-   *  string, or string[] for multi-select. The backend re-validates. */
-  customAnswers: z
-    .record(z.string(), z.union([z.string(), z.array(z.string())]))
     .optional(),
 
   // ── Phase A submission polish ──
@@ -326,25 +314,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       cancelled = true;
     };
   }, [hackathonSlugOrId, tracksEnabled]);
-
-  // ── Hackathon-level custom questions (SUBMISSION scope) ─────────────────
-  // Best-effort load; if it fails the form just omits the extra questions.
-  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
-  useEffect(() => {
-    if (!hackathonSlugOrId) return;
-    let cancelled = false;
-    listPublicCustomQuestions(hackathonSlugOrId, 'SUBMISSION')
-      .then(rows => {
-        if (!cancelled) setCustomQuestions(rows);
-      })
-      .catch(() => {
-        if (!cancelled) setCustomQuestions([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [hackathonSlugOrId]);
-
   const requireDemoVideo = currentHackathon?.requireDemoVideo ?? false;
   const requireOtherLinks = currentHackathon?.requireOtherLinks ?? false;
 
@@ -386,65 +355,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     autoFetch: false,
   });
 
-  // ── On-chain anchoring (MANAGED) ──────────────────────────────────────
-  // A NEW submission must be anchored on the events contract via the
-  // participant's Boundless-managed wallet to be prize-eligible. We run it
-  // with visible progress (never a silent skip) after the row is created.
-  // Editing an existing submission never re-anchors — the anchor is
-  // deterministic and already landed at create.
-  const { walletAddress, refreshWallet } = useWalletContext();
-  const anchor = useSubmissionAnchor(hackathonSlugOrId);
-  const [pendingAnchorId, setPendingAnchorId] = useState<string | null>(null);
-  const [anchorModalOpen, setAnchorModalOpen] = useState(false);
-  const anchorStartedRef = useRef(false);
-  const walletRefreshedRef = useRef(false);
-
-  const finishSubmit = useCallback(() => {
-    if (onSuccess) onSuccess();
-    else if (onClose) onClose();
-    else collapse();
-  }, [onSuccess, onClose, collapse]);
-
-  // Drive the anchor once the managed wallet address is available. If it isn't
-  // loaded yet (rare race — it's provisioned at onboarding), kick a one-shot
-  // refresh; the modal shows a "preparing your wallet" step meanwhile.
-  useEffect(() => {
-    if (!pendingAnchorId) return;
-    if (!walletAddress) {
-      if (!walletRefreshedRef.current) {
-        walletRefreshedRef.current = true;
-        void refreshWallet();
-      }
-      return;
-    }
-    if (anchorStartedRef.current) return;
-    anchorStartedRef.current = true;
-    void anchor.anchor({
-      submissionId: pendingAnchorId,
-      applicantAddress: walletAddress,
-    });
-    // anchor + refreshWallet are stable enough; re-run only when the pending id
-    // or the resolved wallet address changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingAnchorId, walletAddress]);
-
-  const handleAnchorClose = useCallback(() => {
-    // The submission row exists regardless of the anchor outcome, so closing
-    // always proceeds (a failed anchor can be retried later).
-    setAnchorModalOpen(false);
-    finishSubmit();
-  }, [finishSubmit]);
-
-  const handleAnchorRetry = useCallback(() => {
-    if (!pendingAnchorId || !walletAddress) return;
-    anchor.reset();
-    anchorStartedRef.current = true;
-    void anchor.anchor({
-      submissionId: pendingAnchorId,
-      applicantAddress: walletAddress,
-    });
-  }, [anchor, pendingAnchorId, walletAddress]);
-
   const {
     myTeam,
     fetchMyTeam,
@@ -475,7 +385,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       teamMembers: [],
       trackIds: [],
       trackAnswers: {},
-      customAnswers: {},
       tagline: '',
       builtWith: [],
       screenshots: [],
@@ -547,10 +456,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
           }
           return out;
         })(),
-        customAnswers: (raw.customAnswers ?? {}) as Record<
-          string,
-          string | string[]
-        >,
         tagline: raw.tagline ?? '',
         builtWith: raw.builtWith ?? [],
         screenshots: raw.screenshots ?? [],
@@ -1083,22 +988,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
           }
           return Object.keys(next).length > 0 ? next : undefined;
         })(),
-        // Hackathon-level custom answers. Drop empties so the backend update
-        // path never clobbers a stored answer with a blank.
-        customAnswers: ((): Record<string, string | string[]> | undefined => {
-          const ca = (data.customAnswers ??
-            currentValues.customAnswers ??
-            {}) as Record<string, string | string[]>;
-          const next: Record<string, string | string[]> = {};
-          for (const [k, v] of Object.entries(ca)) {
-            if (Array.isArray(v)) {
-              if (v.length > 0) next[k] = v;
-            } else if (typeof v === 'string' && v.trim() !== '') {
-              next[k] = v.trim();
-            }
-          }
-          return Object.keys(next).length > 0 ? next : undefined;
-        })(),
         // ── Phase A submission polish ─ string fields default to undefined
         // (not empty string) so the backend update path doesn't clobber
         // existing values with empties.
@@ -1231,21 +1120,16 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       };
 
       if (submissionId) {
-        // Editing existing submission metadata only — never re-anchors.
         await update(submissionId, submissionData);
-        finishSubmit();
-        return;
-      }
-
-      // New submission: persist the row, then anchor it on-chain (MANAGED)
-      // with visible progress. The anchor effect fires once the managed
-      // wallet address is ready.
-      const created = await create(submissionData);
-      if (created?.id) {
-        setPendingAnchorId(created.id);
-        setAnchorModalOpen(true);
       } else {
-        finishSubmit();
+        await create(submissionData);
+      }
+      if (onSuccess) {
+        onSuccess();
+      } else if (onClose) {
+        onClose();
+      } else {
+        collapse();
       }
     } catch {
       // Error handled in hook
@@ -1496,7 +1380,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder='Milestone-based escrow for one-time freelance gigs on Stellar.'
+                      placeholder='Trustless escrow for one-time freelance gigs on Stellar.'
                       maxLength={200}
                       className='border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
                       value={field.value || ''}
@@ -1582,137 +1466,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                 </FormItem>
               )}
             />
-
-            {customQuestions.length > 0 && (
-              <FormField
-                control={form.control}
-                name='customAnswers'
-                render={({ field }) => {
-                  const answers = (field.value ?? {}) as Record<
-                    string,
-                    string | string[]
-                  >;
-                  const setAnswer = (id: string, val: string | string[]) =>
-                    field.onChange({ ...answers, [id]: val });
-                  return (
-                    <FormItem>
-                      <FormLabel className='text-white'>
-                        Additional questions
-                      </FormLabel>
-                      <div className='space-y-4 rounded-lg border border-gray-700 bg-gray-800/30 p-4'>
-                        {customQuestions.map(q => {
-                          const options = Array.isArray(q.options)
-                            ? q.options
-                            : [];
-                          const raw = answers[q.id];
-                          const strVal = typeof raw === 'string' ? raw : '';
-                          const arrVal = Array.isArray(raw) ? raw : [];
-                          return (
-                            <div key={q.id} className='space-y-1.5'>
-                              <label className='block text-sm font-medium text-white'>
-                                {q.label}
-                                {q.required && (
-                                  <span className='text-red-400'> *</span>
-                                )}
-                              </label>
-                              {q.type === 'LONG' ? (
-                                <Textarea
-                                  value={strVal}
-                                  maxLength={q.maxLength ?? undefined}
-                                  placeholder='Your answer'
-                                  className='min-h-[100px] border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
-                                  onChange={e =>
-                                    setAnswer(q.id, e.target.value)
-                                  }
-                                />
-                              ) : q.type === 'SINGLE_SELECT' ? (
-                                <select
-                                  value={strVal}
-                                  onChange={e =>
-                                    setAnswer(q.id, e.target.value)
-                                  }
-                                  className='w-full rounded-md border border-gray-700 bg-gray-800/50 px-3 py-2 text-sm text-white'
-                                >
-                                  <option value=''>Select an option</option>
-                                  {options.map(o => (
-                                    <option key={o} value={o}>
-                                      {o}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : q.type === 'MULTI_SELECT' ? (
-                                <div className='flex flex-wrap gap-2'>
-                                  {options.map(o => {
-                                    const on = arrVal.includes(o);
-                                    return (
-                                      <button
-                                        key={o}
-                                        type='button'
-                                        onClick={() =>
-                                          setAnswer(
-                                            q.id,
-                                            on
-                                              ? arrVal.filter(v => v !== o)
-                                              : [...arrVal, o]
-                                          )
-                                        }
-                                        className={
-                                          on
-                                            ? 'border-primary bg-primary/15 text-primary rounded-full border px-3 py-1 text-xs'
-                                            : 'rounded-full border border-gray-700 px-3 py-1 text-xs text-gray-400'
-                                        }
-                                      >
-                                        {o}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              ) : q.type === 'BOOLEAN' ? (
-                                <label className='flex items-center gap-2 text-sm text-gray-300'>
-                                  <input
-                                    type='checkbox'
-                                    checked={strVal === 'true'}
-                                    onChange={e =>
-                                      setAnswer(
-                                        q.id,
-                                        e.target.checked ? 'true' : 'false'
-                                      )
-                                    }
-                                    className='h-4 w-4'
-                                  />
-                                  Yes
-                                </label>
-                              ) : (
-                                <Input
-                                  value={strVal}
-                                  type={q.type === 'URL' ? 'url' : 'text'}
-                                  maxLength={q.maxLength ?? undefined}
-                                  placeholder={
-                                    q.type === 'URL'
-                                      ? 'https://...'
-                                      : 'Your answer'
-                                  }
-                                  className='border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
-                                  onChange={e =>
-                                    setAnswer(q.id, e.target.value)
-                                  }
-                                />
-                              )}
-                              {q.helpText && (
-                                <p className='text-xs text-gray-400'>
-                                  {q.helpText}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
-            )}
 
             {tracksEnabled && availableTracks.length > 0 && (
               <FormField
@@ -2824,20 +2577,6 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         hackathonSlugOrId={hackathonSlugOrId}
         teamMax={currentHackathon?.teamMax}
         organizationId={organizationId}
-      />
-      <SubmissionAnchorProgress
-        open={anchorModalOpen}
-        phase={anchor.phase}
-        txHash={anchor.txHash}
-        error={anchor.error}
-        isCompleted={anchor.isAnchored}
-        isFailed={anchor.isFailed}
-        walletPreparing={
-          !!pendingAnchorId && !walletAddress && !anchor.isFailed
-        }
-        onClose={handleAnchorClose}
-        onRetry={handleAnchorRetry}
-        onViewSubmission={handleAnchorClose}
       />
     </div>
   );

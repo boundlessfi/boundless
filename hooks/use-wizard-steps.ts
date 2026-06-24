@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import type { HackathonEscrowData } from '@/lib/api/hackathons';
 
 export type WizardStep = 'announcement' | 'preview';
 
@@ -17,9 +18,10 @@ const STEPS: Array<{ id: WizardStep; name: string; description: string }> = [
 
 interface UseWizardStepsProps {
   open: boolean;
+  escrow: HackathonEscrowData | null;
 }
 
-export const useWizardSteps = ({ open }: UseWizardStepsProps) => {
+export const useWizardSteps = ({ open, escrow }: UseWizardStepsProps) => {
   const [currentStep, setCurrentStep] = useState<WizardStep>('announcement');
   const initializedRef = useRef(false);
 

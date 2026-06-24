@@ -45,35 +45,31 @@ export interface ApiError {
  * backend message on `.message` directly. Plain `Error` instances and raw
  * axios errors are also handled as fallbacks.
  */
-const normalizeMessage = (raw: unknown): string | null => {
-  if (Array.isArray(raw)) {
-    const joined = raw
-      .filter(s => typeof s === 'string' && s.trim())
-      .join('. ');
-    return joined || null;
-  }
-  if (typeof raw === 'string' && raw.trim()) return raw;
-  return null;
-};
-
 export const extractApiErrorMessage = (
   err: unknown,
   fallback = 'Something went wrong. Please try again.'
 ): string => {
   if (!err) return fallback;
 
-  // ApiError or any object with a `message` field (string or string[])
-  if (typeof err === 'object' && 'message' in err) {
-    const msg = normalizeMessage((err as { message: unknown }).message);
-    if (msg) return msg;
+  // ApiError or any object with a non-empty `message` string (most common path)
+  if (
+    typeof err === 'object' &&
+    'message' in err &&
+    typeof (err as { message: unknown }).message === 'string' &&
+    (err as { message: string }).message.trim().length > 0
+  ) {
+    return (err as { message: string }).message;
   }
 
   // Raw axios error fallback (in case it ever bypasses the interceptor)
-  if (typeof err === 'object' && 'response' in err) {
-    const raw = (err as { response?: { data?: { message?: unknown } } })
-      .response?.data?.message;
-    const msg = normalizeMessage(raw);
-    if (msg) return msg;
+  if (
+    typeof err === 'object' &&
+    'response' in err &&
+    (err as { response?: { data?: { message?: string } } }).response?.data
+      ?.message
+  ) {
+    return (err as { response: { data: { message: string } } }).response.data
+      .message;
   }
 
   if (typeof err === 'string' && err.trim().length > 0) return err;
@@ -86,20 +82,6 @@ export interface RequestConfig {
   timeout?: number;
   signal?: AbortSignal;
 }
-
-/**
- * Read the visitor's private-hackathon unlock token for a given slug. The
- * AccessGate stores it as a readable `hx_access_<slug>` cookie after the
- * correct password is entered. Browser-only; returns undefined on the server.
- */
-const readHackathonAccessToken = (slug: string): string | undefined => {
-  if (typeof document === 'undefined' || !slug) return undefined;
-  const prefix = `hx_access_${slug}=`;
-  const hit = document.cookie
-    .split('; ')
-    .find(cookie => cookie.startsWith(prefix));
-  return hit ? decodeURIComponent(hit.slice(prefix.length)) : undefined;
-};
 
 const createClientApi = (): AxiosInstance => {
   // Get base URL dynamically (not at module load time)
@@ -144,31 +126,6 @@ const createClientApi = (): AxiosInstance => {
 
       // Better Auth handles authentication via cookies automatically
       // No need to manually add Authorization headers
-
-      // Private-hackathon access: forward the visitor's unlock token on every
-      // `/hackathons/<slug>/...` read so gated sub-resources (participants,
-      // winners, tracks, announcements, teams, ...) load once the password has
-      // been entered. The detail page sets the cookie; this threads it to the
-      // sub-resource calls without touching each call site. No-op server-side,
-      // for public hackathons, or when a token is already present.
-      if (typeof window !== 'undefined' && config.url) {
-        try {
-          const match = config.url.match(/^\/?hackathons\/([^/?#]+)/i);
-          const slug = match?.[1] ? decodeURIComponent(match[1]) : undefined;
-          const existing = config.params as Record<string, unknown> | undefined;
-          const alreadyHasToken =
-            (existing && 'accessToken' in existing) ||
-            /[?&]accessToken=/.test(config.url);
-          if (slug && !alreadyHasToken) {
-            const token = readHackathonAccessToken(slug);
-            if (token) {
-              config.params = { ...(existing ?? {}), accessToken: token };
-            }
-          }
-        } catch {
-          // Best-effort; never block a request on cookie parsing.
-        }
-      }
 
       return config;
     },
@@ -226,15 +183,11 @@ const createClientApi = (): AxiosInstance => {
       // Handle other errors
       if (error.response) {
         const errorData = error.response.data as
-          | {
-              message?: string | string[];
-              code?: string;
-              errors?: ApiErrorField[];
-            }
+          | { message?: string; code?: string; errors?: ApiErrorField[] }
           | undefined;
         const customError: ApiError = {
           message:
-            normalizeMessage(errorData?.message) ||
+            errorData?.message ||
             `HTTP error! status: ${error.response.status}`,
           status: error.response.status,
           code: errorData?.code,

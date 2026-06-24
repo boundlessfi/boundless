@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import MetricsCard from '@/components/organization/cards/MetricsCard';
 import { useParams } from 'next/navigation';
-import { Info } from 'lucide-react';
 import { useHackathons } from '@/hooks/use-hackathons';
 import { getHackathonStatistics, getHackathon } from '@/lib/api/hackathons';
 import { AuthGuard } from '@/components/auth';
@@ -333,17 +332,6 @@ const ParticipantsPage: React.FC = () => {
                     : '0% submission rate'
               }
             />
-          </div>
-
-          <div className='flex items-start gap-3 rounded-lg border border-gray-800 bg-gray-900/40 p-4 text-sm text-gray-300'>
-            <Info className='mt-0.5 h-4 w-4 shrink-0 text-gray-400' />
-            <p>
-              <span className='font-medium text-white'>Shortlist</span> the
-              entries you want judged. Only shortlisted submissions move on to
-              the Judging page, where your judges score them. Use the status
-              filter to find submitted entries, then shortlist or disqualify
-              each one.
-            </p>
           </div>
 
           <ParticipantToolbar

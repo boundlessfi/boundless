@@ -1,7 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import {
   getPublicContributors,
   type PublicContributorsResponse,
@@ -56,23 +56,25 @@ export default function SponsorsSection({
   slug,
   marketingPartners,
 }: SponsorsSectionProps) {
-  // Shared, cached query. Replaces a manual effect that re-fetched the
-  // contributors endpoint on every mount / StrictMode pass and 404'd loudly for
-  // hackathons without sponsors. Any failure (incl. 404) maps to "no
-  // contributors" and is cached, so React Query doesn't re-request.
-  const { data, isLoading: loading } = useQuery({
-    queryKey: ['hackathon', slug, 'contributors'],
-    queryFn: async (): Promise<PublicContributorsResponse | null> => {
+  const [data, setData] = useState<PublicContributorsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
       try {
         const res = await getPublicContributors(slug);
-        return res.data ?? null;
+        if (!cancelled) setData(res.data ?? null);
       } catch {
-        return null;
+        // Silent fail — sponsors section is non-critical.
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    },
-    enabled: !!slug,
-    staleTime: 60_000,
-  });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   const contributors = data?.contributors ?? [];
   const validMarketing = (marketingPartners ?? []).filter(

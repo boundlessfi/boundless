@@ -4,7 +4,7 @@ import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useHackathon } from '@/hooks/hackathon/use-hackathon-queries';
 import { useAuthStatus } from '@/hooks/use-auth';
-import { useSubmission } from '@/features/hackathons';
+import { useSubmission } from '@/hooks/hackathon/use-submission';
 import { SubmissionFormContent } from '@/components/hackathons/submissions/SubmissionForm';
 import { HackathonDataProvider } from '@/lib/providers/hackathonProvider';
 import LoadingScreen from '@/features/projects/components/CreateProjectModal/LoadingScreen';

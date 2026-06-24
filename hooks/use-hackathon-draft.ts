@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { useHackathons } from '@/hooks/use-hackathons';
 import { transformFromApiFormat } from '@/lib/utils/hackathon-form-transforms';
 import type { InfoFormData } from '@/components/organization/hackathons/new/tabs/schemas/infoSchema';
 import type { TimelineFormData } from '@/components/organization/hackathons/new/tabs/schemas/timelineSchema';
@@ -13,19 +14,11 @@ import {
   STEP_ORDER,
 } from '@/components/organization/hackathons/new/constants';
 import { isStepDataValid } from '@/lib/utils/hackathon-step-validation';
-import {
-  DRAFT_SECTIONS,
-  useCreateDraft,
-  useDraft,
-  useUpdateDraft,
-  type UpdateHackathonDraftBody,
-} from '@/features/hackathons';
 
 interface StepData {
   information?: InfoFormData;
   timeline?: TimelineFormData;
   participation?: ParticipantFormData;
-  tracks?: { tracksMaxPerSubmission?: number };
   rewards?: RewardsFormData;
   resources?: ResourcesFormData;
   judging?: JudgingFormData;
@@ -38,13 +31,6 @@ interface UseHackathonDraftProps {
   onDraftLoaded?: (formData: StepData, firstIncompleteStep: StepKey) => void;
 }
 
-/**
- * Wizard draft orchestration on React Query. Loads an existing draft (resume
- * flow) via `useDraft`, creates on first save via `useCreateDraft`, and persists
- * sections through the single flat `useUpdateDraft` PATCH (one section for a
- * per-step Continue, several for Save draft). Server state lives in the query
- * cache; only the in-progress form snapshot is local.
- */
 export const useHackathonDraft = ({
   organizationId,
   initialDraftId,
@@ -52,60 +38,140 @@ export const useHackathonDraft = ({
 }: UseHackathonDraftProps) => {
   const [draftId, setDraftId] = useState<string | null>(initialDraftId || null);
   const [stepData, setStepData] = useState<StepData>({});
-  // Fires onDraftLoaded once per resumed draft id.
-  const loadedRef = useRef<string | null>(null);
+  const [isLoadingDraft, setIsLoadingDraft] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const draftInitializedRef = useRef<string | null>(null);
 
-  const orgId = organizationId ?? '';
-  // Only fetch for the resume flow (an initial draft id in the URL). Fresh
-  // drafts keep their form state locally until the first save.
-  const draftQuery = useDraft(orgId, initialDraftId);
-  const createDraft = useCreateDraft(orgId);
-  const updateDraft = useUpdateDraft(orgId);
+  const {
+    initializeDraftAction,
+    updateDraftStepAction,
+    fetchDraft,
+    currentDraft,
+    currentLoading,
+    currentError,
+  } = useHackathons({
+    organizationId,
+    autoFetch: false,
+  });
+  useEffect(() => {
+    const loadDraft = async () => {
+      if (!initialDraftId || !organizationId) return;
+
+      setIsLoadingDraft(true);
+      try {
+        await fetchDraft(initialDraftId);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to load draft';
+        toast.error(errorMessage);
+      } finally {
+        setIsLoadingDraft(false);
+      }
+    };
+
+    loadDraft();
+  }, [initialDraftId, organizationId, fetchDraft]);
 
   useEffect(() => {
-    const draft = draftQuery.data;
-    if (!draft || !initialDraftId || draft.id !== initialDraftId) return;
-    if (loadedRef.current === draft.id) return;
-    loadedRef.current = draft.id;
+    if (
+      currentDraft &&
+      initialDraftId &&
+      currentDraft.id === initialDraftId &&
+      draftInitializedRef.current !== currentDraft.id
+    ) {
+      const formData = transformFromApiFormat(currentDraft);
+      setStepData(formData);
+      draftInitializedRef.current = currentDraft.id;
 
-    const formData = transformFromApiFormat(draft);
-    setStepData(formData);
-    if (!draftId) setDraftId(draft.id);
+      const firstIncompleteStep =
+        STEP_ORDER.find(key => !isStepDataValid(key, formData)) ?? 'review';
 
-    const firstIncompleteStep =
-      STEP_ORDER.find(key => !isStepDataValid(key, formData)) ?? 'review';
-    onDraftLoaded?.(formData, firstIncompleteStep);
-  }, [draftQuery.data, initialDraftId, draftId, onDraftLoaded]);
-
-  /** Resolve the draft id, creating an empty draft on first use. */
-  const ensureDraftId = async (): Promise<string> => {
-    if (draftId) return draftId;
-    const draft = await createDraft.mutateAsync();
-    setDraftId(draft.id);
-    return draft.id;
-  };
+      if (onDraftLoaded) {
+        onDraftLoaded(formData, firstIncompleteStep);
+      }
+    } else if (currentDraft && currentDraft.id === initialDraftId) {
+      console.log('⏭️ Draft already initialized, skipping'); // Debug
+    }
+  }, [currentDraft?.id, initialDraftId, onDraftLoaded]);
 
   const saveDraft = async () => {
     if (!organizationId) {
       toast.error('Organization ID is required');
       return;
     }
+
+    setIsSavingDraft(true);
     try {
-      const id = await ensureDraftId();
-      const body = {} as UpdateHackathonDraftBody;
-      for (const section of DRAFT_SECTIONS) {
-        const value = stepData[section];
-        if (value !== undefined) {
-          (body as Record<string, unknown>)[section] = value;
+      if (draftId) {
+        // Save all current steps to the draft
+        if (stepData.information) {
+          await updateDraftStepAction(
+            draftId,
+            'information',
+            stepData.information,
+            true
+          );
         }
+        if (stepData.timeline) {
+          await updateDraftStepAction(
+            draftId,
+            'timeline',
+            stepData.timeline,
+            true
+          );
+        }
+        if (stepData.participation) {
+          await updateDraftStepAction(
+            draftId,
+            'participation',
+            stepData.participation,
+            true
+          );
+        }
+        if (stepData.rewards) {
+          await updateDraftStepAction(
+            draftId,
+            'rewards',
+            stepData.rewards,
+            true
+          );
+        }
+        if (stepData.resources) {
+          await updateDraftStepAction(
+            draftId,
+            'resources',
+            stepData.resources,
+            true
+          );
+        }
+        if (stepData.judging) {
+          await updateDraftStepAction(
+            draftId,
+            'judging',
+            stepData.judging,
+            true
+          );
+        }
+        if (stepData.collaboration) {
+          await updateDraftStepAction(
+            draftId,
+            'collaboration',
+            stepData.collaboration,
+            true
+          );
+        }
+        toast.success('Draft saved successfully');
+      } else {
+        // Initialize new draft
+        const draft = await initializeDraftAction(organizationId);
+        setDraftId(draft.id);
+        toast.success('Draft created successfully');
       }
-      if (Object.keys(body).length > 0) {
-        await updateDraft.mutateAsync({ id, body });
-      }
-      toast.success('Draft saved successfully');
     } catch {
       toast.error('Failed to save draft');
       throw new Error('Failed to save draft');
+    } finally {
+      setIsSavingDraft(false);
     }
   };
 
@@ -125,29 +191,32 @@ export const useHackathonDraft = ({
       return;
     }
 
-    const id = await ensureDraftId();
-    await updateDraft.mutateAsync({
-      id,
-      body: { [stepKey]: data } as UpdateHackathonDraftBody,
-    });
-
     const updatedStepData = { ...stepData, [stepKey]: data };
+
+    if (draftId) {
+      // Update specific step using new API
+      await updateDraftStepAction(draftId, stepKey, data, true);
+    } else {
+      // Initialize draft if it doesn't exist
+      const draft = await initializeDraftAction(organizationId);
+
+      setDraftId(draft.id);
+      // Then update the step
+      await updateDraftStepAction(draft.id, stepKey, data, true);
+    }
+
     setStepData(updatedStepData);
     return updatedStepData;
   };
 
   return {
     draftId,
-    /** Server-side draft status ('DRAFT' | 'DRAFT_AWAITING_FUNDING'); undefined for an unsaved /new draft. */
-    draftStatus: draftQuery.data?.status,
     stepData,
     setStepData,
-    isLoadingDraft: Boolean(initialDraftId) && draftQuery.isLoading,
+    isLoadingDraft: isLoadingDraft || (initialDraftId && currentLoading),
     currentError:
-      initialDraftId && draftQuery.error
-        ? draftQuery.error.message || 'Failed to load draft'
-        : null,
-    isSavingDraft: createDraft.isPending || updateDraft.isPending,
+      initialDraftId && currentError && !currentDraft ? currentError : null,
+    isSavingDraft,
     saveDraft,
     saveStep,
   };

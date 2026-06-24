@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { previewAnnouncementAudience } from '@/features/hackathons';
+import { previewAnnouncementAudience } from '@/lib/api/hackathons/draft';
 import { reportError } from '@/lib/error-reporting';
 
 interface PrePublishAnnounceDialogProps {

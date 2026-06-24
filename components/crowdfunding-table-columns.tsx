@@ -19,7 +19,6 @@ import { Progress } from '@/components/ui/progress';
 import { ColumnDef } from '@tanstack/react-table';
 import { DeleteCampaignAlert } from '@/components/delete-campaign-alert';
 import { CrowdfundingCampaign } from '@/lib/api/types';
-import { campaignStatus, TONE_PILL } from '@/lib/crowdfunding/status';
 
 export const getCrowdfundingTableColumns = (
   onDeleteSuccess?: () => void
@@ -104,8 +103,8 @@ export const getCrowdfundingTableColumns = (
     },
   },
   {
-    id: 'v2Status',
-    accessorKey: 'v2Status',
+    id: 'project.status',
+    accessorKey: 'project.status',
     header: ({ column }) => {
       return (
         <Button
@@ -119,15 +118,23 @@ export const getCrowdfundingTableColumns = (
       );
     },
     cell: ({ row }) => {
-      // Show the campaign lifecycle status (v2Status), not the underlying
-      // project status (which is IDEA for fresh drafts). Plain labels come
-      // from the shared status helper so every surface stays consistent.
-      const meta = campaignStatus(
-        (row.original as { v2Status?: string }).v2Status
-      );
+      const status = row.original.project.status;
+      const getStatusVariant = (status: string) => {
+        switch (status.toLowerCase()) {
+          case 'active':
+          case 'funding':
+            return 'bg-primary/20 text-primary border-primary/30';
+          case 'completed':
+            return 'bg-success-500/20 text-success-400 border-success-500/30';
+          case 'draft':
+            return 'bg-warning-500/20 text-warning-400 border-warning-500/30';
+          default:
+            return 'bg-muted text-muted-foreground';
+        }
+      };
       return (
-        <Badge variant='outline' className={TONE_PILL[meta.tone]}>
-          {meta.label}
+        <Badge variant='outline' className={getStatusVariant(status)}>
+          {status}
         </Badge>
       );
     },
@@ -184,13 +191,7 @@ export const getCrowdfundingTableColumns = (
       );
     },
     cell: ({ row }) => {
-      // The funding deadline is only set once a campaign goes live (after the
-      // community vote). Drafts and pre-funding campaigns have no deadline.
-      const raw = row.original.fundingEndDate;
-      const endDate = raw ? new Date(raw) : null;
-      if (!endDate || isNaN(endDate.getTime())) {
-        return <span className='text-muted-foreground text-sm'>Not set</span>;
-      }
+      const endDate = new Date(row.original.fundingEndDate);
       const now = new Date();
       const daysLeft = Math.ceil(
         (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
@@ -267,7 +268,7 @@ export const getCrowdfundingTableColumns = (
               asChild
               className='text-foreground hover:bg-muted/50'
             >
-              <Link href={`/me/crowdfunding/${campaign.slug}`}>
+              <Link href={`/projects/${campaign.projectId}`}>
                 <Eye className='mr-2 h-4 w-4' />
                 View Campaign
               </Link>
@@ -276,7 +277,7 @@ export const getCrowdfundingTableColumns = (
               asChild
               className='text-foreground hover:bg-muted/50'
             >
-              <Link href={`/crowdfunding/new?campaignId=${campaign.id}`}>
+              <Link href={`/projects/${campaign.projectId}/edit`}>
                 <Edit className='mr-2 h-4 w-4' />
                 Edit Campaign
               </Link>

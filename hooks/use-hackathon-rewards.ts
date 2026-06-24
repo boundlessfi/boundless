@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import pLimit from 'p-limit';
 // Import Hackathon types
 import {
   getJudgingSubmissions,
   getHackathon,
+  getHackathonEscrow,
   type Hackathon,
+  type HackathonEscrowData,
   type HackathonTrackWinner,
 } from '@/lib/api/hackathons';
 import { getHackathonWinners } from '@/lib/api/hackathon';
@@ -65,10 +67,14 @@ const getDefaultPrizeTiers = (): PrizeTier[] => [
 interface UseHackathonRewardsReturn {
   submissions: Submission[];
   setSubmissions: React.Dispatch<React.SetStateAction<Submission[]>>;
+  escrow: HackathonEscrowData | null;
   prizeTiers: PrizeTier[];
+  contractId: string | null;
   isLoading: boolean;
+  isLoadingEscrow: boolean;
   isLoadingSubmissions: boolean;
   error: string | null;
+  refreshEscrow: () => Promise<void>;
   refetchHackathon: () => Promise<void>;
   resultsPublished: boolean;
   hackathon: Hackathon | null;
@@ -85,12 +91,56 @@ export const useHackathonRewards = (
   hackathonId: string
 ): UseHackathonRewardsReturn => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [escrow, setEscrow] = useState<HackathonEscrowData | null>(null);
   const [prizeTiers, setPrizeTiers] = useState<PrizeTier[]>([]);
+  const [contractId, setContractId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingEscrow, setIsLoadingEscrow] = useState(true);
   const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);
   const [trackWinners, setTrackWinners] = useState<HackathonTrackWinner[]>([]);
+
+  const isFetchingEscrowRef = useRef(false);
+  const lastFetchedContractIdRef = useRef<string | null>(null);
+
+  const fetchEscrowData = useCallback(
+    async (contractIdToFetch: string) => {
+      if (
+        isFetchingEscrowRef.current ||
+        lastFetchedContractIdRef.current === contractIdToFetch
+      ) {
+        return;
+      }
+
+      isFetchingEscrowRef.current = true;
+      lastFetchedContractIdRef.current = contractIdToFetch;
+      setIsLoadingEscrow(true);
+
+      try {
+        const response = await getHackathonEscrow(organizationId, hackathonId);
+
+        if (response.success && response.data) {
+          setEscrow(response.data);
+        } else {
+          setEscrow(null);
+        }
+      } catch {
+        setEscrow(null);
+        lastFetchedContractIdRef.current = null;
+      } finally {
+        setIsLoadingEscrow(false);
+        isFetchingEscrowRef.current = false;
+      }
+    },
+    [organizationId, hackathonId]
+  );
+
+  const refreshEscrow = useCallback(async () => {
+    if (!contractId) return;
+    lastFetchedContractIdRef.current = null;
+    await fetchEscrowData(contractId);
+  }, [contractId, fetchEscrowData]);
 
   const fetchHackathon = useCallback(async () => {
     try {
@@ -167,6 +217,12 @@ export const useHackathonRewards = (
           );
           setPrizeTiers(tiers);
         }
+
+        const hackathonContractId =
+          fetchedHackathon.contractId || fetchedHackathon.escrowAddress || null;
+        if (hackathonContractId) {
+          setContractId(hackathonContractId);
+        }
       }
     } catch {
       setPrizeTiers(getDefaultPrizeTiers());
@@ -178,6 +234,19 @@ export const useHackathonRewards = (
       fetchHackathon();
     }
   }, [organizationId, hackathonId, fetchHackathon]);
+
+  useEffect(() => {
+    if (contractId) {
+      if (escrow && escrow.contractId === contractId) {
+        lastFetchedContractIdRef.current = contractId;
+        return;
+      }
+      fetchEscrowData(contractId);
+    } else {
+      setIsLoadingEscrow(false);
+      setEscrow(null);
+    }
+  }, [contractId, escrow, fetchEscrowData]);
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -443,10 +512,14 @@ export const useHackathonRewards = (
   return {
     submissions,
     setSubmissions,
+    escrow,
     prizeTiers,
+    contractId,
     isLoading,
+    isLoadingEscrow,
     isLoadingSubmissions,
     error,
+    refreshEscrow,
     refetchHackathon: fetchHackathon,
     resultsPublished: !!hackathon?.resultsPublished,
     hackathon,

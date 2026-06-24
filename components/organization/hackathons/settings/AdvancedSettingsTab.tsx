@@ -15,9 +15,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { BoundlessButton } from '@/components/buttons';
-import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Lock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,14 +29,21 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Trash2, Ban } from 'lucide-react';
+import { Trash2, Sparkles } from 'lucide-react';
 import { deleteHackathon } from '@/lib/api/hackathons';
-import { useCancelHackathon } from '@/hooks/hackathon/use-cancel-hackathon';
 import { toast } from 'sonner';
 import { api } from '@/lib/api/api';
 
 const advancedSettingsSchema = z.object({
+  isPublic: z.boolean(),
+  allowLateRegistration: z.boolean(),
+  requireApproval: z.boolean(),
   maxParticipants: z.number().optional(),
+  customDomain: z.string().optional(),
+  enableDiscord: z.boolean(),
+  discordInviteLink: z.string().optional(),
+  enableTelegram: z.boolean(),
+  telegramInviteLink: z.string().optional(),
 });
 
 type AdvancedSettingsFormData = z.infer<typeof advancedSettingsSchema>;
@@ -46,7 +52,6 @@ interface AdvancedSettingsTabProps {
   organizationId: string;
   hackathonId: string;
   initialData?: AdvancedSettingsFormData;
-  initialVisibility?: 'PUBLIC' | 'PRIVATE';
   onSaveSuccess?: () => Promise<void>;
 }
 
@@ -54,7 +59,6 @@ export default function AdvancedSettingsTab({
   organizationId,
   hackathonId,
   initialData,
-  initialVisibility,
   onSaveSuccess,
 }: AdvancedSettingsTabProps) {
   const router = useRouter();
@@ -62,62 +66,18 @@ export default function AdvancedSettingsTab({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Visibility & access (PUBLIC vs PRIVATE + password).
-  const wasPrivate = initialVisibility === 'PRIVATE';
-  const [isPrivate, setIsPrivate] = useState(wasPrivate);
-  const [accessPassword, setAccessPassword] = useState('');
-  const [isSavingAccess, setIsSavingAccess] = useState(false);
-  useEffect(() => {
-    setIsPrivate(initialVisibility === 'PRIVATE');
-  }, [initialVisibility]);
-
-  const saveAccess = async () => {
-    if (isPrivate && !wasPrivate && !accessPassword.trim()) {
-      toast.error('Set a password to make this hackathon private.');
-      return;
-    }
-    setIsSavingAccess(true);
-    try {
-      await api.patch(
-        `/organizations/${organizationId}/hackathons/${hackathonId}/access`,
-        {
-          visibility: isPrivate ? 'PRIVATE' : 'PUBLIC',
-          ...(isPrivate && accessPassword.trim()
-            ? { password: accessPassword.trim() }
-            : {}),
-        }
-      );
-      toast.success(
-        isPrivate ? 'Hackathon is now private' : 'Hackathon is now public'
-      );
-      setAccessPassword('');
-      await onSaveSuccess?.();
-    } catch (error: any) {
-      const message = error.response?.data?.message || error.message;
-      toast.error(
-        (Array.isArray(message) ? message[0] : message) ||
-          'Could not update visibility.'
-      );
-    } finally {
-      setIsSavingAccess(false);
-    }
-  };
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const { cancel, isCancelling } = useCancelHackathon(
-    organizationId,
-    hackathonId,
-    {
-      onSuccess: () => {
-        setShowCancelDialog(false);
-        void onSaveSuccess?.();
-      },
-    }
-  );
-
   const form = useForm<AdvancedSettingsFormData>({
     resolver: zodResolver(advancedSettingsSchema),
     defaultValues: {
+      isPublic: true,
+      allowLateRegistration: false,
+      requireApproval: false,
       maxParticipants: undefined,
+      customDomain: '',
+      enableDiscord: false,
+      discordInviteLink: '',
+      enableTelegram: false,
+      telegramInviteLink: '',
     },
   });
 
@@ -135,6 +95,7 @@ export default function AdvancedSettingsTab({
         { advancedSettings: data }
       );
       toast.success('Advanced settings saved successfully!');
+      // Update form state with new values to maintain "clean" status
       form.reset(data);
       if (onSaveSuccess) {
         await onSaveSuccess();
@@ -158,6 +119,7 @@ export default function AdvancedSettingsTab({
         description: 'All associated data has been permanently removed.',
       });
       setShowDeleteDialog(false);
+      // Redirect to hackathons list
       router.push(`/organizations/${organizationId}/hackathons`);
     } catch (error) {
       let errorMessage = 'Failed to delete hackathon. Please try again.';
@@ -187,101 +149,270 @@ export default function AdvancedSettingsTab({
   return (
     <div className='space-y-6'>
       <div className='bg-background-card rounded-xl border border-gray-900 p-6'>
-        <div className='mb-4'>
-          <h2 className='flex items-center gap-2 text-xl font-semibold text-white'>
-            <Lock className='h-5 w-5 text-gray-400' />
-            Visibility &amp; access
-          </h2>
-          <p className='mt-1 text-sm text-gray-400'>
-            Public hackathons appear in listings and anyone can view them.
-            Private hackathons are hidden and need a password to view.
-          </p>
-        </div>
-
-        <div className='flex items-center justify-between rounded-lg border border-gray-900 p-4'>
-          <div>
-            <p className='text-sm text-white'>Private hackathon</p>
-            <p className='text-xs text-gray-400'>
-              Hide it from listings and require a password to view
-            </p>
-          </div>
-          <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
-        </div>
-
-        {isPrivate && (
-          <div className='mt-4'>
-            <label className='mb-1 block text-sm text-white'>
-              Access password
-            </label>
-            <Input
-              type='password'
-              value={accessPassword}
-              onChange={e => setAccessPassword(e.target.value)}
-              placeholder={
-                wasPrivate
-                  ? 'Leave blank to keep the current password'
-                  : 'Set a password visitors will enter'
-              }
-              className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'
-            />
-            <p className='mt-1 text-xs text-gray-400'>
-              Share this password with the people you want to let in.
-            </p>
-          </div>
-        )}
-
-        <div className='mt-4 flex justify-end'>
-          <BoundlessButton
-            onClick={saveAccess}
-            disabled={isSavingAccess}
-            className='min-w-[120px]'
-          >
-            {isSavingAccess ? 'Saving...' : 'Save visibility'}
-          </BoundlessButton>
-        </div>
-      </div>
-
-      <div className='bg-background-card rounded-xl border border-gray-900 p-6'>
         <div className='mb-6'>
           <h2 className='text-xl font-semibold text-white'>
             Advanced Settings
           </h2>
           <p className='mt-1 text-sm text-gray-400'>
-            Configure advanced options for your hackathon.
+            Configure advanced options and integrations for your hackathon.
           </p>
         </div>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-            <FormField
-              control={form.control}
-              name='maxParticipants'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-sm text-white'>
-                    Maximum Participants
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type='number'
-                      placeholder='Unlimited'
-                      value={field.value || ''}
-                      onChange={e =>
-                        field.onChange(
-                          e.target.value ? parseInt(e.target.value) : undefined
-                        )
-                      }
-                      className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'
-                    />
-                  </FormControl>
-                  <FormDescription className='text-xs text-gray-400'>
-                    Leave empty for unlimited participants
-                  </FormDescription>
-                  <FormMessage className='text-error-400 text-xs' />
-                </FormItem>
+            <div className='bg-primary/5 border-primary/20 flex gap-3 rounded-lg border p-4'>
+              <Sparkles className='text-primary mt-0.5 h-5 w-5 shrink-0' />
+              <div>
+                <p className='text-primary text-sm font-medium'>Coming soon</p>
+                <p className='mt-1 text-xs text-zinc-400'>
+                  The following options are not yet supported by the backend and
+                  will be available in a future update: Public hackathon, Allow
+                  late registration, Require approval, Custom domain, Enable
+                  Discord, Enable Telegram.
+                </p>
+              </div>
+            </div>
+
+            <div className='space-y-4'>
+              <h3 className='text-sm font-medium text-white'>
+                Visibility & Access
+              </h3>
+
+              <FormField
+                control={form.control}
+                name='isPublic'
+                render={({ field }) => (
+                  <FormItem className='flex flex-row items-center justify-between rounded-lg border border-gray-900 p-4 opacity-70'>
+                    <div className='space-y-0.5'>
+                      <FormLabel className='text-sm text-white'>
+                        Public Hackathon
+                      </FormLabel>
+                      <FormDescription className='text-xs text-gray-400'>
+                        Allow anyone to view and register for this hackathon
+                      </FormDescription>
+                      <p className='text-primary mt-1 text-xs'>Coming soon</p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='allowLateRegistration'
+                render={({ field }) => (
+                  <FormItem className='flex flex-row items-center justify-between rounded-lg border border-gray-900 p-4 opacity-70'>
+                    <div className='space-y-0.5'>
+                      <FormLabel className='text-sm text-white'>
+                        Allow Late Registration
+                      </FormLabel>
+                      <FormDescription className='text-xs text-gray-400'>
+                        Allow participants to register after the deadline
+                      </FormDescription>
+                      <p className='text-primary mt-1 text-xs'>Coming soon</p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='requireApproval'
+                render={({ field }) => (
+                  <FormItem className='flex flex-row items-center justify-between rounded-lg border border-gray-900 p-4 opacity-70'>
+                    <div className='space-y-0.5'>
+                      <FormLabel className='text-sm text-white'>
+                        Require Approval
+                      </FormLabel>
+                      <FormDescription className='text-xs text-gray-400'>
+                        Manually approve participant registrations
+                      </FormDescription>
+                      <p className='text-primary mt-1 text-xs'>Coming soon</p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='maxParticipants'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-sm text-white'>
+                      Maximum Participants
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type='number'
+                        placeholder='Unlimited'
+                        value={field.value || ''}
+                        onChange={e =>
+                          field.onChange(
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined
+                          )
+                        }
+                        className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0'
+                      />
+                    </FormControl>
+                    <FormDescription className='text-xs text-gray-400'>
+                      Leave empty for unlimited participants
+                    </FormDescription>
+                    <FormMessage className='text-error-400 text-xs' />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className='space-y-4'>
+              <h3 className='text-sm font-medium text-white'>Custom Domain</h3>
+
+              <FormField
+                control={form.control}
+                name='customDomain'
+                render={({ field }) => (
+                  <FormItem className='opacity-70'>
+                    <FormLabel className='text-sm text-white'>
+                      Custom Domain
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type='text'
+                        placeholder='hackathon.example.com'
+                        disabled
+                        className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60'
+                      />
+                    </FormControl>
+                    <FormDescription className='text-xs text-gray-400'>
+                      Set a custom domain for your hackathon page
+                    </FormDescription>
+                    <p className='text-primary text-xs'>Coming soon</p>
+                    <FormMessage className='text-error-400 text-xs' />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className='space-y-4'>
+              <h3 className='text-sm font-medium text-white'>
+                Community Integrations
+              </h3>
+
+              <FormField
+                control={form.control}
+                name='enableDiscord'
+                render={({ field }) => (
+                  <FormItem className='flex flex-row items-center justify-between rounded-lg border border-gray-900 p-4 opacity-70'>
+                    <div className='space-y-0.5'>
+                      <FormLabel className='text-sm text-white'>
+                        Enable Discord
+                      </FormLabel>
+                      <FormDescription className='text-xs text-gray-400'>
+                        Add a Discord community link
+                      </FormDescription>
+                      <p className='text-primary mt-1 text-xs'>Coming soon</p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {form.watch('enableDiscord') && (
+                <FormField
+                  control={form.control}
+                  name='discordInviteLink'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type='text'
+                          placeholder='https://discord.gg/...'
+                          disabled
+                          className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60'
+                        />
+                      </FormControl>
+                      <FormMessage className='text-error-400 text-xs' />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
+
+              <FormField
+                control={form.control}
+                name='enableTelegram'
+                render={({ field }) => (
+                  <FormItem className='flex flex-row items-center justify-between rounded-lg border border-gray-900 p-4 opacity-70'>
+                    <div className='space-y-0.5'>
+                      <FormLabel className='text-sm text-white'>
+                        Enable Telegram
+                      </FormLabel>
+                      <FormDescription className='text-xs text-gray-400'>
+                        Add a Telegram community link
+                      </FormDescription>
+                      <p className='text-primary mt-1 text-xs'>Coming soon</p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {form.watch('enableTelegram') && (
+                <FormField
+                  control={form.control}
+                  name='telegramInviteLink'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type='text'
+                          placeholder='https://t.me/...'
+                          disabled
+                          className='bg-background-card h-12 w-full rounded-[12px] border border-gray-900 p-4 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60'
+                        />
+                      </FormControl>
+                      <FormMessage className='text-error-400 text-xs' />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
 
             <div className='flex justify-end pt-4'>
               <BoundlessButton
@@ -305,45 +436,6 @@ export default function AdvancedSettingsTab({
             Irreversible and destructive actions
           </p>
         </div>
-
-        <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant='outline'
-              className='mb-4 gap-2 border-amber-700/60 text-amber-400 hover:bg-amber-950/30'
-            >
-              <Ban className='h-4 w-4' />
-              Cancel Hackathon &amp; Refund Prize Pool
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent className='bg-background-card border-gray-800'>
-            <AlertDialogHeader>
-              <AlertDialogTitle className='text-white'>
-                Cancel Hackathon
-              </AlertDialogTitle>
-              <AlertDialogDescription className='text-gray-400'>
-                This cancels the hackathon and refunds all contributors and any
-                remaining prize pool funds to the owner. Refunds are automatic
-                and may take a few minutes. This cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className='border-gray-800 text-white hover:bg-gray-800'>
-                Keep Hackathon
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={e => {
-                  e.preventDefault();
-                  void cancel();
-                }}
-                disabled={isCancelling}
-                className='bg-amber-600 text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50'
-              >
-                {isCancelling ? 'Cancelling…' : 'Cancel Hackathon'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
 
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogTrigger asChild>

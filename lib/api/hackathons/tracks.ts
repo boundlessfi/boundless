@@ -1,6 +1,5 @@
 import api from '../api';
 import { ApiResponse } from '../types';
-import type { Schemas } from '../openapi';
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -11,15 +10,69 @@ export type HackathonPrizeStructure =
   | 'OVERALL_AND_TRACKS'
   | 'TRACKS_ONLY';
 
-export type TrackCustomQuestion = Schemas['TrackCustomQuestionDto'];
+export interface TrackCustomQuestion {
+  id: string;
+  label: string;
+  type: 'short' | 'long' | 'url';
+  maxLength?: number;
+  required?: boolean;
+}
 
-export type TrackRequiredArtifact = Schemas['TrackRequiredArtifactDto'];
+export interface TrackRequiredArtifact {
+  id: string;
+  label: string;
+  type: 'figma' | 'github' | 'video' | 'pdf' | 'url';
+  required?: boolean;
+}
 
-export type HackathonTrack = Schemas['TrackResponseDto'];
+export interface HackathonTrack {
+  id: string;
+  hackathonId: string;
+  slug: string;
+  name: string;
+  description?: string;
+  /** Free-form classifier: 'skill' | 'technology' | 'theme' | 'special'. */
+  type?: string;
+  eligibility: TrackEligibility;
+  displayOrder: number;
+  isArchived: boolean;
+  /** Number of submissions opted into this track. */
+  entryCount: number;
+  /** Single open-ended prompt rendered on the submission form. */
+  prompt?: string;
+  /** Organizer-defined custom questions. Phase B. */
+  customQuestions?: TrackCustomQuestion[];
+  /** Required artifact slots (e.g. Figma file URL). Phase B. */
+  requiredArtifacts?: TrackRequiredArtifact[];
+  createdAt: string;
+  updatedAt: string;
+}
 
-export type CreateTrackRequest = Schemas['CreateTrackDto'];
+export interface CreateTrackRequest {
+  name: string;
+  /** Optional. Auto-generated from name if omitted. */
+  slug?: string;
+  description?: string;
+  type?: string;
+  eligibility?: TrackEligibility;
+  displayOrder?: number;
+  prompt?: string;
+  customQuestions?: TrackCustomQuestion[];
+  requiredArtifacts?: TrackRequiredArtifact[];
+}
 
-export type UpdateTrackRequest = Schemas['UpdateTrackDto'];
+export interface UpdateTrackRequest {
+  name?: string;
+  slug?: string;
+  description?: string;
+  type?: string;
+  eligibility?: TrackEligibility;
+  displayOrder?: number;
+  isArchived?: boolean;
+  prompt?: string;
+  customQuestions?: TrackCustomQuestion[];
+  requiredArtifacts?: TrackRequiredArtifact[];
+}
 
 /** Submitter responses to a single track's customization. */
 export interface TrackAnswer {
@@ -106,24 +159,6 @@ export const updateTrack = async (
     data
   );
   if (!res.data?.data) throw new Error('Invalid update-track response');
-  return res.data.data;
-};
-
-/**
- * Hackathon-level track config (currently the max number of tracks a single
- * submission may enter). Lives on its own endpoint so the Tracks wizard
- * section can save it without a valid prize payload.
- */
-export const updateTracksConfig = async (
-  organizationId: string,
-  hackathonId: string,
-  data: { tracksMaxPerSubmission: number }
-): Promise<{ tracksMaxPerSubmission: number }> => {
-  const res = await api.patch<ApiResponse<{ tracksMaxPerSubmission: number }>>(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/tracks/config`,
-    data
-  );
-  if (!res.data?.data) throw new Error('Invalid update-tracks-config response');
   return res.data.data;
 };
 

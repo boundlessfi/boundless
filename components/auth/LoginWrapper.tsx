@@ -9,6 +9,7 @@ import z from 'zod';
 import LoginForm from './LoginForm';
 import TwoFactorVerify from './TwoFactorVerify';
 import { authClient } from '@/lib/auth-client';
+import { useAuthStore } from '@/lib/stores/auth-store';
 
 const formSchema = z.object({
   email: z.string().email({
@@ -206,6 +207,34 @@ const LoginWrapper = ({
       setIsLoading(true);
       setLoadingState(true);
 
+      const syncSession = async () => {
+        const session = await authClient.getSession();
+        if (session && typeof session === 'object' && 'user' in session) {
+          const sessionUser = session.user as
+            | {
+                id: string;
+                email: string;
+                name?: string | null;
+                image?: string | null;
+              }
+            | null
+            | undefined;
+
+          if (sessionUser && sessionUser.id && sessionUser.email) {
+            const authStore = useAuthStore.getState();
+            await authStore.syncWithSession({
+              id: sessionUser.id,
+              email: sessionUser.email,
+              name: sessionUser.name || undefined,
+              image: sessionUser.image || undefined,
+              role: 'USER',
+              username: undefined,
+              accessToken: undefined,
+            });
+          }
+        }
+      };
+
       try {
         const { data, error } = await authClient.signIn.email(
           {
@@ -235,6 +264,7 @@ const LoginWrapper = ({
               }
 
               await new Promise(resolve => setTimeout(resolve, 200));
+              await syncSession();
               if (onAuthSuccess) {
                 await onAuthSuccess();
               } else {

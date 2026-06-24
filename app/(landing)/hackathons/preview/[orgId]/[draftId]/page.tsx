@@ -235,7 +235,7 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
                 ?.requireOtherLinks || false,
 
             contactEmail: draft.data.collaboration?.contactEmail || '',
-            discord: draft.data.collaboration?.discord || '',
+            discord: draft.data.collaboration?.telegram || '',
             telegram: draft.data.collaboration?.telegram || '',
             socialLinks: draft.data.collaboration?.socialLinks || [],
 
@@ -248,6 +248,11 @@ export default function DraftPreviewPage({ params }: PreviewPageProps) {
               submissions: 0,
               followers: 0,
             },
+
+            contractId: undefined,
+            escrowAddress: undefined,
+            transactionHash: undefined,
+            escrowDetails: undefined,
           };
 
           setPreviewHackathon(hackathon);

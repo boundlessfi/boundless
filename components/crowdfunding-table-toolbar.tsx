@@ -58,7 +58,7 @@ export function CrowdfundingTableToolbar({
                     ? 'Title'
                     : column.id === 'project.category'
                       ? 'Category'
-                      : column.id === 'v2Status'
+                      : column.id === 'project.status'
                         ? 'Status'
                         : column.id === 'fundingRaised'
                           ? 'Funding Progress'

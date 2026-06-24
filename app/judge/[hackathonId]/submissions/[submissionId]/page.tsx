@@ -15,7 +15,6 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ScoreSlider } from '@/components/judge/ScoreSlider';
-import JudgeAiAssist from '@/components/judge/JudgeAiAssist';
 import {
   KeyboardShortcuts,
   ShortcutDef,
@@ -163,32 +162,6 @@ function ScorePage() {
       criteria.filter(c => typeof scores[getCriterionKey(c)] === 'number')
         .length,
     [scores, criteria]
-  );
-
-  // AI assist (advisory): id -> label for readable rows, and an apply helper
-  // that copies the AI's per-criterion scores into the judge's own sliders to
-  // review and adjust. Keys align because both use the criterion id.
-  const criterionLabels = useMemo(() => {
-    const out: Record<string, string> = {};
-    for (const c of criteria) {
-      out[getCriterionKey(c)] = c.title || c.name || getCriterionKey(c);
-    }
-    return out;
-  }, [criteria]);
-
-  const applyAiScores = useCallback(
-    (aiScores: Array<{ criterionId: string; score: number }>) => {
-      setScores(prev => {
-        const next = { ...prev };
-        for (const cs of aiScores) {
-          if (criteria.some(c => getCriterionKey(c) === cs.criterionId)) {
-            next[cs.criterionId] = Math.min(10, Math.max(0, cs.score));
-          }
-        }
-        return next;
-      });
-    },
-    [criteria]
   );
 
   // ---- handlers ----
@@ -623,16 +596,6 @@ function ScorePage() {
               </p>
             )}
           </div>
-
-          {criteria.length > 0 && (
-            <JudgeAiAssist
-              hackathonId={hackathonId}
-              submissionId={submissionId}
-              criterionLabels={criterionLabels}
-              disabled={readOnly}
-              onApply={applyAiScores}
-            />
-          )}
         </aside>
       </div>
     </div>

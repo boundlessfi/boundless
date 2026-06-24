@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useOptionalAuth } from '@/hooks/use-auth';
-import { useSubmission } from '@/features/hackathons';
+import { useSubmission } from '@/hooks/hackathon/use-submission';
 import type { ExploreSubmissionsResponse } from '@/lib/api/hackathons';
 
 interface SubmissionCardProps {

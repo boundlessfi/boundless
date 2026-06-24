@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { CheckCircle2, FileText, ShieldX, Trophy } from 'lucide-react';
 import { useAuthStatus } from '@/hooks/use-auth';
-import { useSubmission } from '@/features/hackathons';
+import { useSubmission } from '@/hooks/hackathon/use-submission';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BoundlessButton } from '@/components/buttons';

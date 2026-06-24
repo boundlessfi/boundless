@@ -17,14 +17,14 @@ export class AuthLogger {
   }
 
   /**
-   * Log authentication errors (forwarded to the error-reporting service when configured)
+   * Log authentication errors (reported to Sentry when configured)
    */
   static error(event: string, error: Error, data?: Record<string, unknown>) {
     reportError(error, { context: 'auth', event, ...data });
   }
 
   /**
-   * Log authentication warnings (forwarded to the error-reporting service when configured)
+   * Log authentication warnings (reported to Sentry when configured)
    */
   static warn(event: string, data?: Record<string, unknown>) {
     reportMessage(`[AUTH WARN] ${event}`, 'warning', data);

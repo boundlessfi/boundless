@@ -1,223 +1,262 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Megaphone,
   CheckCircle2,
-  Trophy,
+  XCircle,
+  Clock,
   Loader2,
   AlertTriangle,
-  Check,
+  Info,
+  Ban,
+  ChevronRight,
 } from 'lucide-react';
 import { BoundlessButton } from '@/components/buttons';
 import PodiumSection from '@/components/organization/hackathons/rewards/PodiumSection';
 import { TrackWinnersSection } from '@/components/organization/hackathons/rewards/TrackWinnersSection';
-import { WinnersBoard } from '@/components/organization/hackathons/rewards/WinnersBoard';
+import SubmissionsList from '@/components/organization/hackathons/rewards/SubmissionsList';
+import EscrowStatusCard from '@/components/organization/hackathons/rewards/EscrowStatusCard';
+import { RewardDistributionStatusBanner } from '@/components/organization/hackathons/rewards/RewardDistributionStatusBanner';
+import BoundlessSheet from '@/components/sheet/boundless-sheet';
 import { Submission } from '@/components/organization/hackathons/rewards/types';
-import type { HackathonTrackWinner } from '@/lib/api/hackathons';
-import type { WinnersBoard as WinnersBoardData } from '@/lib/api/hackathons/winners';
-import { cn } from '@/lib/utils';
+import type {
+  HackathonEscrowData,
+  HackathonTrackWinner,
+  RewardDistributionStatusResponse,
+  RewardDistributionStatusEnum,
+} from '@/lib/api/hackathons';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface RewardsPageContentProps {
-  organizationId: string;
-  hackathonId: string;
   submissions: Submission[];
+  escrow: HackathonEscrowData | null;
+  isLoadingEscrow: boolean;
   isLoadingSubmissions: boolean;
   maxRank: number;
   hasWinners: boolean;
-  /** Opens the pay-winners wizard. */
   onPublishClick: () => void;
-  /** Opens the confirm-winners dialog (publishes judging results). */
-  onPublishResults: () => void;
-  isPublishingResults?: boolean;
+  onRankChange: (submissionId: string, newRank: number | null) => Promise<void>;
+  distributionStatus?: RewardDistributionStatusResponse | null;
+  isLoadingDistributionStatus?: boolean;
+  onRefreshDistributionStatus?: () => void;
   resultsPublished?: boolean;
-  /** Funded on-chain — required before winners can be paid. */
-  canReward?: boolean;
+  escrowAddress?: string;
+  /**
+   * Per-track winners stamped by publishResults. Rendered in a
+   * dedicated section below the rank-based podium. Empty pre-publish
+   * and on OVERALL_ONLY hackathons.
+   */
   trackWinners?: HackathonTrackWinner[];
-  /** Reports the live board snapshot up to the page (for gating Confirm). */
-  onBoardLoaded?: (board: WinnersBoardData) => void;
-  winnersChosen?: number;
-  totalPlacements?: number;
-  eligiblePlacements?: number;
-}
-
-const STEPS = ['Pick winners', 'Confirm', 'Pay'] as const;
-
-function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
-  return (
-    <div className='flex flex-wrap items-center gap-2 text-xs'>
-      {STEPS.map((label, i) => (
-        <React.Fragment key={label}>
-          <span
-            className={cn(
-              'flex items-center gap-1.5',
-              i <= current ? 'text-white' : 'text-gray-500'
-            )}
-          >
-            <span
-              className={cn(
-                'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold',
-                i < current
-                  ? 'bg-primary text-primary-foreground'
-                  : i === current
-                    ? 'border-primary text-primary border'
-                    : 'border border-gray-700 text-gray-500'
-              )}
-            >
-              {i < current ? <Check className='h-3 w-3' /> : i + 1}
-            </span>
-            {label}
-          </span>
-          {i < STEPS.length - 1 && <span className='h-px w-6 bg-gray-700' />}
-        </React.Fragment>
-      ))}
-    </div>
-  );
 }
 
 export const RewardsPageContent: React.FC<RewardsPageContentProps> = ({
-  organizationId,
-  hackathonId,
   submissions,
+  escrow,
+  isLoadingEscrow,
+  isLoadingSubmissions,
   maxRank,
+  hasWinners,
   onPublishClick,
-  onPublishResults,
-  isPublishingResults = false,
-  resultsPublished = false,
-  canReward = false,
+  onRankChange,
+  distributionStatus,
+  isLoadingDistributionStatus,
+  onRefreshDistributionStatus,
+  resultsPublished,
+  escrowAddress,
   trackWinners = [],
-  onBoardLoaded,
-  winnersChosen = 0,
-  totalPlacements = 0,
-  eligiblePlacements = 0,
 }) => {
-  // ── Published: show the winners, then pay them out. ──
-  if (resultsPublished) {
-    return (
-      <div className='space-y-8'>
-        <StageIndicator current={2} />
+  const [isStatusSheetOpen, setIsStatusSheetOpen] = useState(false);
 
-        <div className='flex items-center gap-3 rounded-lg border border-green-500/20 bg-green-500/10 p-4'>
-          <CheckCircle2 className='h-6 w-6 shrink-0 text-green-500' />
-          <div>
-            <h3 className='text-sm font-semibold text-green-400'>
-              Winners confirmed
-            </h3>
-            <p className='text-xs text-gray-400'>
-              The winners are locked in and announced. Pay out their prizes
-              below.
-            </p>
-          </div>
-        </div>
+  const status = distributionStatus?.status;
+  const isNotTriggered = !distributionStatus || status === 'NOT_TRIGGERED';
+  const isRejected = status === 'REJECTED' || status === 'FAILED';
+  const isLocked =
+    status &&
+    ['PENDING_ADMIN_REVIEW', 'APPROVED', 'EXECUTING'].includes(status);
 
-        {submissions.length > 0 && (
-          <section className='space-y-6'>
-            <PodiumSection submissions={submissions} maxRank={maxRank} />
-            <TrackWinnersSection trackWinners={trackWinners} />
-          </section>
-        )}
+  const showTriggerButton = (isNotTriggered || isRejected) && !isLocked;
+  const canTrigger = resultsPublished && !!escrowAddress;
 
-        <section className='bg-background-card rounded-xl border border-gray-900 p-5'>
-          <h3 className='text-sm font-semibold text-white'>Pay winners</h3>
-          <p className='mt-1 text-xs text-gray-400'>
-            Send each winner their prize from the prize pool.
-          </p>
-          <div className='mt-3 flex flex-col gap-1.5'>
-            <BoundlessButton
-              variant='default'
-              size='default'
-              onClick={onPublishClick}
-              disabled={!canReward}
-              className='w-fit gap-2'
-            >
-              <Megaphone className='h-4 w-4' />
-              Pay winners
-            </BoundlessButton>
-            {!canReward && (
-              <p className='text-xs text-amber-400/80'>
-                The prize pool is still being set up. This usually takes a
-                moment.
-              </p>
-            )}
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  // ── Selection stage: pick winners, then confirm. ──
-  // Prizes with no winner: fewer scored/eligible projects than prize slots, or
-  // a track with no opted-in projects. Either way they won't be awarded.
-  const unfilled = Math.max(0, totalPlacements - winnersChosen);
+  // Status color/icon mapping for the compact badge
+  const STATUS_BADGE: Record<
+    string,
+    { color: string; icon: React.ReactNode; label: string }
+  > = {
+    NOT_TRIGGERED: {
+      color: 'text-gray-400 border-gray-700 bg-gray-900/60',
+      icon: <Info className='h-3 w-3' />,
+      label: 'Not Triggered',
+    },
+    PENDING_ADMIN_REVIEW: {
+      color: 'text-amber-400 border-amber-800/60 bg-amber-950/30',
+      icon: <Clock className='h-3 w-3' />,
+      label: 'Pending Review',
+    },
+    APPROVED: {
+      color: 'text-green-400 border-green-800/60 bg-green-950/30',
+      icon: <CheckCircle2 className='h-3 w-3' />,
+      label: 'Approved',
+    },
+    REJECTED: {
+      color: 'text-red-400 border-red-800/60 bg-red-950/30',
+      icon: <Ban className='h-3 w-3' />,
+      label: 'Rejected',
+    },
+    EXECUTING: {
+      color: 'text-blue-400 border-blue-800/60 bg-blue-950/30',
+      icon: <Loader2 className='h-3 w-3 animate-spin' />,
+      label: 'Executing',
+    },
+    COMPLETED: {
+      color: 'text-green-400 border-green-800/60 bg-green-950/30',
+      icon: <CheckCircle2 className='h-3 w-3' />,
+      label: 'Completed',
+    },
+    FAILED: {
+      color: 'text-red-400 border-red-800/60 bg-red-950/30',
+      icon: <XCircle className='h-3 w-3' />,
+      label: 'Failed',
+    },
+    PARTIAL_SUCCESS: {
+      color: 'text-orange-400 border-orange-800/60 bg-orange-950/30',
+      icon: <AlertTriangle className='h-3 w-3' />,
+      label: 'Partial Success',
+    },
+  };
+  const badge = status ? STATUS_BADGE[status] : null;
 
   return (
     <div className='space-y-8'>
-      <StageIndicator current={0} />
+      {/* 1. Compact Status Badge + Sheet */}
+      {distributionStatus && status !== 'NOT_TRIGGERED' && badge && (
+        <>
+          <button
+            onClick={() => setIsStatusSheetOpen(true)}
+            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80 ${badge.color}`}
+          >
+            {badge.icon}
+            Distribution: {badge.label}
+            <ChevronRight className='h-3 w-3 opacity-60' />
+          </button>
 
-      <section className='space-y-4'>
-        <div>
-          <h2 className='text-xl font-semibold text-white'>1. Pick winners</h2>
-          <p className='mt-1 text-sm text-gray-400'>
-            The highest-scored project is pre-filled for each prize. Change any
-            winner you like.
-          </p>
-        </div>
-        <WinnersBoard
-          organizationId={organizationId}
-          hackathonId={hackathonId}
-          onBoardLoaded={onBoardLoaded}
-        />
-      </section>
+          <BoundlessSheet
+            open={isStatusSheetOpen}
+            setOpen={setIsStatusSheetOpen}
+            title='Distribution Status'
+            minHeight='300px'
+          >
+            <div className='px-6 pb-6'>
+              <RewardDistributionStatusBanner
+                distributionStatus={distributionStatus}
+                isLoading={isLoadingDistributionStatus}
+                onRefresh={onRefreshDistributionStatus}
+              />
+            </div>
+          </BoundlessSheet>
+        </>
+      )}
 
-      {totalPlacements > 0 && (
-        <div className='rounded-lg border border-gray-800 bg-gray-900/40 p-4'>
-          <p className='text-sm text-white'>
-            <span className='font-semibold'>{winnersChosen}</span> of{' '}
-            {totalPlacements} prize{totalPlacements === 1 ? '' : 's'} have a
-            winner.
-          </p>
-          {winnersChosen > 0 && unfilled > 0 && (
-            <p className='mt-1 flex items-start gap-1.5 text-xs text-amber-400'>
-              <AlertTriangle className='mt-0.5 h-3.5 w-3.5 shrink-0' />
-              {unfilled} prize{unfilled === 1 ? '' : 's'} don&apos;t have a
-              winner yet and won&apos;t be awarded. Pick a winner above, or
-              score more projects.
-            </p>
+      {/* 2. Trigger Control Section / Requirements Alert */}
+      {showTriggerButton && (
+        <div className='flex flex-col gap-4'>
+          {!canTrigger && (
+            <Alert
+              variant='destructive'
+              className='border-amber-900/50 bg-amber-950/20 text-amber-200'
+            >
+              <AlertCircle className='h-4 w-4' />
+              <AlertTitle>Distribution Requirements</AlertTitle>
+              <AlertDescription>
+                To trigger reward distribution, you must:
+                <ul className='mt-2 list-disc pl-5 text-xs opacity-80'>
+                  {!resultsPublished && (
+                    <li>Publish the judging results in the Judging tab.</li>
+                  )}
+                  {!escrowAddress && (
+                    <li>
+                      Configure a valid Stellar Escrow address in Settings.
+                    </li>
+                  )}
+                </ul>
+              </AlertDescription>
+            </Alert>
           )}
+
+          <div className='flex justify-end'>
+            <BoundlessButton
+              variant='default'
+              size='lg'
+              onClick={onPublishClick}
+              disabled={!canTrigger}
+              className='gap-2'
+            >
+              <Megaphone className='h-4 w-4' />
+              {isRejected
+                ? 'Re-trigger Reward Distribution'
+                : 'Trigger Reward Distribution'}
+            </BoundlessButton>
+          </div>
         </div>
       )}
 
-      {totalPlacements > 0 && (
-        <section className='bg-background-card rounded-xl border border-gray-900 p-5'>
-          <h3 className='text-sm font-semibold text-white'>
-            2. Confirm winners
-          </h3>
-          <p className='mt-1 text-xs text-gray-400'>
-            Locks in the winners you picked and announces them to participants.
-            You&apos;ll pay out prizes next.
+      <section>
+        <div className='mb-4'>
+          <h2 className='text-xl font-semibold text-white'>Escrow Status</h2>
+          <p className='mt-1 text-sm text-gray-400'>
+            View escrow balance, milestones, and funding status
           </p>
-          <div className='mt-3 flex flex-col gap-1.5'>
-            <BoundlessButton
-              variant='default'
-              size='default'
-              onClick={onPublishResults}
-              disabled={isPublishingResults || winnersChosen === 0}
-              className='w-fit gap-2'
-            >
-              {isPublishingResults ? (
-                <Loader2 className='h-4 w-4 animate-spin' />
-              ) : (
-                <Trophy className='h-4 w-4' />
-              )}
-              {isPublishingResults ? 'Confirming...' : 'Confirm winners'}
-            </BoundlessButton>
-            {winnersChosen === 0 && (
-              <p className='text-xs text-amber-400/80'>
-                No projects have a winning score yet. Finish judging, then pick
-                at least one winner before confirming.
-              </p>
-            )}
+        </div>
+        <EscrowStatusCard escrow={escrow} isLoading={isLoadingEscrow} />
+      </section>
+
+      {submissions.length > 0 && (
+        <section>
+          <div className='mb-6'>
+            <h2 className='text-xl font-semibold text-white'>
+              Winners & Rankings
+            </h2>
+            <p className='mt-1 text-sm text-gray-400'>
+              Assign ranks to submissions and view the winners podium
+            </p>
           </div>
+          <div className='space-y-6'>
+            <PodiumSection submissions={submissions} maxRank={maxRank} />
+            <TrackWinnersSection trackWinners={trackWinners} />
+            <div>
+              <h3 className='mb-4 text-lg font-medium text-white'>
+                All Submissions
+              </h3>
+              <SubmissionsList
+                submissions={submissions}
+                onRankChange={onRankChange}
+                maxRank={maxRank}
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {submissions.length === 0 && !isLoadingSubmissions && (
+        <section>
+          <Alert className='border-gray-800 bg-gray-900/50'>
+            <AlertCircle className='h-5 w-5 text-gray-400' />
+            <AlertTitle className='text-white'>
+              No Submissions Available
+            </AlertTitle>
+            <AlertDescription className='text-gray-300'>
+              <p className='mb-2'>
+                No judged submissions found. To assign winners and distribute
+                prizes:
+              </p>
+              <ol className='ml-4 list-decimal space-y-1 text-sm'>
+                <li>Ensure submissions have been shortlisted</li>
+                <li>Complete the judging process</li>
+                <li>Return here to assign ranks and publish winners</li>
+              </ol>
+            </AlertDescription>
+          </Alert>
         </section>
       )}
     </div>

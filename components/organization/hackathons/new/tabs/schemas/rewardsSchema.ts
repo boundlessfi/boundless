@@ -48,51 +48,42 @@ export const prizeTierSchema = z
     }
   });
 
-// ── Prize entity write shape (named prizes -> placements -> tracks) ──────────
-export const placementWriteSchema = z.object({
-  position: z.number().int().min(1),
-  label: z.string().optional(),
-  amount: z
-    .string()
-    .refine(
-      v => !isNaN(parseFloat(v)) && parseFloat(v) >= 0,
-      'Please enter a valid amount'
-    ),
-  currency: z.string().optional(),
-  passMark: z.number().min(0).max(100).optional(),
-});
-export type PrizePlacementWrite = z.input<typeof placementWriteSchema>;
-
-export const prizeWriteSchema = z.object({
-  name: z.string().trim().min(1, 'Prize name is required'),
-  description: z.string().optional(),
-  trackIds: z.array(z.string()).default([]),
-  placements: z
-    .array(placementWriteSchema)
-    .min(1, 'Add at least one placement'),
-});
-export type PrizeWrite = z.input<typeof prizeWriteSchema>;
-
 export const rewardsSchema = z
   .object({
-    // Legacy flat tiers (AI / legacy path). Optional now that `prizes` exists.
-    prizeTiers: z.array(prizeTierSchema).optional(),
-    // Named prizes with placements + linked tracks (the entity write path the
-    // backend prefers; it derives prizeTiers as a shadow).
-    prizes: z.array(prizeWriteSchema).optional(),
+    prizeTiers: z
+      .array(prizeTierSchema)
+      .min(1, 'At least one prize tier is required'),
     prizeStructure: prizeStructureSchema.optional(),
     tracksMaxPerSubmission: z.number().int().min(1).max(20).optional(),
-    // Org policy: may a project win an overall AND a track prize?
-    allowWinnerStacking: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
-    const tierCount = data.prizeTiers?.length ?? 0;
-    const prizeCount = data.prizes?.length ?? 0;
-    if (tierCount === 0 && prizeCount === 0) {
+    const structure = data.prizeStructure ?? 'OVERALL_ONLY';
+    const hasTrackTier = data.prizeTiers.some(t => t.kind === 'TRACK');
+    const hasOverallTier = data.prizeTiers.some(
+      t => !t.kind || t.kind === 'OVERALL'
+    );
+    if (structure === 'OVERALL_ONLY' && hasTrackTier) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['prizes'],
-        message: 'Add at least one prize',
+        path: ['prizeStructure'],
+        message:
+          'Switch the structure to Overall + Tracks (or Tracks only) when any tier is a track.',
+      });
+    }
+    if (structure === 'TRACKS_ONLY' && hasOverallTier) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['prizeTiers'],
+        message:
+          'Tracks-only mode requires every tier to be a track. Mark the overall tiers as tracks or switch structure.',
+      });
+    }
+    if (structure === 'OVERALL_AND_TRACKS' && !hasTrackTier) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['prizeTiers'],
+        message:
+          'Add at least one track tier — or switch back to Overall only.',
       });
     }
   });

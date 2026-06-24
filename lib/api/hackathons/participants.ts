@@ -111,8 +111,7 @@ export interface GetHackathonSubmissionsResponse extends ApiResponse<{
  */
 export const registerForHackathon = async (
   hackathonSlugOrId: string,
-  organizationId?: string,
-  customAnswers?: Record<string, string | string[]>
+  organizationId?: string
 ): Promise<RegisterForHackathonResponse> => {
   let url: string;
 
@@ -124,11 +123,7 @@ export const registerForHackathon = async (
     url = `/hackathons/${hackathonSlugOrId}/join`;
   }
 
-  // Body carries REGISTRATION-scope custom-question answers when present.
-  const res = await api.post(
-    url,
-    customAnswers ? { customAnswers } : undefined
-  );
+  const res = await api.post(url);
   return res.data;
 };
 

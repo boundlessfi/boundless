@@ -30,7 +30,6 @@ import {
   TIMEZONES,
 } from './components/timeline/timelineConstants';
 import { format } from 'date-fns';
-import RegenerateSectionButton from '../RegenerateSectionButton';
 
 interface TimelineTabProps {
   onContinue?: () => void;
@@ -64,22 +63,6 @@ export default function TimelineTab({
   const hasRegistrationDeadline = !!form.watch('registrationDeadline');
   const hasJudgingDeadline = !!form.watch('judgingDeadline');
 
-  // Apply an AI-regenerated timeline section. Dates arrive as ISO strings.
-  const applyRegeneratedTimeline = (data: Record<string, unknown>) => {
-    const toDate = (v: unknown) => (v ? new Date(v as string) : undefined);
-    const start = toDate(data.startDate);
-    const submission = toDate(data.submissionDeadline);
-    form.reset({
-      ...form.getValues(),
-      ...(start && { startDate: start }),
-      ...(submission && { submissionDeadline: submission }),
-      timezone:
-        (data.timezone as string) || form.getValues('timezone') || 'UTC',
-      registrationDeadline: toDate(data.registrationDeadline),
-      judgingDeadline: toDate(data.judgingDeadline),
-    });
-  };
-
   const onSubmit = async (data: TimelineFormData) => {
     try {
       if (onSave) {
@@ -94,12 +77,6 @@ export default function TimelineTab({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-10'>
-        <div className='flex justify-end'>
-          <RegenerateSectionButton
-            section='timeline'
-            onApply={applyRegeneratedTimeline}
-          />
-        </div>
         <FormField
           control={form.control}
           name='startDate'

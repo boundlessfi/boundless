@@ -1,6 +1,5 @@
 import api from '../api';
 import type { ApiResponse } from '../types';
-import type { Schemas } from '../openapi';
 
 export type PartnerContributionStatus =
   | 'PENDING'
@@ -45,7 +44,7 @@ export interface AllocationSummary {
   allocatableAmount: string;
   allocatedAmount: string;
   unallocatedAmount: string;
-  /** Platform fee rate as a decimal (e.g. 0.05 = 5%). */
+  /** Trustless Work platform fee rate as a decimal (e.g. 0.05 = 5%). */
   escrowFeeRate?: number;
   isFullyAllocated: boolean;
   requiresAllocation: boolean;
@@ -83,15 +82,22 @@ export interface ContributionAllocationDetail {
   allocatableAmount: string;
   allocatedAmount: string;
   unallocatedAmount: string;
-  /** Platform fee rate as a decimal (e.g. 0.05 = 5%). */
+  /** Trustless Work platform fee rate as a decimal (e.g. 0.05 = 5%). */
   escrowFeeRate?: number;
   isFullyAllocated: boolean;
   allocations: AllocationRecord[];
 }
 
-export type AllocationTarget = Schemas['AllocationTargetDto'];
+export interface AllocationTarget {
+  tierId?: string;
+  newTierLabel?: string;
+  newTierDescription?: string;
+  amount: number;
+}
 
-export type AllocateContributionRequest = Schemas['AllocateContributionDto'];
+export interface AllocateContributionRequest {
+  targets: AllocationTarget[];
+}
 
 export interface PrizeTierShape {
   id?: string;
@@ -117,6 +123,7 @@ export interface PartnerInvitationDetails {
   status: PartnerContributionStatus;
   message?: string | null;
   txHash?: string | null;
+  escrowAddress: string | null;
   hackathon: {
     id: string;
     name: string;
@@ -133,8 +140,6 @@ export interface PartnerInvitationDetails {
     } | null;
   } | null;
   windowOpen: boolean;
-  /** Whether the hackathon's on-chain escrow event exists (publish completed). */
-  escrowReady: boolean;
   canContribute: boolean;
 }
 
@@ -207,13 +212,9 @@ export const getPartnerInvitation = async (
 };
 
 export interface PreparedFundTransaction {
-  /** Escrow op row id (track settlement of the ADD_FUNDS op). */
-  opRowId: string;
-  opId: string;
-  status: string;
-  /** Unsigned ADD_FUNDS transaction XDR for the partner wallet to sign. */
-  unsignedXdr: string;
+  unsignedTransaction: string;
   networkPassphrase: string;
+  contractId: string;
   amount: string;
   currency: string;
 }
@@ -228,18 +229,10 @@ export const prepareFundTransaction = async (
   return res.data;
 };
 
-export interface SubmittedFundTransaction {
-  opRowId: string;
-  opId: string;
-  /** EscrowOp status (e.g. PENDING_CONFIRM). The contribution confirms async. */
-  status: string;
-  txHash: string | null;
-}
-
 export const submitSignedTransaction = async (
   token: string,
   signedXdr: string
-): Promise<ApiResponse<SubmittedFundTransaction>> => {
+): Promise<ApiResponse<PartnerContribution>> => {
   const res = await api.post(`/partners/contribute/${token}/submit-tx`, {
     signedXdr,
   });
@@ -268,35 +261,6 @@ export const allocateContribution = async (
     data
   );
   return res.data;
-};
-
-export interface AllocatablePrizePlacement {
-  id: string;
-  position: number;
-  label: string | null;
-  amount: string;
-  currency: string;
-  passMark: number;
-}
-
-export interface AllocatablePrize {
-  id: string;
-  name: string;
-  description: string | null;
-  displayOrder: number;
-  trackIds: string[];
-  placements: AllocatablePrizePlacement[];
-}
-
-/** Prizes + placements an organizer can allocate partner money into. */
-export const listAllocatablePrizes = async (
-  organizationId: string,
-  hackathonId: string
-): Promise<AllocatablePrize[]> => {
-  const res = await api.get<ApiResponse<AllocatablePrize[]>>(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/partners/prizes`
-  );
-  return res.data?.data ?? [];
 };
 
 export const undoAllocation = async (

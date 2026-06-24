@@ -10,6 +10,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Submission } from './types';
+import { HackathonEscrowData } from '@/lib/api/hackathons';
 import { PrizeTier } from '@/components/organization/hackathons/new/tabs/schemas/rewardsSchema';
 import { useWizardSteps } from '@/hooks/use-wizard-steps';
 import { usePublishWinners } from '@/hooks/use-publish-winners';
@@ -17,13 +18,13 @@ import { AnnouncementStep } from './AnnouncementStep';
 import { PreviewStep } from './PreviewStep';
 import { WizardStepIndicator } from './WizardStepIndicator';
 import { WizardFooter } from './WizardFooter';
-import RewardPayoutProgressModal from './RewardPayoutProgressModal';
 
 interface PublishWinnersWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   submissions: Submission[];
   prizeTiers: PrizeTier[];
+  escrow: HackathonEscrowData | null;
   organizationId: string;
   hackathonId: string;
   onSuccess?: () => void;
@@ -34,6 +35,7 @@ export default function PublishWinnersWizard({
   onOpenChange,
   submissions,
   prizeTiers,
+  escrow,
   organizationId,
   hackathonId,
   onSuccess,
@@ -62,8 +64,6 @@ export default function PublishWinnersWizard({
   );
 
   const [announcement, setAnnouncement] = useState('');
-  // Drives the on-chain payout progress modal once the organizer commits.
-  const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
 
   const {
     currentStep,
@@ -72,56 +72,28 @@ export default function PublishWinnersWizard({
     currentStepIndex,
     handleNext,
     handleBack,
-  } = useWizardSteps({ open });
+  } = useWizardSteps({ open, escrow });
 
-  const {
-    isPublishing,
-    publishWinners,
-    phase,
-    txHash,
-    isCompleted,
-    isFailed,
-    error,
-    reset,
-  } = usePublishWinners({
+  const { isPublishing, publishWinners } = usePublishWinners({
     winners,
     prizeTiers,
+    escrow,
     organizationId,
     hackathonId,
     announcement,
-    // Fire the page's refetch on completion. The wizard + modal stay open
-    // so the organizer sees the success state, then close on dismiss.
-    onSuccess,
+    onSuccess: () => {
+      onOpenChange(false);
+      if (onSuccess) {
+        onSuccess();
+      }
+    },
   });
 
   const handlePublish = async () => {
-    setIsPayoutModalOpen(true);
     try {
       await publishWinners();
     } catch {
-      // Pre-flight validation (missing wallet, no eligible winners, etc.)
-      // throws before the on-chain runner starts, so the runner phase stays
-      // `idle`. A toast already explained the problem — close the modal so it
-      // doesn't hang on a step list that will never advance.
-      setIsPayoutModalOpen(false);
-      reset();
-    }
-  };
-
-  const handlePayoutClose = () => {
-    setIsPayoutModalOpen(false);
-    reset();
-    // A settled payout (success or aborted failure) closes the wizard too.
-    onOpenChange(false);
-  };
-
-  const handlePayoutRetry = async () => {
-    reset();
-    try {
-      await publishWinners();
-    } catch {
-      setIsPayoutModalOpen(false);
-      reset();
+      // Error is handled in the hook
     }
   };
 
@@ -159,73 +131,59 @@ export default function PublishWinnersWizard({
   };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
-          className='bg-background-card max-w-2xl! border-gray-900 p-0'
-          showCloseButton={false}
-        >
-          <DialogHeader className='flex flex-row items-center gap-3 border-b border-gray-900 px-5 py-3'>
-            <Megaphone className='h-4 w-4 text-white' />
-            <DialogTitle className='text-sm font-semibold text-white'>
-              Reward Winners
-            </DialogTitle>
-            <DialogClose asChild>
-              <button className='ml-auto text-gray-400 transition-colors hover:text-white'>
-                <X className='h-4 w-4' />
-              </button>
-            </DialogClose>
-          </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className='bg-background-card max-w-2xl! border-gray-900 p-0'
+        showCloseButton={false}
+      >
+        <DialogHeader className='flex flex-row items-center gap-3 border-b border-gray-900 px-5 py-3'>
+          <Megaphone className='h-4 w-4 text-white' />
+          <DialogTitle className='text-sm font-semibold text-white'>
+            Reward Winners
+          </DialogTitle>
+          <DialogClose asChild>
+            <button className='ml-auto text-gray-400 transition-colors hover:text-white'>
+              <X className='h-4 w-4' />
+            </button>
+          </DialogClose>
+        </DialogHeader>
 
-          <WizardStepIndicator
-            steps={stepsToShow}
-            currentStep={currentStep}
-            currentStepIndex={currentStepIndex}
-          />
+        <WizardStepIndicator
+          steps={stepsToShow}
+          currentStep={currentStep}
+          currentStepIndex={currentStepIndex}
+        />
 
-          <div className='max-h-[65vh] overflow-y-auto px-5 py-4'>
-            {currentStep === 'announcement' && (
-              <AnnouncementStep
-                announcement={announcement}
-                onAnnouncementChange={setAnnouncement}
-              />
-            )}
+        <div className='max-h-[65vh] overflow-y-auto px-5 py-4'>
+          {currentStep === 'announcement' && (
+            <AnnouncementStep
+              announcement={announcement}
+              onAnnouncementChange={setAnnouncement}
+            />
+          )}
 
-            {currentStep === 'preview' && (
-              <PreviewStep
-                winners={winners}
-                prizeTiers={mappedPrizeTiers}
-                announcement={announcement}
-                onEditAnnouncement={() => setCurrentStep('announcement')}
-                getPrizeForRank={getPrizeForRank}
-              />
-            )}
-          </div>
+          {currentStep === 'preview' && (
+            <PreviewStep
+              winners={winners}
+              prizeTiers={mappedPrizeTiers}
+              announcement={announcement}
+              onEditAnnouncement={() => setCurrentStep('announcement')}
+              getPrizeForRank={getPrizeForRank}
+            />
+          )}
+        </div>
 
-          <WizardFooter
-            currentStepIndex={currentStepIndex}
-            totalSteps={stepsToShow.length}
-            isPublishing={isPublishing}
-            canGoNext={canGoNext}
-            onCancel={() => onOpenChange(false)}
-            onBack={handleBack}
-            onNext={handleNext}
-            onPublish={handlePublish}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <RewardPayoutProgressModal
-        open={isPayoutModalOpen}
-        phase={phase}
-        txHash={txHash}
-        error={error}
-        isCompleted={isCompleted}
-        isFailed={isFailed}
-        fundingMode='MANAGED'
-        onClose={handlePayoutClose}
-        onRetry={handlePayoutRetry}
-      />
-    </>
+        <WizardFooter
+          currentStepIndex={currentStepIndex}
+          totalSteps={stepsToShow.length}
+          isPublishing={isPublishing}
+          canGoNext={canGoNext}
+          onCancel={() => onOpenChange(false)}
+          onBack={handleBack}
+          onNext={handleNext}
+          onPublish={handlePublish}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }

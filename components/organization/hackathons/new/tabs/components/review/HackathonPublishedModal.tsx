@@ -7,8 +7,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { BoundlessButton } from '@/components/buttons';
-import { Check, Building2 } from 'lucide-react';
+import { Check, Building2, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { NETWORKS, getCurrentNetwork } from '@/lib/wallet-utils';
 import type { PublishResponseData } from '@/hooks/use-hackathon-publish';
 
 interface HackathonPublishedModalProps {
@@ -39,6 +40,14 @@ export default function HackathonPublishedModal({
       router.push(`/organizations/${organizationId}`);
     } else {
       router.push('/');
+    }
+  };
+
+  const handleViewEscrow = () => {
+    if (publishResponse?.escrowAddress) {
+      const network = getCurrentNetwork();
+      const explorerUrl = `${NETWORKS[network].explorer}/contract/${publishResponse.escrowAddress}`;
+      window.open(explorerUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -82,6 +91,19 @@ export default function HackathonPublishedModal({
             >
               View Hackathon
             </BoundlessButton>
+
+            {publishResponse.escrowAddress && (
+              <BoundlessButton
+                onClick={handleViewEscrow}
+                size='xl'
+                fullWidth
+                variant='outline'
+                className='border-gray-900'
+              >
+                <ExternalLink className='mr-2 h-4 w-4' />
+                View Escrow Address
+              </BoundlessButton>
+            )}
 
             <BoundlessButton
               onClick={handleGoHome}

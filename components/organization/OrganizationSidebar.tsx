@@ -1,8 +1,6 @@
 import {
   Trophy,
-  Target,
   HandCoins,
-  Landmark,
   Settings,
   Plus,
   Sparkles,
@@ -212,23 +210,11 @@ export default function OrganizationSidebar({
       description: 'Manage your events',
     },
     {
-      icon: Target,
-      label: 'Bounties',
-      href: derivedOrgId ? `/organizations/${derivedOrgId}/bounties` : '#',
-      description: 'Host and fund bounties',
-    },
-    {
       icon: HandCoins,
       label: 'Grants',
       href: derivedOrgId ? `/organizations/${derivedOrgId}/grants` : '#',
       description: 'Fund amazing projects',
       disabled: true,
-    },
-    {
-      icon: Landmark,
-      label: 'Treasury',
-      href: derivedOrgId ? `/organizations/${derivedOrgId}/treasury` : '#',
-      description: 'Wallets and funding',
     },
     {
       icon: Settings,
@@ -245,13 +231,6 @@ export default function OrganizationSidebar({
       icon: Plus,
       label: 'Host Hackathon',
       href: `/organizations/${derivedOrgId}/hackathons/new`,
-      gradient: 'from-primary/20 to-primary/5',
-      disabled: false,
-    },
-    {
-      icon: Target,
-      label: 'Post Bounty',
-      href: `/organizations/${derivedOrgId}/bounties/new`,
       gradient: 'from-primary/20 to-primary/5',
       disabled: false,
     },

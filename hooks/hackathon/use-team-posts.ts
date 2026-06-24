@@ -5,6 +5,7 @@ import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStatus } from '@/hooks/use-auth';
+import { useAuthStore } from '@/lib/stores/auth-store';
 import {
   getTeamPosts,
   createTeamPost,
@@ -38,7 +39,8 @@ export function useTeamPosts({
   organizationId,
   autoFetch = true,
 }: UseTeamPostsProps) {
-  const { isAuthenticated, user } = useAuthStatus();
+  const { isAuthenticated } = useAuthStatus();
+  const { user } = useAuthStore();
   const currentUserId = user?.id;
   const queryClient = useQueryClient();
   // After a team mutation, the React Query–backed pages (FindTeam,

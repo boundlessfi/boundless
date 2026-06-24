@@ -167,6 +167,14 @@ export const SubmissionModalHeader: React.FC<SubmissionModalHeaderProps> = ({
               <Share2 className='mr-2 h-4 w-4' />
               Copy Link
             </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled
+              className='cursor-not-allowed text-gray-500 focus:bg-transparent'
+            >
+              <span className='flex items-center'>
+                Report Submission (Coming Soon)
+              </span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

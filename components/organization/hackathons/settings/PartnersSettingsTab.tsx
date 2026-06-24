@@ -10,7 +10,6 @@ import {
   ExternalLink,
   Copy,
   Check,
-  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,12 +48,6 @@ import AllocateContributionModal from './AllocateContributionModal';
 interface PartnersSettingsTabProps {
   organizationId: string;
   hackathonId: string;
-  /**
-   * Whether the hackathon's on-chain escrow event exists (publish completed).
-   * Partners contribute into that escrow, so it must be live before any invite
-   * can be sent (the invite endpoint rejects otherwise).
-   */
-  escrowReady?: boolean;
 }
 
 const STATUS_LABEL: Record<PartnerContributionStatus, string> = {
@@ -93,9 +86,7 @@ const buildContributeUrl = (token: string) => {
 export default function PartnersSettingsTab({
   organizationId,
   hackathonId,
-  escrowReady,
 }: PartnersSettingsTabProps) {
-  const hasEscrow = Boolean(escrowReady);
   const [contributions, setContributions] = useState<
     PartnerContributionWithAllocation[]
   >([]);
@@ -239,7 +230,7 @@ export default function PartnersSettingsTab({
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button disabled={!hasEscrow}>
+            <Button>
               <Plus className='mr-2 h-4 w-4' />
               Invite partner
             </Button>
@@ -382,24 +373,6 @@ export default function PartnersSettingsTab({
         </Dialog>
       </div>
 
-      {!hasEscrow && (
-        <div className='flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4'>
-          <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-400/10'>
-            <Wallet className='h-4 w-4 text-amber-300' />
-          </div>
-          <div className='flex-1'>
-            <div className='text-sm font-semibold text-amber-200'>
-              Prize pool not set up yet
-            </div>
-            <div className='mt-0.5 text-xs text-amber-200/70'>
-              Partners contribute USDC directly into this hackathon&apos;s prize
-              pool, so it must exist before you can invite them. Publish and
-              fund the hackathon first to set it up.
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
         <SummaryCard
           label='Confirmed contributions'
@@ -428,8 +401,8 @@ export default function PartnersSettingsTab({
               {formatAmount(unallocatedTotal)} USDC awaiting allocation
             </div>
             <div className='mt-0.5 text-xs text-amber-200/70'>
-              You must allocate every confirmed contribution into prize
-              placements before winners can be announced.
+              You must allocate every confirmed contribution into prize tiers
+              before winners can be announced.
             </div>
           </div>
         </div>

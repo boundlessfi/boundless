@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Clock,
@@ -9,25 +9,17 @@ import {
   ChevronRight,
   Flower,
   AlertCircle,
-  UserPlus,
 } from 'lucide-react';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
-import {
-  useHackathonTracks,
-  useJoinHackathon,
-} from '@/hooks/hackathon/use-hackathon-queries';
-import RegistrationQuestionsDialog, {
-  useRegistrationQuestions,
-} from '../RegistrationQuestionsDialog';
+import { useHackathonTracks } from '@/hooks/hackathon/use-hackathon-queries';
 import { useOptionalAuth } from '@/hooks/use-auth';
 import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
-import { useSubmission } from '@/features/hackathons';
+import { useSubmission } from '@/hooks/hackathon/use-submission';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { BoundlessButton } from '@/components/buttons';
-import { effectivePrizeTiers } from '@/lib/utils/effective-prize-tiers';
-import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { ExtendedBadge } from '@/components/hackathons/ExtendedBadge';
 import { Participant } from '@/lib/api/hackathons';
 
@@ -67,6 +59,7 @@ function useCountdown(deadline?: string) {
 
 export default function PoolAndAction() {
   const params = useParams();
+  const router = useRouter();
   const { user, isAuthenticated } = useOptionalAuth();
   const slug = params.slug as string;
 
@@ -84,7 +77,6 @@ export default function PoolAndAction() {
     submissions,
     error,
     loading,
-    refreshCurrentHackathon,
   } = useHackathonData();
   const hackathonError = error;
   const isDataLoading = loading || !hackathon;
@@ -105,11 +97,11 @@ export default function PoolAndAction() {
   const startDate = hackathon?.startDate;
   const timeLeft = useCountdown(deadline);
 
-  const tiers = effectivePrizeTiers(hackathon);
-  const totalPool = tiers.reduce(
-    (acc, t) => acc + Number(t.prizeAmount || 0),
-    0
-  );
+  const totalPool =
+    hackathon?.prizeTiers.reduce(
+      (acc, t) => acc + Number(t.prizeAmount || 0),
+      0
+    ) ?? 0;
 
   const now = new Date();
   const isNotStarted = startDate ? now < new Date(startDate) : false;
@@ -124,7 +116,7 @@ export default function PoolAndAction() {
     ['COMPLETED', 'JUDGING', 'ARCHIVED', 'CANCELLED'].includes(
       hackathon?.status || ''
     ) || (deadline ? now > new Date(deadline) : false);
-  const currency = tiers[0]?.currency ?? 'USDC';
+  const currency = hackathon?.prizeTiers[0]?.currency ?? 'USDC';
   const categories = hackathon?.categories ?? [];
 
   const isParticipant = user
@@ -142,48 +134,22 @@ export default function PoolAndAction() {
   //
   // `redirectTo` is still set so Google sign-in (a full provider redirect
   // that bypasses onAuthSuccess) lands somewhere sensible.
-  // A non-participant who wants to submit is routed through JOIN first (the
-  // header JOIN does the same). A hackathon has no on-chain "join" — it's a DB
-  // registration — so this is a plain mutation; on success the participation
-  // refresh flips the CTA to "Submit Now". withAuth opens the auth modal when
-  // the viewer is signed out.
-  const joinMutation = useJoinHackathon(slug);
-  const { data: registrationQuestions = [] } = useRegistrationQuestions(slug);
-  const [regDialogOpen, setRegDialogOpen] = useState(false);
-
-  const doJoin = async (answers?: Record<string, string | string[]>) => {
-    await joinMutation.mutateAsync(answers);
-    await refreshCurrentHackathon();
-    toast.success('You joined the hackathon. You can now submit your project.');
-  };
-
-  const handleJoinToSubmit = withAuth(async () => {
-    // Collect registration questions first when the organizer set any.
-    if (registrationQuestions.length > 0) {
-      setRegDialogOpen(true);
-      return;
+  const submitUrl = `/hackathons/${slug}/submit`;
+  const handleSubmit = withAuth(
+    () => {
+      if (isButtonDisabled) return;
+      router.push(submitUrl);
+    },
+    {
+      redirectTo: submitUrl,
+      onAuthSuccess: () => {
+        const popup = window.open(submitUrl, '_blank', 'noopener,noreferrer');
+        if (!popup) {
+          router.push(submitUrl);
+        }
+      },
     }
-    try {
-      await doJoin();
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Failed to join hackathon'
-      );
-    }
-  });
-
-  const handleRegisterSubmit = async (
-    answers: Record<string, string | string[]>
-  ) => {
-    try {
-      await doJoin(answers);
-      setRegDialogOpen(false);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Failed to join hackathon'
-      );
-    }
-  };
+  );
 
   if (isDataLoading) {
     return (
@@ -225,16 +191,14 @@ export default function PoolAndAction() {
     if (hackathon?.status === 'CANCELLED') return 'Hackathon Cancelled';
     if (isEnded) return 'Submissions Closed';
     if (isNotStarted) return 'Hackathon Not Started';
-    if (!isParticipant) return 'Join to Submit';
+    if (!isParticipant) return 'Register to Submit';
     return 'Submit Now';
   };
 
-  // "Closed" = the hackathon itself can't take submissions (ended / not yet
-  // started / archived / cancelled). NOT being a participant is NOT closed —
-  // that's an actionable "join first" state, handled separately below.
-  const isClosed =
+  const isButtonDisabled =
     isEnded ||
     isNotStarted ||
+    !isParticipant ||
     ['ARCHIVED', 'CANCELLED'].includes(hackathon?.status || '');
 
   return (
@@ -290,98 +254,66 @@ export default function PoolAndAction() {
         </div>
 
         {hackathon &&
-          tiers.length > 0 &&
+          hackathon.prizeTiers.length > 0 &&
           (() => {
-            const ordinal = (i: number) =>
-              `${i + 1}${['st', 'nd', 'rd'][i] ?? 'th'}`;
-            const overallTiers = tiers.filter(
-              t => !t.kind || t.kind === 'OVERALL'
-            );
-            const trackTiers = tiers.filter(t => t.kind === 'TRACK');
-            // Group track placements under their track so each track shows its
-            // own placement ladder, instead of interleaving them as flat dots.
-            const order: string[] = [];
-            const byTrack = new Map<string, typeof trackTiers>();
-            for (const t of trackTiers) {
-              const key = t.trackId ?? 'untracked';
-              if (!byTrack.has(key)) {
-                byTrack.set(key, []);
-                order.push(key);
-              }
-              byTrack.get(key)!.push(t);
-            }
+            // Walk the tiers once, but keep a separate counter for
+            // OVERALL placements so the "1st/2nd/3rd" labels stay
+            // accurate even when track tiers are interleaved. Track
+            // tiers get the actual track name (looked up via trackId)
+            // and a "TRACK" prefix so the sidebar matches what the
+            // organizer set up in Rewards.
+            let overallIdx = 0;
             return (
-              <div className='mb-5 space-y-4'>
-                {overallTiers.length > 0 && (
-                  <div className='relative ml-1'>
-                    <div className='bg-primary/30 absolute top-2 bottom-2 left-[5px] w-[2px]' />
-                    <div className='flex flex-col gap-3'>
-                      {overallTiers.map((tier, i) => (
-                        <div
-                          key={tier.id ?? `o-${i}`}
-                          className='flex items-start gap-4'
-                        >
-                          <span className='bg-primary relative z-10 mt-[5px] h-3 w-3 shrink-0 rounded-full ring-4 ring-[#11230F]' />
-                          <div>
-                            <p className='text-xs text-gray-500'>
-                              {tier.name ?? `${ordinal(i)} Place`}
-                            </p>
-                            <p className='text-base font-bold text-white'>
-                              {Number(tier.prizeAmount ?? 0).toLocaleString()}{' '}
-                              <span className='font-medium text-gray-400'>
-                                {tier.currency ?? currency}
+              <div className='relative mb-5 ml-1'>
+                <div className='bg-primary/30 absolute top-2 bottom-2 left-[5px] w-[2px]' />
+                <div className='flex flex-col gap-3'>
+                  {hackathon.prizeTiers.map((tier, i) => {
+                    const isTrack = tier.kind === 'TRACK';
+                    const track =
+                      isTrack && tier.trackId
+                        ? trackById.get(tier.trackId)
+                        : undefined;
+                    let label: string;
+                    if (isTrack) {
+                      label = track?.name ?? tier.name ?? 'Track';
+                    } else {
+                      const place = overallIdx;
+                      overallIdx += 1;
+                      label =
+                        tier.name ??
+                        `${place + 1}${['st', 'nd', 'rd'][place] ?? 'th'} Place`;
+                    }
+                    return (
+                      <div
+                        key={tier.id ?? i}
+                        className='flex items-start gap-4'
+                      >
+                        <span
+                          className={cn(
+                            'relative z-10 mt-[5px] h-3 w-3 shrink-0 rounded-full ring-4 ring-[#11230F]',
+                            isTrack ? 'bg-primary/60' : 'bg-primary'
+                          )}
+                        />
+                        <div>
+                          <p className='text-xs text-gray-500'>
+                            {isTrack && (
+                              <span className='text-primary/80 mr-1 text-[9px] font-bold tracking-widest uppercase'>
+                                Track ·
                               </span>
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {order.length > 0 && (
-                  <div className='space-y-2.5'>
-                    <p className='text-primary/80 flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase'>
-                      Track Prizes
-                    </p>
-                    {order.map(trackId => {
-                      const placements = byTrack.get(trackId)!;
-                      const track =
-                        trackId !== 'untracked'
-                          ? trackById.get(trackId)
-                          : undefined;
-                      const single = placements.length === 1;
-                      return (
-                        <div
-                          key={trackId}
-                          className='rounded-lg border border-white/5 bg-white/[0.02] p-3'
-                        >
-                          <p className='mb-2 truncate text-xs font-semibold text-gray-200'>
-                            {track?.name ?? placements[0]?.name ?? 'Track'}
+                            )}
+                            {label}
                           </p>
-                          <div className='space-y-1.5'>
-                            {placements.map((pl, pi) => (
-                              <div
-                                key={pl.id ?? `${trackId}-${pi}`}
-                                className='flex items-center justify-between gap-2'
-                              >
-                                <span className='text-[11px] text-gray-500'>
-                                  {single ? 'Winner' : `${ordinal(pi)} place`}
-                                </span>
-                                <span className='text-sm font-bold text-white'>
-                                  {Number(pl.prizeAmount ?? 0).toLocaleString()}{' '}
-                                  <span className='text-[11px] font-medium text-gray-400'>
-                                    {pl.currency ?? currency}
-                                  </span>
-                                </span>
-                              </div>
-                            ))}
-                          </div>
+                          <p className='text-base font-bold text-white'>
+                            {Number(tier.prizeAmount ?? 0).toLocaleString()}{' '}
+                            <span className='font-medium text-gray-400'>
+                              {tier.currency ?? currency}
+                            </span>
+                          </p>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })()}
@@ -430,29 +362,27 @@ export default function PoolAndAction() {
             users still get the button so the auth modal can intercept
             in place. */}
         {!hasSubmitted &&
-          (isClosed ? (
-            // Non-actionable status (ended / not started / archived / cancelled).
+          (isButtonDisabled || !isAuthenticated ? (
             <BoundlessButton
-              className='h-12 w-full cursor-not-allowed rounded-xl bg-gray-800 text-sm font-bold text-gray-500'
-              disabled
-              fullWidth
-            >
-              {getButtonText()}
-            </BoundlessButton>
-          ) : !isParticipant ? (
-            // Open, but the viewer hasn't joined — JOIN first (auth-gated).
-            <BoundlessButton
-              className='group bg-primary hover:bg-primary/90 h-12 w-full rounded-xl text-sm font-bold text-black transition-all'
-              onClick={handleJoinToSubmit}
-              loading={joinMutation.isPending}
+              className={cn(
+                'group h-12 w-full rounded-xl text-sm font-bold transition-all',
+                isButtonDisabled
+                  ? 'cursor-not-allowed bg-gray-800 text-gray-500'
+                  : 'bg-primary hover:bg-primary/90 text-black'
+              )}
+              onClick={handleSubmit}
+              disabled={isButtonDisabled}
               iconPosition='right'
               fullWidth
-              icon={<UserPlus className='h-4 w-4' />}
+              icon={
+                !isButtonDisabled && (
+                  <ChevronRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
+                )
+              }
             >
               {getButtonText()}
             </BoundlessButton>
           ) : (
-            // Participant + open — go to the submit form.
             <Link
               href={`/hackathons/${slug}/submit`}
               target='_blank'
@@ -465,14 +395,6 @@ export default function PoolAndAction() {
             </Link>
           ))}
       </div>
-
-      <RegistrationQuestionsDialog
-        open={regDialogOpen}
-        onOpenChange={setRegDialogOpen}
-        questions={registrationQuestions}
-        submitting={joinMutation.isPending}
-        onSubmit={handleRegisterSubmit}
-      />
     </div>
   );
 }

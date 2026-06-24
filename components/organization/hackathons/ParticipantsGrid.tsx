@@ -55,12 +55,8 @@ export const ParticipantsGrid: React.FC<ParticipantsGridProps> = ({
 
   if (data.length === 0) {
     return (
-      <div className='flex h-40 flex-col items-center justify-center gap-1 rounded-lg border border-gray-900 bg-gray-950/20 px-6 text-center text-gray-500'>
-        <p className='font-medium'>No participants yet</p>
-        <p className='text-sm'>
-          People show up here once they register. After a hackathon is published
-          and shared, registrations and submissions appear in this list.
-        </p>
+      <div className='flex h-40 items-center justify-center rounded-lg border border-gray-900 bg-gray-950/20 text-gray-500'>
+        No participants found.
       </div>
     );
   }

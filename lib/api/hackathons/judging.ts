@@ -91,11 +91,6 @@ export interface JudgingResult {
    *  or submissions that didn't pick any track. Used to group results
    *  per-track in the organizer dashboard. */
   trackIds?: string[];
-  /** Advisory recommendation-threshold flags. `recommendedOverall` = top X%
-   *  overall; `recommendedTrackIds` = tracks where this submission is top X%.
-   *  Never selects winners. */
-  recommendedOverall?: boolean;
-  recommendedTrackIds?: string[];
 }
 
 export interface AggregatedJudgingResults {

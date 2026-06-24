@@ -8,7 +8,6 @@ import React, {
   useCallback,
   useRef,
 } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Logger } from '@/lib/logger';
 import { reportError } from '@/lib/error-reporting';
@@ -22,7 +21,7 @@ import {
   OrganizationFormData,
 } from './organization-types';
 import { Organization } from '../api/types';
-import { getMe, ME_QUERY_KEY } from '../api/auth';
+import { getMe } from '../api/auth';
 import {
   getOrganization,
   updateOrganizationProfile,
@@ -286,14 +285,9 @@ export function OrganizationProvider({
   initialOrgId,
 }: OrganizationProviderProps) {
   const [state, dispatch] = useReducer(organizationReducer, initialState);
-  const queryClient = useQueryClient();
   const isInitializedRef = useRef(false);
   const isFetchingOrganizationsRef = useRef(false);
   const isFetchingActiveOrgRef = useRef(false);
-  // The org id already loaded into (or loading for) activeOrg. Lets repeat
-  // setActiveOrg(sameId) calls — the provider init AND the page both call it —
-  // skip a duplicate getOrganization. Reset on failure so a retry can refetch.
-  const lastActiveOrgFetchRef = useRef<string | null>(null);
   const fetchOrganizationsTimeoutRef = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
@@ -367,336 +361,307 @@ export function OrganizationProvider({
   //   };
   // }, [autoRefresh, refreshInterval, state.activeOrgId]);
 
-  const fetchOrganizations = useCallback(
-    async (force = false) => {
-      logger.info({ eventType: 'org.fetchOrganizations.called' });
+  const fetchOrganizations = useCallback(async () => {
+    logger.info({ eventType: 'org.fetchOrganizations.called' });
 
-      if (isFetchingOrganizationsRef.current) {
+    if (isFetchingOrganizationsRef.current) {
+      logger.warn({
+        eventType: 'org.fetchOrganizations.skipped',
+        reason: 'in_progress',
+      });
+      return;
+    }
+
+    isFetchingOrganizationsRef.current = true;
+    logger.info({ eventType: 'org.fetchOrganizations.start' });
+
+    try {
+      dispatch({
+        type: 'SET_LOADING',
+        payload: { isLoading: false, isLoadingOrganizations: true },
+      });
+      dispatch({
+        type: 'SET_ERROR',
+        payload: { error: null, organizationsError: null },
+      });
+
+      const response = await getMe();
+      logger.info({ eventType: 'org.fetchOrganizations.getMe_success' });
+
+      if (!response || typeof response !== 'object') {
+        throw new Error('Invalid response from getMe API');
+      }
+
+      const organizations = response.user.members || [];
+      logger.info({
+        eventType: 'org.fetchOrganizations.organizations_loaded',
+        count: Array.isArray(organizations) ? organizations.length : 0,
+      });
+
+      if (!Array.isArray(organizations)) {
         logger.warn({
-          eventType: 'org.fetchOrganizations.skipped',
-          reason: 'in_progress',
+          eventType: 'org.fetchOrganizations.invalid_organizations_type',
         });
+        dispatch({ type: 'SET_ORGANIZATIONS', payload: [] });
         return;
       }
 
-      isFetchingOrganizationsRef.current = true;
-      logger.info({ eventType: 'org.fetchOrganizations.start' });
-
-      try {
-        dispatch({
-          type: 'SET_LOADING',
-          payload: { isLoading: false, isLoadingOrganizations: true },
-        });
-        dispatch({
-          type: 'SET_ERROR',
-          payload: { error: null, organizationsError: null },
-        });
-
-        // Route the read through React Query so concurrent callers dedupe and the
-        // result is cached (60s) / inspectable in devtools. `force` (post-mutation
-        // refresh) bypasses the cache.
-        const response = await queryClient.fetchQuery({
-          queryKey: ME_QUERY_KEY,
-          queryFn: getMe,
-          staleTime: force ? 0 : 60_000,
-        });
-        logger.info({ eventType: 'org.fetchOrganizations.getMe_success' });
-
-        if (!response || typeof response !== 'object') {
-          throw new Error('Invalid response from getMe API');
-        }
-
-        const organizations = response.user.members || [];
-        logger.info({
-          eventType: 'org.fetchOrganizations.organizations_loaded',
-          count: Array.isArray(organizations) ? organizations.length : 0,
-        });
-
-        if (!Array.isArray(organizations)) {
-          logger.warn({
-            eventType: 'org.fetchOrganizations.invalid_organizations_type',
-          });
-          dispatch({ type: 'SET_ORGANIZATIONS', payload: [] });
-          return;
-        }
-
-        type OrgLike = {
+      type OrgLike = {
+        id: string;
+        organizationId: string;
+        userId: string;
+        role: 'owner' | 'member';
+        createdAt: string;
+        organization: {
           id: string;
-          organizationId: string;
-          userId: string;
-          role: 'owner' | 'member';
+          name: string;
+          slug: string;
+          logo?: string | null;
           createdAt: string;
-          organization: {
-            id: string;
-            name: string;
-            slug: string;
-            logo?: string | null;
-            createdAt: string;
-            _count: {
-              hackathons: number;
-              grants: number;
-              members: number;
-            };
-            metadata?: {
-              tagline?: string;
-              about?: string;
-              links?: Record<string, unknown>;
-            };
+          _count: {
+            hackathons: number;
+            grants: number;
+            members: number;
           };
-        } & Record<string, unknown>;
-
-        const orgs = organizations as unknown as OrgLike[];
-
-        const organizationSummaries: OrganizationSummary[] = orgs
-          .filter(
-            org => org && typeof org === 'object' && org.id && org.organization
-          )
-          .map(org => {
-            const orgData = org.organization;
-            return {
-              organizationId: orgData.id,
-              name: orgData.name || 'Unnamed Organization',
-              logo: orgData.logo || '/images/default-org-logo.png',
-              tagline: orgData.metadata?.tagline || '',
-              isProfileComplete: Boolean(
-                orgData.metadata?.about &&
-                orgData.metadata?.tagline &&
-                orgData.logo
-              ),
-              role:
-                org.role === 'owner' || org.role === 'member'
-                  ? org.role
-                  : 'member',
-              _count: orgData._count.hackathons,
-              memberCount: orgData._count.members, // Will be calculated separately if needed
-              hackathonCount: orgData._count.hackathons, // Will be calculated separately if needed
-              grantCount: orgData._count.grants, // Will be calculated separately if needed
-              createdAt: orgData.createdAt,
-            };
-          });
-
-        logger.info({
-          eventType: 'org.fetchOrganizations.transformed',
-          count: organizationSummaries.length,
-          sampleOrg: organizationSummaries[0]
-            ? {
-                organizationId: organizationSummaries[0].organizationId,
-                name: organizationSummaries[0].name,
-                hackathonCount: organizationSummaries[0].hackathonCount,
-                grantCount: organizationSummaries[0].grantCount,
-                memberCount: organizationSummaries[0].memberCount,
-              }
-            : null,
-        });
-        dispatch({ type: 'SET_ORGANIZATIONS', payload: organizationSummaries });
-        dispatch({ type: 'SET_LAST_UPDATED', payload: Date.now() });
-
-        localStorage.setItem(
-          STORAGE_KEYS.ORGANIZATIONS_CACHE,
-          JSON.stringify(organizationSummaries)
-        );
-        localStorage.setItem(STORAGE_KEYS.LAST_UPDATED, Date.now().toString());
-      } catch (error) {
-        logger.error({ eventType: 'org.fetchOrganizations.error', error });
-
-        let errorMessage: string | null = 'Failed to fetch organizations';
-
-        if (error instanceof Error) {
-          errorMessage = error.message;
-        } else if (typeof error === 'object' && error !== null) {
-          // Check for ApiError structure (after interceptor transformation)
-          const apiErrorStatus = (error as { status?: number }).status;
-          if (apiErrorStatus === 429) {
-            errorMessage =
-              'Too many requests. Please wait a moment and try again.';
-            // Don't show error if we have cached data - use it instead
-            const cachedOrgs = localStorage.getItem(
-              STORAGE_KEYS.ORGANIZATIONS_CACHE
-            );
-            if (cachedOrgs) {
-              try {
-                const parsed = JSON.parse(cachedOrgs);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  dispatch({
-                    type: 'SET_ORGANIZATIONS',
-                    payload: parsed,
-                  });
-                  errorMessage = null; // Clear error since we have cached data
-                  logger.info({
-                    eventType: 'org.fetchOrganizations.rateLimited_using_cache',
-                    cachedCount: parsed.length,
-                  });
-                }
-              } catch {
-                // Cache parse failed, keep error message
-              }
-            }
-          } else if (
-            'response' in (error as Record<string, unknown>) &&
-            (error as Record<string, unknown>).response
-          ) {
-            // Check axios error structure (before interceptor)
-            const apiError = (
-              error as {
-                response?: {
-                  status?: number;
-                  statusText?: string;
-                  data?: { message?: string };
-                };
-              }
-            ).response;
-            if (apiError?.data?.message) {
-              errorMessage = apiError.data.message;
-            } else if (apiError?.status === 401) {
-              errorMessage = 'Authentication required. Please log in again.';
-            } else if (apiError?.status === 403) {
-              errorMessage =
-                'Access denied. You do not have permission to view organizations.';
-            } else if ((apiError?.status ?? 0) >= 500) {
-              errorMessage = 'Server error. Please try again later.';
-            } else {
-              errorMessage = `API Error: ${apiError?.status} ${apiError?.statusText || 'Unknown error'}`;
-            }
-          } else if ('message' in (error as Record<string, unknown>)) {
-            errorMessage =
-              (error as { message?: string }).message || errorMessage;
-          }
-        }
-
-        if (errorMessage) {
-          dispatch({
-            type: 'SET_ERROR',
-            payload: { error: null, organizationsError: errorMessage },
-          });
-        }
-
-        if (process.env.NODE_ENV === 'development') {
-          logger.warn({
-            eventType: 'org.fetchOrganizations.dev_help',
-            notes: [
-              'endpoint missing',
-              'unauthenticated',
-              'response changed',
-              'network issues',
-            ],
-          });
-        }
-      } finally {
-        isFetchingOrganizationsRef.current = false;
-        dispatch({
-          type: 'SET_LOADING',
-          payload: { isLoading: false, isLoadingOrganizations: false },
-        });
-      }
-    },
-    [queryClient]
-  );
-
-  const fetchActiveOrganization = useCallback(
-    async (orgId: string, force = false) => {
-      // Skip the network call when this exact org is already loaded (or loading).
-      // The provider init AND the org page both call setActiveOrg(orgId); without
-      // this guard they each fire getOrganization for the same org.
-      if (!force && lastActiveOrgFetchRef.current === orgId) {
-        return;
-      }
-      if (isFetchingActiveOrgRef.current) {
-        logger.warn({
-          eventType: 'org.fetchActiveOrganization.skipped',
-          reason: 'in_progress',
-        });
-        return;
-      }
-
-      isFetchingActiveOrgRef.current = true;
-      lastActiveOrgFetchRef.current = orgId;
-
-      try {
-        dispatch({
-          type: 'SET_LOADING',
-          payload: { isLoading: false, isLoadingActiveOrg: true },
-        });
-        dispatch({
-          type: 'SET_ERROR',
-          payload: { error: null, activeOrgError: null },
-        });
-
-        const response = await queryClient.fetchQuery({
-          queryKey: ['organization', orgId],
-          queryFn: () => getOrganization(orgId),
-          staleTime: force ? 0 : 60_000,
-        });
-        const organization = response;
-
-        dispatch({
-          type: 'SET_ACTIVE_ORG',
-          payload: { org: organization, orgId },
-        });
-        dispatch({ type: 'SET_LAST_UPDATED', payload: Date.now() });
-      } catch (error) {
-        // Allow a retry of this org after a failure.
-        lastActiveOrgFetchRef.current = null;
-        let errorMessage: string | null =
-          error instanceof Error
-            ? error.message
-            : 'Failed to fetch organization';
-
-        const apiError = error as {
-          status?: number;
-          message?: string;
-          code?: string;
+          metadata?: {
+            tagline?: string;
+            about?: string;
+            links?: Record<string, unknown>;
+          };
         };
-        if (apiError?.status === 429) {
+      } & Record<string, unknown>;
+
+      const orgs = organizations as unknown as OrgLike[];
+
+      const organizationSummaries: OrganizationSummary[] = orgs
+        .filter(
+          org => org && typeof org === 'object' && org.id && org.organization
+        )
+        .map(org => {
+          const orgData = org.organization;
+          return {
+            organizationId: orgData.id,
+            name: orgData.name || 'Unnamed Organization',
+            logo: orgData.logo || '/images/default-org-logo.png',
+            tagline: orgData.metadata?.tagline || '',
+            isProfileComplete: Boolean(
+              orgData.metadata?.about &&
+              orgData.metadata?.tagline &&
+              orgData.logo
+            ),
+            role:
+              org.role === 'owner' || org.role === 'member'
+                ? org.role
+                : 'member',
+            _count: orgData._count.hackathons,
+            memberCount: orgData._count.members, // Will be calculated separately if needed
+            hackathonCount: orgData._count.hackathons, // Will be calculated separately if needed
+            grantCount: orgData._count.grants, // Will be calculated separately if needed
+            createdAt: orgData.createdAt,
+          };
+        });
+
+      logger.info({
+        eventType: 'org.fetchOrganizations.transformed',
+        count: organizationSummaries.length,
+        sampleOrg: organizationSummaries[0]
+          ? {
+              organizationId: organizationSummaries[0].organizationId,
+              name: organizationSummaries[0].name,
+              hackathonCount: organizationSummaries[0].hackathonCount,
+              grantCount: organizationSummaries[0].grantCount,
+              memberCount: organizationSummaries[0].memberCount,
+            }
+          : null,
+      });
+      dispatch({ type: 'SET_ORGANIZATIONS', payload: organizationSummaries });
+      dispatch({ type: 'SET_LAST_UPDATED', payload: Date.now() });
+
+      localStorage.setItem(
+        STORAGE_KEYS.ORGANIZATIONS_CACHE,
+        JSON.stringify(organizationSummaries)
+      );
+      localStorage.setItem(STORAGE_KEYS.LAST_UPDATED, Date.now().toString());
+    } catch (error) {
+      logger.error({ eventType: 'org.fetchOrganizations.error', error });
+
+      let errorMessage: string | null = 'Failed to fetch organizations';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Check for ApiError structure (after interceptor transformation)
+        const apiErrorStatus = (error as { status?: number }).status;
+        if (apiErrorStatus === 429) {
           errorMessage =
             'Too many requests. Please wait a moment and try again.';
-
+          // Don't show error if we have cached data - use it instead
           const cachedOrgs = localStorage.getItem(
             STORAGE_KEYS.ORGANIZATIONS_CACHE
           );
           if (cachedOrgs) {
             try {
               const parsed = JSON.parse(cachedOrgs);
-              if (Array.isArray(parsed)) {
-                const cachedOrg = parsed.find(
-                  (org: { organizationId: string }) =>
-                    org.organizationId === orgId
-                );
-                if (cachedOrg) {
-                  dispatch({
-                    type: 'SET_ACTIVE_ORG',
-                    payload: { org: cachedOrg, orgId },
-                  });
-                  errorMessage = null;
-                  logger.info({
-                    eventType:
-                      'org.fetchActiveOrganization.rateLimited_using_cache',
-                    orgId,
-                  });
-                }
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                dispatch({
+                  type: 'SET_ORGANIZATIONS',
+                  payload: parsed,
+                });
+                errorMessage = null; // Clear error since we have cached data
+                logger.info({
+                  eventType: 'org.fetchOrganizations.rateLimited_using_cache',
+                  cachedCount: parsed.length,
+                });
               }
             } catch {
               // Cache parse failed, keep error message
             }
           }
+        } else if (
+          'response' in (error as Record<string, unknown>) &&
+          (error as Record<string, unknown>).response
+        ) {
+          // Check axios error structure (before interceptor)
+          const apiError = (
+            error as {
+              response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string };
+              };
+            }
+          ).response;
+          if (apiError?.data?.message) {
+            errorMessage = apiError.data.message;
+          } else if (apiError?.status === 401) {
+            errorMessage = 'Authentication required. Please log in again.';
+          } else if (apiError?.status === 403) {
+            errorMessage =
+              'Access denied. You do not have permission to view organizations.';
+          } else if ((apiError?.status ?? 0) >= 500) {
+            errorMessage = 'Server error. Please try again later.';
+          } else {
+            errorMessage = `API Error: ${apiError?.status} ${apiError?.statusText || 'Unknown error'}`;
+          }
+        } else if ('message' in (error as Record<string, unknown>)) {
+          errorMessage =
+            (error as { message?: string }).message || errorMessage;
         }
+      }
 
-        if (errorMessage) {
-          dispatch({
-            type: 'SET_ERROR',
-            payload: { error: null, activeOrgError: errorMessage },
-          });
-        }
-        logger.error({ eventType: 'org.fetchActiveOrganization.error', error });
-      } finally {
-        isFetchingActiveOrgRef.current = false;
+      if (errorMessage) {
         dispatch({
-          type: 'SET_LOADING',
-          payload: { isLoading: false, isLoadingActiveOrg: false },
+          type: 'SET_ERROR',
+          payload: { error: null, organizationsError: errorMessage },
         });
       }
-    },
-    [queryClient]
-  );
+
+      if (process.env.NODE_ENV === 'development') {
+        logger.warn({
+          eventType: 'org.fetchOrganizations.dev_help',
+          notes: [
+            'endpoint missing',
+            'unauthenticated',
+            'response changed',
+            'network issues',
+          ],
+        });
+      }
+    } finally {
+      isFetchingOrganizationsRef.current = false;
+      dispatch({
+        type: 'SET_LOADING',
+        payload: { isLoading: false, isLoadingOrganizations: false },
+      });
+    }
+  }, []);
+
+  const fetchActiveOrganization = useCallback(async (orgId: string) => {
+    if (isFetchingActiveOrgRef.current) {
+      logger.warn({
+        eventType: 'org.fetchActiveOrganization.skipped',
+        reason: 'in_progress',
+      });
+      return;
+    }
+
+    isFetchingActiveOrgRef.current = true;
+
+    try {
+      dispatch({
+        type: 'SET_LOADING',
+        payload: { isLoading: false, isLoadingActiveOrg: true },
+      });
+      dispatch({
+        type: 'SET_ERROR',
+        payload: { error: null, activeOrgError: null },
+      });
+
+      const response = await getOrganization(orgId);
+      const organization = response;
+
+      dispatch({
+        type: 'SET_ACTIVE_ORG',
+        payload: { org: organization, orgId },
+      });
+      dispatch({ type: 'SET_LAST_UPDATED', payload: Date.now() });
+    } catch (error) {
+      let errorMessage: string | null =
+        error instanceof Error ? error.message : 'Failed to fetch organization';
+
+      const apiError = error as {
+        status?: number;
+        message?: string;
+        code?: string;
+      };
+      if (apiError?.status === 429) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+
+        const cachedOrgs = localStorage.getItem(
+          STORAGE_KEYS.ORGANIZATIONS_CACHE
+        );
+        if (cachedOrgs) {
+          try {
+            const parsed = JSON.parse(cachedOrgs);
+            if (Array.isArray(parsed)) {
+              const cachedOrg = parsed.find(
+                (org: { organizationId: string }) =>
+                  org.organizationId === orgId
+              );
+              if (cachedOrg) {
+                dispatch({
+                  type: 'SET_ACTIVE_ORG',
+                  payload: { org: cachedOrg, orgId },
+                });
+                errorMessage = null;
+                logger.info({
+                  eventType:
+                    'org.fetchActiveOrganization.rateLimited_using_cache',
+                  orgId,
+                });
+              }
+            }
+          } catch {
+            // Cache parse failed, keep error message
+          }
+        }
+      }
+
+      if (errorMessage) {
+        dispatch({
+          type: 'SET_ERROR',
+          payload: { error: null, activeOrgError: errorMessage },
+        });
+      }
+      logger.error({ eventType: 'org.fetchActiveOrganization.error', error });
+    } finally {
+      isFetchingActiveOrgRef.current = false;
+      dispatch({
+        type: 'SET_LOADING',
+        payload: { isLoading: false, isLoadingActiveOrg: false },
+      });
+    }
+  }, []);
 
   const setActiveOrg = useCallback(
     (orgId: string) => {
@@ -724,7 +689,7 @@ export function OrganizationProvider({
 
   const refreshOrganization = useCallback(async () => {
     if (state.activeOrgId) {
-      await fetchActiveOrganization(state.activeOrgId, true);
+      await fetchActiveOrganization(state.activeOrgId);
       dispatch({ type: 'INCREMENT_REFRESH_COUNT' });
     }
   }, [state.activeOrgId, fetchActiveOrganization]);
@@ -736,8 +701,7 @@ export function OrganizationProvider({
     }
 
     fetchOrganizationsTimeoutRef.current = setTimeout(() => {
-      // Debounced refresh follows a mutation -> force fresh, bypass the cache.
-      fetchOrganizations(true);
+      fetchOrganizations();
     }, 300);
   }, [fetchOrganizations]);
 
@@ -750,9 +714,9 @@ export function OrganizationProvider({
     dispatch({ type: 'SET_LOADING', payload: { isLoading: true } });
     try {
       await Promise.all([
-        fetchOrganizations(true),
+        fetchOrganizations(),
         state.activeOrgId
-          ? fetchActiveOrganization(state.activeOrgId, true)
+          ? fetchActiveOrganization(state.activeOrgId)
           : Promise.resolve(),
       ]);
       dispatch({ type: 'INCREMENT_REFRESH_COUNT' });
@@ -1253,34 +1217,31 @@ export function OrganizationProvider({
   );
 
   useEffect(() => {
-    if (isInitializedRef.current) return;
-    isInitializedRef.current = true;
-    logger.info({ eventType: 'org.initialize.start' });
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true;
+      logger.info({ eventType: 'org.initialize.start' });
 
-    const savedOrgId =
-      initialOrgId || localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID);
-
-    // getMe is shared (ME_QUERY_KEY) with the auth-profile query and cached 60s
-    // in React Query — since the auth hook fetches it on every authed page, this
-    // resolves from cache (or dedupes the in-flight request) rather than firing a
-    // second /users/me. loadCachedData still paints the list instantly from
-    // localStorage while this settles.
-    fetchOrganizations()
-      .then(() => {
-        if (savedOrgId) {
-          logger.info({
-            eventType: 'org.initialize.set_active_after_fetch',
-            orgId: savedOrgId,
-          });
-          setActiveOrgRef.current?.(savedOrgId);
-        }
-      })
-      .catch(error => {
-        logger.error({ eventType: 'org.initialize.fetch_error', error });
-        if (savedOrgId) {
-          setActiveOrgRef.current?.(savedOrgId);
-        }
-      });
+      fetchOrganizations()
+        .then(() => {
+          const savedOrgId =
+            initialOrgId || localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID);
+          if (savedOrgId) {
+            logger.info({
+              eventType: 'org.initialize.set_active_after_fetch',
+              orgId: savedOrgId,
+            });
+            setActiveOrgRef.current?.(savedOrgId);
+          }
+        })
+        .catch(error => {
+          logger.error({ eventType: 'org.initialize.fetch_error', error });
+          const savedOrgId =
+            localStorage.getItem(STORAGE_KEYS.ACTIVE_ORG_ID) || initialOrgId;
+          if (savedOrgId) {
+            setActiveOrgRef.current?.(savedOrgId);
+          }
+        });
+    }
   }, [fetchOrganizations, initialOrgId]);
 
   const assignRole = useCallback(
@@ -1367,7 +1328,7 @@ export function OrganizationProvider({
           dispatch({ type: 'UPDATE_ORGANIZATION', payload: updatedOrg });
 
           // Refresh organizations list to update current user's role in the UI
-          await fetchOrganizations(true);
+          await fetchOrganizations();
         } else {
           logger.error({
             eventType: 'org.transfer_ownership.error',

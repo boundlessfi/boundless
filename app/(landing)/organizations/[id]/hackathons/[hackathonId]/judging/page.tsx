@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import MetricsCard from '@/components/organization/cards/MetricsCard';
 import JudgingParticipant from '@/components/organization/cards/JudgingParticipant';
 import EmptyState from '@/components/EmptyState';
-import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
   getJudgingSubmissionsForJudge,
@@ -54,10 +53,10 @@ import { reportError, reportMessage } from '@/lib/error-reporting';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JudgingCriteriaList } from '@/components/organization/hackathons/judging/JudgingCriteriaList';
 import JudgingResultsTable from '@/components/organization/hackathons/judging/JudgingResultsTable';
+import TrackResultsSection from '@/components/organization/hackathons/judging/TrackResultsSection';
+import AllocationPreviewCard from '@/components/organization/hackathons/judging/AllocationPreviewCard';
 import CoverageMatrix from '@/components/organization/hackathons/judging/CoverageMatrix';
 import { OrganizerJudgesPanel } from '@/components/organization/hackathons/judging/OrganizerJudgesPanel';
-import RecommendationThresholdsCard from '@/components/organization/hackathons/judging/RecommendationThresholdsCard';
-import AiScorecardsPanel from '@/components/organization/hackathons/judging/AiScorecardsPanel';
 import {
   useHackathon,
   useHackathonTracks,
@@ -827,25 +826,11 @@ export default function JudgingPage() {
                 </div>
               ) : (
                 <EmptyState
-                  title={
-                    submissionSearchTerm ? 'No matches' : 'Nothing to judge yet'
-                  }
+                  title='No Submissions Found'
                   description={
                     submissionSearchTerm
-                      ? `No submissions matching "${submissionSearchTerm}".`
-                      : 'Only shortlisted submissions show up here. Review the entries on the Submissions page and shortlist the ones you want your judges to score.'
-                  }
-                  action={
-                    submissionSearchTerm ? undefined : (
-                      <Link
-                        href={`/organizations/${organizationId}/hackathons/${hackathonId}/submissions`}
-                      >
-                        <Button className='gap-2'>
-                          Go to Submissions
-                          <ArrowUpRight className='h-4 w-4' />
-                        </Button>
-                      </Link>
-                    )
+                      ? `No submissions matching "${submissionSearchTerm}"`
+                      : 'There are currently no submissions to judge.'
                   }
                 />
               )}
@@ -865,25 +850,6 @@ export default function JudgingPage() {
                 onRemoveJudge={userId => setJudgeToRemove(userId)}
                 onJudgesChanged={fetchJudges}
               />
-
-              {canManageJudges && (
-                <div className='mt-6'>
-                  <RecommendationThresholdsCard
-                    organizationId={organizationId}
-                    hackathonId={hackathonId}
-                  />
-                </div>
-              )}
-
-              {canManageJudges && (
-                <div className='mt-6'>
-                  <AiScorecardsPanel
-                    organizationId={organizationId}
-                    hackathonId={hackathonId}
-                    criteria={criteria}
-                  />
-                </div>
-              )}
               {/* Legacy org-members picker — superseded by email invitations.
                   Kept hidden behind a flag so we can re-surface it if a
                   power-user organizer asks for the direct-add path. */}
@@ -1058,40 +1024,91 @@ export default function JudgingPage() {
 
             <TabsContent value='results' className='mt-6'>
               <div className='flex flex-col gap-6'>
-                {/* Winners are picked, confirmed and paid in the Winners
-                    section. This tab is now read-only scoring standings. */}
-                <div className='flex flex-col gap-3 rounded-lg border border-gray-800 bg-gray-900/40 p-4 sm:flex-row sm:items-center sm:justify-between'>
-                  <div className='flex items-center gap-3'>
-                    <div className='bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full'>
-                      <Trophy className='text-primary h-5 w-5' />
-                    </div>
+                {resultsPublished && (
+                  <div className='flex items-center gap-4 rounded-lg border border-green-500/20 bg-green-500/10 p-4'>
+                    <CheckCircle2 className='h-10 w-10 shrink-0 text-green-500' />
                     <div>
-                      <h3 className='text-sm font-semibold text-white'>
-                        {resultsPublished
-                          ? 'Winners are published'
-                          : 'Ready to pick winners?'}
+                      <h3 className='text-sm font-semibold text-green-400'>
+                        Results published
                       </h3>
                       <p className='text-xs text-gray-400'>
-                        {resultsPublished
-                          ? 'Review and pay winners in the Winners section.'
-                          : 'When judging is done, pick a winner for each prize in the Winners section.'}
+                        Winner rankings are live. This hackathon&apos;s results
+                        have been finalized.
                       </p>
                     </div>
                   </div>
-                  <Link
-                    href={`/organizations/${organizationId}/hackathons/${hackathonId}/winners`}
-                  >
-                    <Button className='gap-2'>
-                      Go to Winners
-                      <ArrowUpRight className='h-4 w-4' />
-                    </Button>
-                  </Link>
-                </div>
+                )}
 
-                {/* Read-only standings: the scores judges have submitted. */}
+                {!resultsPublished &&
+                  canPublishResults &&
+                  judgingResults.length > 0 && (
+                    <div className='bg-primary/5 border-primary/10 flex items-center justify-between rounded-lg border p-4 shadow-sm'>
+                      <div className='flex items-center gap-4'>
+                        <div className='bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full'>
+                          <Trophy className='text-primary h-5 w-5' />
+                        </div>
+                        <div>
+                          <h3 className='text-primary text-sm font-semibold'>
+                            Finalize Competition
+                          </h3>
+                          <p className='text-xs text-gray-400'>
+                            Publish the current rankings to name the winners.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => setIsPublishDialogOpen(true)}
+                        disabled={isPublishing}
+                        className='bg-primary text-primary-foreground hover:bg-primary/90 px-8 font-bold shadow-lg'
+                      >
+                        {isPublishing ? 'Publishing...' : 'Publish Results'}
+                      </Button>
+                    </div>
+                  )}
+
+                {!resultsPublished && (
+                  <AllocationPreviewCard
+                    organizationId={organizationId}
+                    hackathonId={hackathonId}
+                    refreshKey={resultsPage}
+                  />
+                )}
+
+                {winners.length > 0 && (
+                  <div className='space-y-4'>
+                    <h2 className='flex items-center gap-2 text-lg font-bold text-yellow-500'>
+                      <Trophy className='h-5 w-5' />
+                      Final Winners
+                    </h2>
+                    <JudgingResultsTable
+                      results={winners}
+                      organizationId={organizationId}
+                      hackathonId={hackathonId}
+                      totalJudges={currentJudges.length}
+                      criteria={criteria}
+                      canManage={canManageJudges}
+                      winnerOverrides={judgingSummary?.winnerOverrides}
+                    />
+                  </div>
+                )}
+
+                {tracks.length > 0 && judgingResults.length > 0 && (
+                  <TrackResultsSection
+                    tracks={tracks}
+                    results={judgingResults}
+                    totalJudges={currentJudges.length}
+                    criteria={criteria}
+                    canManage={canManageJudges}
+                    winnerOverrides={judgingSummary?.winnerOverrides}
+                    prizeByTrackId={prizeByTrackId}
+                    organizationId={organizationId}
+                    hackathonId={hackathonId}
+                  />
+                )}
+
                 <div className='space-y-4'>
                   <h2 className='text-lg font-bold text-gray-200'>
-                    Current standings
+                    Current Standings
                   </h2>
                   {isFetchingResults && judgingResults.length === 0 ? (
                     <div className='flex items-center justify-center py-12'>
@@ -1105,7 +1122,8 @@ export default function JudgingPage() {
                         hackathonId={hackathonId}
                         totalJudges={currentJudges.length}
                         criteria={criteria}
-                        canManage={false}
+                        canManage={canManageJudges}
+                        winnerOverrides={judgingSummary?.winnerOverrides}
                       />
 
                       {/* Pagination Controls for Results */}
@@ -1142,8 +1160,8 @@ export default function JudgingPage() {
                     </>
                   ) : (
                     <EmptyState
-                      title='No scores yet'
-                      description='Standings appear here as judges submit their scores.'
+                      title='No Results Yet'
+                      description='No judging results available yet. Results appear once judges submit scores.'
                     />
                   )}
                 </div>

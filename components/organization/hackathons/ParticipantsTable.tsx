@@ -270,14 +270,9 @@ export function ParticipantsTable({
             <TableRow>
               <TableCell
                 colSpan={columns.length}
-                className='h-24 text-center text-gray-500'
+                className='h-24 text-center font-medium text-gray-500'
               >
-                <p className='font-medium'>No participants yet</p>
-                <p className='mt-1 text-sm'>
-                  People show up here once they register. After a hackathon is
-                  published and shared, registrations and submissions appear in
-                  this list.
-                </p>
+                No participants found.
               </TableCell>
             </TableRow>
           )}

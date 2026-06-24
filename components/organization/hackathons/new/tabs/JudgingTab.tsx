@@ -19,7 +19,6 @@ import {
   Criterion,
 } from './schemas/judgingSchema';
 import { cn } from '@/lib/utils';
-import RegenerateSectionButton from '../RegenerateSectionButton';
 import {
   Plus,
   X,
@@ -423,21 +422,6 @@ export default function JudgingTab({
     });
   };
 
-  // Apply an AI-regenerated criteria section (wizard shape) to the field array.
-  const applyRegeneratedCriteria = (data: Record<string, unknown>) => {
-    const criteria = (data as { criteria?: Array<Partial<Criterion>> })
-      .criteria;
-    if (!Array.isArray(criteria)) return;
-    replace(
-      criteria.map((c, i) => ({
-        id: c.id ?? `criterion-${Date.now()}-${i}`,
-        name: c.name ?? '',
-        weight: Number(c.weight ?? 0),
-        description: c.description ?? '',
-      }))
-    );
-  };
-
   const applyTemplate = (templateKey: keyof typeof JUDGING_TEMPLATES) => {
     const template = JUDGING_TEMPLATES[templateKey];
     const newCriteria = template.criteria.map((criterion, idx) => ({
@@ -482,15 +466,9 @@ export default function JudgingTab({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
         <div>
-          <div className='flex items-start justify-between gap-3'>
-            <h3 className='text-sm'>
-              Set Judging Criteria <span className='text-error-400'>*</span>
-            </h3>
-            <RegenerateSectionButton
-              section='criteria'
-              onApply={applyRegeneratedCriteria}
-            />
-          </div>
+          <h3 className='text-sm'>
+            Set Judging Criteria <span className='text-error-400'>*</span>
+          </h3>
           <p className='mt-1 mb-3 text-sm text-gray-500'>
             Define how submissions will be evaluated. Assign weight percentages
             to each criterion so that the total adds up to 100%.

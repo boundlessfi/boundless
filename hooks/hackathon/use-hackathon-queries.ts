@@ -432,8 +432,7 @@ export function useTeamInvitations(
 export function useJoinHackathon(slug: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (customAnswers?: Record<string, string | string[]>) =>
-      registerForHackathon(slug, undefined, customAnswers),
+    mutationFn: () => registerForHackathon(slug),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: hackathonKeys.detail(slug) });
       queryClient.invalidateQueries({

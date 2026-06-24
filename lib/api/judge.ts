@@ -357,21 +357,8 @@ export interface OrganizerInvitationSummary {
 export interface InviteJudgePayload {
   email: string;
   displayName?: string;
-  title?: string;
   message?: string;
   expiresInDays?: number;
-}
-
-export interface BulkInviteRowResult {
-  email: string;
-  status: 'invited' | 'failed';
-  reason?: string;
-}
-
-export interface BulkInviteResult {
-  results: BulkInviteRowResult[];
-  invited: number;
-  failed: number;
 }
 
 export const inviteJudge = async (
@@ -382,18 +369,6 @@ export const inviteJudge = async (
   const res = await api.post<ApiResponse<OrganizerInvitationSummary>>(
     `/organizations/${organizationId}/hackathons/${hackathonIdOrSlug}/judging/invitations`,
     payload
-  );
-  return res.data;
-};
-
-export const bulkInviteJudges = async (
-  organizationId: string,
-  hackathonIdOrSlug: string,
-  invites: InviteJudgePayload[]
-): Promise<ApiResponse<BulkInviteResult>> => {
-  const res = await api.post<ApiResponse<BulkInviteResult>>(
-    `/organizations/${organizationId}/hackathons/${hackathonIdOrSlug}/judging/invitations/bulk`,
-    { invites }
   );
   return res.data;
 };
@@ -428,175 +403,6 @@ export const resendJudgeInvitation = async (
 ): Promise<ApiResponse<OrganizerInvitationSummary>> => {
   const res = await api.post<ApiResponse<OrganizerInvitationSummary>>(
     `/organizations/${organizationId}/hackathons/${hackathonIdOrSlug}/judging/invitations/${invitationId}/resend`
-  );
-  return res.data;
-};
-
-// ---------------------------------------------------------------------------
-// Endpoints — recommendation thresholds (advisory shortlist hints)
-// ---------------------------------------------------------------------------
-
-export interface RecommendationThreshold {
-  id: string;
-  hackathonId: string;
-  /** null = overall threshold; otherwise the scoped track id. */
-  trackId: string | null;
-  topPercent: number;
-}
-
-export interface RecommendationComputeDiagnostics {
-  /** Submissions currently SHORTLISTED. */
-  shortlistedSubmissions: number;
-  /** Shortlisted submissions with at least one counted score (advisory AI_ASSIST excluded). */
-  scoredSubmissions: number;
-  overallThresholdConfigured: boolean;
-  trackThresholdsConfigured: number;
-  /** Human-readable reasons explaining the outcome; empty when nothing is outstanding. */
-  reasons: string[];
-}
-
-export interface RecommendationComputeResult {
-  overallRecommended: number;
-  tracks: { trackId: string; recommended: number }[];
-  diagnostics: RecommendationComputeDiagnostics;
-}
-
-const thresholdsBase = (organizationId: string, hackathonIdOrSlug: string) =>
-  `/organizations/${organizationId}/hackathons/${hackathonIdOrSlug}/judging/recommendation-thresholds`;
-
-export const listRecommendationThresholds = async (
-  organizationId: string,
-  hackathonIdOrSlug: string
-): Promise<ApiResponse<RecommendationThreshold[]>> => {
-  const res = await api.get<ApiResponse<RecommendationThreshold[]>>(
-    thresholdsBase(organizationId, hackathonIdOrSlug)
-  );
-  return res.data;
-};
-
-export const setRecommendationThreshold = async (
-  organizationId: string,
-  hackathonIdOrSlug: string,
-  payload: { trackId?: string; topPercent: number }
-): Promise<ApiResponse<RecommendationThreshold>> => {
-  const res = await api.put<ApiResponse<RecommendationThreshold>>(
-    thresholdsBase(organizationId, hackathonIdOrSlug),
-    payload
-  );
-  return res.data;
-};
-
-export const deleteRecommendationThreshold = async (
-  organizationId: string,
-  hackathonIdOrSlug: string,
-  thresholdId: string
-): Promise<void> => {
-  await api.delete(
-    `${thresholdsBase(organizationId, hackathonIdOrSlug)}/${thresholdId}`
-  );
-};
-
-export const computeRecommendations = async (
-  organizationId: string,
-  hackathonIdOrSlug: string
-): Promise<ApiResponse<RecommendationComputeResult>> => {
-  const res = await api.post<ApiResponse<RecommendationComputeResult>>(
-    `${thresholdsBase(organizationId, hackathonIdOrSlug)}/compute`
-  );
-  return res.data;
-};
-
-// ---------------------------------------------------------------------------
-// Endpoints — AI Judging Assist (advisory scorecards)
-// ---------------------------------------------------------------------------
-
-export interface AiScorecardFlags {
-  meritsAttention: boolean;
-  meritsAttentionReason: string | null;
-  lowEffortSignal: boolean;
-  lowEffortReason: string | null;
-}
-
-export interface AiScorecard {
-  submissionId: string;
-  totalScore: number;
-  tldr: string | null;
-  criteriaScores: Array<{
-    criterionId: string;
-    score: number;
-    comment?: string;
-  }>;
-  flags: AiScorecardFlags | null;
-  /** True once promoted into a counting score (no longer advisory-only). */
-  promoted: boolean;
-  /**
-   * True only when promoted AND the AI judge is currently active on the
-   * roster, i.e. the score is actually counting toward ranking right now.
-   * Undefined on judge-side reads (only the organizer view computes it).
-   */
-  counts?: boolean;
-  scoredAt: string;
-}
-
-export const listAiScorecards = async (
-  organizationId: string,
-  hackathonIdOrSlug: string
-): Promise<ApiResponse<AiScorecard[]>> => {
-  const res = await api.get<ApiResponse<AiScorecard[]>>(
-    `/organizations/${organizationId}/hackathons/${hackathonIdOrSlug}/judging/ai-scorecards`
-  );
-  return res.data;
-};
-
-/** Trigger AI scoring for one submission. Returns the fresh scorecard. */
-export const runAiScore = async (
-  organizationId: string,
-  hackathonIdOrSlug: string,
-  submissionId: string,
-  prizeId?: string
-): Promise<ApiResponse<unknown>> => {
-  const qs = prizeId ? `?prizeId=${prizeId}` : '';
-  const res = await api.post<ApiResponse<unknown>>(
-    `/organizations/${organizationId}/hackathons/${hackathonIdOrSlug}/judging/submissions/${submissionId}/ai-score${qs}`
-  );
-  return res.data;
-};
-
-/** Promote an AI scorecard into a counting score (or reverse it). */
-export const setAiScorePromotion = async (
-  organizationId: string,
-  hackathonIdOrSlug: string,
-  submissionId: string,
-  promote: boolean
-): Promise<ApiResponse<unknown>> => {
-  const action = promote ? 'promote' : 'unpromote';
-  const res = await api.post<ApiResponse<unknown>>(
-    `/organizations/${organizationId}/hackathons/${hackathonIdOrSlug}/judging/submissions/${submissionId}/ai-score/${action}`
-  );
-  return res.data;
-};
-
-// ── Judge-side AI assist (advisory; the judge views/runs it but always
-//    enters and submits their own score) ──────────────────────────────────
-
-/** The AI scorecard for a submission, from the judge dashboard. Null if none. */
-export const getJudgeAiScorecard = async (
-  hackathonId: string,
-  submissionId: string
-): Promise<ApiResponse<AiScorecard | null>> => {
-  const res = await api.get<ApiResponse<AiScorecard | null>>(
-    `/judge/hackathons/${hackathonId}/submissions/${submissionId}/ai-score`
-  );
-  return res.data;
-};
-
-/** Run (or re-run) AI scoring for a submission. Re-fetch the scorecard after. */
-export const runJudgeAiScore = async (
-  hackathonId: string,
-  submissionId: string
-): Promise<ApiResponse<unknown>> => {
-  const res = await api.post<ApiResponse<unknown>>(
-    `/judge/hackathons/${hackathonId}/submissions/${submissionId}/ai-score`
   );
   return res.data;
 };
