@@ -12,6 +12,7 @@ import {
   ExternalLink,
   ShieldCheck,
   CalendarDays,
+  LogIn,
 } from 'lucide-react';
 
 import { useCampaign } from '@/features/crowdfunding';
@@ -133,7 +134,7 @@ export default function PublicCampaignPage({ params }: PageProps) {
   const { slug } = use(params);
   const { data: campaign, isLoading } = useCampaign(slug);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { user } = useAuthStatus();
+  const { user, isAuthenticated } = useAuthStatus();
   const { styledContent: descriptionContent } = useMarkdown(
     campaign?.project?.details ?? ''
   );
@@ -212,8 +213,8 @@ export default function PublicCampaignPage({ params }: PageProps) {
       </div>
 
       {/* Hero */}
-      {project.banner ? (
-        <div className='relative h-56 w-full overflow-hidden sm:h-72'>
+      <div className='relative h-56 w-full overflow-hidden sm:h-72'>
+        {project.banner ? (
           <Image
             src={project.banner}
             alt={project.title}
@@ -221,11 +222,65 @@ export default function PublicCampaignPage({ params }: PageProps) {
             className='object-cover'
             priority
           />
-          <div className='absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent' />
-        </div>
-      ) : (
-        <div className='h-24 w-full bg-gradient-to-br from-zinc-900 to-zinc-800' />
-      )}
+        ) : (
+          <svg
+            viewBox='0 0 1200 400'
+            xmlns='http://www.w3.org/2000/svg'
+            className='absolute inset-0 h-full w-full'
+            preserveAspectRatio='xMidYMid slice'
+          >
+            <defs>
+              <radialGradient id='bg-glow' cx='75%' cy='35%' r='55%'>
+                <stop offset='0%' stopColor='#2EEDAA' stopOpacity='0.07' />
+                <stop offset='100%' stopColor='#09090b' stopOpacity='0' />
+              </radialGradient>
+              <pattern
+                id='dot-grid'
+                x='0'
+                y='0'
+                width='32'
+                height='32'
+                patternUnits='userSpaceOnUse'
+              >
+                <circle cx='16' cy='16' r='1' fill='#3f3f46' opacity='0.6' />
+              </pattern>
+            </defs>
+            {/* Base background */}
+            <rect width='1200' height='400' fill='#09090b' />
+            {/* Dot grid */}
+            <rect width='1200' height='400' fill='url(#dot-grid)' />
+            {/* Glow */}
+            <rect width='1200' height='400' fill='url(#bg-glow)' />
+            {/* Concentric arcs from bottom-left — Boundless brand identity */}
+            {[180, 320, 460, 600, 740, 880, 1020, 1180].map((r, i) => (
+              <path
+                key={r}
+                d={`M ${r},400 A ${r},${r} 0 0,0 0,${400 - r}`}
+                stroke='#2EEDAA'
+                strokeWidth='1'
+                fill='none'
+                opacity={Math.max(0.04, 0.22 - i * 0.025)}
+              />
+            ))}
+            {/* Boundless wordmark — very faint watermark */}
+            <text
+              x='600'
+              y='230'
+              textAnchor='middle'
+              dominantBaseline='middle'
+              fontFamily='system-ui, -apple-system, sans-serif'
+              fontWeight='700'
+              fontSize='140'
+              letterSpacing='-4'
+              fill='#2EEDAA'
+              opacity='0.03'
+            >
+              Boundless
+            </text>
+          </svg>
+        )}
+        <div className='absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent' />
+      </div>
 
       <div className='container mx-auto max-w-5xl px-4 pb-20'>
         {/* Title row */}
@@ -527,20 +582,33 @@ export default function PublicCampaignPage({ params }: PageProps) {
                     </p>
                   </div>
                 ) : isFunding && !isFullyFunded ? (
-                  <>
-                    <Button
-                      onClick={() => setSheetOpen(true)}
-                      className='bg-primary hover:bg-primary/90 w-full'
-                      size='lg'
-                    >
-                      Back this project
-                    </Button>
-                    <p className='mt-3 flex items-start gap-2 text-xs text-zinc-500'>
-                      <ShieldCheck className='mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-zinc-600' />
-                      Your support is held safely and released to the team as
-                      each milestone is delivered and approved.
-                    </p>
-                  </>
+                  isAuthenticated ? (
+                    <>
+                      <Button
+                        onClick={() => setSheetOpen(true)}
+                        className='bg-primary hover:bg-primary/90 w-full'
+                        size='lg'
+                      >
+                        Back this project
+                      </Button>
+                      <p className='mt-3 flex items-start gap-2 text-xs text-zinc-500'>
+                        <ShieldCheck className='mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-zinc-600' />
+                        Your support is held safely and released to the team as
+                        each milestone is delivered and approved.
+                      </p>
+                    </>
+                  ) : (
+                    <Link href='/auth' className='block'>
+                      <Button
+                        variant='outline'
+                        className='w-full gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white'
+                        size='lg'
+                      >
+                        <LogIn className='h-4 w-4' />
+                        Sign in to back this project
+                      </Button>
+                    </Link>
+                  )
                 ) : isFullyFunded ? (
                   <div className='border-primary/30 bg-primary/10 rounded-lg border px-4 py-3 text-center'>
                     <p className='text-primary text-sm font-semibold'>

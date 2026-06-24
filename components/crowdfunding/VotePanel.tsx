@@ -1,6 +1,7 @@
 'use client';
 
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, LogIn } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { extractApiErrorMessage } from '@/lib/api/api';
 
@@ -8,12 +9,10 @@ import { useCastVote, useMyVote } from '@/features/crowdfunding';
 import type { Crowdfunding } from '@/features/projects/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuthStatus } from '@/hooks/use-auth';
 
-/**
- * Public voting panel shown while a campaign is in community review. Anyone
- * signed in can vote yes/no; the tally fills toward the campaign's quorum.
- */
 export function VotePanel({ campaign }: { campaign: Crowdfunding }) {
+  const { isAuthenticated } = useAuthStatus();
   const vote = useCastVote();
   const { data: myVoteRaw } = useMyVote(campaign.id);
   const current = (myVoteRaw as { choice?: 'UP' | 'DOWN' } | null)?.choice;
@@ -55,34 +54,46 @@ export function VotePanel({ campaign }: { campaign: Crowdfunding }) {
         </p>
       </div>
 
-      <div className='grid grid-cols-2 gap-2'>
-        <Button
-          onClick={() => cast('UP')}
-          disabled={vote.isPending}
-          className={cn(
-            'gap-2',
-            current === 'UP'
-              ? 'bg-primary hover:bg-primary/90'
-              : 'border border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800'
-          )}
-        >
-          <ThumbsUp className='h-4 w-4' />
-          Yes
-        </Button>
-        <Button
-          onClick={() => cast('DOWN')}
-          disabled={vote.isPending}
-          className={cn(
-            'gap-2',
-            current === 'DOWN'
-              ? 'bg-red-600 text-white hover:bg-red-500'
-              : 'border border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800'
-          )}
-        >
-          <ThumbsDown className='h-4 w-4' />
-          No
-        </Button>
-      </div>
+      {isAuthenticated ? (
+        <div className='grid grid-cols-2 gap-2'>
+          <Button
+            onClick={() => cast('UP')}
+            disabled={vote.isPending}
+            className={cn(
+              'gap-2',
+              current === 'UP'
+                ? 'bg-primary hover:bg-primary/90'
+                : 'border border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800'
+            )}
+          >
+            <ThumbsUp className='h-4 w-4' />
+            Yes
+          </Button>
+          <Button
+            onClick={() => cast('DOWN')}
+            disabled={vote.isPending}
+            className={cn(
+              'gap-2',
+              current === 'DOWN'
+                ? 'bg-red-600 text-white hover:bg-red-500'
+                : 'border border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800'
+            )}
+          >
+            <ThumbsDown className='h-4 w-4' />
+            No
+          </Button>
+        </div>
+      ) : (
+        <Link href='/auth' className='block'>
+          <Button
+            variant='outline'
+            className='w-full gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white'
+          >
+            <LogIn className='h-4 w-4' />
+            Sign in to vote
+          </Button>
+        </Link>
+      )}
 
       <div>
         <div className='flex items-center justify-between text-xs text-zinc-500'>
