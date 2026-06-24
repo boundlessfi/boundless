@@ -2,7 +2,7 @@
 
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { AnnouncementEditor } from '@/components/ui/shadcn-io/announcement-editor';
 import { Lightbulb, AlignLeft } from 'lucide-react';
 import type { CampaignWizardData } from '../NewCampaignWizard';
 
@@ -63,16 +63,13 @@ export default function StoryStep({ data, onChange }: Props) {
         </div>
 
         <div className='space-y-1.5'>
-          <Label htmlFor='vision' className='text-sm font-medium text-zinc-300'>
+          <Label className='text-sm font-medium text-zinc-300'>
             Project description <span className='text-red-400'>*</span>
           </Label>
-          <Textarea
-            id='vision'
+          <AnnouncementEditor
+            content={data.vision}
+            onChange={v => onChange({ vision: v })}
             placeholder='Share your vision, the problem you are solving, your approach, and what success looks like...'
-            value={data.vision}
-            onChange={e => onChange({ vision: e.target.value })}
-            rows={16}
-            className='focus:border-primary/50 resize-none border-zinc-800 bg-zinc-950 text-white placeholder:text-zinc-600'
           />
           <div className='flex justify-between text-xs text-zinc-600'>
             <span>

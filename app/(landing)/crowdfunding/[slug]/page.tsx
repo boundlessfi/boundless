@@ -31,6 +31,7 @@ import {
 } from '@/lib/crowdfunding/status';
 import { getTransactionExplorerUrl } from '@/lib/wallet-utils';
 import { useAuthStatus } from '@/hooks/use-auth';
+import { useMarkdown } from '@/hooks/use-markdown';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -133,6 +134,9 @@ export default function PublicCampaignPage({ params }: PageProps) {
   const { data: campaign, isLoading } = useCampaign(slug);
   const [sheetOpen, setSheetOpen] = useState(false);
   const { user } = useAuthStatus();
+  const { styledContent: descriptionContent } = useMarkdown(
+    campaign?.project?.details ?? ''
+  );
 
   if (isLoading) {
     return (
@@ -259,8 +263,14 @@ export default function PublicCampaignPage({ params }: PageProps) {
           <div className='space-y-12 lg:col-span-2'>
             {/* Story */}
             <Section title='About this campaign'>
-              <div className='leading-relaxed whitespace-pre-line text-zinc-300'>
-                {project.vision || project.description || (
+              <div className='text-zinc-300'>
+                {project.details ? (
+                  descriptionContent
+                ) : project.vision || project.description ? (
+                  <p className='leading-relaxed whitespace-pre-line'>
+                    {project.vision || project.description}
+                  </p>
+                ) : (
                   <span className='text-zinc-600 italic'>
                     No description provided.
                   </span>
