@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import NewHackathonSidebar from '@/components/organization/hackathons/new/NewHackathonSidebar';
 import HackathonSidebar from '@/components/organization/hackathons/details/HackathonSidebar';
 import HackathonNavigationLoader from '@/components/organization/hackathons/details/HackathonNavigationLoader';
+import BountySidebar from '@/components/organization/bounties/details/BountySidebar';
 
 export default function OrganizationsLayout({
   children,
@@ -31,6 +32,11 @@ export default function OrganizationsLayout({
     pathname.includes('/hackathons/') &&
     !pathname.endsWith('/hackathons') &&
     !pathname.includes('/hackathons/new');
+  // Show bounty sidebar on bounty detail pages
+  const showBountySidebar =
+    pathname.includes('/bounties/') &&
+    !pathname.endsWith('/bounties') &&
+    !pathname.includes('/bounties/new');
   const getOrgIdFromPath = () => {
     if (pathname.startsWith('/organizations/')) {
       const pathParts = pathname.split('/');
@@ -52,6 +58,7 @@ export default function OrganizationsLayout({
           showNewHackathonSidebar={showNewHackathonSidebar}
           showNewGrantSidebar={showNewGrantSidebar}
           showHackathonSidebar={showHackathonSidebar}
+          showBountySidebar={showBountySidebar}
           initialOrgId={initialOrgId}
         >
           {children}
@@ -67,6 +74,7 @@ function OrganizationsLayoutContent({
   showNewHackathonSidebar,
   showNewGrantSidebar,
   showHackathonSidebar,
+  showBountySidebar,
   initialOrgId,
 }: {
   children: React.ReactNode;
@@ -74,6 +82,7 @@ function OrganizationsLayoutContent({
   showNewHackathonSidebar: boolean;
   showNewGrantSidebar: boolean;
   showHackathonSidebar: boolean;
+  showBountySidebar: boolean;
   initialOrgId: string | null;
 }) {
   const { isNavigating } = useNavigationLoading();
@@ -87,10 +96,14 @@ function OrganizationsLayoutContent({
           {showOrganizationSidebar &&
             !showNewHackathonSidebar &&
             !showNewGrantSidebar &&
-            !showHackathonSidebar && <OrganizationSidebar />}
+            !showHackathonSidebar &&
+            !showBountySidebar && <OrganizationSidebar />}
           {showNewHackathonSidebar && <NewHackathonSidebar />}
           {showHackathonSidebar && (
             <HackathonSidebar organizationId={initialOrgId || undefined} />
+          )}
+          {showBountySidebar && (
+            <BountySidebar organizationId={initialOrgId || undefined} />
           )}
           {/* {showNewGrantSidebar && <NewGrantSidebar />} */}
 
