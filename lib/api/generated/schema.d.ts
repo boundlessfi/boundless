@@ -17002,7 +17002,7 @@ export interface components {
     };
     HackathonEscrowOpResponseDto: {
       /**
-       * @description Internal cuid for the EscrowOp row. Use this for follow-up calls.
+       * @description Internal uuid for the EscrowOp row. Use this for follow-up calls.
        * @example cmpwiox7u0000yy4404ojbk9t
        */
       id: string;
@@ -18059,7 +18059,7 @@ export interface components {
       fundingMode: 'EXTERNAL' | 'MANAGED';
     };
     BountyEscrowOpResponseDto: {
-      /** @description Internal EscrowOp cuid. */
+      /** @description Internal EscrowOp uuid. */
       id: string;
       /** @description Hex-encoded 32-byte contract op_id. */
       opId: string;
@@ -27922,7 +27922,7 @@ export interface operations {
         organizationId: string;
         /** @description Hackathon id */
         id: string;
-        /** @description EscrowOp cuid returned by the publish call */
+        /** @description EscrowOp uuid returned by the publish call */
         opRowId: string;
       };
       cookie?: never;
@@ -27952,7 +27952,7 @@ export interface operations {
         organizationId: string;
         /** @description Hackathon id */
         id: string;
-        /** @description EscrowOp cuid */
+        /** @description EscrowOp uuid */
         opRowId: string;
       };
       cookie?: never;
@@ -27998,7 +27998,7 @@ export interface operations {
       path: {
         /** @description Hackathon id */
         id: string;
-        /** @description HackathonSubmission cuid */
+        /** @description HackathonSubmission uuid */
         submissionId: string;
       };
       cookie?: never;
@@ -28026,7 +28026,7 @@ export interface operations {
       path: {
         /** @description Hackathon id */
         id: string;
-        /** @description HackathonSubmission cuid */
+        /** @description HackathonSubmission uuid */
         submissionId: string;
       };
       cookie?: never;
@@ -28080,7 +28080,7 @@ export interface operations {
       path: {
         /** @description Hackathon id */
         id: string;
-        /** @description EscrowOp cuid */
+        /** @description EscrowOp uuid */
         opRowId: string;
       };
       cookie?: never;
@@ -28108,7 +28108,7 @@ export interface operations {
       path: {
         /** @description Hackathon id */
         id: string;
-        /** @description EscrowOp cuid */
+        /** @description EscrowOp uuid */
         opRowId: string;
       };
       cookie?: never;
@@ -32629,7 +32629,7 @@ export interface operations {
         organizationId: string;
         /** @description Bounty id */
         id: string;
-        /** @description EscrowOp cuid */
+        /** @description EscrowOp uuid */
         opRowId: string;
       };
       cookie?: never;
@@ -32658,7 +32658,7 @@ export interface operations {
         organizationId: string;
         /** @description Bounty id */
         id: string;
-        /** @description EscrowOp cuid */
+        /** @description EscrowOp uuid */
         opRowId: string;
       };
       cookie?: never;
@@ -32812,7 +32812,7 @@ export interface operations {
       path: {
         /** @description Bounty id */
         id: string;
-        /** @description EscrowOp cuid */
+        /** @description EscrowOp uuid */
         opRowId: string;
       };
       cookie?: never;
@@ -32840,7 +32840,7 @@ export interface operations {
       path: {
         /** @description Bounty id */
         id: string;
-        /** @description EscrowOp cuid */
+        /** @description EscrowOp uuid */
         opRowId: string;
       };
       cookie?: never;

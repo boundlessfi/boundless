@@ -26,7 +26,6 @@ export type {
 
 // ── Request DTOs from generated schema ───────────────────────────────────────
 
-export type ClaimMilestoneBody = Schemas['ClaimCrowdfundingMilestoneDto'];
 export type ApproveCampaignBody = Schemas['ApproveCrowdfundingCampaignDto'];
 export type RejectCampaignBody = Schemas['RejectCrowdfundingCampaignDto'];
 export type PauseCampaignBody = Schemas['PauseCrowdfundingCampaignDto'];
@@ -56,12 +55,17 @@ export interface PublishCampaignBody {
   contentUri?: string;
 }
 
-/** Escrow op envelope returned by publish/contribute (status + unsigned XDR). */
+/**
+ * Escrow op envelope returned by publish/contribute. Field names mirror the
+ * backend EscrowOpResponseDto exactly: `opRowId` is the DB row id used to
+ * submit a wallet-signed XDR (NOT `id`); `opId` is the on-chain op hash.
+ */
 export interface EscrowOpResult {
-  id: string;
+  opRowId: string;
+  opId?: string;
   status?: string;
   unsignedXdr?: string | null;
-  transactionHash?: string | null;
+  txHash?: string | null;
 }
 
 // ── Milestone review body (new admin endpoints, not yet in schema) ────────────

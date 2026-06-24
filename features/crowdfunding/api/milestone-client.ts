@@ -2,7 +2,6 @@
  * Crowdfunding milestone imperative client.
  */
 import { apiClient, unwrapData } from '@/lib/api/client';
-import type { ClaimMilestoneBody } from '../types';
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
@@ -29,7 +28,6 @@ export const validateMilestoneSubmission = async (
   campaignId: string,
   milestoneId: string,
   body: {
-    status: 'submitted' | 'in_progress' | 'completed';
     proofOfWorkFiles: string[];
     proofOfWorkLinks: string[];
     submissionNotes: string;
@@ -59,18 +57,4 @@ export const updateMilestone = async (
       params: { path: { id: campaignId, milestoneId } },
       body: body as never,
     })
-  );
-
-export const claimMilestone = async (
-  campaignId: string,
-  body: ClaimMilestoneBody
-): Promise<unknown> =>
-  unwrapData(
-    await apiClient.POST(
-      '/api/crowdfunding/campaigns/{id}/v2/escrow/claim-milestone',
-      {
-        params: { path: { id: campaignId } },
-        body: body as never,
-      }
-    )
   );

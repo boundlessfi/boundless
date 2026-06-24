@@ -2,77 +2,71 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { Plus, Rocket } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useMyCampaigns } from '@/features/crowdfunding';
-import { CrowdfundingDataTable } from '@/components/crowdfunding-data-table';
+import ProjectCard from '@/features/projects/components/ProjectCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 
 export default function MyCrowdfundingPage() {
-  const [page, setPage] = React.useState(1);
-  const [limit, setLimit] = React.useState(10);
-
-  const { data, isLoading, refetch } = useMyCampaigns(page, limit);
-
+  const { data, isLoading } = useMyCampaigns(1, 50);
   const campaigns = data?.data ?? [];
-  const pagination = data?.pagination ?? {
-    page,
-    limit,
-    total: 0,
-    totalPages: 0,
-  };
 
   if (isLoading) {
     return (
-      <div className='mx-auto flex h-screen items-center justify-center py-10'>
+      <div className='flex h-[60vh] items-center justify-center'>
         <LoadingSpinner size='xl' />
       </div>
     );
   }
 
   return (
-    <Card className='bg-background border-border/10 container mx-auto py-10'>
-      <div className='flex items-center justify-between space-y-2'>
-        <CardHeader className='flex w-full items-center justify-between'>
-          <div>
-            <CardTitle className='text-foreground'>
-              Campaigns Overview
-            </CardTitle>
-            <CardDescription className='text-muted-foreground'>
-              A list of all your crowdfunding campaigns including their current
-              status and funding progress.
-            </CardDescription>
-          </div>
-          <div className='flex items-center space-x-2'>
-            <Button asChild className='bg-primary hover:bg-primary/90'>
-              <Link href='/crowdfunding/new'>
-                <Plus className='mr-2 h-4 w-4' />
-                Create Campaign
-              </Link>
-            </Button>
-          </div>
-        </CardHeader>
+    <div className='container mx-auto px-4 py-8'>
+      <div className='mb-6 flex items-center justify-between gap-4'>
+        <div>
+          <h1 className='text-3xl font-bold text-white'>My Campaigns</h1>
+          <p className='mt-2 text-white/70'>
+            All your crowdfunding campaigns ({campaigns.length} total)
+          </p>
+        </div>
+        <Button asChild className='bg-primary hover:bg-primary/90'>
+          <Link href='/crowdfunding/new'>
+            <Plus className='mr-2 h-4 w-4' />
+            Create Campaign
+          </Link>
+        </Button>
       </div>
 
-      <div className='mt-6 space-y-4'>
-        <CrowdfundingDataTable
-          data={campaigns}
-          pagination={pagination}
-          onPaginationChange={(p, l) => {
-            setPage(p);
-            setLimit(l ?? limit);
-          }}
-          onDeleteSuccess={() => refetch()}
-          loading={isLoading}
-        />
-      </div>
-    </Card>
+      {campaigns.length === 0 ? (
+        <Card className='bg-background border-border/10'>
+          <CardContent className='py-12 text-center'>
+            <Rocket className='mx-auto mb-4 h-16 w-16 text-white/30' />
+            <h3 className='mb-2 text-xl font-semibold text-white'>
+              No campaigns yet
+            </h3>
+            <p className='mb-6 text-white/60'>
+              You haven&apos;t created any crowdfunding campaigns yet. Start one
+              and rally the community behind it.
+            </p>
+            <Button asChild>
+              <Link href='/crowdfunding/new'>Create your first campaign</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
+          {campaigns.map(c => (
+            <ProjectCard
+              key={c.id}
+              isFullWidth
+              data={c}
+              basePath='/me/crowdfunding'
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

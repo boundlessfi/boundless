@@ -8,9 +8,7 @@ import {
   fetchMilestone,
   validateMilestoneSubmission,
   updateMilestone,
-  claimMilestone,
 } from './milestone-client';
-import type { ClaimMilestoneBody } from '../types';
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
@@ -62,7 +60,6 @@ export function useSubmitMilestoneEvidence(campaignId: string) {
         campaignId,
         milestoneId,
         {
-          status: 'submitted',
           submissionNotes,
           proofOfWorkLinks,
           proofOfWorkFiles,
@@ -80,21 +77,6 @@ export function useSubmitMilestoneEvidence(campaignId: string) {
     onSuccess: (_data, { milestoneId }) => {
       queryClient.invalidateQueries({
         queryKey: crowdfundingKeys.milestone(campaignId, milestoneId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: crowdfundingKeys.campaign(campaignId),
-      });
-    },
-  });
-}
-
-export function useClaimMilestone(campaignId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (body: ClaimMilestoneBody) => claimMilestone(campaignId, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: crowdfundingKeys.milestones(campaignId),
       });
       queryClient.invalidateQueries({
         queryKey: crowdfundingKeys.campaign(campaignId),

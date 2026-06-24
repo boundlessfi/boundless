@@ -20,7 +20,7 @@ export default function FundingStep({ data, onChange }: Props) {
     <div className='space-y-8'>
       <div className='rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-4 text-sm text-zinc-400'>
         Set your funding goal in USDC. Backers support you directly; funds are
-        held in escrow and released as you complete milestones.
+        held safely and released as you complete each milestone.
       </div>
 
       <div className='space-y-1.5'>

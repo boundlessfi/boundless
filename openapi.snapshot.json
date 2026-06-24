@@ -12754,7 +12754,7 @@
             "name": "opRowId",
             "required": true,
             "in": "path",
-            "description": "EscrowOp cuid returned by the publish call",
+            "description": "EscrowOp uuid returned by the publish call",
             "schema": {
               "example": "cmpwiox7u0000yy4404ojbk9t",
               "type": "string"
@@ -12819,7 +12819,7 @@
             "name": "opRowId",
             "required": true,
             "in": "path",
-            "description": "EscrowOp cuid",
+            "description": "EscrowOp uuid",
             "schema": {
               "type": "string"
             }
@@ -12902,7 +12902,7 @@
             "name": "submissionId",
             "required": true,
             "in": "path",
-            "description": "HackathonSubmission cuid",
+            "description": "HackathonSubmission uuid",
             "schema": {
               "type": "string"
             }
@@ -12956,7 +12956,7 @@
             "name": "submissionId",
             "required": true,
             "in": "path",
-            "description": "HackathonSubmission cuid",
+            "description": "HackathonSubmission uuid",
             "schema": {
               "type": "string"
             }
@@ -13056,7 +13056,7 @@
             "name": "opRowId",
             "required": true,
             "in": "path",
-            "description": "EscrowOp cuid",
+            "description": "EscrowOp uuid",
             "schema": {
               "type": "string"
             }
@@ -13110,7 +13110,7 @@
             "name": "opRowId",
             "required": true,
             "in": "path",
-            "description": "EscrowOp cuid",
+            "description": "EscrowOp uuid",
             "schema": {
               "type": "string"
             }
@@ -20132,7 +20132,7 @@
             "name": "opRowId",
             "required": true,
             "in": "path",
-            "description": "EscrowOp cuid",
+            "description": "EscrowOp uuid",
             "schema": {
               "type": "string"
             }
@@ -20194,7 +20194,7 @@
             "name": "opRowId",
             "required": true,
             "in": "path",
-            "description": "EscrowOp cuid",
+            "description": "EscrowOp uuid",
             "schema": {
               "type": "string"
             }
@@ -20467,7 +20467,7 @@
             "name": "opRowId",
             "required": true,
             "in": "path",
-            "description": "EscrowOp cuid",
+            "description": "EscrowOp uuid",
             "schema": {
               "type": "string"
             }
@@ -20521,7 +20521,7 @@
             "name": "opRowId",
             "required": true,
             "in": "path",
-            "description": "EscrowOp cuid",
+            "description": "EscrowOp uuid",
             "schema": {
               "type": "string"
             }
@@ -41163,7 +41163,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Internal cuid for the EscrowOp row. Use this for follow-up calls.",
+            "description": "Internal uuid for the EscrowOp row. Use this for follow-up calls.",
             "example": "cmpwiox7u0000yy4404ojbk9t"
           },
           "opId": {
@@ -43186,7 +43186,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Internal EscrowOp cuid."
+            "description": "Internal EscrowOp uuid."
           },
           "opId": {
             "type": "string",

@@ -120,7 +120,7 @@ const emptyForm = (next: HackathonTrack[] = []): TrackFormState => ({
 });
 
 // Generate a stable id used inside customQuestions / requiredArtifacts.
-// Doesn't need to be a real cuid; uniqueness within the track is enough.
+// Doesn't need to be a real uuid; uniqueness within the track is enough.
 const tinyId = () =>
   `q-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 

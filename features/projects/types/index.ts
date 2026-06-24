@@ -40,6 +40,11 @@ export interface Milestone {
   fundingPercentage: number;
   title: string;
   orderIndex?: string;
+  claimedAt?: string | null;
+  completedAt?: string | null;
+  submittedAt?: string | null;
+  rejectionFeedback?: string | null;
+  resubmissionDeadline?: string | null;
 }
 
 export interface User {

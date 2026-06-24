@@ -14,7 +14,6 @@ export type {
   CrowdfundingReview,
   SocialLink,
   Contact,
-  ClaimMilestoneBody,
   ApproveCampaignBody,
   RejectCampaignBody,
   PauseCampaignBody,
@@ -40,6 +39,7 @@ export {
   usePublishCampaign,
   useContributeV2,
   useCastVote,
+  useMyVote,
 } from './api/use-campaign';
 
 // Milestone hooks (React Query)
@@ -47,7 +47,6 @@ export {
   useMilestones,
   useMilestone,
   useSubmitMilestoneEvidence,
-  useClaimMilestone,
 } from './api/use-milestone';
 
 // Imperative clients (for wizard saves and other non-React contexts)
@@ -70,5 +69,4 @@ export {
   fetchMilestone,
   validateMilestoneSubmission,
   updateMilestone,
-  claimMilestone,
 } from './api/milestone-client';

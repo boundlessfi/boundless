@@ -71,13 +71,13 @@ const STATUS_CONFIG: Record<CrowdfundingV2Status, StatusConfig> = {
       'The review team has requested some changes before your campaign can go live. See feedback below.',
   },
   REVIEW_APPROVED: {
-    label: 'Approved',
+    label: 'Ready to Launch',
     color: 'text-emerald-400',
     borderColor: 'border-emerald-800/50',
     bgColor: 'bg-emerald-950/30',
-    icon: CheckCircle2,
+    icon: Zap,
     description:
-      'Your campaign has been approved and is now open for community voting.',
+      'Your campaign has been approved. Launch it to start accepting support from the community.',
   },
   VOTING: {
     label: 'Community Voting',
@@ -104,7 +104,7 @@ const STATUS_CONFIG: Record<CrowdfundingV2Status, StatusConfig> = {
     bgColor: 'bg-emerald-950/30',
     icon: Zap,
     description:
-      'Your campaign passed the community vote. Launch it to start accepting contributions from backers.',
+      'Your campaign passed the community vote. Launch it to start accepting support from the community.',
   },
   PUBLISHING: {
     label: 'Launching...',
@@ -112,8 +112,7 @@ const STATUS_CONFIG: Record<CrowdfundingV2Status, StatusConfig> = {
     borderColor: 'border-blue-800/50',
     bgColor: 'bg-blue-950/30',
     icon: Loader2,
-    description:
-      'Your campaign is being set up on-chain. This may take a few moments.',
+    description: 'Your campaign is being set up. This may take a few moments.',
   },
   FUNDING: {
     label: 'Live',
@@ -174,6 +173,14 @@ export function CampaignStatusBanner({ campaign, onStatusChange }: Props) {
   const [launchOpen, setLaunchOpen] = useState(false);
 
   const status = (campaign.v2Status ?? 'DRAFT') as CrowdfundingV2Status;
+  const raised = campaign.fundingRaised ?? 0;
+  const goal = campaign.fundingGoal ?? 0;
+  const fullyFunded = status === 'FUNDING' && goal > 0 && raised >= goal;
+  const milestones = campaign.milestones ?? [];
+  const completedMilestones = milestones.filter(m =>
+    Boolean(m.claimedAt)
+  ).length;
+
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.DRAFT;
   const Icon = config.icon;
 
@@ -182,7 +189,7 @@ export function CampaignStatusBanner({ campaign, onStatusChange }: Props) {
   const handleLaunch = () => {
     publish.mutate(campaign, {
       onSuccess: () => {
-        toast.success('Launching your campaign on-chain. This takes a moment.');
+        toast.success('Launching your campaign. This takes a moment.');
         setLaunchOpen(false);
         onStatusChange?.();
       },
@@ -214,10 +221,28 @@ export function CampaignStatusBanner({ campaign, onStatusChange }: Props) {
     );
   };
 
+  const renderFundingProgress = () => {
+    if (status !== 'FUNDING') return null;
+    const total = milestones.length;
+    if (total === 0) return null;
+    const milestonePct = Math.round((completedMilestones / total) * 100);
+    return (
+      <div className='mt-3 space-y-1.5'>
+        <div className='flex items-center justify-between text-xs text-zinc-400'>
+          <span>Milestones completed</span>
+          <span>
+            {completedMilestones} / {total}
+          </span>
+        </div>
+        <Progress value={milestonePct} className='h-2' />
+      </div>
+    );
+  };
+
   const renderVotingProgress = () => {
     if (status !== 'VOTING') return null;
     const up = campaign.voteUpCount ?? 0;
-    const goal = campaign.voteGoal ?? 100;
+    const goal = campaign.voteGoal ?? 1;
     const pct = Math.min(100, Math.round((up / goal) * 100));
     return (
       <div className='mt-3 space-y-1.5'>
@@ -226,7 +251,9 @@ export function CampaignStatusBanner({ campaign, onStatusChange }: Props) {
           <span>{goal} needed</span>
         </div>
         <Progress value={pct} className='h-2' />
-        <p className='text-xs text-zinc-500'>{pct}% of quorum reached</p>
+        <p className='text-xs text-zinc-500'>
+          {pct}% of the votes needed to go live
+        </p>
       </div>
     );
   };
@@ -287,6 +314,7 @@ export function CampaignStatusBanner({ campaign, onStatusChange }: Props) {
           </div>
         );
 
+      case 'REVIEW_APPROVED':
       case 'VOTE_PASSED':
         return (
           <Button
@@ -344,14 +372,22 @@ export function CampaignStatusBanner({ campaign, onStatusChange }: Props) {
               )}
             />
             <div>
-              <p className={cn('text-sm font-semibold', config.color)}>
-                {config.label}
+              <p
+                className={cn(
+                  'text-sm font-semibold',
+                  fullyFunded ? 'text-primary' : config.color
+                )}
+              >
+                {fullyFunded ? 'Fully Funded' : config.label}
               </p>
               <p className='mt-0.5 text-sm text-zinc-400'>
-                {config.description}
+                {fullyFunded
+                  ? 'Your campaign has reached its funding goal. Milestones are now being delivered.'
+                  : config.description}
               </p>
               {renderReviewFeedback()}
               {renderVotingProgress()}
+              {renderFundingProgress()}
             </div>
           </div>
           <div className='flex-shrink-0'>{renderActions()}</div>
@@ -361,12 +397,11 @@ export function CampaignStatusBanner({ campaign, onStatusChange }: Props) {
       <AlertDialog open={launchOpen} onOpenChange={setLaunchOpen}>
         <AlertDialogContent className='border-zinc-800 bg-zinc-950 text-white'>
           <AlertDialogHeader>
-            <AlertDialogTitle>Launch your campaign on-chain?</AlertDialogTitle>
+            <AlertDialogTitle>Launch your campaign?</AlertDialogTitle>
             <AlertDialogDescription className='text-zinc-400'>
-              This creates the escrow on Stellar using your Boundless wallet and
-              opens a 30-day funding window. Once live, backers can contribute
-              and funds are released as you complete milestones. This cannot be
-              undone.
+              This opens your campaign for support and starts a 30-day funding
+              window. Supporters&apos; money is held safely and released to you
+              as you complete each milestone. This can&apos;t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

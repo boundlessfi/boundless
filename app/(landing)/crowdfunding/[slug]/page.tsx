@@ -3,23 +3,34 @@
 import { useState, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCampaign } from '@/features/crowdfunding';
-import type { CrowdfundingContributor } from '@/features/crowdfunding';
-import { ContributeSheet } from '@/components/crowdfunding/ContributeSheet';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ArrowLeft,
-  Target,
-  Clock,
   Users,
   Github,
   Globe,
   Video,
   ExternalLink,
+  ShieldCheck,
+  CalendarDays,
 } from 'lucide-react';
+
+import { useCampaign } from '@/features/crowdfunding';
+import type { CrowdfundingContributor } from '@/features/crowdfunding';
+import {
+  ContributeSheet,
+  MIN_CONTRIBUTION,
+} from '@/components/crowdfunding/ContributeSheet';
+import { VotePanel } from '@/components/crowdfunding/VotePanel';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import {
+  campaignStatus,
+  milestoneState,
+  TONE_PILL,
+} from '@/lib/crowdfunding/status';
+import { getTransactionExplorerUrl } from '@/lib/wallet-utils';
+import { useAuthStatus } from '@/hooks/use-auth';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -31,20 +42,35 @@ function daysLeft(dateStr?: string): number | null {
   return Math.max(0, Math.ceil(diff / 86_400_000));
 }
 
+function formatDate(dateStr?: string): string | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 function pct(raised: number, goal: number): number {
   if (!goal) return 0;
   return Math.min(100, Math.round((raised / goal) * 100));
 }
 
-function BackerRow({ c }: { c: CrowdfundingContributor }) {
+function SupporterRow({ c }: { c: CrowdfundingContributor }) {
   const isAnon = !c.username && !c.name;
+  const dateLabel = new Date(c.date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
   return (
     <div className='flex items-center gap-3 rounded-xl border border-zinc-800/50 bg-zinc-900/30 px-4 py-3'>
       <div className='relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-zinc-800'>
         {c.image ? (
           <Image
             src={c.image}
-            alt={c.name || 'Backer'}
+            alt={c.name || 'Supporter'}
             fill
             className='object-cover'
           />
@@ -52,7 +78,7 @@ function BackerRow({ c }: { c: CrowdfundingContributor }) {
           <div className='flex h-full w-full items-center justify-center text-sm font-bold text-zinc-500'>
             {isAnon
               ? '?'
-              : (c.name || c.username || 'B').charAt(0).toUpperCase()}
+              : (c.name || c.username || 'S').charAt(0).toUpperCase()}
           </div>
         )}
       </div>
@@ -68,14 +94,37 @@ function BackerRow({ c }: { c: CrowdfundingContributor }) {
         <p className='text-sm font-semibold text-white'>
           ${c.amount.toLocaleString()}
         </p>
-        <p className='text-xs text-zinc-600'>
-          {new Date(c.date).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          })}
-        </p>
+        {c.transactionHash ? (
+          <a
+            href={getTransactionExplorerUrl(c.transactionHash)}
+            target='_blank'
+            rel='noopener noreferrer'
+            title='View transaction on Stellar Expert'
+            className='hover:text-primary inline-flex items-center gap-1 text-xs text-zinc-600 transition'
+          >
+            {dateLabel}
+            <ExternalLink className='h-3 w-3' />
+          </a>
+        ) : (
+          <p className='text-xs text-zinc-600'>{dateLabel}</p>
+        )}
       </div>
     </div>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <h2 className='mb-4 text-lg font-semibold text-white'>{title}</h2>
+      {children}
+    </section>
   );
 }
 
@@ -83,6 +132,7 @@ export default function PublicCampaignPage({ params }: PageProps) {
   const { slug } = use(params);
   const { data: campaign, isLoading } = useCampaign(slug);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { user } = useAuthStatus();
 
   if (isLoading) {
     return (
@@ -105,16 +155,42 @@ export default function PublicCampaignPage({ params }: PageProps) {
   const goal = campaign.fundingGoal ?? 0;
   const progress = pct(raised, goal);
   const days = daysLeft(campaign.fundingEndDate);
-  const isLive = campaign.v2Status === 'FUNDING';
-  const backers = campaign.contributors ?? [];
+  const closeDate = formatDate(campaign.fundingEndDate);
+  const supporters = campaign.contributors ?? [];
 
-  const statusLabel: Record<string, string> = {
-    FUNDING: 'Live',
-    COMPLETED: 'Completed',
-    VOTING: 'Community Vote',
-    DRAFT: 'Draft',
-    SUBMITTED_FOR_REVIEW: 'Under Review',
-  };
+  const isFunding = campaign.v2Status === 'FUNDING';
+  const isVoting = campaign.v2Status === 'VOTING';
+  const isComplete = campaign.v2Status === 'COMPLETED';
+  const showFundingStats = isFunding || isComplete;
+  // Funded once less than the contract minimum remains (the last sliver can't
+  // be filled per the on-chain floor), so we stop offering "Back this project".
+  const isFullyFunded =
+    isFunding && goal > 0 && goal - raised < MIN_CONTRIBUTION;
+
+  const completedMilestones = campaign.milestones.filter(m =>
+    Boolean(m.claimedAt)
+  ).length;
+
+  const baseStatus = campaignStatus(campaign.v2Status);
+  const status = isFullyFunded
+    ? {
+        label: 'Fully Funded',
+        tone: 'success' as const,
+        description: baseStatus.description,
+      }
+    : baseStatus;
+
+  const isOwnerOrTeam =
+    !!user?.id &&
+    (user.id === project.creatorId ||
+      campaign.team.some(m => m.id === user.id));
+  // Statuses the public is allowed to observe. All others are pre-launch or
+  // terminal-negative and should not expose internal status copy to strangers.
+  const isPublicStatus =
+    campaign.v2Status === 'VOTING' ||
+    campaign.v2Status === 'FUNDING' ||
+    campaign.v2Status === 'PAUSED' ||
+    campaign.v2Status === 'COMPLETED';
 
   return (
     <div className='min-h-screen bg-zinc-950'>
@@ -132,376 +208,418 @@ export default function PublicCampaignPage({ params }: PageProps) {
       </div>
 
       {/* Hero */}
-      <div className='relative'>
-        {project.banner ? (
-          <div className='relative h-64 w-full overflow-hidden sm:h-80'>
-            <Image
-              src={project.banner}
-              alt={project.title}
-              fill
-              className='object-cover'
-              priority
-            />
-            <div className='absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent' />
-          </div>
-        ) : (
-          <div className='h-32 w-full bg-gradient-to-br from-zinc-900 to-zinc-800' />
-        )}
-      </div>
+      {project.banner ? (
+        <div className='relative h-56 w-full overflow-hidden sm:h-72'>
+          <Image
+            src={project.banner}
+            alt={project.title}
+            fill
+            className='object-cover'
+            priority
+          />
+          <div className='absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent' />
+        </div>
+      ) : (
+        <div className='h-24 w-full bg-gradient-to-br from-zinc-900 to-zinc-800' />
+      )}
 
       <div className='container mx-auto max-w-5xl px-4 pb-20'>
         {/* Title row */}
-        <div className='-mt-8 mb-8 flex items-end justify-between gap-4'>
-          <div className='flex items-end gap-4'>
-            {project.logo && (
-              <div className='relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900 shadow-lg'>
-                <Image
-                  src={project.logo}
-                  alt={project.title}
-                  fill
-                  className='object-cover'
-                />
-              </div>
-            )}
-            <div>
+        <div className='-mt-8 mb-10 flex items-end gap-4'>
+          {project.logo && (
+            <div className='relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-zinc-800 bg-zinc-900 shadow-lg'>
+              <Image
+                src={project.logo}
+                alt={project.title}
+                fill
+                className='object-cover'
+              />
+            </div>
+          )}
+          <div className='min-w-0 flex-1'>
+            <div className='flex flex-wrap items-center gap-3'>
               <h1 className='text-2xl font-bold text-white sm:text-3xl'>
                 {project.title}
               </h1>
-              {project.tagline && (
-                <p className='mt-1 text-base text-zinc-400'>
-                  {project.tagline}
-                </p>
-              )}
+              <Badge
+                variant='outline'
+                className={cn('text-xs', TONE_PILL[status.tone])}
+              >
+                {status.label}
+              </Badge>
             </div>
+            {project.tagline && (
+              <p className='mt-1 text-base text-zinc-400'>{project.tagline}</p>
+            )}
           </div>
-          {campaign.v2Status && (
-            <Badge
-              className={cn(
-                'flex-shrink-0 border-0 text-xs',
-                isLive
-                  ? 'bg-emerald-900/50 text-emerald-400'
-                  : 'bg-zinc-800 text-zinc-400'
-              )}
-            >
-              {statusLabel[campaign.v2Status] ?? campaign.v2Status}
-            </Badge>
-          )}
         </div>
 
-        <div className='grid gap-8 lg:grid-cols-3'>
-          {/* Main content */}
-          <div className='lg:col-span-2'>
-            <Tabs defaultValue='about'>
-              <TabsList className='mb-6 border-b border-zinc-800 bg-transparent'>
-                {(['about', 'milestones', 'team', 'backers'] as const).map(
-                  t => (
-                    <TabsTrigger
-                      key={t}
-                      value={t}
-                      className='data-[state=active]:border-primary rounded-none border-b-2 border-transparent pb-3 text-sm text-zinc-500 capitalize data-[state=active]:bg-transparent data-[state=active]:text-white'
-                    >
-                      {t}
-                      {t === 'backers' && backers.length > 0 && (
-                        <span className='ml-1.5 rounded-full bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-400'>
-                          {backers.length}
-                        </span>
-                      )}
-                    </TabsTrigger>
-                  )
+        <div className='grid gap-10 lg:grid-cols-3'>
+          {/* Main content — single scroll */}
+          <div className='space-y-12 lg:col-span-2'>
+            {/* Story */}
+            <Section title='About this campaign'>
+              <div className='leading-relaxed whitespace-pre-line text-zinc-300'>
+                {project.vision || project.description || (
+                  <span className='text-zinc-600 italic'>
+                    No description provided.
+                  </span>
                 )}
-              </TabsList>
-
-              <TabsContent value='about' className='mt-0'>
-                <div className='prose prose-invert prose-zinc max-w-none leading-relaxed text-zinc-300'>
-                  {project.vision || project.description || (
-                    <p className='text-zinc-600 italic'>
-                      No description provided.
-                    </p>
+              </div>
+              {(project.githubUrl ||
+                project.projectWebsite ||
+                project.demoVideo) && (
+                <div className='mt-6 flex flex-wrap gap-3'>
+                  {project.githubUrl && (
+                    <a
+                      href={project.githubUrl}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white'
+                    >
+                      <Github className='h-4 w-4' />
+                      Code
+                      <ExternalLink className='h-3 w-3 text-zinc-600' />
+                    </a>
+                  )}
+                  {project.projectWebsite && (
+                    <a
+                      href={project.projectWebsite}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white'
+                    >
+                      <Globe className='h-4 w-4' />
+                      Website
+                      <ExternalLink className='h-3 w-3 text-zinc-600' />
+                    </a>
+                  )}
+                  {project.demoVideo && (
+                    <a
+                      href={project.demoVideo}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white'
+                    >
+                      <Video className='h-4 w-4' />
+                      Demo
+                      <ExternalLink className='h-3 w-3 text-zinc-600' />
+                    </a>
                   )}
                 </div>
-                {(project.githubUrl ||
-                  project.projectWebsite ||
-                  project.demoVideo) && (
-                  <div className='mt-8 flex flex-wrap gap-3'>
-                    {project.githubUrl && (
-                      <a
-                        href={project.githubUrl}
-                        target='_blank'
-                        rel='noreferrer'
-                        className='inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white'
-                      >
-                        <Github className='h-4 w-4' />
-                        GitHub
-                        <ExternalLink className='h-3 w-3 text-zinc-600' />
-                      </a>
-                    )}
-                    {project.projectWebsite && (
-                      <a
-                        href={project.projectWebsite}
-                        target='_blank'
-                        rel='noreferrer'
-                        className='inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white'
-                      >
-                        <Globe className='h-4 w-4' />
-                        Website
-                        <ExternalLink className='h-3 w-3 text-zinc-600' />
-                      </a>
-                    )}
-                    {project.demoVideo && (
-                      <a
-                        href={project.demoVideo}
-                        target='_blank'
-                        rel='noreferrer'
-                        className='inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white'
-                      >
-                        <Video className='h-4 w-4' />
-                        Demo
-                        <ExternalLink className='h-3 w-3 text-zinc-600' />
-                      </a>
-                    )}
-                  </div>
-                )}
-              </TabsContent>
+              )}
+            </Section>
 
-              <TabsContent value='milestones' className='mt-0'>
-                {campaign.milestones.length === 0 ? (
-                  <p className='text-zinc-600 italic'>No milestones listed.</p>
-                ) : (
-                  <div className='space-y-4'>
-                    {campaign.milestones.map((m, idx) => {
-                      const statusColors: Record<string, string> = {
-                        completed:
-                          'text-emerald-400 bg-emerald-900/30 border-emerald-800/30',
-                        approved:
-                          'text-emerald-400 bg-emerald-900/30 border-emerald-800/30',
-                        in_review:
-                          'text-amber-400 bg-amber-900/30 border-amber-800/30',
-                        submitted:
-                          'text-amber-400 bg-amber-900/30 border-amber-800/30',
-                        pending:
-                          'text-zinc-400 bg-zinc-900/30 border-zinc-800/30',
-                      };
-                      const sc =
-                        statusColors[m.reviewStatus?.toLowerCase()] ??
-                        statusColors.pending;
-                      return (
-                        <div
-                          key={idx}
-                          className='rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-5'
-                        >
-                          <div className='flex items-start justify-between gap-3'>
-                            <div>
-                              <p className='text-sm font-semibold text-white'>
-                                {idx + 1}. {m.name}
-                              </p>
-                              {m.description && (
-                                <p className='mt-1 text-sm text-zinc-500'>
-                                  {m.description}
-                                </p>
-                              )}
-                            </div>
-                            <div className='flex flex-shrink-0 flex-col items-end gap-1'>
-                              {isLive && m.amount != null && (
-                                <span className='text-sm font-semibold text-white'>
-                                  ${m.amount.toLocaleString()}
-                                </span>
-                              )}
-                              {m.reviewStatus && (
-                                <Badge
-                                  className={cn(
-                                    'border text-xs capitalize',
-                                    sc
-                                  )}
-                                >
-                                  {m.reviewStatus.replace('_', ' ')}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          {m.endDate && (
-                            <p className='mt-2 flex items-center gap-1.5 text-xs text-zinc-600'>
-                              <Clock className='h-3 w-3' />
-                              Due{' '}
-                              {new Date(m.endDate).toLocaleDateString('en-US', {
-                                month: 'short',
-                                year: 'numeric',
-                              })}
+            {/* Milestones */}
+            <Section
+              title={
+                showFundingStats && campaign.milestones.length > 0
+                  ? `Milestones (${completedMilestones} / ${campaign.milestones.length} delivered)`
+                  : 'Milestones'
+              }
+            >
+              <p className='mb-5 text-sm text-zinc-500'>
+                The plan is delivered in stages. Funds are released to the team
+                one stage at a time, as each is delivered and approved by a
+                reviewer.
+              </p>
+              {campaign.milestones.length === 0 ? (
+                <p className='text-zinc-600 italic'>No milestones listed.</p>
+              ) : (
+                <div className='space-y-4'>
+                  {campaign.milestones.map((m, idx) => {
+                    const st = milestoneState(m.reviewStatus, m.claimedAt);
+                    const planned = formatDate(m.endDate);
+                    const inner = (
+                      <>
+                        <div className='flex items-start justify-between gap-3'>
+                          <div className='min-w-0'>
+                            <p className='text-sm font-semibold text-white'>
+                              {idx + 1}. {m.title || m.name}
                             </p>
-                          )}
+                            {m.description && (
+                              <p className='mt-1 text-sm text-zinc-500'>
+                                {m.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className='flex flex-shrink-0 flex-col items-end gap-1'>
+                            {showFundingStats && m.amount != null && (
+                              <span className='text-sm font-semibold text-white'>
+                                ${m.amount.toLocaleString()}
+                              </span>
+                            )}
+                            <Badge
+                              variant='outline'
+                              className={cn('text-xs', TONE_PILL[st.tone])}
+                            >
+                              {st.label}
+                            </Badge>
+                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value='team' className='mt-0'>
-                {campaign.team.length === 0 ? (
-                  <p className='text-zinc-600 italic'>
-                    No team members listed.
-                  </p>
-                ) : (
-                  <div className='grid gap-4 sm:grid-cols-2'>
-                    {campaign.team.map((m, idx) => (
+                        {planned && (
+                          <p className='mt-2 flex items-center gap-1.5 text-xs text-zinc-600'>
+                            <CalendarDays className='h-3 w-3' />
+                            Planned for {planned}
+                          </p>
+                        )}
+                      </>
+                    );
+                    return m.id ? (
+                      <Link
+                        key={m.id}
+                        href={`/crowdfunding/${slug}/milestones/${m.id}`}
+                        className='block rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-5 transition hover:border-zinc-700 hover:bg-zinc-900/60'
+                      >
+                        {inner}
+                      </Link>
+                    ) : (
                       <div
                         key={idx}
-                        className='flex items-center gap-3 rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4'
+                        className='rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-5'
                       >
-                        <div className='relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-zinc-800'>
-                          {m.image ? (
-                            <Image
-                              src={m.image}
-                              alt={m.name}
-                              fill
-                              className='object-cover'
-                            />
-                          ) : (
-                            <div className='flex h-full w-full items-center justify-center text-sm font-bold text-zinc-500'>
-                              {m.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                        <div className='min-w-0'>
-                          <p className='text-sm font-medium text-white'>
-                            {m.name}
-                          </p>
-                          <p className='text-xs text-zinc-500'>{m.role}</p>
-                        </div>
+                        {inner}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value='backers' className='mt-0'>
-                {backers.length === 0 ? (
-                  <div className='flex flex-col items-center gap-2 py-10 text-center'>
-                    <Users className='h-8 w-8 text-zinc-700' />
-                    <p className='text-sm text-zinc-600'>
-                      No backers yet. Be the first!
-                    </p>
-                    {isLive && (
-                      <Button
-                        onClick={() => setSheetOpen(true)}
-                        className='bg-primary hover:bg-primary/90 mt-2'
-                        size='sm'
-                      >
-                        Back this project
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className='space-y-3'>
-                    {backers.map((c, i) => (
-                      <BackerRow key={i} c={c} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Sidebar */}
-          <div className='space-y-5'>
-            <div className='rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-5'>
-              <div className='mb-4'>
-                <div className='h-2 overflow-hidden rounded-full bg-zinc-800'>
-                  <div
-                    className='bg-primary h-full rounded-full transition-all'
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <div className='mt-2 flex items-center justify-between text-xs text-zinc-500'>
-                  <span>{progress}% funded</span>
-                  {days !== null && <span>{days} days left</span>}
-                </div>
-              </div>
-
-              <div className='mb-4 space-y-3'>
-                <div className='flex items-center gap-2'>
-                  <Target className='h-4 w-4 text-zinc-600' />
-                  <div>
-                    <p className='text-xl font-bold text-white'>
-                      ${raised.toLocaleString()}
-                    </p>
-                    <p className='text-xs text-zinc-500'>
-                      raised of ${goal.toLocaleString()} goal
-                    </p>
-                  </div>
-                </div>
-                <div className='flex items-center gap-2'>
-                  <Users className='h-4 w-4 text-zinc-600' />
-                  <div>
-                    <p className='text-base font-semibold text-white'>
-                      {backers.length}
-                    </p>
-                    <p className='text-xs text-zinc-500'>backers</p>
-                  </div>
-                </div>
-              </div>
-
-              {isLive ? (
-                <Button
-                  onClick={() => setSheetOpen(true)}
-                  className='bg-primary hover:bg-primary/90 w-full'
-                  size='lg'
-                >
-                  Back this project
-                </Button>
-              ) : (
-                <div className='rounded-lg bg-zinc-800/50 px-4 py-3 text-center text-sm text-zinc-500'>
-                  {campaign.v2Status === 'COMPLETED'
-                    ? 'This campaign has closed.'
-                    : 'Contributions open when the campaign goes live.'}
+                    );
+                  })}
                 </div>
               )}
-            </div>
+            </Section>
 
-            {project.creator && (
-              <div className='rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-5'>
-                <p className='mb-3 text-xs font-semibold tracking-wider text-zinc-600 uppercase'>
-                  Builder
-                </p>
-                <div className='flex items-center gap-3'>
-                  <div className='relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-zinc-800'>
-                    {project.creator.image ? (
-                      <Image
-                        src={project.creator.image}
-                        alt={project.creator.name}
-                        fill
-                        className='object-cover'
-                      />
-                    ) : (
-                      <div className='flex h-full w-full items-center justify-center text-sm font-bold text-zinc-500'>
-                        {(project.creator.name || 'B').charAt(0).toUpperCase()}
+            {/* Team */}
+            {campaign.team.length > 0 && (
+              <Section title='Team'>
+                <div className='grid gap-4 sm:grid-cols-2'>
+                  {campaign.team.map((m, idx) => (
+                    <div
+                      key={idx}
+                      className='flex items-center gap-3 rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4'
+                    >
+                      <div className='relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-zinc-800'>
+                        {m.image ? (
+                          <Image
+                            src={m.image}
+                            alt={m.name}
+                            fill
+                            className='object-cover'
+                          />
+                        ) : (
+                          <div className='flex h-full w-full items-center justify-center text-sm font-bold text-zinc-500'>
+                            {m.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div>
-                    <p className='text-sm font-medium text-white'>
-                      {project.creator.name}
+                      <div className='min-w-0'>
+                        <p className='text-sm font-medium text-white'>
+                          {m.name}
+                        </p>
+                        <p className='text-xs text-zinc-500'>{m.role}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {/* Supporters */}
+            <Section
+              title={`Supporters${supporters.length ? ` (${supporters.length})` : ''}`}
+            >
+              {supporters.length === 0 ? (
+                <div className='flex flex-col items-center gap-2 rounded-xl border border-dashed border-zinc-800 py-10 text-center'>
+                  <Users className='h-8 w-8 text-zinc-700' />
+                  <p className='text-sm text-zinc-600'>
+                    No supporters yet.
+                    {isFunding ? ' Be the first to back this.' : ''}
+                  </p>
+                </div>
+              ) : (
+                <div className='space-y-3'>
+                  {supporters.map((c, i) => (
+                    <SupporterRow key={i} c={c} />
+                  ))}
+                </div>
+              )}
+            </Section>
+          </div>
+
+          {/* Sticky sidebar — funding + action */}
+          <div className='lg:col-span-1'>
+            <div className='space-y-5 lg:sticky lg:top-6'>
+              <div className='rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-5'>
+                {showFundingStats ? (
+                  <>
+                    <div className='mb-4'>
+                      <div className='h-2 overflow-hidden rounded-full bg-zinc-800'>
+                        <div
+                          className='bg-primary h-full rounded-full transition-all'
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                      <div className='mt-2 flex items-center justify-between text-xs text-zinc-500'>
+                        <span>{progress}% funded</span>
+                        {isFunding && days !== null && (
+                          <span>
+                            {days} {days === 1 ? 'day' : 'days'} left
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className='mb-1'>
+                      <p className='text-2xl font-bold text-white'>
+                        ${raised.toLocaleString()}
+                      </p>
+                      <p className='text-sm text-zinc-500'>
+                        raised of ${goal.toLocaleString()} goal
+                      </p>
+                    </div>
+                    <p className='mb-4 text-sm text-zinc-500'>
+                      {supporters.length}{' '}
+                      {supporters.length === 1 ? 'supporter' : 'supporters'}
+                      {isFunding && closeDate ? ` · closes ${closeDate}` : ''}
                     </p>
-                    {project.creator.username && (
-                      <p className='text-xs text-zinc-500'>
-                        @{project.creator.username}
+                  </>
+                ) : (
+                  <div className='mb-4 space-y-2'>
+                    <div>
+                      <p className='text-2xl font-bold text-white'>
+                        ${goal.toLocaleString()}{' '}
+                        <span className='text-sm font-normal text-zinc-500'>
+                          {campaign.fundingCurrency ?? 'USDC'}
+                        </span>
+                      </p>
+                      <p className='text-sm text-zinc-500'>funding goal</p>
+                    </div>
+                    {campaign.milestones.length > 0 && (
+                      <p className='text-sm text-zinc-500'>
+                        {campaign.milestones.length}{' '}
+                        {campaign.milestones.length === 1
+                          ? 'milestone'
+                          : 'milestones'}{' '}
+                        planned
                       </p>
                     )}
                   </div>
-                </div>
+                )}
+
+                {/* Primary action by state */}
+                {isOwnerOrTeam ? (
+                  // Owner/team: show their private status info; no voting or funding actions.
+                  <div
+                    className={cn(
+                      'rounded-lg border px-4 py-3 text-center',
+                      TONE_PILL[status.tone]
+                    )}
+                  >
+                    <p className='text-sm font-semibold'>{status.label}</p>
+                    <p className='mt-1 text-xs opacity-80'>
+                      {status.description}
+                    </p>
+                  </div>
+                ) : isFunding && !isFullyFunded ? (
+                  <>
+                    <Button
+                      onClick={() => setSheetOpen(true)}
+                      className='bg-primary hover:bg-primary/90 w-full'
+                      size='lg'
+                    >
+                      Back this project
+                    </Button>
+                    <p className='mt-3 flex items-start gap-2 text-xs text-zinc-500'>
+                      <ShieldCheck className='mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-zinc-600' />
+                      Your support is held safely and released to the team as
+                      each milestone is delivered and approved.
+                    </p>
+                  </>
+                ) : isFullyFunded ? (
+                  <div className='border-primary/30 bg-primary/10 rounded-lg border px-4 py-3 text-center'>
+                    <p className='text-primary text-sm font-semibold'>
+                      Fully funded
+                    </p>
+                    <p className='mt-1 text-xs text-zinc-400'>
+                      This campaign reached its goal. Thanks to all{' '}
+                      {supporters.length}{' '}
+                      {supporters.length === 1 ? 'supporter' : 'supporters'}.
+                    </p>
+                  </div>
+                ) : isVoting ? (
+                  <VotePanel campaign={campaign} />
+                ) : isPublicStatus ? (
+                  <div
+                    className={cn(
+                      'rounded-lg border px-4 py-3 text-center',
+                      TONE_PILL[status.tone]
+                    )}
+                  >
+                    <p className='text-sm font-semibold'>{status.label}</p>
+                    <p className='mt-1 text-xs opacity-80'>
+                      {status.description}
+                    </p>
+                  </div>
+                ) : (
+                  // Pre-launch or terminal state accessed via direct URL; not in public listing.
+                  <div className='rounded-lg border border-zinc-800 px-4 py-3 text-center'>
+                    <p className='text-sm font-semibold text-zinc-400'>
+                      Not yet open
+                    </p>
+                    <p className='mt-1 text-xs text-zinc-600'>
+                      This campaign is not yet available to the public.
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* Creator */}
+              {project.creator && (
+                <div className='rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-5'>
+                  <p className='mb-3 text-xs font-semibold tracking-wider text-zinc-600 uppercase'>
+                    Creator
+                  </p>
+                  <div className='flex items-center gap-3'>
+                    <div className='relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-zinc-800'>
+                      {project.creator.image ? (
+                        <Image
+                          src={project.creator.image}
+                          alt={project.creator.name}
+                          fill
+                          className='object-cover'
+                        />
+                      ) : (
+                        <div className='flex h-full w-full items-center justify-center text-sm font-bold text-zinc-500'>
+                          {(project.creator.name || 'C')
+                            .charAt(0)
+                            .toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className='text-sm font-medium text-white'>
+                        {project.creator.name}
+                      </p>
+                      {project.creator.username && (
+                        <p className='text-xs text-zinc-500'>
+                          @{project.creator.username}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <ContributeSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        campaignId={campaign.id}
-        campaignTitle={project.title}
-        fundingGoal={goal}
-        raisedAmount={raised}
-      />
+      {!isOwnerOrTeam && (
+        <ContributeSheet
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          campaignId={campaign.id}
+          campaignTitle={project.title}
+          fundingGoal={goal}
+          raisedAmount={raised}
+        />
+      )}
     </div>
   );
 }

@@ -19,7 +19,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     color: 'bg-blue-900/50 text-blue-400',
   },
   REVIEW_APPROVED: {
-    label: 'Approved',
+    label: 'Ready to Launch',
     color: 'bg-emerald-900/50 text-emerald-400',
   },
   VOTING: { label: 'Voting', color: 'bg-purple-900/50 text-purple-400' },

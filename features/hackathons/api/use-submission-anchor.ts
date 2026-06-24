@@ -60,7 +60,7 @@ export interface UseSubmissionAnchor {
  * responsible for ensuring the managed wallet is ready and passing its address
  * (so this stays decoupled from the wallet provider and trivially testable).
  *
- * @param hackathonId the hackathon **CUID** (not the slug — the participant
+ * @param hackathonId the hackathon **id** (not the slug — the participant
  *   escrow endpoint resolves `:id` by primary key).
  */
 export function useSubmissionAnchor(hackathonId: string): UseSubmissionAnchor {

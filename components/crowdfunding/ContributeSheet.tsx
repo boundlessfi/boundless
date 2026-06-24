@@ -27,7 +27,7 @@ import { connectWallet, signXdrWithKit } from '@/lib/wallet/wallet-kit';
 type WalletOrigin = 'BOUNDLESS' | 'EXTERNAL';
 
 /** Contract floor: contributions must be at least 10 USDC. */
-const MIN_CONTRIBUTION = 10;
+export const MIN_CONTRIBUTION = 10;
 
 interface Props {
   open: boolean;
@@ -57,8 +57,12 @@ export function ContributeSheet({
   const queryClient = useQueryClient();
 
   const numAmount = parseFloat(amount);
-  const isValidAmount = !isNaN(numAmount) && numAmount >= MIN_CONTRIBUTION;
   const remaining = Math.max(0, fundingGoal - raisedAmount);
+  const overRemaining = !isNaN(numAmount) && numAmount > remaining;
+  const isValidAmount =
+    !isNaN(numAmount) &&
+    numAmount >= MIN_CONTRIBUTION &&
+    numAmount <= remaining;
 
   const reset = () => {
     setAmount('');
@@ -103,8 +107,11 @@ export function ContributeSheet({
         if (!op?.unsignedXdr) {
           throw new Error('Could not build the contribution transaction.');
         }
-        const signedXdr = await signXdrWithKit(op.unsignedXdr);
-        await submitSignedContribution(campaignId, op.id, signedXdr);
+        const signedXdr = await signXdrWithKit(
+          op.unsignedXdr,
+          connected.address
+        );
+        await submitSignedContribution(campaignId, op.opRowId, signedXdr);
       }
       // Refresh campaign data (raised total, backers) once the op is in flight.
       queryClient.invalidateQueries({ queryKey: ['crowdfunding'] });
@@ -121,10 +128,28 @@ export function ContributeSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={handleClose}>
+    <Sheet
+      open={open}
+      // Keep the sheet open mid-flow: the external path opens the wallet kit
+      // modal while submitting, which Radix would otherwise treat as an outside
+      // interaction and tear the contribute form down.
+      onOpenChange={next => {
+        if (!next && submitting) return;
+        if (!next) handleClose();
+      }}
+      // Non-modal so the wallet kit's connect/sign popup stays interactive. A
+      // modal sheet traps focus and blocks the wallet UI.
+      modal={false}
+    >
       <SheetContent
         side='right'
         className='w-full border-zinc-800 bg-zinc-950 sm:max-w-md'
+        onInteractOutside={e => {
+          if (submitting) e.preventDefault();
+        }}
+        onEscapeKeyDown={e => {
+          if (submitting) e.preventDefault();
+        }}
       >
         {done ? (
           <div className='flex h-full flex-col items-center justify-center gap-6 text-center'>
@@ -133,12 +158,12 @@ export function ContributeSheet({
             </div>
             <div>
               <h2 className='text-xl font-semibold text-white'>
-                Contribution confirmed
+                Contribution submitted
               </h2>
               <p className='mt-2 text-sm text-zinc-500'>
                 Thank you for backing{' '}
-                <span className='text-zinc-300'>{campaignTitle}</span>. Your
-                support helps bring this to life.
+                <span className='text-zinc-300'>{campaignTitle}</span>. It will
+                appear in the supporters list once confirmed.
               </p>
             </div>
             <Button
@@ -153,8 +178,8 @@ export function ContributeSheet({
             <SheetHeader className='mb-6'>
               <SheetTitle className='text-white'>Back this project</SheetTitle>
               <SheetDescription className='text-zinc-500'>
-                Your contribution is held in escrow and released as milestones
-                are completed.
+                Your money is held safely and released to the team as each
+                milestone is delivered and approved.
               </SheetDescription>
             </SheetHeader>
 
@@ -181,6 +206,7 @@ export function ContributeSheet({
                   <Input
                     type='number'
                     min={MIN_CONTRIBUTION}
+                    max={remaining}
                     step='any'
                     placeholder='0.00'
                     value={amount}
@@ -188,11 +214,15 @@ export function ContributeSheet({
                     className='border-zinc-800 bg-zinc-900 pl-7 text-white placeholder:text-zinc-600'
                   />
                 </div>
-                {amount && !isValidAmount && (
+                {amount && overRemaining ? (
                   <p className='text-xs text-red-400'>
-                    Minimum contribution is ${MIN_CONTRIBUTION} USDC
+                    Only ${remaining.toLocaleString()} left to reach the goal.
                   </p>
-                )}
+                ) : amount && !isValidAmount ? (
+                  <p className='text-xs text-red-400'>
+                    Minimum contribution is ${MIN_CONTRIBUTION} USDC.
+                  </p>
+                ) : null}
               </div>
 
               {/* Wallet selector */}
@@ -284,7 +314,8 @@ export function ContributeSheet({
               </Button>
 
               <p className='text-center text-xs text-zinc-600'>
-                Funds are held in escrow until milestones are approved.
+                Your money is held safely and only released as milestones are
+                approved.
               </p>
             </div>
           </>

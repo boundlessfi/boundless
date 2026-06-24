@@ -5,7 +5,7 @@ import { ProjectLoading } from '@/components/project-details/project-loading';
 import { getCrowdfundingProject } from '@/features/projects/api';
 import type { Crowdfunding } from '@/features/projects/types';
 import { use, useEffect, useState } from 'react';
-import { useSearchParams, notFound } from 'next/navigation';
+import { useSearchParams, notFound, useRouter } from 'next/navigation';
 import {
   getSubmissionDetails,
   getHackathon,
@@ -34,6 +34,15 @@ function ProjectContent({
   const [project, setProject] = useState<Crowdfunding | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  // Crowdfunding campaigns have their own dedicated, jargon-free page. Never
+  // show them inside the generic project layout — send them there instead.
+  const crowdfundingSlug =
+    !isSubmission && project?.v2Status ? project.slug : null;
+  useEffect(() => {
+    if (crowdfundingSlug) router.replace(`/crowdfunding/${crowdfundingSlug}`);
+  }, [crowdfundingSlug, router]);
 
   useEffect(() => {
     const fetchSubmission = async (submissionId: string) => {
@@ -108,12 +117,8 @@ function ProjectContent({
     fetchProjectData();
   }, [id, isSubmission]);
 
-  if (loading) {
+  if (loading || crowdfundingSlug) {
     return <ProjectLoading />;
-  }
-
-  if (error || !project) {
-    notFound();
   }
 
   if (error || !project) {

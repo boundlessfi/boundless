@@ -5,15 +5,13 @@ import { uploadMilestoneDocuments } from '@/lib/api/upload';
 import {
   useCampaign,
   useSubmitMilestoneEvidence,
-  useClaimMilestone,
 } from '@/features/crowdfunding';
 import { MilestoneDetailHeader } from '@/components/crowdfunding/milestone-detail-header';
 import { MilestoneDetailInfo } from '@/components/crowdfunding/milestone-detail-info';
 import { MilestoneDetailDescription } from '@/components/crowdfunding/milestone-detail-description';
 import { MilestoneDetailLinks } from '@/components/crowdfunding/milestone-detail-links';
 import { MilestoneSubmitForm } from '@/components/crowdfunding/MilestoneSubmitForm';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, DollarSign, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PageProps {
@@ -37,7 +35,6 @@ export default function MilestoneDetailPage({ params }: PageProps) {
   const campaignId = campaign?.id ?? '';
 
   const submitEvidence = useSubmitMilestoneEvidence(campaignId);
-  const claimMilestone = useClaimMilestone(campaignId);
 
   const handleSubmitEvidence = async (formData: {
     submissionNotes: string;
@@ -87,21 +84,6 @@ export default function MilestoneDetailPage({ params }: PageProps) {
     );
   };
 
-  const handleClaimPayout = () => {
-    if (!milestone?.id) return;
-    claimMilestone.mutate(
-      { builderAddress: '', crowdfundingMilestoneId: milestone.id },
-      {
-        onSuccess: () => toast.success('Payout claimed successfully!'),
-        onError: err => {
-          toast.error(
-            err instanceof Error ? err.message : 'Failed to claim payout'
-          );
-        },
-      }
-    );
-  };
-
   if (isLoading) {
     return (
       <div className='text-muted-foreground py-12 text-center'>Loading...</div>
@@ -121,8 +103,7 @@ export default function MilestoneDetailPage({ params }: PageProps) {
     reviewStatus === 'pending' || reviewStatus === 'resubmission_required';
   const isRejected =
     reviewStatus === 'rejected' || reviewStatus === 'resubmission_required';
-  const canClaim =
-    reviewStatus === 'approved' && campaign.v2Status === 'FUNDING';
+  const isApproved = reviewStatus === 'approved';
 
   return (
     <div className='mx-auto max-w-4xl space-y-8'>
@@ -169,17 +150,18 @@ export default function MilestoneDetailPage({ params }: PageProps) {
         />
       )}
 
-      {/* Claim payout */}
-      {canClaim && (
+      {/* Approved: payout is released by the Boundless team (no builder action) */}
+      {isApproved && (
         <div className='rounded-xl border border-emerald-800/50 bg-emerald-950/20 p-6'>
-          <div className='flex items-start justify-between gap-4'>
+          <div className='flex items-start gap-3'>
+            <CheckCircle2 className='mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-400' />
             <div>
               <h3 className='text-base font-semibold text-emerald-300'>
-                Payout available
+                Milestone approved
               </h3>
               <p className='mt-1 text-sm text-emerald-200/70'>
-                This milestone has been approved. Claim your share of the escrow
-                funds.
+                This milestone is approved. The Boundless team releases the
+                payout to your wallet. No action is needed on your part.
               </p>
               {milestone.amount != null && (
                 <p className='mt-2 text-lg font-bold text-white'>
@@ -187,18 +169,6 @@ export default function MilestoneDetailPage({ params }: PageProps) {
                 </p>
               )}
             </div>
-            <Button
-              onClick={handleClaimPayout}
-              disabled={claimMilestone.isPending}
-              className='flex-shrink-0 gap-2 bg-emerald-600 text-white hover:bg-emerald-500'
-            >
-              {claimMilestone.isPending ? (
-                <Loader2 className='h-4 w-4 animate-spin' />
-              ) : (
-                <DollarSign className='h-4 w-4' />
-              )}
-              {claimMilestone.isPending ? 'Claiming...' : 'Claim payout'}
-            </Button>
           </div>
         </div>
       )}

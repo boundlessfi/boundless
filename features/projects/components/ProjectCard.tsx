@@ -3,6 +3,7 @@ import { formatNumber, cn } from '@/lib/utils';
 import { useRouter } from 'nextjs-toploader/app';
 import Image from 'next/image';
 import { CountdownTimer } from '@/components/ui/timer';
+import { campaignStatus, type StatusTone } from '@/lib/crowdfunding/status';
 
 export type ProjectCardData = {
   id: string;
@@ -26,9 +27,30 @@ export type ProjectCardData = {
   milestones?: any[];
   voteGoal?: number;
   voteProgress?: number;
+  /**
+   * Crowdfunding campaign fields. When `v2Status` is present the card treats
+   * `data` as a campaign and reads its stage + vote tally from these (the
+   * single source of truth), not from the legacy project.status / Vote model.
+   */
+  v2Status?: string | null;
+  voteUpCount?: number;
+  voteDownCount?: number;
   isSubmission?: boolean;
   submissionStatus?: string | null;
   [key: string]: any;
+};
+
+/** Which progress row a card shows under the title. */
+type StatBucket = 'votes' | 'funding' | 'milestones' | null;
+
+/** Map a plain-language status tone to the card's overlay badge palette. */
+const TONE_TO_BADGE: Record<StatusTone, string> = {
+  neutral: 'text-gray-400 bg-gray-800/20',
+  info: 'text-blue-400 bg-blue-400/10',
+  warning: 'text-amber-400 bg-amber-400/10',
+  success: 'text-green-400 bg-green-400/10',
+  danger: 'text-red-400 bg-red-400/10',
+  live: 'text-blue-400 bg-blue-400/10',
 };
 
 type ProjectCardProps = {
@@ -36,6 +58,8 @@ type ProjectCardProps = {
   newTab?: boolean;
   isFullWidth?: boolean;
   className?: string;
+  /** Route base the card links to. Defaults to /projects; crowdfunding passes /crowdfunding. */
+  basePath?: string;
 };
 
 function ProjectCard({
@@ -43,6 +67,7 @@ function ProjectCard({
   newTab = false,
   isFullWidth = false,
   className = '',
+  basePath = '/projects',
 }: ProjectCardProps) {
   const router = useRouter();
 
@@ -55,7 +80,9 @@ function ProjectCard({
     fundingEndDate = null,
     milestones = [],
     voteGoal = 0,
-    voteProgress = 0,
+    v2Status = null,
+    voteUpCount,
+    voteDownCount,
     isSubmission,
     submissionStatus,
   } = data;
@@ -77,12 +104,19 @@ function ProjectCard({
   const handleClick = () => {
     const url = isSubmission
       ? `/projects/${slug}?type=submission`
-      : `/projects/${slug}`;
+      : `${basePath}/${slug}`;
     router.push(url);
   };
 
-  // Determine display status
-  const getDisplayStatus = () => {
+  const isCampaign = !!v2Status && !isSubmission;
+  const fullyFunded =
+    isCampaign &&
+    v2Status === 'FUNDING' &&
+    fundingGoal > 0 &&
+    fundingRaised >= fundingGoal;
+
+  // Plain projects + hackathon submissions key off the legacy project.status.
+  const projectDisplayStatus = (() => {
     if (isSubmission) {
       if (submissionStatus === 'SHORTLISTED' || submissionStatus === 'ACCEPTED')
         return 'Shortlisted';
@@ -96,12 +130,38 @@ function ProjectCard({
     if (projectStatus === 'LIVE') return 'Funded';
     if (projectStatus === 'COMPLETED') return 'Completed';
     return projectStatus;
-  };
+  })();
 
-  const status = getDisplayStatus();
+  // Crowdfunding campaigns derive stage from the v2 lifecycle (single source of
+  // truth); project.status stays IDEA through voting, so it can't be trusted.
+  const campaignMeta = isCampaign ? campaignStatus(v2Status) : null;
+  const status = fullyFunded
+    ? 'Fully Funded'
+    : campaignMeta
+      ? campaignMeta.label
+      : projectDisplayStatus;
 
-  const getStatusStyles = () => {
-    switch (status) {
+  // Which progress row to render. Fully-funded campaigns switch from the
+  // funding bar to the milestone delivery bar immediately.
+  const statBucket: StatBucket = campaignMeta
+    ? v2Status === 'VOTING'
+      ? 'votes'
+      : fullyFunded || v2Status === 'COMPLETED'
+        ? 'milestones'
+        : v2Status === 'FUNDING' || v2Status === 'PAUSED'
+          ? 'funding'
+          : null
+    : projectDisplayStatus === 'Validation'
+      ? 'votes'
+      : projectDisplayStatus === 'Funding'
+        ? 'funding'
+        : projectDisplayStatus === 'Funded' ||
+            projectDisplayStatus === 'Completed'
+          ? 'milestones'
+          : null;
+
+  const getProjectStatusStyles = () => {
+    switch (projectDisplayStatus) {
       case 'Funding':
         return 'text-blue-400 bg-blue-400/10';
       case 'Funded':
@@ -115,18 +175,26 @@ function ProjectCard({
     }
   };
 
-  // Stats calculations
-  const totalVotes = _count?.votes || 0;
+  // Stats calculations. Campaigns count community turnout from the campaign's
+  // own tally (up + down toward the goal), matching the detail-page VotePanel.
+  // Plain projects fall back to the legacy Vote model count.
+  const totalVotes = isCampaign
+    ? (voteUpCount ?? 0) + (voteDownCount ?? 0)
+    : _count?.votes || 0;
   const currentVoteGoal = voteGoal || 1;
   const fundingProgress = (fundingRaised / (fundingGoal || 1)) * 100;
 
   const completedMilestones =
-    milestones?.filter(m => m.reviewStatus === 'completed')?.length || 0;
+    milestones?.filter((m: any) => Boolean(m.claimedAt))?.length || 0;
   const totalMilestonesCount = milestones?.length || 0;
   const milestonesProgress =
     (completedMilestones / (totalMilestonesCount || 1)) * 100;
 
   const getDeadlineInfo = () => {
+    if (fullyFunded) {
+      return { text: 'Fully Funded', className: 'text-green-400' };
+    }
+
     if (status === 'Completed') {
       return { text: 'Completed', className: 'text-green-400' };
     }
@@ -161,7 +229,11 @@ function ProjectCard({
   };
 
   const deadlineInfo = getDeadlineInfo();
-  const statusColor = getStatusStyles();
+  const statusColor = fullyFunded
+    ? TONE_TO_BADGE['success']
+    : campaignMeta
+      ? TONE_TO_BADGE[campaignMeta.tone]
+      : getProjectStatusStyles();
 
   return (
     <div
@@ -241,7 +313,7 @@ function ProjectCard({
 
         {/* Stats / Progress Section */}
         <div className='flex flex-col gap-2 border-t border-neutral-800 px-4 pt-3 pb-1 sm:px-5'>
-          {status === 'Validation' && (
+          {statBucket === 'votes' && (
             <div className='flex flex-col gap-1'>
               <div className='flex items-baseline justify-between'>
                 <span className='text-sm text-gray-400'>Votes</span>
@@ -261,7 +333,7 @@ function ProjectCard({
             </div>
           )}
 
-          {status === 'Funding' && (
+          {statBucket === 'funding' && (
             <div className='flex flex-col gap-1'>
               <div className='flex items-baseline justify-between'>
                 <span className='text-sm text-gray-400'>Raised</span>
@@ -281,7 +353,7 @@ function ProjectCard({
             </div>
           )}
 
-          {(status === 'Funded' || status === 'Completed') && (
+          {statBucket === 'milestones' && (
             <div className='flex flex-col gap-1'>
               <div className='flex items-baseline justify-between'>
                 <span className='text-sm text-gray-400'>Milestones</span>
@@ -304,7 +376,7 @@ function ProjectCard({
 
         {/* Footer info: Deadline/Status Text */}
         <div className='flex items-center justify-between border-t border-neutral-800 px-4 py-3 sm:px-5'>
-          {(status === 'Funding' || status === 'Validation') &&
+          {(statBucket === 'funding' || statBucket === 'votes') &&
           fundingEndDate ? (
             <div className='flex items-center gap-2'>
               <span className='text-[10px] whitespace-nowrap text-gray-400 uppercase'>

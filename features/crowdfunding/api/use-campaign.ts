@@ -17,6 +17,7 @@ import {
   publishCampaign,
   contributeV2,
   castVote,
+  fetchMyVote,
 } from './campaign-client';
 import type { ContributeV2Body } from '../types';
 
@@ -165,6 +166,19 @@ export function useCastVote() {
       queryClient.invalidateQueries({
         queryKey: crowdfundingKeys.campaign(id),
       });
+      queryClient.invalidateQueries({
+        queryKey: [...crowdfundingKeys.campaign(id), 'my-vote'],
+      });
     },
+  });
+}
+
+/** The caller's current vote on a campaign (or null). */
+export function useMyVote(id?: string) {
+  return useQuery({
+    queryKey: [...crowdfundingKeys.campaign(id ?? ''), 'my-vote'],
+    queryFn: () => fetchMyVote(id as string),
+    enabled: Boolean(id),
+    staleTime: 15_000,
   });
 }
