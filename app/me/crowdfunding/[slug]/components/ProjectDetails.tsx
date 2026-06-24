@@ -12,10 +12,7 @@ interface ProjectDetailsProps {
 // Identity (logo, title, status) lives in the shared campaign layout header,
 // so this is just the campaign story — no duplicated title/status/date.
 export function ProjectDetails({ project }: ProjectDetailsProps) {
-  // `vision` is the canonical "Project story" the wizard writes; description /
-  // details are legacy fields. Match the public page's precedence so the same
-  // campaign shows the same story on both surfaces.
-  const body = project.vision || project.description || project.details || '';
+  const body = project.details ?? project.description ?? '';
   const { styledContent } = useMarkdown(body, {
     breaks: true,
     gfm: true,

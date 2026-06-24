@@ -245,7 +245,7 @@ function mapCampaignToWizard(c: CrowdfundingCampaign): CampaignWizardData {
     category: p?.category ?? '',
     logoUrl: p?.logo ?? '',
     bannerUrl: p?.banner ?? '',
-    vision: p?.details ?? '', // story <-> project.details
+    vision: p?.details ?? p?.description ?? '', // story <-> project.details (fallback: project.description for pre-fix data)
     fundingGoal: c.fundingGoal ?? 0,
     milestones,
     teamMembers,

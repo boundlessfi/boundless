@@ -136,7 +136,7 @@ export default function PublicCampaignPage({ params }: PageProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const { user, isAuthenticated } = useAuthStatus();
   const { styledContent: descriptionContent } = useMarkdown(
-    campaign?.project?.details ?? ''
+    campaign?.project?.details ?? campaign?.project?.description ?? ''
   );
 
   if (isLoading) {
@@ -319,12 +319,8 @@ export default function PublicCampaignPage({ params }: PageProps) {
             {/* Story */}
             <Section title='About this campaign'>
               <div className='text-zinc-300'>
-                {project.details ? (
+                {(project.details ?? project.description) ? (
                   descriptionContent
-                ) : project.vision || project.description ? (
-                  <p className='leading-relaxed whitespace-pre-line'>
-                    {project.vision || project.description}
-                  </p>
                 ) : (
                   <span className='text-zinc-600 italic'>
                     No description provided.
