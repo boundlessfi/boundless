@@ -11,6 +11,7 @@ import {
   fetchCampaigns,
   fetchMyCampaigns,
   fetchCampaignBySlug,
+  fetchCampaignById,
   submitForReview,
   withdrawSubmission,
   reviseAndResubmit,
@@ -19,6 +20,9 @@ import {
   castVote,
   fetchMyVote,
 } from './campaign-client';
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import type { ContributeV2Body } from '../types';
 
 /** Funding window opened at launch (admins can extend it afterward). */
@@ -58,12 +62,14 @@ export function useMyCampaigns(
 
 /** Single campaign by slug or ID. Disabled until a value is provided. */
 export function useCampaign(idOrSlug: string | null | undefined) {
+  const isId = Boolean(idOrSlug && UUID_RE.test(idOrSlug));
   return useQuery({
     queryKey: idOrSlug
       ? crowdfundingKeys.campaign(idOrSlug)
       : [...crowdfundingKeys.all, 'campaign', 'idle'],
     enabled: Boolean(idOrSlug),
-    queryFn: () => fetchCampaignBySlug(idOrSlug!),
+    queryFn: () =>
+      isId ? fetchCampaignById(idOrSlug!) : fetchCampaignBySlug(idOrSlug!),
     staleTime: 30_000,
   });
 }
