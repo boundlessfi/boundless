@@ -31,11 +31,35 @@ export const transformBountyFromApi = (draft: BountyDraft): BountyFormData => {
   const mode = draft.data?.mode;
   const submission = draft.data?.submission;
   const reward = draft.data?.reward;
+  // `resources` is read via a cast until `npm run codegen` runs against the
+  // updated backend (the generated BountyDraftData picks it up then).
+  const resources = (
+    draft.data as { resources?: BountyFormData['resources'] } | undefined
+  )?.resources;
 
   const winnerCount = reward?.prizeTiers?.length || 1;
 
+  // category/country are read via a cast until `npm run codegen` runs against
+  // the updated backend (the generated BountyScopeSection picks them up then).
+  const scopeExtra = scope as
+    | {
+        category?: NonNullable<BountyFormData['scope']>['category'];
+        country?: string | null;
+      }
+    | undefined;
+
   return {
-    scope: scope ? { ...scope } : undefined,
+    scope: scope
+      ? ({
+          title: scope.title,
+          description: scope.description,
+          category: scopeExtra?.category ?? undefined,
+          country: scopeExtra?.country ?? null,
+          githubIssueUrl: scope.githubIssueUrl ?? null,
+          projectId: scope.projectId ?? null,
+          bountyWindowId: scope.bountyWindowId ?? null,
+        } as NonNullable<BountyFormData['scope']>)
+      : undefined,
     mode:
       mode?.entryType && mode?.claimType
         ? {
@@ -60,6 +84,10 @@ export const transformBountyFromApi = (draft: BountyDraft): BountyFormData => {
         }
       : undefined,
     reward: reward ? { ...reward } : undefined,
+    resources:
+      resources && Array.isArray(resources.resources)
+        ? { resources: resources.resources }
+        : undefined,
   };
 };
 
@@ -146,6 +174,31 @@ export const useBountyDraft = ({
   };
 
   /**
+   * Persist every provided section in a single PATCH and replace the local
+   * snapshot. Used by the dev-only "Fill with mock" tool to populate the whole
+   * wizard at once.
+   */
+  const saveAllSections = async (data: BountyFormData) => {
+    if (!organizationId) {
+      toast.error('Organization ID is required');
+      return;
+    }
+    const id = await ensureDraftId();
+    const body: Record<string, unknown> = {};
+    for (const section of DRAFT_SECTIONS) {
+      const value = data[section];
+      if (value !== undefined) body[section] = value;
+    }
+    if (Object.keys(body).length > 0) {
+      await updateDraft.mutateAsync({
+        id,
+        body: body as UpdateBountyDraftBody,
+      });
+    }
+    setStepData(data);
+  };
+
+  /**
    * Persist one section. `data` is the section's form snapshot; extra UI-only
    * fields (e.g. mode.winnerCount) are stripped by the backend Zod section
    * schema, so we can send the form value as-is.
@@ -179,5 +232,6 @@ export const useBountyDraft = ({
     isSavingDraft: createDraft.isPending || updateDraft.isPending,
     saveDraft,
     saveStep,
+    saveAllSections,
   };
 };

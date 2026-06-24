@@ -37,6 +37,11 @@ export {
 // Query keys.
 export { bountyKeys } from './api/keys';
 
+// Published bounty list (client + hook).
+export { listOrganizationBounties } from './api/core';
+export type { OrganizationBountyListItem } from './api/core';
+export { useOrganizationBounties } from './api/use-bounties';
+
 // Draft client (imperative helpers).
 export {
   createBountyDraft,

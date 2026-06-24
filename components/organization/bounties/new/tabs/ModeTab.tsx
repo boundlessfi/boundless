@@ -11,6 +11,7 @@ import {
   Loader2,
   Minus,
   Plus,
+  ArrowLeft,
 } from 'lucide-react';
 
 import { BoundlessButton } from '@/components/buttons';
@@ -28,6 +29,7 @@ import {
 
 interface ModeTabProps {
   onContinue?: () => void;
+  onBack?: () => void;
   onSave?: (data: ModeFormData) => Promise<void>;
   initialData?: Partial<ModeFormData>;
   isLoading?: boolean;
@@ -87,6 +89,7 @@ const defaultValues: ModeFormData = {
 
 export default function ModeTab({
   onContinue,
+  onBack,
   onSave,
   initialData,
   isLoading = false,
@@ -314,7 +317,21 @@ export default function ModeTab({
           </p>
         </div>
 
-        <div className='flex justify-end pt-4'>
+        <div className='flex items-center justify-between pt-4'>
+          {onBack ? (
+            <BoundlessButton
+              type='button'
+              variant='outline'
+              size='lg'
+              onClick={onBack}
+              disabled={isLoading}
+            >
+              <ArrowLeft className='mr-2 h-4 w-4' />
+              Back
+            </BoundlessButton>
+          ) : (
+            <span />
+          )}
           <BoundlessButton
             type='submit'
             size='lg'

@@ -51,6 +51,7 @@ export const useBountySteps = (
     mode: { status: 'pending', isCompleted: false },
     submission: { status: 'pending', isCompleted: false },
     reward: { status: 'pending', isCompleted: false },
+    resources: { status: 'pending', isCompleted: false },
     review: { status: 'pending', isCompleted: false },
   });
 

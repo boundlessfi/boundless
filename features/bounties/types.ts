@@ -33,12 +33,13 @@ export type BountySubmissionVisibility = NonNullable<
   BountySubmissionSection['submissionVisibility']
 >;
 
-/** The four editable wizard sections, in order. */
+/** The editable wizard sections, in order. `resources` is optional. */
 export const DRAFT_SECTIONS = [
   'scope',
   'mode',
   'submission',
   'reward',
+  'resources',
 ] as const;
 export type DraftSection = (typeof DRAFT_SECTIONS)[number];
 

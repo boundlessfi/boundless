@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -17,9 +17,17 @@ interface ResourceFileUploadProps {
   value?: { url: string; name: string };
   onChange: (file: { url: string; name: string } | undefined) => void;
   disabled?: boolean;
+  /** Cloudinary folder the upload lands in. */
+  folder?: string;
+  /** Tags applied to the uploaded asset. */
+  tags?: string[];
+  /** Accepted MIME types. Defaults to PDF / PowerPoint / Word. */
+  allowedMimeTypes?: string[];
+  /** Accepted file extensions (incl. leading dot). Defaults to PDF/PPT/DOC. */
+  allowedExtensions?: string[];
 }
 
-const ALLOWED_FILE_TYPES = [
+const DEFAULT_ALLOWED_MIME_TYPES = [
   'application/pdf',
   'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -27,7 +35,7 @@ const ALLOWED_FILE_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 
-const ALLOWED_EXTENSIONS = ['.pdf', '.ppt', '.pptx', '.doc', '.docx'];
+const DEFAULT_ALLOWED_EXTENSIONS = ['.pdf', '.ppt', '.pptx', '.doc', '.docx'];
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -42,6 +50,9 @@ const getFileIcon = (fileName: string) => {
   if (extension === 'doc' || extension === 'docx') {
     return <File className='h-5 w-5 text-blue-500' />;
   }
+  if (extension === 'md' || extension === 'markdown') {
+    return <FileText className='h-5 w-5 text-purple-400' />;
+  }
   return <FileText className='h-5 w-5 text-zinc-500' />;
 };
 
@@ -49,21 +60,32 @@ export default function ResourceFileUpload({
   value,
   onChange,
   disabled = false,
+  folder = 'boundless/hackathons/resources',
+  tags = ['hackathon', 'resource'],
+  allowedMimeTypes = DEFAULT_ALLOWED_MIME_TYPES,
+  allowedExtensions = DEFAULT_ALLOWED_EXTENSIONS,
 }: ResourceFileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Unique per instance so multiple resource rows don't share one input id
+  // (a duplicate id would make every label trigger the first row's input).
+  const inputId = useId();
+
+  // Human-readable list of accepted formats (e.g. "PDF, PPT, DOC, MD").
+  const acceptLabel = allowedExtensions
+    .map(ext => ext.replace('.', '').toUpperCase())
+    .join(', ');
 
   const validateFile = (file: File): boolean => {
-    // Check file type
+    // Check file type. Markdown often arrives with an empty or generic MIME
+    // type, so the extension check is the reliable signal.
     const isValidType =
-      ALLOWED_FILE_TYPES.includes(file.type) ||
-      ALLOWED_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext));
+      allowedMimeTypes.includes(file.type) ||
+      allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
 
     if (!isValidType) {
-      toast.error(
-        'Please upload a PDF, PowerPoint (.ppt, .pptx), or Word document (.doc, .docx)'
-      );
+      toast.error(`Please upload one of: ${acceptLabel}`);
       return false;
     }
 
@@ -89,8 +111,8 @@ export default function ResourceFileUpload({
     setIsUploading(true);
     try {
       const uploadResult = await uploadService.uploadSingle(file, {
-        folder: 'boundless/hackathons/resources',
-        tags: ['hackathon', 'resource'],
+        folder,
+        tags,
       });
 
       if (uploadResult.success) {
@@ -142,8 +164,8 @@ export default function ResourceFileUpload({
       setIsUploading(true);
       try {
         const uploadResult = await uploadService.uploadSingle(file, {
-          folder: 'boundless/hackathons/resources',
-          tags: ['hackathon', 'resource'],
+          folder,
+          tags,
         });
 
         if (uploadResult.success) {
@@ -174,9 +196,9 @@ export default function ResourceFileUpload({
       <input
         ref={fileInputRef}
         type='file'
-        accept='.pdf,.ppt,.pptx,.doc,.docx'
+        accept={allowedExtensions.join(',')}
         className='hidden'
-        id='resource-file-upload'
+        id={inputId}
         onChange={handleFileUpload}
         disabled={disabled || isUploading}
       />
@@ -203,7 +225,7 @@ export default function ResourceFileUpload({
         </div>
       ) : (
         <label
-          htmlFor='resource-file-upload'
+          htmlFor={inputId}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -236,7 +258,7 @@ export default function ResourceFileUpload({
                     {isDragOver ? 'Drop file here' : 'Upload file'}
                   </p>
                   <p className='text-xs text-zinc-500'>
-                    PDF, PPT, PPTX, DOC, DOCX • Max 10MB
+                    {acceptLabel} • Max 10MB
                   </p>
                 </div>
               </>

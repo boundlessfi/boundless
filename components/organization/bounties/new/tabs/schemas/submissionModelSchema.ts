@@ -38,21 +38,27 @@ const isSet = (v: unknown): boolean => v !== null && v !== undefined;
  */
 export function makeSubmissionModelSchema(
   entryType: BountyEntryType,
-  claimType: BountyClaimType
+  claimType: BountyClaimType,
+  reputationFloor = 0
 ) {
   const fields = getModeFields(entryType, claimType);
 
   return submissionModelBase.superRefine((data, ctx) => {
-    if (
-      fields.reputationMinimum === 'required' &&
-      !isSet(data.reputationMinimum)
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          'Reputation minimum is required for open single-claim bounties',
-        path: ['reputationMinimum'],
-      });
+    if (fields.reputationMinimum === 'required') {
+      if (!isSet(data.reputationMinimum)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'Reputation minimum is required for open single-claim bounties',
+          path: ['reputationMinimum'],
+        });
+      } else if ((data.reputationMinimum as number) < reputationFloor) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Minimum reputation for this category is ${reputationFloor}`,
+          path: ['reputationMinimum'],
+        });
+      }
     }
 
     if (

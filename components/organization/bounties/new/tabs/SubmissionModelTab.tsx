@@ -2,7 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { EyeOff, Lock, Loader2 } from 'lucide-react';
+import { ArrowLeft, EyeOff, Lock, Loader2 } from 'lucide-react';
 
 import { BoundlessButton } from '@/components/buttons';
 import {
@@ -23,11 +23,19 @@ import {
   makeSubmissionModelSchema,
   SubmissionModelFormData,
 } from './schemas/submissionModelSchema';
+import {
+  CATEGORY_LABELS,
+  CATEGORY_REPUTATION_BASELINE,
+  type BountyCategory,
+} from './schemas/scopeSchema';
 
 interface SubmissionModelTabProps {
   /** The mode chosen in ModeTab; drives which fields show and how they validate. */
   mode?: ModeSelection;
+  /** The category chosen in ScopeTab; sets the floor for the reputation minimum. */
+  category?: BountyCategory;
   onContinue?: () => void;
+  onBack?: () => void;
   onSave?: (data: SubmissionModelFormData) => Promise<void>;
   initialData?: Partial<SubmissionModelFormData>;
   isLoading?: boolean;
@@ -48,7 +56,9 @@ const toNumberOrNull = (raw: string): number | null => {
 
 export default function SubmissionModelTab({
   mode,
+  category,
   onContinue,
+  onBack,
   onSave,
   initialData,
   isLoading = false,
@@ -64,16 +74,22 @@ export default function SubmissionModelTab({
     effectiveMode.claimType
   );
 
+  // The category sets the lowest reputation the organizer can require; they may
+  // raise it but not drop below it.
+  const reputationFloor = category ? CATEGORY_REPUTATION_BASELINE[category] : 0;
+
   const form = useForm<SubmissionModelFormData>({
     resolver: zodResolver(
       makeSubmissionModelSchema(
         effectiveMode.entryType,
-        effectiveMode.claimType
+        effectiveMode.claimType,
+        reputationFloor
       )
     ),
     defaultValues: {
       submissionDeadline: '',
-      reputationMinimum: null,
+      reputationMinimum:
+        fields.reputationMinimum === 'hidden' ? null : reputationFloor || null,
       applicationWindowCloseAt: null,
       maxApplicants: null,
       shortlistSize: null,
@@ -89,6 +105,17 @@ export default function SubmissionModelTab({
     form.setValue('submissionVisibility', fields.submissionVisibility);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fields.submissionVisibility]);
+
+  // Default the reputation minimum to the category floor, and bump it up if a
+  // saved/typed value sits below the floor (e.g. after switching category).
+  React.useEffect(() => {
+    if (fields.reputationMinimum === 'hidden') return;
+    const current = form.getValues('reputationMinimum');
+    if (current == null || current < reputationFloor) {
+      form.setValue('reputationMinimum', reputationFloor || null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reputationFloor, fields.reputationMinimum]);
 
   if (!mode) {
     return (
@@ -183,7 +210,7 @@ export default function SubmissionModelTab({
                 <FormControl>
                   <Input
                     type='number'
-                    min={0}
+                    min={reputationFloor}
                     className='h-10 rounded-lg border-zinc-800 bg-zinc-900/50 text-white'
                     value={field.value ?? ''}
                     onChange={e =>
@@ -191,6 +218,12 @@ export default function SubmissionModelTab({
                     }
                   />
                 </FormControl>
+                {reputationFloor > 0 && category && (
+                  <p className='text-xs text-zinc-500'>
+                    {CATEGORY_LABELS[category]} bounties start at{' '}
+                    {reputationFloor}. You can raise this, but not lower it.
+                  </p>
+                )}
                 <FormMessage className='text-xs text-red-500' />
               </FormItem>
             )}
@@ -311,7 +344,21 @@ export default function SubmissionModelTab({
           </p>
         </div>
 
-        <div className='flex justify-end pt-4'>
+        <div className='flex items-center justify-between pt-4'>
+          {onBack ? (
+            <BoundlessButton
+              type='button'
+              variant='outline'
+              size='lg'
+              onClick={onBack}
+              disabled={isLoading}
+            >
+              <ArrowLeft className='mr-2 h-4 w-4' />
+              Back
+            </BoundlessButton>
+          ) : (
+            <span />
+          )}
           <BoundlessButton
             type='submit'
             size='lg'
