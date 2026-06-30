@@ -17,17 +17,21 @@ import ResourcesTab from './tabs/ResourcesTab';
 import JudgingTab from './tabs/JudgingTab';
 import CollaborationTab from './tabs/CollaborationTab';
 import ReviewTab from './tabs/ReviewTab';
-import FundingConfirmationModal from './FundingConfirmationModal';
-import type { FundingSourceItem } from './FundingConfirmationModal';
-import FundingProgressModal from './FundingProgressModal';
+import FundingConfirmationModal from '@/components/organization/funding/FundingConfirmationModal';
+import type { FundingSourceItem } from '@/components/organization/funding/FundingConfirmationModal';
+import FundingProgressModal from '@/components/organization/funding/FundingProgressModal';
 import type { StepKey } from './constants';
 import { isStepDataValid } from '@/lib/utils/hackathon-step-validation';
 import { usePrizePoolCalculations } from '@/hooks/use-prize-pool-calculations';
 import {
   requestHackathonFundingOtp,
   verifyHackathonFundingOtp,
+  useDraft,
   type FundingMode,
+  type HackathonDraftAssumption,
 } from '@/features/hackathons';
+import AiAssumptionsBanner from '@/components/ai/AiAssumptionsBanner';
+import AiBriefPanel from '@/components/ai/AiBriefPanel';
 import { connectWallet } from '@/lib/wallet/wallet-kit';
 import { useTreasuryWallets } from '@/features/treasury';
 import { useQuery } from '@tanstack/react-query';
@@ -125,6 +129,22 @@ export default function NewHackathonTab({
     params.set('draftId', draftId);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [draftId, initialDraftId, searchParams, pathname, router]);
+
+  // AI assumptions (from the draft response) surfaced on the review step so the
+  // organizer can see and correct every guess the AI made.
+  const { data: aiDraftRecord } = useDraft(derivedOrgId ?? '', draftId);
+  const aiGenerationRecord = (
+    aiDraftRecord as
+      | {
+          aiGeneration?: {
+            assumptions?: HackathonDraftAssumption[];
+            brief?: string | null;
+          };
+        }
+      | undefined
+  )?.aiGeneration;
+  const aiAssumptions = aiGenerationRecord?.assumptions ?? [];
+  const aiBrief = aiGenerationRecord?.brief ?? null;
 
   // Define the callback after hooks are initialized
   const onDraftLoaded = useCallback(
@@ -610,6 +630,14 @@ export default function NewHackathonTab({
           </TabsContent>
 
           <TabsContent value='review' className='mt-0'>
+            {aiBrief && <AiBriefPanel brief={aiBrief} className='mb-4' />}
+            {aiAssumptions.length > 0 && (
+              <AiAssumptionsBanner
+                assumptions={aiAssumptions}
+                onReview={section => handleEditTab(section as StepKey)}
+                className='mb-6'
+              />
+            )}
             <ReviewTab
               allData={stepData}
               onEdit={handleEditTab}
@@ -650,6 +678,7 @@ export default function NewHackathonTab({
             onConnectExternal={handleConnectExternal}
             requestOtp={requestOtp}
             verifyOtp={verifyOtp}
+            entityNoun='hackathon'
           />
           <FundingProgressModal
             open={progressOpen}
@@ -667,7 +696,8 @@ export default function NewHackathonTab({
             }}
             onRetry={handleRetryFunding}
             onSwitchToDraft={() => setProgressOpen(false)}
-            onViewHackathon={handleViewHackathon}
+            onView={handleViewHackathon}
+            entityNoun='hackathon'
           />
         </>
       )}

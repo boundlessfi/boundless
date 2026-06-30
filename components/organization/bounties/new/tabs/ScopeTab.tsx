@@ -37,6 +37,7 @@ import {
   type BountyCategory,
   type ScopeFormData,
 } from './schemas/scopeSchema';
+import RegenerateBountySectionButton from '../RegenerateBountySectionButton';
 
 // Markdown editor for the description, matching the hackathon Info step.
 const MDEditor = dynamic(
@@ -228,9 +229,22 @@ export default function ScopeTab({
           name='description'
           render={({ field }) => (
             <FormItem>
-              <FormLabel className='text-sm font-medium text-white'>
-                Description<span className='text-red-500'>*</span>
-              </FormLabel>
+              <div className='flex items-center justify-between gap-2'>
+                <FormLabel className='text-sm font-medium text-white'>
+                  Description<span className='text-red-500'>*</span>
+                </FormLabel>
+                <RegenerateBountySectionButton
+                  section='description'
+                  onApply={data => {
+                    if (typeof data.description === 'string') {
+                      form.setValue('description', data.description, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      });
+                    }
+                  }}
+                />
+              </div>
               <FormControl>
                 <div className='overflow-hidden rounded-xl border border-zinc-800'>
                   <MDEditor

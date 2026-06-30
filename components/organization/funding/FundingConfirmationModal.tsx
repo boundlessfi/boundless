@@ -74,6 +74,8 @@ interface FundingConfirmationModalProps {
    * before calling onConfirm. Omit to fund without step-up. */
   requestOtp?: () => Promise<FundingOtpRequestOutcome>;
   verifyOtp?: (code: string) => Promise<void>;
+  /** Entity word for the copy, e.g. "hackathon" | "bounty". Defaults to "event". */
+  entityNoun?: string;
 }
 
 function sourceIcon(kind: FundingSourceKind) {
@@ -104,6 +106,7 @@ export default function FundingConfirmationModal({
   isSubmitting = false,
   requestOtp,
   verifyOtp,
+  entityNoun = 'event',
 }: FundingConfirmationModalProps) {
   const selected =
     sources.find(s => s.id === selectedSourceId) ?? sources[0] ?? null;
@@ -278,7 +281,7 @@ export default function FundingConfirmationModal({
             <DialogHeader>
               <DialogTitle className='flex items-center gap-2 text-white'>
                 <Lock className='text-primary h-4 w-4' />
-                Fund &amp; publish hackathon
+                Fund &amp; publish {entityNoun}
               </DialogTitle>
               <DialogDescription className='text-gray-400'>
                 Publishing sets aside your prize pool so it is ready to pay

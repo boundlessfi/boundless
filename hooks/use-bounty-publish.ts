@@ -11,6 +11,7 @@ import {
 } from '@/lib/utils/publish-op-storage';
 import {
   getBountyEscrowOp,
+  resetBountyEscrowToDraft,
   useEscrowOpRunner,
   usePublishBountyEscrow,
   type FundingMode,
@@ -35,6 +36,13 @@ interface UseBountyPublishProps {
    * Wallets Kit). Becomes the on-chain owner. Ignored for MANAGED.
    */
   externalOwnerAddress?: string | null;
+  /**
+   * For MANAGED funding from an organization treasury wallet: the treasury
+   * wallet to fund + sign with (backend signs custodially). When set, its
+   * address becomes the on-chain owner and we forward its id as sourceWalletId.
+   * Omit to fund from the caller's personal managed wallet.
+   */
+  treasurySource?: { walletId: string; address: string } | null;
 }
 
 export interface BountyPublishResponse {
@@ -64,8 +72,8 @@ const PUBLISHED_STATUSES = new Set([
  *   2. Poll the op to COMPLETED; the backend subscriber flips the bounty
  *      draft_awaiting_funding -> open on settle.
  *
- * Mirrors useHackathonPublish. Treasury funding (sourceWalletId) is omitted
- * until the backend treasury-parity issue (boundless-nestjs #314) lands.
+ * Mirrors useHackathonPublish, including managed-treasury and external-wallet
+ * funding sources (the funding modal picks one).
  */
 export const useBountyPublish = ({
   organizationId,
@@ -73,16 +81,21 @@ export const useBountyPublish = ({
   draftId,
   fundingMode = 'MANAGED',
   externalOwnerAddress,
+  treasurySource,
 }: UseBountyPublishProps) => {
   const { walletAddress, balances } = useWalletContext();
   const bountyId = draftId || '';
   const isExternal = fundingMode === 'EXTERNAL';
+  const usingTreasury = !isExternal && !!treasurySource;
 
-  // The on-chain owner/source. EXTERNAL funds from the connected wallet;
-  // MANAGED from the caller's platform-held custodial wallet.
+  // The on-chain owner/source. EXTERNAL funds from the connected wallet; a
+  // treasury source funds from the org treasury wallet; otherwise the caller's
+  // personal platform-held custodial wallet.
   const ownerAddress = isExternal
     ? (externalOwnerAddress ?? null)
-    : walletAddress;
+    : usingTreasury
+      ? treasurySource!.address
+      : walletAddress;
 
   const publishMutation = usePublishBountyEscrow(organizationId, bountyId);
   const runner = useEscrowOpRunner(
@@ -162,21 +175,33 @@ export const useBountyPublish = ({
 
     if (currentStatus === 'draft_awaiting_funding') {
       const storedOpRowId = readPublishOpId(bountyId);
-      if (!storedOpRowId) {
+      if (storedOpRowId) {
+        // A publish op is in flight locally — resume polling it rather than
+        // starting a second (double-funding) publish.
+        finalizedRef.current = false;
+        setHasStarted(true);
+        toast.info('Resuming bounty funding…');
+        await runner.run(() =>
+          getBountyEscrowOp(organizationId, bountyId, storedOpRowId)
+        );
+        return null;
+      }
+      // No resumable op locally: the publish stranded the bounty (e.g. the
+      // managed sign/submit failed before settling). Try to return it to draft
+      // so we can republish. The backend refuses if the op might still settle.
+      try {
+        await resetBountyEscrowToDraft(organizationId, bountyId);
+        clearPublishOpId(bountyId);
+        toast.info('Returned to draft — retrying publish…');
+        // Status is now draft; fall through to the normal publish path below.
+      } catch {
         toast.info(
-          'This bounty is already being funded on-chain. It will finish ' +
+          'This bounty is still being funded on-chain. It will finish ' +
             'publishing shortly, or return to draft if the transaction fails — ' +
             'refresh in a moment to check.'
         );
         return null;
       }
-      finalizedRef.current = false;
-      setHasStarted(true);
-      toast.info('Resuming bounty funding…');
-      await runner.run(() =>
-        getBountyEscrowOp(organizationId, bountyId, storedOpRowId)
-      );
-      return null;
     }
 
     // ---- Normal draft publish path ----
@@ -205,7 +230,12 @@ export const useBountyPublish = ({
     const usdcBalance = parseFloat(usdcEntry?.balance ?? '0');
     const fmt = (n: number) =>
       n.toLocaleString('en-US', { maximumFractionDigits: 2 });
-    if (!isExternal && balances.length > 0 && usdcBalance < required) {
+    if (
+      !isExternal &&
+      !usingTreasury &&
+      balances.length > 0 &&
+      usdcBalance < required
+    ) {
       toast.error(
         usdcEntry
           ? `Insufficient USDC. Publishing locks ${fmt(required)} USDC ` +
@@ -239,9 +269,9 @@ export const useBountyPublish = ({
       tokenAddress,
       budget: String(budget),
       submissionDeadline,
-      applicationCreditCost: submission.applicationCreditCost ?? 1,
       winnerDistribution: buildBountyWinnerDistribution(reward),
       fundingMode,
+      ...(usingTreasury ? { sourceWalletId: treasurySource!.walletId } : {}),
     };
 
     finalizedRef.current = false;

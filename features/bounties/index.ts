@@ -61,6 +61,34 @@ export {
   useDeleteDraft,
 } from './api/use-draft';
 
+// Organizer Assist (AI drafting) — types, client, hooks.
+export type {
+  BountyDraftAiGeneration,
+  BountyDraftAssumption,
+  BountyDraftGeneratedMode,
+  BountyDraftWithAi,
+  BountyAiGenerationMeta,
+  GenerateBountyDraftFromBriefBody,
+  GenerateBountyDraftFromBriefResponse,
+  BountyDraftRegenSection,
+  RegenerateBountyDraftSectionBody,
+  RegenerateBountyDraftSectionResponse,
+  ClarifyOption,
+  ClarifyQuestion,
+  ClarifyBountyDraftResult,
+} from './types';
+export { BOUNTY_DRAFT_REGEN_SECTIONS } from './types';
+export {
+  clarifyBountyDraft,
+  generateBountyDraftFromBrief,
+  regenerateBountyDraftSection,
+} from './api/draft-ai-client';
+export {
+  useClarifyBountyDraft,
+  useGenerateBountyDraftFromBrief,
+  useRegenerateBountyDraftSection,
+} from './api/use-draft-ai';
+
 // Escrow client (typed openapi-fetch).
 export {
   publishBountyEscrow,
@@ -68,7 +96,14 @@ export {
   selectBountyWinners,
   submitSignedBountyEscrow,
   getBountyEscrowOp,
+  requestBountyFundingOtp,
+  verifyBountyFundingOtp,
+  resetBountyEscrowToDraft,
 } from './api/escrow-client';
+export type {
+  BountyFundingOtpRequestResult,
+  BountyFundingOtpVerifyResult,
+} from './types';
 
 // Escrow hooks (React Query: polling primitive, mutation wrappers, op runner).
 export {

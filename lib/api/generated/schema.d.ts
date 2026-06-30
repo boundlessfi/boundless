@@ -256,117 +256,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/users/me': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get current user dashboard with overview, chart, and activities graph */
-    get: operations['UserController_getProfile'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/users/public': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Public test endpoint */
-    get: operations['UserController_getPublic'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/users/optional': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Optional authentication test endpoint */
-    get: operations['UserController_getOptional'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/users/{username}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get user profile by username
-     * @description Get a user profile by their username. Accessible to anyone without authentication.
-     */
-    get: operations['UserController_getUserByUsername'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/users/{username}/followers': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get user followers
-     * @description Get a list of users who follow this profile
-     */
-    get: operations['UserController_getUserFollowers'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/users/{username}/following': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get users followed by this profile
-     * @description Get a list of entities (users, projects, organizations) followed by this user
-     */
-    get: operations['UserController_getUserFollowing'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/users/profile': {
     parameters: {
       query?: never;
@@ -514,6 +403,151 @@ export interface paths {
     get?: never;
     /** Update skill preferences */
     put: operations['PreferencesController_updateSkillPreferences'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get the current user (lean identity payload) */
+    get: operations['UserController_getMe'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/dashboard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get the current user dashboard: stats, chart, activities graph, and recent activities */
+    get: operations['UserController_getDashboard'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/onboarding': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Complete onboarding (persona, referral source, skills, goals) */
+    post: operations['UserController_completeOnboarding'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/public': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Public test endpoint */
+    get: operations['UserController_getPublic'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/optional': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Optional authentication test endpoint */
+    get: operations['UserController_getOptional'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/{username}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get user profile by username
+     * @description Get a user profile by their username. Accessible to anyone without authentication.
+     */
+    get: operations['UserController_getUserByUsername'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/{username}/followers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get user followers
+     * @description Get a list of users who follow this profile
+     */
+    get: operations['UserController_getUserFollowers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/{username}/following': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get users followed by this profile
+     * @description Get a list of entities (users, projects, organizations) followed by this user
+     */
+    get: operations['UserController_getUserFollowing'];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -1151,6 +1185,40 @@ export interface paths {
     head?: never;
     /** Mark conversation as read */
     patch: operations['MessagesController_markConversationRead'];
+    trace?: never;
+  };
+  '/api/credits/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Current user credit balance, tier and next refill */
+    get: operations['CreditsController_getMine'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/credits/history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Paginated credit ledger for the current user */
+    get: operations['CreditsController_getHistory'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/crowdfunding/validate': {
@@ -1842,6 +1910,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/wallet/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Total USD balance across the user wallet assets (nav chip) */
+    get: operations['WalletController_getWalletSummary'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/wallet/balance/{address}': {
     parameters: {
       query?: never;
@@ -2004,26 +2089,6 @@ export interface paths {
      * @description Sends funds from your Boundless wallet to a destination. Requires identity verification (KYC). Validates: your wallet is activated, destination is activated, destination has trustline for the asset (if not XLM), optional memo. Requires sufficient balance and XLM for network fee when sending non-XLM.
      */
     post: operations['WalletController_send'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/wallet/payout': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send payout from platform (Admin only)
-     * @description Sends funds from the Boundless platform wallet to a destination. Validates: destination activated, trustline for asset, memo when required, platform balance. Idempotent when idempotencyKey is provided.
-     */
-    post: operations['WalletPayoutController_sendPayout'];
     delete?: never;
     options?: never;
     head?: never;
@@ -3072,6 +3137,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/organizations/{organizationId}/hackathons/draft/clarify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Triage a hackathon brief for clarifying questions (Organizer Assist)
+     * @description A cheap pre-draft gate: returns { ready: true } when the brief is specific enough, or 1-3 clarifying questions (duration / structure / participation) the organizer answers before drafting.
+     */
+    post: operations['OrganizationHackathonsAiController_clarify'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/organizations/{organizationId}/hackathons/draft/from-brief': {
     parameters: {
       query?: never;
@@ -3086,6 +3171,26 @@ export interface paths {
      * @description Calls the AI service to turn a brief into a structured draft, persists a new hackathon draft pre-filled with the timeline, prizes, and judging criteria, and returns it together with the full AI suggestion for review. The organizer reviews, completes (banner, venue), and publishes.
      */
     post: operations['OrganizationHackathonsAiController_generateFromBrief'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/hackathons/draft/from-brief/stream': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate a hackathon draft from a brief, streaming (Organizer Assist)
+     * @description Server-Sent Events: `partial` frames carry the draft taking shape for a live reveal, then a `done` frame carries { draftId, draft }. Errors arrive as an `error` frame (or a normal 4xx before the stream opens, e.g. quota).
+     */
+    post: operations['OrganizationHackathonsAiController_generateFromBriefStream'];
     delete?: never;
     options?: never;
     head?: never;
@@ -7184,6 +7289,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/organizations/{organizationId}/ai/usage': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get this organization’s monthly AI usage + cost */
+    get: operations['AiUsageController_getUsage'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/admin/ops/pause': {
     parameters: {
       query?: never;
@@ -8246,6 +8368,159 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/admin/v2/contract-governance/tokens': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List whitelisted tokens with live on-chain status */
+    get: operations['GovernanceContractController_listTokens'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/contract-governance/tokens/sync': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Sync the whitelist from contract state (authoritative enumeration, any age); falls back to an event rescan on pre-enumeration contracts. */
+    post: operations['GovernanceContractController_syncTokens'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/contract-governance/tokens/import': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Import a token already whitelisted on-chain into the portal (verified via is_supported_token; no signing). For recovering older tokens. */
+    post: operations['GovernanceContractController_importToken'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/contract-governance/pause-state': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Live pause flag for the events contract */
+    get: operations['GovernanceContractController_pauseState'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/contract-governance/tokens/build-xdr': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Build the unsigned register_supported_token transaction. Tier 3: step-up. */
+    post: operations['GovernanceContractController_buildRegisterToken'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/contract-governance/tokens/deregister/build-xdr': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Build the unsigned deregister_supported_token transaction. Tier 3: step-up. */
+    post: operations['GovernanceContractController_buildDeregisterToken'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/contract-governance/pause/build-xdr': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Build the unsigned pause transaction. Tier 3: step-up. */
+    post: operations['GovernanceContractController_buildPause'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/contract-governance/unpause/build-xdr': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Build the unsigned unpause transaction. Tier 3: step-up. */
+    post: operations['GovernanceContractController_buildUnpause'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/contract-governance/ops/{id}/submit-signed': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit the admin-signed transaction for a built op (verified against the built XDR). Tier 3: step-up. */
+    post: operations['GovernanceContractController_submitSigned'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/admin/v2/kyc': {
     parameters: {
       query?: never;
@@ -8448,6 +8723,218 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/hackathon-brief-templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List all hackathon brief templates (including inactive) */
+    get: operations['HackathonBriefTemplatesController_list'];
+    put?: never;
+    /** Create a hackathon brief template (Tier 1) */
+    post: operations['HackathonBriefTemplatesController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/hackathon-brief-templates/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update a hackathon brief template (Tier 1) */
+    put: operations['HackathonBriefTemplatesController_update'];
+    post?: never;
+    /** Archive a hackathon brief template (soft-delete) */
+    delete: operations['HackathonBriefTemplatesController_archive'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/hackathon-brief-templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List active hackathon brief templates */
+    get: operations['HackathonBriefTemplatesPublicController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/marketing/templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List all marketing templates */
+    get: operations['MarketingTemplatesController_list'];
+    put?: never;
+    /** Create a marketing template (Tier 1) */
+    post: operations['MarketingTemplatesController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/marketing/templates/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update a marketing template (Tier 1) */
+    put: operations['MarketingTemplatesController_update'];
+    post?: never;
+    /** Archive a marketing template (soft-delete) */
+    delete: operations['MarketingTemplatesController_archive'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/marketing/campaigns': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List all marketing campaigns */
+    get: operations['MarketingCampaignsController_list'];
+    put?: never;
+    /** Create a campaign draft (Tier 1) */
+    post: operations['MarketingCampaignsController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/marketing/campaigns/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update a campaign draft (Tier 1) */
+    put: operations['MarketingCampaignsController_update'];
+    post?: never;
+    /** Cancel a campaign (soft-cancel) */
+    delete: operations['MarketingCampaignsController_cancel'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/marketing/campaigns/audience-size': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Preview audience count for a filter */
+    post: operations['MarketingCampaignsController_audienceSize'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/marketing/campaigns/{id}/send': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Send a campaign to its audience (Tier 2 step-up) */
+    post: operations['MarketingCampaignsController_send'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/marketing/automations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List all marketing automations */
+    get: operations['MarketingAutomationsController_list'];
+    put?: never;
+    /** Create a marketing automation (Tier 1) */
+    post: operations['MarketingAutomationsController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/marketing/automations/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update a marketing automation (Tier 1) */
+    put: operations['MarketingAutomationsController_update'];
+    post?: never;
+    /** Delete an automation (hard delete — no audit trail loss) */
+    delete: operations['MarketingAutomationsController_remove'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/v2/marketing/automations/{id}/toggle': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Enable or disable an automation */
+    patch: operations['MarketingAutomationsController_toggle'];
     trace?: never;
   };
   '/api/prices': {
@@ -8763,6 +9250,140 @@ export interface paths {
     get: operations['OrganizationBountiesDraftsController_getOrganizationDrafts'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/draft/clarify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Triage a bounty brief for clarifying questions (Organizer Assist)
+     * @description A cheap pre-draft gate: returns { ready: true } when the brief is specific enough, or 1-3 clarifying questions (mode / winners / deadline) the organizer answers before drafting.
+     */
+    post: operations['OrganizationBountiesAiController_clarify'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/draft/from-brief': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate a bounty draft from a brief (Organizer Assist)
+     * @description Calls the AI service to turn a brief into a structured draft, persists a new bounty draft pre-filled with scope, mode, submission settings, and prize tiers, and returns it together with cost metadata. The organizer reviews, edits, and publishes.
+     */
+    post: operations['OrganizationBountiesAiController_generateFromBrief'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/draft/from-brief/stream': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate a bounty draft from a brief, streaming (Organizer Assist)
+     * @description Server-Sent Events: `partial` frames carry the draft taking shape for a live reveal, then a `done` frame carries { draftId, draft }. Errors arrive as an `error` frame (or a normal 4xx before the stream opens, e.g. quota).
+     */
+    post: operations['OrganizationBountiesAiController_generateFromBriefStream'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/draft/{id}/regenerate-section': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Regenerate one section of a bounty draft (Organizer Assist)
+     * @description Calls the AI service to regenerate a single section (description, submission, or reward) from the current draft and returns the new section for the organizer to accept or discard.
+     */
+    post: operations['OrganizationBountiesAiController_regenerateSection'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/{id}/escrow/funding-otp/request': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Request a funding step-up code for a bounty */
+    post: operations['OrganizationBountiesEscrowController_requestFundingOtp'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/{id}/escrow/funding-otp/verify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Verify a funding step-up code for a bounty */
+    post: operations['OrganizationBountiesEscrowController_verifyFundingOtp'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/{id}/escrow/reset-to-draft': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Return a stuck bounty to draft after a failed publish
+     * @description Resets a bounty stranded in draft_awaiting_funding back to draft so the organizer can republish. Refuses while the publish op may still settle on-chain (PENDING_SUBMIT / PENDING_CONFIRM / COMPLETED).
+     */
+    post: operations['OrganizationBountiesEscrowController_resetToDraft'];
     delete?: never;
     options?: never;
     head?: never;
@@ -15733,6 +16354,58 @@ export interface components {
       /** @description Activity feed */
       activities: components['schemas']['EarningActivityDto'][];
     };
+    ProfileDetailsDto: {
+      bio: string | null;
+      website: string | null;
+      location: string | null;
+      company: string | null;
+      skills: string[];
+      /** @description Social links keyed by platform. */
+      socialLinks: {
+        [key: string]: unknown;
+      } | null;
+    };
+    ProfileResponseDto: {
+      id: string;
+      name: string | null;
+      email: string;
+      username: string | null;
+      displayUsername: string | null;
+      image: string | null;
+      emailVerified: boolean;
+      /** @description contributor | host (onboarding persona) */
+      persona: string | null;
+      /** @description When onboarding was completed; null if not done. */
+      onboardingCompletedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      profile: components['schemas']['ProfileDetailsDto'];
+    };
+    ProfileSocialLinksDto: {
+      /** @description GitHub profile or repository URL */
+      github?: string;
+      /** @description Twitter/X profile URL */
+      twitter?: string;
+      /** @description LinkedIn profile URL */
+      linkedin?: string;
+      /** @description Discord profile or server URL */
+      discord?: string;
+    };
+    UpdateProfileDto: {
+      /** @description Short bio */
+      bio?: string;
+      /** @description Personal or project website URL */
+      website?: string;
+      /** @description Country or location */
+      location?: string;
+      /** @description Company or organization */
+      company?: string;
+      /** @description Skill tags */
+      skills?: string[];
+      socialLinks?: components['schemas']['ProfileSocialLinksDto'];
+    };
     DashboardUserStatsDto: {
       followers: number;
       following: number;
@@ -15748,6 +16421,10 @@ export interface components {
       /** Format: date-time */
       createdAt: string;
       stats?: components['schemas']['DashboardUserStatsDto'];
+    };
+    CurrentUserDto: {
+      /** @description Current user */
+      user: components['schemas']['DashboardUserDto'];
     };
     UserStatsDto: {
       projectsCreated: number;
@@ -15804,7 +16481,19 @@ export interface components {
       /** @description Recent activities */
       recentActivities: components['schemas']['RecentActivityDto'][];
     };
-    UpdateProfileDto: Record<string, never>;
+    CompleteOnboardingDto: {
+      /**
+       * @description How the user plans to use Boundless.
+       * @enum {string}
+       */
+      persona: 'contributor' | 'host';
+      /** @description How the user heard about Boundless. */
+      referralSource?: string;
+      /** @description Skill tags. */
+      skills?: string[];
+      /** @description What the user wants to use Boundless for. */
+      goals?: string[];
+    };
     UpdateUserDto: Record<string, never>;
     UploadResponseDto: Record<string, never>;
     MultipleUploadResponseDto: Record<string, never>;
@@ -15824,6 +16513,73 @@ export interface components {
     CreateMessageDto: {
       /** @description Message text */
       body: string;
+    };
+    /** @enum {string} */
+    CreditTier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
+    CreditSummaryDto: {
+      /**
+       * @description Current credit balance.
+       * @example 6
+       */
+      balance: number;
+      /**
+       * @description Hard ceiling on the balance.
+       * @example 12
+       */
+      cap: number;
+      /** @example BRONZE */
+      tier: components['schemas']['CreditTier'];
+      /**
+       * @description Credits this user resets to on the next refill.
+       * @example 3
+       */
+      refillAmount: number;
+      /**
+       * @description Credits spent so far this calendar month.
+       * @example 8
+       */
+      usedThisMonth: number;
+      /**
+       * Format: date-time
+       * @description When the next monthly refill applies.
+       */
+      nextRefillAt: string;
+    };
+    /** @enum {string} */
+    CreditLedgerReason:
+      | 'WELCOME'
+      | 'REFILL'
+      | 'SPEND'
+      | 'REFUND'
+      | 'SPAM_FORFEIT'
+      | 'ADMIN_GRANT'
+      | 'PURCHASE';
+    CreditLedgerEntryDto: {
+      id: string;
+      /**
+       * @description Signed change to the balance.
+       * @example -1
+       */
+      delta: number;
+      /**
+       * @description Balance after this entry.
+       * @example 5
+       */
+      balanceAfter: number;
+      reason: components['schemas']['CreditLedgerReason'];
+      /** @example BOUNTY_APPLICATION */
+      refType: Record<string, never> | null;
+      refId: Record<string, never> | null;
+      /** @example 2026-06 */
+      period: Record<string, never> | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    CreditHistoryDto: {
+      rows: components['schemas']['CreditLedgerEntryDto'][];
+      total: number;
+      page: number;
+      limit: number;
     };
     ContactDto: Record<string, never>;
     CreateCampaignDto: {
@@ -16225,6 +16981,28 @@ export interface components {
       /** @description ISO timestamp the dispute was filed */
       createdAt: string;
     };
+    WalletSummaryAssetDto: {
+      /** @example USDC */
+      assetCode: string;
+      /**
+       * @description Raw asset amount.
+       * @example 125.0000000
+       */
+      balance: string;
+      /** @example 125 */
+      usdValue: Record<string, never> | null;
+    };
+    WalletSummaryDto: {
+      /** @description Wallet G-address. */
+      address: Record<string, never> | null;
+      isActivated: boolean;
+      /**
+       * @description Total USD across all assets.
+       * @example 125
+       */
+      totalUsd: number;
+      assets: components['schemas']['WalletSummaryAssetDto'][];
+    };
     ReclaimDormantDto: {
       /**
        * @description Minimum days a wallet must have been idle to be eligible. Default 90.
@@ -16271,36 +17049,6 @@ export interface components {
       memoRequired?: boolean;
       /** @description Idempotency key to prevent duplicate sends */
       idempotencyKey?: string;
-    };
-    SendPayoutDto: {
-      /**
-       * @description Stellar destination public key (G...)
-       * @example GABCD...
-       */
-      destinationPublicKey: string;
-      /**
-       * @description Amount to send (positive number)
-       * @example 100.5
-       */
-      amount: number;
-      /**
-       * @description Asset code (XLM, USDC, EURC, etc. – must be supported on network)
-       * @example USDC
-       */
-      currency: string;
-      /** @description Memo (required by some exchanges). Max 28 bytes UTF-8. */
-      memo?: string;
-      /**
-       * @description Memo type
-       * @enum {string}
-       */
-      memoType?: 'text' | 'id';
-      /** @description If true, request fails when memo is missing (e.g. exchange requires it) */
-      memoRequired?: boolean;
-      /** @description Idempotency key to prevent duplicate payouts */
-      idempotencyKey?: string;
-      /** @description Reference for audit (e.g. earnings-payout-123) */
-      reference?: string;
     };
     CreateCommentDto: {
       /**
@@ -17322,9 +18070,21 @@ export interface components {
       judging?: components['schemas']['JudgingFormData'];
       collaboration?: components['schemas']['CollaborationFormData'];
     };
+    HackathonDraftAssumptionDto: {
+      /** @description Wizard section the assumption belongs to. */
+      section: string;
+      /** @description Field within the section. */
+      field: string;
+      /** @description One-line plain reason for the choice. */
+      note: string;
+    };
     HackathonDraftAiGenerationDto: {
       /** @description AI generationId that produced or last-updated this draft. */
       generationId: string;
+      /** @description Non-obvious choices the AI made, for review. */
+      assumptions: components['schemas']['HackathonDraftAssumptionDto'][];
+      /** @description The brief that produced this draft (shown beside the draft). */
+      brief?: string | null;
     };
     HackathonDraftPrizePlacementDto: {
       id: string;
@@ -17383,6 +18143,25 @@ export interface components {
       collaboration?: components['schemas']['CollaborationFormData'];
       /** @description Hint that this is an autosave (no completion side effects). */
       autoSave?: boolean;
+    };
+    ClarifyHackathonBriefDto: {
+      /** @description Free-text brief to triage for clarifying questions. */
+      brief: string;
+    };
+    ClarifyHackathonQuestionOptionDto: {
+      value: string;
+      label: string;
+    };
+    ClarifyHackathonQuestionDto: {
+      /** @description Axis key, e.g. "duration" | "structure" | "participation". */
+      id: string;
+      question: string;
+      options: components['schemas']['ClarifyHackathonQuestionOptionDto'][];
+    };
+    ClarifyHackathonDraftResponseDto: {
+      /** @description True when the brief is specific enough to draft immediately. */
+      ready: boolean;
+      questions: components['schemas']['ClarifyHackathonQuestionDto'][];
     };
     GenerateDraftFromBriefDto: {
       /**
@@ -18458,11 +19237,6 @@ export interface components {
        */
       position: number;
       /**
-       * @description Override the platform default credit_earn for this position. Defaults to 20/10/5 for positions 1/2/3 and 3 for the rest. Capped at 100 by the contract.
-       * @example 20
-       */
-      creditEarn?: number;
-      /**
        * @description Override the platform default reputation_bump for this position. Defaults to 50/25/10 for positions 1/2/3 and 5 for the rest.
        * @example 50
        */
@@ -19064,9 +19838,20 @@ export interface components {
       notes?: string;
     };
     RejectMilestoneDto: {
-      /** @description Feedback shown to the builder; what needs to change. */
-      rejectionFeedback: string;
-      /** @description Optional ISO date by which the builder must resubmit. */
+      /**
+       * @description Rejection reason
+       * @example Incomplete deliverables
+       */
+      reason: string;
+      /**
+       * @description Detailed feedback for rejection
+       * @example The submitted work does not meet the project requirements. Please revise and resubmit.
+       */
+      feedback: string;
+      /**
+       * @description Deadline for resubmission
+       * @example 2025-02-01
+       */
       resubmissionDeadline?: string;
     };
     RequestMilestoneResubmissionDto: {
@@ -19112,8 +19897,11 @@ export interface components {
       recipientAddress?: string;
     };
     AssignDisputeDto: {
-      /** @description staff_users id to assign the dispute to, or null to unassign. */
-      assignedToStaffId: string | null;
+      /**
+       * @description Admin user ID to assign dispute to
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      adminId: string;
     };
     AddDisputeNoteDto: {
       /**
@@ -19129,7 +19917,8 @@ export interface components {
     };
     ResolveDisputeDto: {
       /**
-       * @description Resolution outcome recorded on the dispute.
+       * @description Resolution type
+       * @example APPROVED_WITH_CONDITIONS
        * @enum {string}
        */
       resolution:
@@ -19139,11 +19928,17 @@ export interface components {
         | 'FULL_REFUND'
         | 'DISMISSED'
         | 'ARBITRATION';
-      /** @description Resolution notes shown to the reporter and campaign creator. */
+      /**
+       * @description Detailed notes explaining the resolution
+       * @example Approved with condition that milestone is completed by next week
+       */
       resolutionNotes: string;
     };
     EscalateDisputeDto: {
-      /** @description Why this dispute is being escalated to arbitration. Recorded in the audit log. */
+      /**
+       * @description Reason for escalation to arbitration
+       * @example Parties cannot agree on resolution terms
+       */
       reason: string;
     };
     RejectManualProjectDto: Record<string, never>;
@@ -19245,6 +20040,23 @@ export interface components {
       totalDepositStroops: string;
       /** @description Audit label for the rate choice: default | foundation-tier | sales-override:* | waiver:*. */
       reason: string;
+    };
+    AiUsageResponseDto: {
+      /** @description Subscription tier (FREE | PRO | BYOK | ENTERPRISE). */
+      tier: string;
+      /** @description Monthly billable-call limit, or null for unlimited tiers. */
+      limit: number | null;
+      /** @description Billable calls used this month. */
+      used: number;
+      /** @description Remaining billable calls, or null for unlimited. */
+      remaining: number | null;
+      /**
+       * Format: date-time
+       * @description Window reset (UTC).
+       */
+      resetAt: string;
+      /** @description Total spend this month as a decimal string (incl. clarify). */
+      costUsdThisMonth: string;
     };
     StaffPrincipalDto: {
       id: string;
@@ -19556,6 +20368,10 @@ export interface components {
       /** @description ISO timestamp the dispute was opened */
       created: string;
     };
+    AdminV2AssignDisputeDto: {
+      /** @description staff_users id to assign the dispute to, or null to unassign. */
+      assignedToStaffId: string | null;
+    };
     DisputeAssignmentResponseDto: {
       id: string;
       /** @description Assigned staff email, or null when unassigned */
@@ -19572,6 +20388,21 @@ export interface components {
       /** @description ISO timestamp the note was recorded */
       createdAt: string;
     };
+    AdminV2ResolveDisputeDto: {
+      /**
+       * @description Resolution outcome recorded on the dispute.
+       * @enum {string}
+       */
+      resolution:
+        | 'APPROVED_WITH_CONDITIONS'
+        | 'REQUIRE_RESUBMISSION'
+        | 'PARTIAL_REFUND'
+        | 'FULL_REFUND'
+        | 'DISMISSED'
+        | 'ARBITRATION';
+      /** @description Resolution notes shown to the reporter and campaign creator. */
+      resolutionNotes: string;
+    };
     DisputeActionResponseDto: {
       id: string;
       /** @description New dispute lifecycle status */
@@ -19580,6 +20411,10 @@ export interface components {
       resolution: string | null;
       /** @description Whether the dispute is escalated to arbitration */
       escalatedToArbitration: boolean;
+    };
+    AdminV2EscalateDisputeDto: {
+      /** @description Why this dispute is being escalated to arbitration. Recorded in the audit log. */
+      reason: string;
     };
     AdminMoneyEntryDto: {
       id: string;
@@ -20217,6 +21052,73 @@ export interface components {
       /** @description Hash of the offline-signed, executed transaction */
       txHash: string;
     };
+    SupportedTokenDto: {
+      id: string;
+      address: string;
+      symbol: string | null;
+      label: string | null;
+      logoUrl: string | null;
+      /** @description Last observed on-chain whitelist state. */
+      lastKnownOnChain: boolean;
+      createdAt: string;
+    };
+    SyncTokensResultDto: {
+      /** @description Number of token rows created or updated. */
+      applied: number;
+      /** @description Tokens seen on-chain (whitelist size for state sync, events scanned for the events fallback). */
+      total: number;
+      /**
+       * @description Which mechanism ran: authoritative state enumeration, or the events fallback when the contract predates the enumerable index.
+       * @enum {string}
+       */
+      source: 'state' | 'events';
+    };
+    RegisterTokenDto: {
+      /** @description Stellar Asset Contract (C...) address of the token to whitelist as an escrow denomination. */
+      token: string;
+      /** @description Display symbol, e.g. "USDC". */
+      symbol?: string;
+      /** @description Human label shown in the portal. */
+      label?: string;
+      /** @description Hosted logo image URL, shown next to the token on consumer surfaces. */
+      logoUrl?: string;
+    };
+    PauseStateDto: {
+      /** @description Live on-chain pause flag for the events contract. */
+      paused: boolean;
+    };
+    ContractOpXdrDto: {
+      /** @description AdminContractOp row id tracking this op. */
+      opId: string;
+      /** @enum {string} */
+      intent: 'REGISTER_TOKEN' | 'DEREGISTER_TOKEN' | 'PAUSE' | 'UNPAUSE';
+      /** @description On-chain contract admin G-address. This is the transaction source and the account that must sign at the Lab. */
+      source: string;
+      /** @description Unsigned transaction XDR for the admin to sign. */
+      unsignedXdr: string;
+      /** @description Stellar Lab "Sign Transaction" deep link. */
+      labUrl: string;
+      /** @enum {string} */
+      network: 'public' | 'testnet';
+      /** @description Network passphrase the signer must use. */
+      passphrase: string;
+    };
+    DeregisterTokenDto: {
+      /** @description Stellar Asset Contract (C...) address to deregister. */
+      token: string;
+    };
+    SubmitSignedContractOpDto: {
+      /** @description Base64 transaction XDR signed offline by the admin at the Stellar Lab. Must be the exact transaction returned by build-xdr (hash-checked). */
+      signedXdr: string;
+    };
+    ContractOpResultDto: {
+      opId: string;
+      /** @enum {string} */
+      intent: 'REGISTER_TOKEN' | 'DEREGISTER_TOKEN' | 'PAUSE' | 'UNPAUSE';
+      /** @description AdminContractOp status after submission. */
+      status: string;
+      txHash: string | null;
+    };
     AdminKycListItemDto: {
       /** @description User id */
       id: string;
@@ -20345,6 +21247,12 @@ export interface components {
       /** @description New milestone review status */
       status: string;
     };
+    AdminV2RejectMilestoneDto: {
+      /** @description Feedback shown to the builder; what needs to change. */
+      rejectionFeedback: string;
+      /** @description Optional ISO date by which the builder must resubmit. */
+      resubmissionDeadline?: string;
+    };
     MilestoneReleaseXdrDto: {
       /** @description EscrowOp row id tracking this release. */
       opId: string;
@@ -20399,6 +21307,192 @@ export interface components {
       limit: number;
       total: number;
       totalPages: number;
+    };
+    HackathonBriefTemplateDto: {
+      id: string;
+      name: string;
+      description: string;
+      category: string;
+      brief: string;
+      isActive: boolean;
+      sortOrder: number;
+      createdAt: string;
+      updatedAt: string;
+    };
+    HackathonBriefTemplatesResponseDto: {
+      items: components['schemas']['HackathonBriefTemplateDto'][];
+    };
+    CreateHackathonBriefTemplateDto: {
+      name: string;
+      description: string;
+      category: string;
+      brief: string;
+      /** @default true */
+      isActive: boolean;
+      /** @default 0 */
+      sortOrder: number;
+    };
+    UpdateHackathonBriefTemplateDto: {
+      name?: string;
+      description?: string;
+      category?: string;
+      brief?: string;
+      isActive?: boolean;
+      sortOrder?: number;
+    };
+    MarketingTemplateDto: {
+      id: string;
+      name: string;
+      subject: string;
+      body: string;
+      variables: string[];
+      isActive: boolean;
+      sortOrder: number;
+      createdAt: string;
+      updatedAt: string;
+    };
+    MarketingTemplatesResponseDto: {
+      items: components['schemas']['MarketingTemplateDto'][];
+    };
+    CreateMarketingTemplateDto: {
+      name: string;
+      subject: string;
+      body: string;
+      variables?: string[];
+      isActive?: boolean;
+      sortOrder?: number;
+    };
+    UpdateMarketingTemplateDto: {
+      name?: string;
+      subject?: string;
+      body?: string;
+      variables?: string[];
+      isActive?: boolean;
+      sortOrder?: number;
+    };
+    AudienceFilterDto: {
+      /** @enum {string} */
+      type:
+        | 'all'
+        | 'skills_match'
+        | 'participated_in'
+        | 'location'
+        | 'never_applied';
+      skills?: string[];
+      /** @enum {string} */
+      programType?: 'hackathon' | 'bounty' | 'grant';
+      location?: string;
+    };
+    MarketingCampaignDto: {
+      id: string;
+      name: string;
+      subject: string;
+      body: string;
+      audience: components['schemas']['AudienceFilterDto'];
+      templateId?: Record<string, never>;
+      status: string;
+      scheduledAt?: Record<string, never>;
+      sentAt?: Record<string, never>;
+      sentCount: number;
+      /** @description Custom substitution vars for {{key}} placeholders */
+      variables: {
+        [key: string]: string;
+      };
+      createdById: string;
+      createdByEmail: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    MarketingCampaignsResponseDto: {
+      items: components['schemas']['MarketingCampaignDto'][];
+    };
+    CreateMarketingCampaignDto: {
+      name: string;
+      subject: string;
+      body: string;
+      audience: components['schemas']['AudienceFilterDto'];
+      templateId?: string;
+      scheduledAt?: string;
+      /** @description Key-value pairs substituted into {{key}} placeholders in subject/body */
+      variables?: {
+        [key: string]: string;
+      };
+    };
+    UpdateMarketingCampaignDto: {
+      name?: string;
+      subject?: string;
+      body?: string;
+      audience?: components['schemas']['AudienceFilterDto'];
+      templateId?: string;
+      scheduledAt?: string;
+      variables?: {
+        [key: string]: string;
+      };
+    };
+    PreviewCampaignAudienceDto: {
+      audience: components['schemas']['AudienceFilterDto'];
+    };
+    CampaignAudienceSizeDto: {
+      count: number;
+    };
+    AutomationConditionsDto: {
+      /** @description Min hours before re-sending to same user */
+      cooldownHours?: number;
+    };
+    MarketingAutomationDto: {
+      id: string;
+      name: string;
+      trigger: string;
+      audience: components['schemas']['AudienceFilterDto'];
+      templateId: string;
+      templateName: string;
+      conditions: components['schemas']['AutomationConditionsDto'];
+      isActive: boolean;
+      lastFiredAt?: Record<string, never>;
+      fireCount: number;
+      createdById: string;
+      createdByEmail: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    MarketingAutomationsResponseDto: {
+      items: components['schemas']['MarketingAutomationDto'][];
+    };
+    CreateMarketingAutomationDto: {
+      name: string;
+      /** @enum {string} */
+      trigger:
+        | 'new_hackathon_published'
+        | 'new_bounty_published'
+        | 'new_grant_published'
+        | 'new_crowdfunding_launched'
+        | 'hackathon_deadline_3d'
+        | 'hackathon_deadline_7d'
+        | 'bounty_deadline_3d'
+        | 'grant_deadline_3d'
+        | 'user_signup'
+        | 'user_inactive';
+      audience: components['schemas']['AudienceFilterDto'];
+      templateId: string;
+      conditions?: components['schemas']['AutomationConditionsDto'];
+    };
+    UpdateMarketingAutomationDto: {
+      name?: string;
+      /** @enum {string} */
+      trigger?:
+        | 'new_hackathon_published'
+        | 'new_bounty_published'
+        | 'new_grant_published'
+        | 'new_crowdfunding_launched'
+        | 'hackathon_deadline_3d'
+        | 'hackathon_deadline_7d'
+        | 'bounty_deadline_3d'
+        | 'grant_deadline_3d'
+        | 'user_signup'
+        | 'user_inactive';
+      audience?: components['schemas']['AudienceFilterDto'];
+      templateId?: string;
+      conditions?: components['schemas']['AutomationConditionsDto'];
     };
     Function: Record<string, never>;
     BountyScopeSectionDto: {
@@ -20488,6 +21582,30 @@ export interface components {
       amount: string;
       passMark?: number | null;
     };
+    BountyDraftAssumptionDto: {
+      /** @description Wizard section the assumption belongs to. */
+      section: string;
+      /** @description Field within the section. */
+      field: string;
+      /** @description One-line plain reason for the choice. */
+      note: string;
+    };
+    BountyDraftGeneratedModeDto: {
+      entryType: string;
+      claimType: string;
+    };
+    BountyDraftAiGenerationDto: {
+      /** @description AI generationId that produced this draft. */
+      generationId: string;
+      /** @description Non-obvious choices the AI made, for review. */
+      assumptions: components['schemas']['BountyDraftAssumptionDto'][];
+      /** @description The brief that produced this draft (shown beside the draft). */
+      brief?: string | null;
+      /** @description The mode the AI generated for (to detect a later mode change). */
+      generatedMode?:
+        | components['schemas']['BountyDraftGeneratedModeDto']
+        | null;
+    };
     BountyDraftResponseDto: {
       id: string;
       /**
@@ -20507,6 +21625,8 @@ export interface components {
       validationErrors: {
         [key: string]: Record<string, never>[];
       };
+      /** @description Present when the draft was generated with Organizer Assist; enables per-section AI regenerate in the wizard. */
+      aiGeneration?: components['schemas']['BountyDraftAiGenerationDto'];
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -20520,6 +21640,72 @@ export interface components {
       resources?: components['schemas']['BountyResourcesSectionDto'];
       /** @description Hint that this is an autosave (no completion side effects). */
       autoSave?: boolean;
+    };
+    ClarifyBountyBriefDto: {
+      /** @description Free-text brief to triage for clarifying questions. */
+      brief: string;
+    };
+    ClarifyQuestionOptionDto: {
+      value: string;
+      label: string;
+    };
+    ClarifyQuestionDto: {
+      /** @description Axis key, e.g. "winners" | "entry" | "deadline". */
+      id: string;
+      question: string;
+      options: components['schemas']['ClarifyQuestionOptionDto'][];
+    };
+    ClarifyBountyDraftResponseDto: {
+      /** @description True when the brief is specific enough to draft immediately. */
+      ready: boolean;
+      questions: components['schemas']['ClarifyQuestionDto'][];
+    };
+    GenerateBountyDraftFromBriefDto: {
+      /**
+       * @description Free-text brief describing the bounty to generate.
+       * @example A one-week bounty to design three onboarding illustrations for a Stellar wallet, paid to the best entry.
+       */
+      brief: string;
+      /**
+       * @description Total reward budget in USDC, as a decimal string.
+       * @example 500
+       */
+      budgetCapUsdc: string;
+      /**
+       * @description Earliest the bounty may start (YYYY-MM-DD).
+       * @example 2026-07-01
+       */
+      earliestStart: string;
+      /** @description Up to 3 example briefs to steer style. */
+      examples?: string[];
+    };
+    BountyAiGenerationMetaDto: {
+      generationId: string;
+      model: string;
+      promptVersion: string;
+      /** @description Cost in USD as a decimal string (never a float). */
+      costUsd: string;
+    };
+    GenerateBountyDraftFromBriefResponseDto: {
+      /** @description Id of the created draft. */
+      draftId: string;
+      draft: components['schemas']['BountyDraftResponseDto'];
+      generation: components['schemas']['BountyAiGenerationMetaDto'];
+    };
+    RegenerateBountyDraftSectionDto: {
+      /** @enum {string} */
+      section: 'description' | 'submission' | 'reward';
+      /** @description Optional steering instructions for the regeneration. */
+      instructions?: string;
+    };
+    RegenerateBountyDraftSectionResponseDto: {
+      /** @enum {string} */
+      section: 'description' | 'submission' | 'reward';
+      /** @description Regenerated values in the wizard section shape. */
+      data: {
+        [key: string]: unknown;
+      };
+      generation: components['schemas']['BountyAiGenerationMetaDto'];
     };
     BountyWinnerDistributionEntryDto: {
       /**
@@ -20554,12 +21740,6 @@ export interface components {
        * @example 1804383600
        */
       submissionDeadline: number | null;
-      /**
-       * @description Credits required to apply. Defaults to 1; raise on high-value bounties to deter spam. Max 100 (enforced by the contract).
-       * @default 1
-       * @example 1
-       */
-      applicationCreditCost: number;
       /** @description Override for the winner distribution. Defaults to 100% to position 1. */
       winnerDistribution?: components['schemas']['BountyWinnerDistributionEntryDto'][];
       /** @description Override for the content URI stored on chain. Defaults to https://api.boundless.fi/bounties/<id>/content. */
@@ -20624,11 +21804,6 @@ export interface components {
        * @example 1
        */
       position: number;
-      /**
-       * @description Override the platform default credit_earn for this position. Defaults to 20/10/5 for positions 1/2/3 and 3 for the rest. Capped at 100 by the contract.
-       * @example 20
-       */
-      creditEarn?: number;
       /**
        * @description Override the platform default reputation_bump for this position. Defaults to 50/25/10 for positions 1/2/3 and 5 for the rest.
        * @example 50
@@ -21091,8 +22266,6 @@ export interface components {
        * @example 1
        */
       position: number;
-      /** @example 20 */
-      creditEarn?: number;
       /** @example 50 */
       reputationBump?: number;
     };
@@ -21937,172 +23110,6 @@ export interface operations {
       };
     };
   };
-  UserController_getProfile: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description User dashboard with profile, stats, chart data, activities graph, and recent activities retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['DashboardDto'];
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  UserController_getPublic: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Public route accessed successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  UserController_getOptional: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Optional auth route accessed successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  UserController_getUserByUsername: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Username of the user to retrieve */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description User profile retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description User not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  UserController_getUserFollowers: {
-    parameters: {
-      query?: {
-        /** @description Pagination offset */
-        offset?: number;
-        /** @description Number of followers to return */
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        /** @description Username of the user */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Followers retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description User not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  UserController_getUserFollowing: {
-    parameters: {
-      query?: {
-        /** @description Filter by entity type */
-        entityType?:
-          | 'USER'
-          | 'PROJECT'
-          | 'ORGANIZATION'
-          | 'CROWDFUNDING_CAMPAIGN'
-          | 'BOUNTY'
-          | 'GRANT'
-          | 'HACKATHON';
-        /** @description Pagination offset */
-        offset?: number;
-        /** @description Number of following to return */
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        /** @description Username of the user */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Following list retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description User not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   ProfileController_getProfile: {
     parameters: {
       query?: never;
@@ -22117,7 +23124,9 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': components['schemas']['ProfileResponseDto'];
+        };
       };
       /** @description Unauthorized */
       401: {
@@ -22440,6 +23449,235 @@ export interface operations {
       };
       /** @description Unauthorized */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UserController_getMe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Current user retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CurrentUserDto'];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UserController_getDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dashboard with profile, stats, chart data, activities graph, and recent activities retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DashboardDto'];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UserController_completeOnboarding: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompleteOnboardingDto'];
+      };
+    };
+    responses: {
+      /** @description Onboarding completed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UserController_getPublic: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Public route accessed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UserController_getOptional: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Optional auth route accessed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UserController_getUserByUsername: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Username of the user to retrieve */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description User profile retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description User not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UserController_getUserFollowers: {
+    parameters: {
+      query?: {
+        /** @description Pagination offset */
+        offset?: number;
+        /** @description Number of followers to return */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Username of the user */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Followers retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description User not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UserController_getUserFollowing: {
+    parameters: {
+      query?: {
+        /** @description Filter by entity type */
+        entityType?:
+          | 'USER'
+          | 'PROJECT'
+          | 'ORGANIZATION'
+          | 'CROWDFUNDING_CAMPAIGN'
+          | 'BOUNTY'
+          | 'GRANT'
+          | 'HACKATHON';
+        /** @description Pagination offset */
+        offset?: number;
+        /** @description Number of following to return */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Username of the user */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Following list retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description User not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -23557,6 +24795,47 @@ export interface operations {
       };
     };
   };
+  CreditsController_getMine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CreditSummaryDto'];
+        };
+      };
+    };
+  };
+  CreditsController_getHistory: {
+    parameters: {
+      query?: {
+        page?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CreditHistoryDto'];
+        };
+      };
+    };
+  };
   CampaignsController_validateCampaign: {
     parameters: {
       query?: never;
@@ -24611,6 +25890,25 @@ export interface operations {
       };
     };
   };
+  WalletController_getWalletSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WalletSummaryDto'];
+        };
+      };
+    };
+  };
   WalletController_getAddressBalance: {
     parameters: {
       query?: never;
@@ -24833,42 +26131,6 @@ export interface operations {
         content?: never;
       };
       /** @description Identity verification required. Complete KYC to send funds. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  WalletPayoutController_sendPayout: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SendPayoutDto'];
-      };
-    };
-    responses: {
-      /** @description Payout submitted successfully */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation or business rule error (e.g. destination not activated, no trustline, memo required) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Forbidden – admin only */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27314,6 +28576,46 @@ export interface operations {
       };
     };
   };
+  OrganizationHackathonsAiController_clarify: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Organization ID */
+        organizationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ClarifyHackathonBriefDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ClarifyHackathonDraftResponseDto'];
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   OrganizationHackathonsAiController_generateFromBrief: {
     parameters: {
       query?: never;
@@ -27348,6 +28650,30 @@ export interface operations {
       };
       /** @description Resource not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrganizationHackathonsAiController_generateFromBriefStream: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Organization ID */
+        organizationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GenerateDraftFromBriefDto'];
+      };
+    };
+    responses: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
@@ -34745,6 +36071,28 @@ export interface operations {
       };
     };
   };
+  AiUsageController_getUsage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Organization ID */
+        organizationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AiUsageResponseDto'];
+        };
+      };
+    };
+  };
   AdminOpsController_pause: {
     parameters: {
       query?: never;
@@ -35291,7 +36639,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['AssignDisputeDto'];
+        'application/json': components['schemas']['AdminV2AssignDisputeDto'];
       };
     };
     responses: {
@@ -35341,7 +36689,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['ResolveDisputeDto'];
+        'application/json': components['schemas']['AdminV2ResolveDisputeDto'];
       };
     };
     responses: {
@@ -35366,7 +36714,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['EscalateDisputeDto'];
+        'application/json': components['schemas']['AdminV2EscalateDisputeDto'];
       };
     };
     responses: {
@@ -36383,6 +37731,195 @@ export interface operations {
       };
     };
   };
+  GovernanceContractController_listTokens: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupportedTokenDto'][];
+        };
+      };
+    };
+  };
+  GovernanceContractController_syncTokens: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SyncTokensResultDto'];
+        };
+      };
+    };
+  };
+  GovernanceContractController_importToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterTokenDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupportedTokenDto'];
+        };
+      };
+    };
+  };
+  GovernanceContractController_pauseState: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PauseStateDto'];
+        };
+      };
+    };
+  };
+  GovernanceContractController_buildRegisterToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterTokenDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContractOpXdrDto'];
+        };
+      };
+    };
+  };
+  GovernanceContractController_buildDeregisterToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DeregisterTokenDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContractOpXdrDto'];
+        };
+      };
+    };
+  };
+  GovernanceContractController_buildPause: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContractOpXdrDto'];
+        };
+      };
+    };
+  };
+  GovernanceContractController_buildUnpause: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContractOpXdrDto'];
+        };
+      };
+    };
+  };
+  GovernanceContractController_submitSigned: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubmitSignedContractOpDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContractOpResultDto'];
+        };
+      };
+    };
+  };
   KycController_list: {
     parameters: {
       query?: {
@@ -36580,7 +38117,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['RejectMilestoneDto'];
+        'application/json': components['schemas']['AdminV2RejectMilestoneDto'];
       };
     };
     responses: {
@@ -36663,6 +38200,434 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['PaginatedWalletsDto'];
+        };
+      };
+    };
+  };
+  HackathonBriefTemplatesController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HackathonBriefTemplatesResponseDto'];
+        };
+      };
+    };
+  };
+  HackathonBriefTemplatesController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateHackathonBriefTemplateDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HackathonBriefTemplateDto'];
+        };
+      };
+    };
+  };
+  HackathonBriefTemplatesController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateHackathonBriefTemplateDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HackathonBriefTemplateDto'];
+        };
+      };
+    };
+  };
+  HackathonBriefTemplatesController_archive: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  HackathonBriefTemplatesPublicController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HackathonBriefTemplatesResponseDto'];
+        };
+      };
+    };
+  };
+  MarketingTemplatesController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingTemplatesResponseDto'];
+        };
+      };
+    };
+  };
+  MarketingTemplatesController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateMarketingTemplateDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingTemplateDto'];
+        };
+      };
+    };
+  };
+  MarketingTemplatesController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMarketingTemplateDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingTemplateDto'];
+        };
+      };
+    };
+  };
+  MarketingTemplatesController_archive: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MarketingCampaignsController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingCampaignsResponseDto'];
+        };
+      };
+    };
+  };
+  MarketingCampaignsController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateMarketingCampaignDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingCampaignDto'];
+        };
+      };
+    };
+  };
+  MarketingCampaignsController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMarketingCampaignDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingCampaignDto'];
+        };
+      };
+    };
+  };
+  MarketingCampaignsController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MarketingCampaignsController_audienceSize: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PreviewCampaignAudienceDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CampaignAudienceSizeDto'];
+        };
+      };
+    };
+  };
+  MarketingCampaignsController_send: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingCampaignDto'];
+        };
+      };
+    };
+  };
+  MarketingAutomationsController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingAutomationsResponseDto'];
+        };
+      };
+    };
+  };
+  MarketingAutomationsController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateMarketingAutomationDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingAutomationDto'];
+        };
+      };
+    };
+  };
+  MarketingAutomationsController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMarketingAutomationDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingAutomationDto'];
+        };
+      };
+    };
+  };
+  MarketingAutomationsController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MarketingAutomationsController_toggle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarketingAutomationDto'];
         };
       };
     };
@@ -37121,6 +39086,184 @@ export interface operations {
         content: {
           'application/json': components['schemas']['BountyDraftResponseDto'][];
         };
+      };
+    };
+  };
+  OrganizationBountiesAiController_clarify: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Organization ID */
+        organizationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ClarifyBountyBriefDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ClarifyBountyDraftResponseDto'];
+        };
+      };
+    };
+  };
+  OrganizationBountiesAiController_generateFromBrief: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Organization ID */
+        organizationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GenerateBountyDraftFromBriefDto'];
+      };
+    };
+    responses: {
+      /** @description Draft generated and pre-filled. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GenerateBountyDraftFromBriefResponseDto'];
+        };
+      };
+    };
+  };
+  OrganizationBountiesAiController_generateFromBriefStream: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Organization ID */
+        organizationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GenerateBountyDraftFromBriefDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrganizationBountiesAiController_regenerateSection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Organization ID */
+        organizationId: string;
+        /** @description Bounty draft ID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegenerateBountyDraftSectionDto'];
+      };
+    };
+    responses: {
+      /** @description Regenerated section returned. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegenerateBountyDraftSectionResponseDto'];
+        };
+      };
+    };
+  };
+  OrganizationBountiesEscrowController_requestFundingOtp: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationId: string;
+        /** @description Bounty draft id */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RequestFundingOtpResponseDto'];
+        };
+      };
+    };
+  };
+  OrganizationBountiesEscrowController_verifyFundingOtp: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationId: string;
+        /** @description Bounty draft id */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VerifyFundingOtpDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VerifyFundingOtpResponseDto'];
+        };
+      };
+    };
+  };
+  OrganizationBountiesEscrowController_resetToDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationId: string;
+        /** @description Bounty draft id */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Bounty reset to draft. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

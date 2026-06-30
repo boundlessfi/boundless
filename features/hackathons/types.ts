@@ -62,6 +62,30 @@ export type AiGenerationMeta = Schemas['AiGenerationMetaDto'];
 /** The sections the AI can regenerate (criteria | prizes | tracks | timeline | description). */
 export type DraftRegenSection = RegenerateDraftSectionBody['section'];
 
+// Hand-typed until `npm run codegen` surfaces the clarify DTOs + the
+// `aiGeneration.assumptions` field on the draft response.
+
+/** A non-obvious choice the AI made, surfaced for organizer review. */
+export interface HackathonDraftAssumption {
+  section: string;
+  field: string;
+  note: string;
+}
+
+export interface HackathonClarifyOption {
+  value: string;
+  label: string;
+}
+export interface HackathonClarifyQuestion {
+  id: string;
+  question: string;
+  options: HackathonClarifyOption[];
+}
+export interface ClarifyHackathonDraftResult {
+  ready: boolean;
+  questions: HackathonClarifyQuestion[];
+}
+
 // ── Escrow ─────────────────────────────────────────────────────────────────
 
 /** The EscrowOp row returned by every hackathon escrow endpoint. */

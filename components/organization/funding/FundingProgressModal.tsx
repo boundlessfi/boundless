@@ -18,8 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { BoundlessButton } from '@/components/buttons';
 import { getTransactionExplorerUrl } from '@/lib/wallet-utils';
-import type { EscrowRunPhase } from '@/features/hackathons';
-import type { FundingMode } from '@/features/hackathons';
+import type { EscrowRunPhase, FundingMode } from './types';
 
 interface FundingProgressModalProps {
   open: boolean;
@@ -32,7 +31,9 @@ interface FundingProgressModalProps {
   onClose: () => void;
   onRetry?: () => void;
   onSwitchToDraft?: () => void;
-  onViewHackathon?: () => void;
+  onView?: () => void;
+  /** Entity word for the copy, e.g. "hackathon" | "bounty". Defaults to "event". */
+  entityNoun?: string;
 }
 
 interface Step {
@@ -69,10 +70,12 @@ export default function FundingProgressModal({
   onClose,
   onRetry,
   onSwitchToDraft,
-  onViewHackathon,
+  onView,
+  entityNoun = 'event',
 }: FundingProgressModalProps) {
   const steps = fundingMode === 'EXTERNAL' ? EXTERNAL_STEPS : MANAGED_STEPS;
   const dismissable = isCompleted || isFailed;
+  const Entity = entityNoun.charAt(0).toUpperCase() + entityNoun.slice(1);
 
   const phaseIndex = steps.findIndex(s => s.phase === phase);
   const activeIndex = isCompleted
@@ -103,14 +106,14 @@ export default function FundingProgressModal({
         <DialogHeader>
           <DialogTitle className='text-white'>
             {isCompleted
-              ? 'Hackathon published'
+              ? `${Entity} published`
               : isFailed
                 ? 'Funding failed'
-                : 'Funding your hackathon'}
+                : `Funding your ${entityNoun}`}
           </DialogTitle>
           <DialogDescription className='text-gray-400'>
             {isCompleted
-              ? 'Your prize pool is secured and the hackathon is live.'
+              ? `Your prize pool is secured and the ${entityNoun} is live.`
               : isFailed
                 ? 'No funds moved. You can retry or move it back to draft.'
                 : 'Keep this open while we set up your prize pool.'}
@@ -175,9 +178,9 @@ export default function FundingProgressModal({
               >
                 Close
               </BoundlessButton>
-              {onViewHackathon && (
-                <BoundlessButton onClick={onViewHackathon}>
-                  View hackathon
+              {onView && (
+                <BoundlessButton onClick={onView}>
+                  View {entityNoun}
                 </BoundlessButton>
               )}
             </>

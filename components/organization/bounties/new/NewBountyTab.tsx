@@ -2,13 +2,38 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { Sparkles } from 'lucide-react';
 
 import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { BoundlessButton } from '@/components/buttons';
+import AiAssumptionsBanner from '@/components/ai/AiAssumptionsBanner';
+import AiBriefPanel from '@/components/ai/AiBriefPanel';
+import FundingConfirmationModal from '@/components/organization/funding/FundingConfirmationModal';
+import type { FundingSourceItem } from '@/components/organization/funding/FundingConfirmationModal';
+import FundingProgressModal from '@/components/organization/funding/FundingProgressModal';
+import type { FundingMode } from '@/components/organization/funding/types';
+import {
+  useDraft,
+  requestBountyFundingOtp,
+  verifyBountyFundingOtp,
+  type BountyDraftWithAi,
+} from '@/features/bounties';
+import { useTreasuryWallets } from '@/features/treasury';
+import { connectWallet } from '@/lib/wallet/wallet-kit';
+import { getWalletBalanceByAddress } from '@/lib/api/wallet';
+import { formatAddress } from '@/lib/wallet-utils';
+import {
+  getBountyPrizePool,
+  getBountyPlatformFee,
+  getBountyTotalFunding,
+} from '@/lib/utils/bounty-escrow';
 import { useBountySteps } from '@/hooks/use-bounty-steps';
 import { useBountyDraft } from '@/hooks/use-bounty-draft';
 import { useBountyPublish } from '@/hooks/use-bounty-publish';
 import { buildMockBountyData } from './mock-data';
+import GenerateWithAiBountyDialog from './GenerateWithAiBountyDialog';
 import ScopeTab from './tabs/ScopeTab';
 import ModeTab from './tabs/ModeTab';
 import SubmissionModelTab from './tabs/SubmissionModelTab';
@@ -35,9 +60,9 @@ interface NewBountyTabProps {
  * tabs. The ModeTab feeds the chosen mode into the SubmissionModelTab so its
  * conditional fields render correctly.
  *
- * Scope / Reward / Review tabs arrive in #600 and the publish + funding flow in
- * #601; their wiring seams (saveSection, draftId, navigateToStep) are in place
- * here. There are intentionally no AI entry points.
+ * Organizer Assist (AI) entry points: a "Start faster with AI" banner on the
+ * empty wizard opens GenerateWithAiBountyDialog (brief -> full draft), and each
+ * AI-generated section offers a per-section "Regenerate with AI" button.
  */
 export default function NewBountyTab({
   organizationId,
@@ -159,30 +184,185 @@ export default function NewBountyTab({
     ? { entryType: stepData.mode.entryType, claimType: stepData.mode.claimType }
     : undefined;
 
-  // Publish via the shared escrow runner. Defaults to MANAGED (the connected
-  // custodial wallet funds + the backend signs); the funding-source picker
-  // (external wallet / treasury) is a follow-up.
-  const { publish, isPublishing, publishResponse } = useBountyPublish({
-    organizationId: derivedOrgId || '',
-    stepData,
-    draftId,
-    fundingMode: 'MANAGED',
-  });
+  // ---- Funding (publish) flow: the same modal hackathons use ----
+  const [selectedSourceId, setSelectedSourceId] = useState('external');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [externalAddress, setExternalAddress] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
 
-  // Once the publish finalizes on-chain, leave the wizard for the organizer's
-  // bounty list rather than lingering on the (now read-only) review.
-  const hasRedirectedRef = useRef(false);
-  useEffect(() => {
-    if (publishResponse && derivedOrgId && !hasRedirectedRef.current) {
-      hasRedirectedRef.current = true;
-      router.replace(`/organizations/${derivedOrgId}/bounties`);
+  const rewardData = stepData.reward;
+  const totalPrizePool = rewardData ? getBountyPrizePool(rewardData) : 0;
+  const platformFee = rewardData ? getBountyPlatformFee(rewardData) : 0;
+  const totalFunding = rewardData ? getBountyTotalFunding(rewardData) : 0;
+
+  // Selectable funding sources: org treasury (managed) wallets + a connected
+  // (external) wallet. Mirrors the hackathon picker.
+  const treasuryQuery = useTreasuryWallets(derivedOrgId);
+  const fundingSources = useMemo<FundingSourceItem[]>(() => {
+    const items: FundingSourceItem[] = [];
+    for (const w of treasuryQuery.data ?? []) {
+      if (w.kind === 'MANAGED' && w.status === 'ACTIVE') {
+        items.push({
+          id: w.id,
+          kind: 'MANAGED_TREASURY',
+          label: `${w.label} (treasury)`,
+          description: `Org treasury wallet · ${formatAddress(w.publicKey, 4)}`,
+          address: w.publicKey,
+        });
+      }
     }
-  }, [publishResponse, derivedOrgId, router]);
+    items.push({
+      id: 'external',
+      kind: 'EXTERNAL',
+      label: 'Connected wallet',
+      description: 'You sign the transaction in your own wallet.',
+      address: externalAddress,
+    });
+    return items;
+  }, [treasuryQuery.data, externalAddress]);
+
+  // Default to the org's canonical treasury wallet when one exists, unless the
+  // organizer explicitly picks another.
+  const sourcePickedRef = useRef(false);
+  const defaultTreasuryId = useMemo(() => {
+    const list = treasuryQuery.data ?? [];
+    const def =
+      list.find(
+        w => w.kind === 'MANAGED' && w.status === 'ACTIVE' && w.isDefault
+      ) ?? list.find(w => w.kind === 'MANAGED' && w.status === 'ACTIVE');
+    return def?.id ?? null;
+  }, [treasuryQuery.data]);
+  useEffect(() => {
+    if (!sourcePickedRef.current && defaultTreasuryId) {
+      setSelectedSourceId(defaultTreasuryId);
+    }
+  }, [defaultTreasuryId]);
+
+  const handleSelectSource = useCallback((id: string) => {
+    sourcePickedRef.current = true;
+    setSelectedSourceId(id);
+  }, []);
+
+  // Funding mode + owner derived from the explicit selection id (see the
+  // hackathon note: never key off a list-fallback that could silently flip a
+  // treasury selection to the connected wallet).
+  const isExternalSource = selectedSourceId === 'external';
+  const selectedTreasury = isExternalSource
+    ? undefined
+    : fundingSources.find(
+        s => s.id === selectedSourceId && s.kind === 'MANAGED_TREASURY'
+      );
+  const fundingMode: FundingMode = isExternalSource ? 'EXTERNAL' : 'MANAGED';
+  const treasurySource = selectedTreasury?.address
+    ? { walletId: selectedTreasury.id, address: selectedTreasury.address }
+    : null;
+  const externalOwnerAddress = isExternalSource ? externalAddress : null;
+  const funderAddress = isExternalSource
+    ? externalAddress
+    : (selectedTreasury?.address ?? null);
+
+  const sourceAddress = funderAddress ?? undefined;
+  const sourceBalanceQuery = useQuery({
+    queryKey: ['wallet-balance', sourceAddress],
+    queryFn: () => getWalletBalanceByAddress(sourceAddress as string),
+    enabled: !!sourceAddress,
+    staleTime: 15_000,
+  });
+  const selectedSourceUsdc = sourceAddress
+    ? Number.parseFloat(sourceBalanceQuery.data?.usdc ?? '')
+    : undefined;
+  const balanceLoading = !!sourceAddress && sourceBalanceQuery.isLoading;
+
+  const { publish, isPublishing, escrowPhase, escrowError, escrowTxHash } =
+    useBountyPublish({
+      organizationId: derivedOrgId || '',
+      stepData,
+      draftId,
+      fundingMode,
+      externalOwnerAddress,
+      treasurySource,
+    });
+
+  const isFundingComplete = escrowPhase === 'completed';
+  const isFundingFailed = escrowPhase === 'failed';
+  const escrowPhaseRef = useRef(escrowPhase);
+  useEffect(() => {
+    escrowPhaseRef.current = escrowPhase;
+  }, [escrowPhase]);
+
+  const goToBountyList = useCallback(() => {
+    if (derivedOrgId) router.replace(`/organizations/${derivedOrgId}/bounties`);
+  }, [derivedOrgId, router]);
+
+  const runFunding = useCallback(async () => {
+    try {
+      await publish();
+      updateStepCompletion('review', true);
+    } catch {
+      // Failure surfaced via escrowPhase; the progress modal offers retry.
+    }
+  }, [publish, updateStepCompletion]);
+
+  const handleConfirmFunding = async () => {
+    setConfirmOpen(false);
+    setProgressOpen(true);
+    await runFunding();
+    // Pre-flight bailed before the runner started -> nothing to show.
+    if (escrowPhaseRef.current === 'idle') setProgressOpen(false);
+  };
+
+  // Funding step-up (email OTP). Backend decides if required; no-op when off.
+  const requestOtp = useCallback(async () => {
+    if (!derivedOrgId || !draftId) {
+      return { required: false, alreadyVerified: false, sent: false };
+    }
+    const res = await requestBountyFundingOtp(derivedOrgId, draftId);
+    return {
+      required: res.required,
+      alreadyVerified: res.alreadyVerified,
+      sent: res.sent,
+    };
+  }, [derivedOrgId, draftId]);
+
+  const verifyOtp = useCallback(
+    async (code: string) => {
+      if (!derivedOrgId || !draftId) return;
+      await verifyBountyFundingOtp(derivedOrgId, draftId, code);
+    },
+    [derivedOrgId, draftId]
+  );
+
+  const handleConnectExternal = useCallback(async () => {
+    setConnecting(true);
+    try {
+      const { address } = await connectWallet();
+      setExternalAddress(address);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Could not connect a wallet.'
+      );
+    } finally {
+      setConnecting(false);
+    }
+  }, []);
 
   // Dev-only convenience: fill every section with valid mock data, persist it
   // in one PATCH, and jump to Review. Never rendered in production builds.
   const isDev = process.env.NODE_ENV === 'development';
   const [isFillingMock, setIsFillingMock] = useState(false);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  // Offer AI drafting only on a fresh, empty wizard (no draft created and no
+  // scope entered yet) so it never overwrites in-progress work.
+  const showAiBanner = !draftId && !stepData.scope;
+
+  // AI assumptions (from the draft response) surfaced on the review step so the
+  // organizer can see and correct every guess the AI made.
+  const { data: draftRecord } = useDraft(derivedOrgId ?? '', draftId);
+  const aiGenerationRecord = (draftRecord as BountyDraftWithAi | undefined)
+    ?.aiGeneration;
+  const aiAssumptions = aiGenerationRecord?.assumptions ?? [];
+  const aiBrief = aiGenerationRecord?.brief ?? null;
   const handleFillMock = useCallback(async () => {
     setIsFillingMock(true);
     try {
@@ -232,6 +412,44 @@ export default function NewBountyTab({
           </button>
         </div>
       )}
+      {showAiBanner && derivedOrgId && (
+        <div className='px-6 md:px-20'>
+          <div className='border-primary/30 from-primary/10 flex flex-col gap-3 rounded-xl border bg-gradient-to-r to-transparent p-4 sm:flex-row sm:items-center sm:justify-between'>
+            <div className='flex items-start gap-3'>
+              <span className='bg-primary/15 text-primary mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg'>
+                <Sparkles className='h-5 w-5' />
+              </span>
+              <div>
+                <p className='text-sm font-semibold text-white'>
+                  Start faster with AI
+                </p>
+                <p className='text-xs text-gray-400'>
+                  Describe your bounty and we&apos;ll draft the scope,
+                  submission rules, and prizes for you to review and edit.
+                </p>
+              </div>
+            </div>
+            <BoundlessButton
+              type='button'
+              size='sm'
+              icon={<Sparkles className='h-4 w-4' />}
+              iconPosition='left'
+              onClick={() => setAiDialogOpen(true)}
+            >
+              Generate with AI
+            </BoundlessButton>
+          </div>
+        </div>
+      )}
+
+      {derivedOrgId && (
+        <GenerateWithAiBountyDialog
+          organizationId={derivedOrgId}
+          open={aiDialogOpen}
+          onOpenChange={setAiDialogOpen}
+        />
+      )}
+
       <Tabs value={activeTab} className='w-full'>
         <div className='px-6 py-6 md:px-20'>
           <TabsContent value='scope' className='mt-0'>
@@ -294,20 +512,67 @@ export default function NewBountyTab({
           </TabsContent>
 
           <TabsContent value='review' className='mt-0'>
+            {aiBrief && <AiBriefPanel brief={aiBrief} className='mb-4' />}
+            {aiAssumptions.length > 0 && (
+              <AiAssumptionsBanner
+                assumptions={aiAssumptions}
+                onReview={section => navigateToStep(section as StepKey)}
+                className='mb-6'
+              />
+            )}
             <ReviewTab
               allData={stepData}
               onEdit={navigateToStep}
               onBack={() => navigateToStep('resources')}
               onSaveDraft={saveDraft}
               isSavingDraft={isSavingDraft}
-              onPublish={async () => {
-                await publish();
-              }}
+              onPublish={() => setConfirmOpen(true)}
               isLoading={isPublishing}
             />
           </TabsContent>
         </div>
       </Tabs>
+
+      {draftId && derivedOrgId && (
+        <>
+          <FundingConfirmationModal
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            totalPrizePool={totalPrizePool}
+            platformFee={platformFee}
+            totalFunding={totalFunding}
+            sources={fundingSources}
+            selectedSourceId={selectedSourceId}
+            onSelectSource={handleSelectSource}
+            sourceUsdc={selectedSourceUsdc}
+            balanceLoading={balanceLoading}
+            onConfirm={handleConfirmFunding}
+            isSubmitting={isPublishing}
+            connecting={connecting}
+            onConnectExternal={handleConnectExternal}
+            requestOtp={requestOtp}
+            verifyOtp={verifyOtp}
+            entityNoun='bounty'
+          />
+          <FundingProgressModal
+            open={progressOpen}
+            phase={escrowPhase}
+            txHash={escrowTxHash}
+            error={escrowError}
+            isCompleted={isFundingComplete}
+            isFailed={isFundingFailed}
+            fundingMode={fundingMode}
+            onClose={() => {
+              setProgressOpen(false);
+              if (isFundingComplete) goToBountyList();
+            }}
+            onRetry={() => void runFunding()}
+            onSwitchToDraft={() => setProgressOpen(false)}
+            onView={goToBountyList}
+            entityNoun='bounty'
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -43,6 +43,95 @@ export const DRAFT_SECTIONS = [
 ] as const;
 export type DraftSection = (typeof DRAFT_SECTIONS)[number];
 
+// ── Organizer Assist (AI drafting) ────────────────────────────────────────────
+// Hand-typed until `npm run codegen` surfaces the new bounty AI DTOs +
+// the `aiGeneration` field on BountyDraftResponseDto. Mirrors the backend
+// bounty-ai-assist.dto.ts shapes exactly.
+
+/** A non-obvious choice the AI made, surfaced for organizer review. */
+export interface BountyDraftAssumption {
+  section: string;
+  field: string;
+  note: string;
+}
+
+/** The mode the AI generated for, to detect a later mode change. */
+export interface BountyDraftGeneratedMode {
+  entryType: BountyEntryType;
+  claimType: BountyClaimType;
+}
+
+/** AI provenance — present when the draft was generated with Organizer Assist. */
+export interface BountyDraftAiGeneration {
+  generationId: string;
+  assumptions?: BountyDraftAssumption[];
+  brief?: string | null;
+  generatedMode?: BountyDraftGeneratedMode | null;
+}
+
+/** Pre-draft clarify gate. */
+export interface ClarifyOption {
+  value: string;
+  label: string;
+}
+export interface ClarifyQuestion {
+  id: string;
+  question: string;
+  options: ClarifyOption[];
+}
+export interface ClarifyBountyDraftResult {
+  ready: boolean;
+  questions: ClarifyQuestion[];
+}
+
+/** A draft that may carry AI provenance (until codegen folds it into BountyDraft). */
+export type BountyDraftWithAi = BountyDraft & {
+  aiGeneration?: BountyDraftAiGeneration;
+};
+
+/** Cost/trace metadata returned with every Organizer Assist response. */
+export interface BountyAiGenerationMeta {
+  generationId: string;
+  model: string;
+  promptVersion: string;
+  costUsd: string;
+}
+
+/** Body for POST …/bounties/draft/from-brief. */
+export interface GenerateBountyDraftFromBriefBody {
+  brief: string;
+  budgetCapUsdc: string;
+  earliestStart: string;
+  examples?: string[];
+}
+
+export interface GenerateBountyDraftFromBriefResponse {
+  draftId: string;
+  draft: BountyDraft;
+  generation: BountyAiGenerationMeta;
+}
+
+/** Sections the AI can regenerate (mirrors backend BOUNTY_DRAFT_REGEN_SECTIONS). */
+export const BOUNTY_DRAFT_REGEN_SECTIONS = [
+  'description',
+  'submission',
+  'reward',
+] as const;
+export type BountyDraftRegenSection =
+  (typeof BOUNTY_DRAFT_REGEN_SECTIONS)[number];
+
+export interface RegenerateBountyDraftSectionBody {
+  section: BountyDraftRegenSection;
+  instructions?: string;
+}
+
+export interface RegenerateBountyDraftSectionResponse {
+  section: BountyDraftRegenSection;
+  /** Regenerated values in the wizard section shape, ready to apply. */
+  data: Record<string, unknown>;
+  generation: BountyAiGenerationMeta;
+}
+
 // ── Escrow ───────────────────────────────────────────────────────────────────
 
 /** The EscrowOp row returned by every bounty escrow endpoint. */
@@ -64,6 +153,19 @@ export type BountyWinnerDistributionEntry =
 export type FundingMode = NonNullable<
   PublishBountyEscrowRequest['fundingMode']
 >;
+
+// Funding step-up OTP (shared FundingOtpModule). Hand-typed until codegen
+// surfaces the new bounty funding-otp endpoints.
+export interface BountyFundingOtpRequestResult {
+  required: boolean;
+  alreadyVerified: boolean;
+  sent: boolean;
+  expiresInSeconds: number;
+}
+export interface BountyFundingOtpVerifyResult {
+  verified: boolean;
+  expiresInSeconds: number;
+}
 
 /** Terminal op states. Polling should stop once one is reached. */
 export const TERMINAL_ESCROW_STATUSES: readonly EscrowOpStatus[] = [

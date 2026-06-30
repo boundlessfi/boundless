@@ -30,6 +30,7 @@ import {
 } from '@/lib/utils/bounty-escrow';
 import { MAX_PRIZE_TIERS, type BountyClaimType } from './schemas/modeSchema';
 import { makeRewardSchema, type RewardFormData } from './schemas/rewardSchema';
+import RegenerateBountySectionButton from '../RegenerateBountySectionButton';
 
 interface RewardTabProps {
   /** The claim type + winner count chosen in ModeTab; drives the tier count. */
@@ -121,6 +122,33 @@ export default function RewardTab({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+        <div className='flex justify-end'>
+          <RegenerateBountySectionButton
+            section='reward'
+            onApply={data => {
+              if (typeof data.rewardCurrency === 'string') {
+                form.setValue('rewardCurrency', data.rewardCurrency, {
+                  shouldDirty: true,
+                });
+              }
+              if (Array.isArray(data.prizeTiers)) {
+                replace(
+                  (
+                    data.prizeTiers as Array<{
+                      position: number;
+                      amount: string;
+                      passMark?: number | null;
+                    }>
+                  ).map(t => ({
+                    position: t.position,
+                    amount: String(t.amount),
+                    passMark: t.passMark ?? null,
+                  }))
+                );
+              }
+            }}
+          />
+        </div>
         <FormField
           control={form.control}
           name='rewardCurrency'

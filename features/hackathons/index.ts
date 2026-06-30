@@ -58,8 +58,15 @@ export {
 // Organizer Assist (AI) hooks.
 export { useGenerateDraftFromBrief } from './api/use-generate-from-brief';
 export { useRegenerateDraftSection } from './api/use-regenerate-section';
+export { useClarifyDraft } from './api/use-clarify';
 export { useBriefTemplates } from './api/use-brief-templates';
 export type { BriefTemplate } from './api/use-brief-templates';
+export type {
+  HackathonDraftAssumption,
+  HackathonClarifyOption,
+  HackathonClarifyQuestion,
+  ClarifyHackathonDraftResult,
+} from './types';
 
 // Draft client (imperative helpers, legacy-compatible signatures).
 export { deleteDraft, previewAnnouncementAudience } from './api/draft-client';

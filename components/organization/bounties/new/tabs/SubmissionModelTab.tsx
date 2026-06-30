@@ -1,8 +1,11 @@
 import React from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { ArrowLeft, EyeOff, Lock, Loader2 } from 'lucide-react';
+
+import { useDraft, type BountyDraftWithAi } from '@/features/bounties';
 
 import { BoundlessButton } from '@/components/buttons';
 import {
@@ -29,6 +32,7 @@ import {
   CATEGORY_REPUTATION_BASELINE,
   type BountyCategory,
 } from './schemas/scopeSchema';
+import RegenerateBountySectionButton from '../RegenerateBountySectionButton';
 
 interface SubmissionModelTabProps {
   /** The mode chosen in ModeTab; drives which fields show and how they validate. */
@@ -55,6 +59,14 @@ const toNumberOrNull = (raw: string): number | null => {
   return Number.isNaN(n) ? null : n;
 };
 
+/** Trim an ISO date-time to the `YYYY-MM-DDTHH:mm` a datetime-local input wants. */
+const toDatetimeLocal = (iso: unknown): string | null => {
+  if (typeof iso !== 'string' || iso.trim() === '') return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return iso.slice(0, 16);
+};
+
 export default function SubmissionModelTab({
   mode,
   category,
@@ -78,6 +90,23 @@ export default function SubmissionModelTab({
   // The category sets the lowest reputation the organizer can require; they may
   // raise it but not drop below it.
   const reputationFloor = category ? CATEGORY_REPUTATION_BASELINE[category] : 0;
+
+  // Detect a mode change since the AI generated this draft, so we can nudge the
+  // organizer to regenerate the (now mode-dependent) submission settings.
+  const routeParams = useParams();
+  const searchParams = useSearchParams();
+  const organizationId = (routeParams?.id as string) ?? '';
+  const draftId =
+    (routeParams?.draftId as string) ?? searchParams.get('draftId') ?? '';
+  const { data: draftRecord } = useDraft(organizationId, draftId || undefined);
+  const generatedMode = (draftRecord as BountyDraftWithAi | undefined)
+    ?.aiGeneration?.generatedMode;
+  const modeChanged = Boolean(
+    generatedMode &&
+    mode &&
+    (generatedMode.entryType !== mode.entryType ||
+      generatedMode.claimType !== mode.claimType)
+  );
 
   const form = useForm<SubmissionModelFormData>({
     resolver: zodResolver(
@@ -154,6 +183,51 @@ export default function SubmissionModelTab({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+        {modeChanged && (
+          <div className='border-primary/40 bg-primary/10 flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between'>
+            <p className='text-sm text-white'>
+              You changed the mode since this was drafted. Regenerate the
+              submission settings so they match the new mode.
+            </p>
+          </div>
+        )}
+        <div className='flex justify-end'>
+          <RegenerateBountySectionButton
+            section='submission'
+            defaultInstruction={
+              modeChanged && mode
+                ? `The bounty mode is now entryType=${mode.entryType}, claimType=${mode.claimType}. Update the submission settings (application window, submission visibility, applicant/shortlist caps, reputation) to match.`
+                : undefined
+            }
+            onApply={data => {
+              const deadline = toDatetimeLocal(data.submissionDeadline);
+              if (deadline)
+                form.setValue('submissionDeadline', deadline, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+              if ('applicationWindowCloseAt' in data)
+                form.setValue(
+                  'applicationWindowCloseAt',
+                  toDatetimeLocal(data.applicationWindowCloseAt)
+                );
+              if (typeof data.maxApplicants === 'number')
+                form.setValue('maxApplicants', data.maxApplicants);
+              if (typeof data.shortlistSize === 'number')
+                form.setValue('shortlistSize', data.shortlistSize);
+              if (
+                typeof data.reputationMinimum === 'number' &&
+                fields.reputationMinimum !== 'hidden'
+              )
+                form.setValue('reputationMinimum', data.reputationMinimum);
+              if (typeof data.applicationCreditCost === 'number')
+                form.setValue(
+                  'applicationCreditCost',
+                  data.applicationCreditCost
+                );
+            }}
+          />
+        </div>
         {/* Submission deadline (always required) */}
         <FormField
           control={form.control}
