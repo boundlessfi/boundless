@@ -97,14 +97,16 @@ export function makeSubmissionModelSchema(
       }
     }
 
-    // Competition modes must hide submissions until the deadline.
+    // Competition modes must hide peer submissions from other participants
+    // until the deadline (organizers always see submissions).
     if (
       claimType === 'COMPETITION' &&
       data.submissionVisibility !== 'HIDDEN_UNTIL_DEADLINE'
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Competition submissions are hidden until the deadline',
+        message:
+          'Competition submissions are hidden from other participants until the deadline',
         path: ['submissionVisibility'],
       });
     }

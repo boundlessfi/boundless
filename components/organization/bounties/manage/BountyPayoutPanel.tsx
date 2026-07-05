@@ -21,8 +21,6 @@ import {
 } from '@/components/ui/select';
 import { BoundlessButton } from '@/components/buttons';
 import EmptyState from '@/components/EmptyState';
-import { SealedUntilDeadline } from '@/components/bounties/SealedUntilDeadline';
-import { useDeadlinePassed } from '@/components/bounties/use-deadline-passed';
 import {
   useAllBountySubmissions,
   ESCROW_PHASE_LABEL,
@@ -63,20 +61,15 @@ export default function BountyPayoutPanel({
   staged: Set<string>;
 }) {
   const isCompleted = overview.status === 'completed';
-  const deadlinePassed = useDeadlinePassed(overview.submissionDeadline ?? null);
-  // UX gate only, mirroring the Submissions tab. Publish validation guarantees
-  // live competitions have a deadline, so a null deadline does not gate.
-  const gated =
-    overview.submissionVisibility === 'HIDDEN_UNTIL_DEADLINE' &&
-    overview.submissionDeadline != null &&
-    !deadlinePassed;
 
   // Winner selection must see the COMPLETE pool, never one review page.
+  // Organizers always see submissions regardless of submissionVisibility;
+  // HIDDEN_UNTIL_DEADLINE only hides peer work from other participants.
   const {
     data: allSubmissions,
     isLoading,
     error,
-  } = useAllBountySubmissions(organizationId, bountyId, { enabled: !gated });
+  } = useAllBountySubmissions(organizationId, bountyId);
   const submissions = useMemo(() => allSubmissions ?? [], [allSubmissions]);
 
   const payout = useBountyPayout({ organizationId, bountyId });
@@ -165,16 +158,6 @@ export default function BountyPayoutPanel({
           ))
         )}
       </div>
-    );
-  }
-
-  if (gated && overview.submissionDeadline) {
-    return (
-      <SealedUntilDeadline
-        deadline={overview.submissionDeadline}
-        title='Winner selection opens at the deadline'
-        description='Competition submissions stay sealed until then.'
-      />
     );
   }
 

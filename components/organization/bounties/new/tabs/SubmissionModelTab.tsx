@@ -408,7 +408,7 @@ export default function SubmissionModelTab({
               </p>
               <p className='mt-0.5 text-xs text-zinc-500'>
                 {isCompetition
-                  ? 'Hidden until the deadline so the organizer cannot play favorites.'
+                  ? "Participants can't see each other's work until the deadline. You review submissions as they arrive."
                   : 'Visible to the organizer as submissions arrive.'}
               </p>
             </div>

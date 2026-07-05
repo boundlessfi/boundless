@@ -19,12 +19,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { BoundlessButton } from '@/components/buttons';
 import EmptyState from '@/components/EmptyState';
-import { SealedUntilDeadline } from '@/components/bounties/SealedUntilDeadline';
 import { submissionStatusClass } from '@/components/bounties/statusClass';
-import { useDeadlinePassed } from '@/components/bounties/use-deadline-passed';
 import {
   useBountySubmissions,
-  type BountyOperateOverview,
   type OrganizerBountySubmission,
 } from '@/features/bounties';
 import { ordinal } from '@/lib/utils';
@@ -51,48 +48,25 @@ function formatTierAmount(amount: string): string {
 export default function BountySubmissionsPanel({
   organizationId,
   bountyId,
-  submissionVisibility,
-  submissionDeadline,
   rewardCurrency,
   staged,
   onToggleStage,
 }: {
   organizationId: string;
   bountyId: string;
-  submissionVisibility: BountyOperateOverview['submissionVisibility'];
-  submissionDeadline: string | null;
   rewardCurrency: string;
   staged: Set<string>;
   onToggleStage: (id: string) => void;
 }) {
   const [page, setPage] = useState(1);
-  const deadlinePassed = useDeadlinePassed(submissionDeadline);
 
-  // Keep competition work out of the UI until the deadline. Publish validation
-  // guarantees a deadline for live competitions; without one there is nothing
-  // to count down to, so we do not gate. NOTE: this is a UX gate only, the
-  // organizer endpoint itself returns submissions regardless of visibility.
-  const gated =
-    submissionVisibility === 'HIDDEN_UNTIL_DEADLINE' &&
-    submissionDeadline != null &&
-    !deadlinePassed;
-
-  // Don't fetch sealed competition work until the deadline.
+  // Organizers always see submissions, regardless of submissionVisibility.
+  // HIDDEN_UNTIL_DEADLINE only hides peer work from other participants.
   const { data, isLoading, error } = useBountySubmissions(
     organizationId,
     bountyId,
-    { params: { page, limit: PAGE_SIZE }, enabled: !gated }
+    { params: { page, limit: PAGE_SIZE } }
   );
-
-  if (gated && submissionDeadline) {
-    return (
-      <SealedUntilDeadline
-        deadline={submissionDeadline}
-        title='Submissions are hidden until the deadline'
-        description='This is a competition. Work stays sealed so review stays fair.'
-      />
-    );
-  }
 
   if (isLoading) {
     return (

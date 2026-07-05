@@ -164,8 +164,6 @@ export default function BountyManagementDashboard() {
           <BountySubmissionsPanel
             organizationId={organizationId}
             bountyId={bountyId}
-            submissionVisibility={overview.submissionVisibility}
-            submissionDeadline={overview.submissionDeadline ?? null}
             rewardCurrency={overview.rewardCurrency}
             staged={stagedWinners}
             onToggleStage={toggleStagedWinner}

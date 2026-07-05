@@ -73,7 +73,7 @@ export function computeBountyModeDescription(
   if (entryType === 'OPEN') {
     return single
       ? 'Anyone eligible can claim this bounty directly. The first to claim locks it, does the work, and gets paid. One worker, one reward.'
-      : 'Anyone can join and work in parallel. Submissions stay hidden until the deadline, then the organizer picks the winner(s).';
+      : 'Anyone can join and work in parallel. Submissions stay hidden from other participants until the deadline, then the organizer picks the winner(s).';
   }
   const depth =
     entryType === 'APPLICATION_LIGHT'

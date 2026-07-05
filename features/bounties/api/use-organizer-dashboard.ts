@@ -32,15 +32,14 @@ export function useBountyOverview(
 
 /**
  * Submitted work on a bounty, for the reviewing organizer (#337 / #632).
- * Pass `enabled: false` to keep the Submissions tab from fetching sealed
- * competition work before the deadline. This is a UX gate only: the API
- * returns the organizer's submissions regardless of visibility, so the
- * actual seal (if required) must be enforced server-side.
+ * Organizers always see submissions regardless of submissionVisibility —
+ * HIDDEN_UNTIL_DEADLINE only hides peer work from other participants, and
+ * the API returns the organizer's submissions at all times.
  */
 export function useBountySubmissions(
   organizationId: string | undefined,
   bountyId: string | undefined,
-  options: { params?: OrganizerSubmissionsParams; enabled?: boolean } = {}
+  options: { params?: OrganizerSubmissionsParams } = {}
 ) {
   const params = options.params ?? {};
   return useQuery<OrganizerBountySubmissionList>({
@@ -55,19 +54,18 @@ export function useBountySubmissions(
         bountyId as string,
         params
       ),
-    enabled: !!organizationId && !!bountyId && (options.enabled ?? true),
+    enabled: !!organizationId && !!bountyId,
   });
 }
 
 /**
  * The COMPLETE submission set for a bounty (pages through the capped list
  * endpoint). Winner selection reads this so the payout pool is never a
- * truncated page. Same UX-only caveat as useBountySubmissions.
+ * truncated page. Same organizer-visibility rule as useBountySubmissions.
  */
 export function useAllBountySubmissions(
   organizationId: string | undefined,
-  bountyId: string | undefined,
-  options: { enabled?: boolean } = {}
+  bountyId: string | undefined
 ) {
   return useQuery<OrganizerBountySubmission[]>({
     queryKey: bountyKeys.orgSubmissionsAll(
@@ -76,6 +74,6 @@ export function useAllBountySubmissions(
     ),
     queryFn: () =>
       listAllBountySubmissions(organizationId as string, bountyId as string),
-    enabled: !!organizationId && !!bountyId && (options.enabled ?? true),
+    enabled: !!organizationId && !!bountyId,
   });
 }
