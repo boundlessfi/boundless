@@ -104,6 +104,14 @@ export default function BountyApplicationsPanel({
     a.applicationStatus === 'SUBMITTED';
   const busy = select.isPending || shortlist.isPending || decline.isPending;
 
+  // `checked` can hold ids that have since left SUBMITTED (e.g. a checked
+  // application was declined, unmounting its checkbox), so derive the
+  // effective selection from the live list: the sticky-bar count and the
+  // shortlist payload must never include a non-actionable application.
+  const selectedIds = [...checked].filter(id =>
+    applications.some(a => a.id === id && actionable(a))
+  );
+
   const toggleCheck = (id: string) =>
     setChecked(prev => {
       const next = new Set(prev);
@@ -122,7 +130,7 @@ export default function BountyApplicationsPanel({
     );
 
   const onShortlist = () => {
-    const applicationIds = [...checked];
+    const applicationIds = selectedIds;
     if (
       overview.shortlistSize != null &&
       applicationIds.length > overview.shortlistSize
@@ -171,19 +179,19 @@ export default function BountyApplicationsPanel({
       {isCompetition && (
         <div className='sticky bottom-4 flex items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/90 p-4 backdrop-blur'>
           <span className='text-sm text-zinc-400'>
-            {checked.size} selected
+            {selectedIds.length} selected
             {overview.shortlistSize != null
               ? ` (max ${overview.shortlistSize})`
               : ''}
           </span>
           <BoundlessButton
-            disabled={checked.size === 0 || busy}
+            disabled={selectedIds.length === 0 || busy}
             onClick={onShortlist}
           >
             {shortlist.isPending ? (
               <Loader2 className='h-4 w-4 animate-spin' />
             ) : (
-              `Approve shortlist (${checked.size})`
+              `Approve shortlist (${selectedIds.length})`
             )}
           </BoundlessButton>
         </div>
