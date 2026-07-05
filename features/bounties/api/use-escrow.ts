@@ -167,6 +167,21 @@ export type EscrowRunPhase =
   | 'completed'
   | 'failed';
 
+/**
+ * Base user-facing labels for the runner phases. Flows spread this and
+ * override the flow-specific verbs (usually `starting` and `polling`), so a
+ * new phase only needs wiring here and every consumer stays exhaustive.
+ */
+export const ESCROW_PHASE_LABEL: Record<EscrowRunPhase, string> = {
+  idle: '',
+  starting: 'Preparing…',
+  signing: 'Signing…',
+  submitting: 'Submitting…',
+  polling: 'Confirming on-chain…',
+  completed: 'Confirmed',
+  failed: 'Failed',
+};
+
 export interface UseEscrowOpRunnerOptions {
   /**
    * Signer for the EXTERNAL path. When the start op returns PENDING_SIGN with

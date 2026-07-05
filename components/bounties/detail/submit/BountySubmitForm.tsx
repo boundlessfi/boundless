@@ -24,18 +24,14 @@ import { uploadService } from '@/lib/api/upload';
 import { useWalletContext } from '@/components/providers/wallet-provider';
 import {
   useSubmitBounty,
+  ESCROW_PHASE_LABEL,
   type BountyPublic,
-  type EscrowRunPhase,
 } from '@/features/bounties';
 
-const PHASE_LABEL: Record<EscrowRunPhase, string> = {
-  idle: '',
+const PHASE_LABEL = {
+  ...ESCROW_PHASE_LABEL,
   starting: 'Preparing submission…',
-  signing: 'Signing…',
-  submitting: 'Submitting…',
   polling: 'Anchoring on-chain…',
-  completed: 'Confirmed',
-  failed: 'Failed',
 };
 
 type Requirements = BountyPublic['submissionRequirements'];

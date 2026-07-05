@@ -13,6 +13,7 @@ import {
 } from '@/components/organization/bounties/new/tabs/schemas/scopeSchema';
 import type { BountyPublic } from '@/features/bounties';
 import { DueCountdown } from '../DueCountdown';
+import { bountyStatusClass } from '../statusClass';
 
 /** Plain-language mode label (single claim / competition / application). */
 function modeLabel(b: BountyPublic): string {
@@ -22,22 +23,13 @@ function modeLabel(b: BountyPublic): string {
   return 'Bounty';
 }
 
-const STATUS_CLASS: Record<string, string> = {
-  open: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-  in_progress: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-  completed: 'border-primary/30 bg-primary/10 text-primary',
-  cancelled: 'border-zinc-700 bg-zinc-800/60 text-zinc-300',
-};
-
 export function BountyCard({ bounty }: { bounty: BountyPublic }) {
   const reward = bounty.rewardAmount > 0;
   const isUsdc = bounty.rewardCurrency?.toUpperCase() === 'USDC';
   const categoryLabel = bounty.category
     ? (CATEGORY_LABELS[bounty.category as BountyCategory] ?? bounty.category)
     : null;
-  const statusClass =
-    STATUS_CLASS[bounty.status] ??
-    'border-zinc-700 bg-zinc-800/60 text-zinc-300';
+  const statusClass = bountyStatusClass(bounty.status);
 
   return (
     <Link

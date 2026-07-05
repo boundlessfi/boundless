@@ -112,6 +112,7 @@ export {
   usePublishBountyEscrow,
   useSelectBountyWinners,
   useCancelBountyEscrow,
+  ESCROW_PHASE_LABEL,
 } from './api/use-escrow';
 export type {
   EscrowOpScope,
@@ -182,6 +183,30 @@ export {
   useMyBountySubmissions,
   useMyBountySubmission,
 } from './api/use-participant-dashboard';
+
+// ── Organizer operate dashboard (#338 / #630) ─────────────────────────────────
+export {
+  getBountyOverview,
+  listBountySubmissions,
+  listAllBountySubmissions,
+} from './api/organizer-dashboard-client';
+export type {
+  BountyOperateOverview,
+  BountyOperateIntake,
+  BountyOperateApplicationStats,
+  BountyOperateSubmissionStats,
+  BountyOperateContributionStats,
+  BountyOverviewPrizeTier,
+  OrganizerBountySubmission,
+  OrganizerBountySubmissionList,
+  OrganizerSubmissionUser,
+  OrganizerSubmissionsParams,
+} from './api/organizer-dashboard-client';
+export {
+  useBountyOverview,
+  useBountySubmissions,
+  useAllBountySubmissions,
+} from './api/use-organizer-dashboard';
 
 // Participant hooks (React Query).
 export {

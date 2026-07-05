@@ -234,7 +234,15 @@ export default function OrganizationBountiesPage() {
                   return (
                     <div
                       key={bounty.id}
-                      className='group hover:border-primary/60 hover:shadow-primary/10 relative flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 shadow-lg transition-all'
+                      className='group hover:border-primary/60 hover:shadow-primary/10 relative flex cursor-pointer flex-col rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 shadow-lg transition-all'
+                      onClick={() =>
+                        router.push(
+                          `/organizations/${organizationId}/bounties/${bounty.id}`
+                        )
+                      }
+                      tabIndex={0}
+                      role='button'
+                      aria-label={`Manage bounty ${bounty.title || 'Untitled bounty'}`}
                     >
                       <div className='mb-3 flex items-center justify-between'>
                         <Badge

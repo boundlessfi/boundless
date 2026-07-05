@@ -28,6 +28,7 @@ import {
   getBountyPrizePool,
   getBountyTotalFunding,
 } from '@/lib/utils/bounty-escrow';
+import { ordinal } from '@/lib/utils';
 import { MAX_PRIZE_TIERS, type BountyClaimType } from './schemas/modeSchema';
 import { makeRewardSchema, type RewardFormData } from './schemas/rewardSchema';
 import RegenerateBountySectionButton from '../RegenerateBountySectionButton';
@@ -47,12 +48,6 @@ const REWARD_CURRENCIES = [
   { code: 'USDC', label: 'USDC', disabled: false },
   { code: 'XLM', label: 'XLM', disabled: true },
 ] as const;
-
-const ordinal = (n: number): string => {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
-};
 
 export default function RewardTab({
   mode,

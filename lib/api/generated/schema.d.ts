@@ -9735,6 +9735,125 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/organizations/{organizationId}/bounties/{bountyId}/submissions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List submitted work on a bounty (organizer) */
+    get: operations['OrganizationBountySubmissionsController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/{bountyId}/submissions/{submissionId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read a single submission (organizer) */
+    get: operations['OrganizationBountySubmissionsController_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/{bountyId}/overview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Operate dashboard overview + intake stats */
+    get: operations['OrganizationBountyOverviewController_overview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/{bountyId}/archive': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Archive a completed/cancelled bounty */
+    post: operations['OrganizationBountyArchiveController_archive'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/{bountyId}/restore': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Restore an archived bounty */
+    post: operations['OrganizationBountyArchiveController_restore'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/organizations/{organizationId}/bounties/{bountyId}/publish-results': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Publish the results/winner announcement */
+    post: operations['OrganizationBountyResultsController_publish'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/bounties/{bountyId}/announcement': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Public results/winner announcement for a bounty */
+    get: operations['BountyAnnouncementPublicController_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/bounties/{bountyId}/v2/competition/join': {
     parameters: {
       query?: never;
@@ -10321,6 +10440,43 @@ export interface paths {
      * @description Send a campaign to all matching subscribers. Delivers in batches of 10 with 1-second delays. Cannot re-send an already sent campaign.
      */
     post: operations['NewsletterController_sendCampaign'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/discover/landing': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Discover landing feed
+     * @description Returns curated slices of bounties, hackathons, crowdfunding campaigns, grants, and recent winners in a single response. All queries run in parallel server-side.
+     */
+    get: operations['DiscoverController_getLanding'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/discover/recent-winners': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recent prize winners across hackathons, bounties, and grants */
+    get: operations['DiscoverController_getRecentWinners'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -21991,6 +22147,114 @@ export interface components {
       /** @description Reason for decline (surfaced to builder). */
       reason?: string;
     };
+    OrganizerSubmissionUserDto: {
+      id: string;
+      name: string;
+      username?: string | null;
+      avatarUrl?: string | null;
+    };
+    OrganizerBountySubmissionDto: {
+      id: string;
+      bountyId: string;
+      submittedBy: components['schemas']['OrganizerSubmissionUserDto'];
+      /** @description G-address that receives payout if this submission wins. */
+      applicantAddress?: string | null;
+      /** @description Primary submission link (anchored on-chain). */
+      contentUri?: string | null;
+      documentationUrl?: string | null;
+      tweetUrl?: string | null;
+      demoVideoUrl?: string | null;
+      mediaUrls: string[];
+      /** @description Review status: pending | accepted | rejected | disputed. */
+      status: string;
+      /** @description Escrow anchor: pending_confirm | active | withdrawn | failed. */
+      escrowAnchorStatus?: string | null;
+      tierPosition?: number | null;
+      tierAmount?: string | null;
+      reviewComments?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    OrganizerBountySubmissionListDto: {
+      items: components['schemas']['OrganizerBountySubmissionDto'][];
+      total: number;
+      page: number;
+      limit: number;
+    };
+    BountyOverviewPrizeTierDto: {
+      position: number;
+      amount: string;
+      passMark?: number | null;
+    };
+    BountyApplicationStatsDto: {
+      submitted: number;
+      shortlisted: number;
+      selected: number;
+      declined: number;
+      withdrawn: number;
+      /** @description All application rows on the bounty. */
+      total: number;
+    };
+    BountySubmissionStatsDto: {
+      pending: number;
+      accepted: number;
+      rejected: number;
+      disputed: number;
+      /** @description All submission rows on the bounty. */
+      total: number;
+    };
+    BountyContributionStatsDto: {
+      /** @description Count of confirmed contributions. */
+      count: number;
+      /** @description Sum of confirmed contribution amounts. */
+      total: string;
+    };
+    BountyOperateIntakeDto: {
+      applications: components['schemas']['BountyApplicationStatsDto'];
+      submissions: components['schemas']['BountySubmissionStatsDto'];
+      contributions: components['schemas']['BountyContributionStatsDto'];
+    };
+    BountyOperateOverviewDto: {
+      id: string;
+      title: string;
+      /** @description Lifecycle status (lowercase). */
+      status: string;
+      /** @enum {string|null} */
+      entryType?: 'OPEN' | 'APPLICATION_LIGHT' | 'APPLICATION_FULL' | null;
+      /** @enum {string|null} */
+      claimType?: 'SINGLE_CLAIM' | 'COMPETITION' | null;
+      /** @enum {string} */
+      submissionVisibility: 'ORGANIZER_ONLY' | 'HIDDEN_UNTIL_DEADLINE';
+      /** Format: date-time */
+      applicationWindowCloseAt?: string | null;
+      /** Format: date-time */
+      submissionDeadline?: string | null;
+      maxApplicants?: number | null;
+      shortlistSize?: number | null;
+      rewardCurrency: string;
+      rewardAmount: number;
+      prizeTiers: components['schemas']['BountyOverviewPrizeTierDto'][];
+      /** @description On-chain event id once published; null while in draft. */
+      escrowEventId?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      intake: components['schemas']['BountyOperateIntakeDto'];
+    };
+    PublishBountyResultsDto: {
+      /** @description Announcement message shown on the results page. */
+      message: string;
+    };
+    BountyAnnouncementDto: {
+      id: string;
+      bountyId: string;
+      message: string;
+      /** @description User id of the organizer who published it. */
+      publishedBy: string;
+      /** Format: date-time */
+      publishedAt: string;
+    };
     JoinCompetitionDto: {
       /**
        * @description G-address that will receive payout if winning
@@ -22575,6 +22839,43 @@ export interface components {
        *     ]
        */
       tags?: string[];
+    };
+    DiscoverPillarDto: {
+      items: components['schemas']['OpportunityListItemDto'][];
+      /** @description Total matching records in the pillar (unpaged). */
+      total: number;
+    };
+    RecentWinnerUserDto: {
+      name: string;
+      avatarUrl?: string;
+    };
+    RecentWinnerPrizeDto: {
+      amount: number;
+      /** @example USDC */
+      currency: string;
+    };
+    RecentWinnerDto: {
+      id: string;
+      user: components['schemas']['RecentWinnerUserDto'];
+      projectTitle: string;
+      /** @enum {string} */
+      category: 'hackathon' | 'bounty' | 'grant';
+      prize: components['schemas']['RecentWinnerPrizeDto'];
+      /** @description ISO-8601 timestamp of the win event */
+      occurredAt: string;
+      totalApplications: number;
+      /** @description Total wins for this user across all pillars */
+      boundlessWins: number;
+    };
+    DiscoverLandingDto: {
+      bounties: components['schemas']['DiscoverPillarDto'];
+      hackathons: components['schemas']['DiscoverPillarDto'];
+      crowdfunding: components['schemas']['DiscoverPillarDto'];
+      grants: components['schemas']['DiscoverPillarDto'];
+      recentWinners: components['schemas']['RecentWinnerDto'][];
+    };
+    RecentWinnersResponseDto: {
+      items: components['schemas']['RecentWinnerDto'][];
     };
     User: {
       id?: string;
@@ -39777,6 +40078,168 @@ export interface operations {
       };
     };
   };
+  OrganizationBountySubmissionsController_list: {
+    parameters: {
+      query?: {
+        page?: number;
+        limit?: number;
+        /** @description Filter by review status (pending/accepted/rejected/disputed) */
+        status?: unknown;
+      };
+      header?: never;
+      path: {
+        organizationId: string;
+        bountyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrganizerBountySubmissionListDto'];
+        };
+      };
+    };
+  };
+  OrganizationBountySubmissionsController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationId: string;
+        bountyId: string;
+        submissionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrganizerBountySubmissionDto'];
+        };
+      };
+    };
+  };
+  OrganizationBountyOverviewController_overview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationId: string;
+        bountyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BountyOperateOverviewDto'];
+        };
+      };
+    };
+  };
+  OrganizationBountyArchiveController_archive: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationId: string;
+        bountyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Archive state. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrganizationBountyArchiveController_restore: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationId: string;
+        bountyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Archive state. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrganizationBountyResultsController_publish: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationId: string;
+        bountyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PublishBountyResultsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BountyAnnouncementDto'];
+        };
+      };
+    };
+  };
+  BountyAnnouncementPublicController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        bountyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Null if unpublished. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BountyAnnouncementDto'];
+        };
+      };
+    };
+  };
   BountyCompetitionJoinController_join: {
     parameters: {
       query?: never;
@@ -40741,6 +41204,58 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  DiscoverController_getLanding: {
+    parameters: {
+      query?: {
+        /** @description Max bounty cards on the landing page. */
+        bountyLimit?: number;
+        /** @description Max hackathon cards on the landing page. */
+        hackathonLimit?: number;
+        /** @description Max crowdfunding cards on the landing page. */
+        crowdfundingLimit?: number;
+        /** @description Max grant cards on the landing page. */
+        grantLimit?: number;
+        /** @description Max recent-winner rows. */
+        winnersLimit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DiscoverLandingDto'];
+        };
+      };
+    };
+  };
+  DiscoverController_getRecentWinners: {
+    parameters: {
+      query?: {
+        /** @description Number of winners to return (default: 8, max: 50) */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecentWinnersResponseDto'];
+        };
       };
     };
   };
